@@ -4,6 +4,7 @@ import at.asitplus.wallet.backend.data.toBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
@@ -17,11 +18,14 @@ import javax.imageio.ImageIO
 @Controller
 class DemoController {
 
+    private val logger = LoggerFactory.getLogger(this.javaClass)
+
     @Autowired
     private lateinit var authTokenService: AuthTokenService
 
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
+        logger.info("/demo called")
         val token = authTokenService.generateAuthToken()
         val size = 400
         model["qrcodewidth"] = size
