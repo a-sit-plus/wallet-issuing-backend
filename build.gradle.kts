@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("org.springframework.boot") version "2.5.3"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
+    id("maven-publish")
     kotlin("jvm") version "1.5.21"
     kotlin("plugin.spring") version "1.5.21"
     kotlin("plugin.jpa") version "1.5.21"
@@ -17,10 +18,6 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
@@ -53,4 +50,53 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+val gitLabPrivateToken: String? by extra
+val gitLabProjectId: String by extra
+val gitLabGroupId: String by extra
+
+repositories {
+    mavenLocal()
+    if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
+        maven {
+            name = "gitlab"
+            url = uri("https://gitlab.iaik.tugraz.at/api/v4/groups/$gitLabGroupId/-/packages/maven")
+            if (gitLabPrivateToken != null) {
+                credentials(HttpHeaderCredentials::class) {
+                    name = "Private-Token"
+                    value = gitLabPrivateToken
+                }
+            } else if (System.getenv("CI_JOB_TOKEN") != null) {
+                credentials(HttpHeaderCredentials::class) {
+                    name = "Job-Token"
+                    value = System.getenv("CI_JOB_TOKEN")
+                }
+            }
+            authentication {
+                create<HttpHeaderAuthentication>("header")
+            }
+        }
+    }
+    mavenCentral()
+}
+
+
+publishing {
+    repositories {
+        mavenLocal()
+        if (System.getenv("CI_JOB_TOKEN") != null) {
+            maven {
+                name = "gitlab"
+                url = uri("https://gitlab.iaik.tugraz.at/api/v4/projects/$gitLabProjectId/packages/maven")
+                credentials(HttpHeaderCredentials::class) {
+                    name = "Job-Token"
+                    value = System.getenv("CI_JOB_TOKEN")
+                }
+                authentication {
+                    create<HttpHeaderAuthentication>("header")
+                }
+            }
+        }
+    }
 }
