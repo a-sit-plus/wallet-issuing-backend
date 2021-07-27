@@ -19,12 +19,13 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-data class StoreEntry(
-    val serialized: VerifiableCredentialSerialized,
-    val vc: VerifiableCredentialJws
-)
 
-open class Agent {
+class Agent {
+
+    data class StoreEntry(
+        val serialized: VerifiableCredentialSerialized,
+        val vc: VerifiableCredentialJws
+    )
 
     protected val keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
         it.initialize(256)
@@ -38,9 +39,9 @@ open class Agent {
 
     private val vcStore = mutableListOf<StoreEntry>()
 
-    fun issueCredential(agent: Agent): VerifiableCredentialSerialized {
+    fun issueCredential(keyIdSubject: String): VerifiableCredentialSerialized {
         val id = "example.com/credential/1234"
-        val subject = Subject(agent.keyId, PupilId("Max", "Mustermann"))
+        val subject = Subject(keyIdSubject, PupilId("Max", "Mustermann"))
         val revocation = Revocation("example.com/rev/1", "RevocationList2020")
         val vc = VerifiableCredential(id, keyId, Duration.ofSeconds(60), revocation, subject)
         val jwsHeader = buildJwsHeader()
