@@ -6,6 +6,7 @@ plugins {
     kotlin("jvm") version "1.5.21"
     kotlin("plugin.spring") version "1.5.21"
     kotlin("plugin.jpa") version "1.5.21"
+    kotlin("plugin.serialization") version "1.5.21"
 }
 
 group = "at.asitplus.wallet"
@@ -32,6 +33,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+    implementation("com.nimbusds:nimbus-jose-jwt:9.11.1")
+    implementation("org.json:json:20210307")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
