@@ -21,6 +21,17 @@ configurations {
 
 repositories {
     mavenCentral()
+//    maven {
+//        url = uri("https://gitlab.example.com/api/v4/groups/<group>/-/packages/maven")
+//        name = "GitLab"
+//        credentials(HttpHeaderCredentials::class) {
+//            name = "Private-Token"
+//            value = "gitLabPrivateToken"
+//        }
+//        authentication {
+//            create<HttpHeaderAuthentication>("header")
+//        }
+//    }
 }
 
 dependencies {
