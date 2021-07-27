@@ -10,7 +10,7 @@ class AuthTokenService {
     private val activeTokens = mutableListOf<String>()
 
     fun generateAuthToken(): String {
-        val bytes = byteArrayOf(32)
+        val bytes = ByteArray(128)
         SecureRandom().nextBytes(bytes)
         val token = bytes.toBase64Url()
         activeTokens += token

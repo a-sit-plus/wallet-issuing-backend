@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.data
 
 import java.util.Base64
 
+fun ByteArray.toBase64() = Base64.getEncoder().encodeToString(this)
+
 fun ByteArray.toBase64Url() = Base64.getUrlEncoder().encodeToString(this)
 
 fun ByteArray.toHexString() = joinToString("") { "%02x".format(it) }
