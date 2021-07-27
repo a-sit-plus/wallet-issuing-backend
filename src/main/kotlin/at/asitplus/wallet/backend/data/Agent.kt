@@ -101,6 +101,8 @@ class Agent {
             throw IllegalArgumentException("jti")
         if (vcJws.subject != vcJws.vc.credentialSubject.id)
             throw IllegalArgumentException("sub")
+        if (vcJws.subject != keyId)
+            throw IllegalArgumentException("sub")
         if (!vcJws.vc.type.contains("VerifiableCredential"))
             throw IllegalArgumentException("type")
         if (vcJws.expiration != null && vcJws.expiration.isBefore(Instant.now()))

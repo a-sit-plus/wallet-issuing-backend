@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.Agent
 import at.asitplus.wallet.backend.data.VerifiableCredentialSerialized
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -18,11 +19,37 @@ class ApiControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
 
+    @Autowired
+    lateinit var authTokenService: AuthTokenService
+
+    private lateinit var subject: Agent
+
+    @BeforeEach
+    fun beforeEach() {
+        subject = Agent()
+    }
+
+    @Test
+    fun issue_missingToken_400() {
+        mockMvc.get("/issue?keyId={keyId}", subject.keyId)
+            .andExpect {
+                status { is4xxClientError() }
+            }.andReturn()
+    }
+
+    @Test
+    fun issue_wrongToken_401() {
+        mockMvc.get("/issue?keyId={keyId}&token={token}", subject.keyId, "foo")
+            .andExpect {
+                status { isUnauthorized() }
+            }.andReturn()
+    }
+
     @Test
     fun issueCredential() {
-        val subject = Agent()
+        val token = authTokenService.generateAuthToken()
 
-        val result = mockMvc.get("/issue?keyId={}", subject.keyId)
+        val result = mockMvc.get("/issue?keyId={keyId}&token={token}", subject.keyId, token)
             .andExpect {
                 status { isOk() }
             }.andReturn()
