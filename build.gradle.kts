@@ -21,17 +21,6 @@ configurations {
 
 repositories {
     mavenCentral()
-//    maven {
-//        url = uri("https://gitlab.example.com/api/v4/groups/<group>/-/packages/maven")
-//        name = "GitLab"
-//        credentials(HttpHeaderCredentials::class) {
-//            name = "Private-Token"
-//            value = "gitLabPrivateToken"
-//        }
-//        authentication {
-//            create<HttpHeaderAuthentication>("header")
-//        }
-//    }
 }
 
 dependencies {
@@ -52,6 +41,7 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation(kotlin("test"))
 }
 
 tasks.withType<KotlinCompile> {
