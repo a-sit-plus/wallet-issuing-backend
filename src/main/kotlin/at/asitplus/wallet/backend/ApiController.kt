@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.Agent
+import at.asitplus.wallet.backend.model.IdentifierRegistery
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -20,6 +21,9 @@ class ApiController {
     @Autowired
     lateinit var authTokenService: AuthTokenService
 
+    @Autowired
+    lateinit var identifierRegistery: IdentifierRegistery
+
     @GetMapping("/issue")
     fun issueCredential(@RequestParam keyId: String, @RequestParam token: String): ResponseEntity<String> {
         logger.info("/issue called with $keyId and $token")
@@ -29,6 +33,7 @@ class ApiController {
         }
         val vcSerialized = issuer.issueCredential(keyId)
         logger.info("returning $vcSerialized")
+        identifierRegistery.addIdenitfier(keyId);
         return ResponseEntity.ok(vcSerialized.compactJws)
     }
 
