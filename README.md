@@ -6,6 +6,10 @@ Functionality:
  - Providing a demo web page showing QR codes to initialize a Wallet App
  - Endpoint for issuing of a new pupil ID at `/issue?keyId={keyId}&token={token}`
  - Providing a revocation list
+ - Store references for issued credentials
+ - Provide an endpoint for the revocation list
+
+
  
 TODO:
  - Validate keyId of the client before issuing new VC

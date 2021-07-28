@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.Agent
 import at.asitplus.wallet.backend.model.IdentifierRegistery
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -35,6 +37,21 @@ class ApiController {
         logger.info("returning $vcSerialized")
         identifierRegistery.addIdenitfier(keyId);
         return ResponseEntity.ok(vcSerialized.compactJws)
+    }
+
+    @GetMapping("/check")
+    fun checkRevocation(@RequestParam keyId: String): ResponseEntity<String> {
+        logger.info("/check called with $keyId")
+        // TODO check what we decided over revocation
+        val revoked = identifierRegistery.isRevoked(keyId);
+        return ResponseEntity.ok(revoked.toString())
+    }
+
+    @GetMapping("/revoke") // TODO do we need a signed revocation request
+    fun revoke(@RequestParam keyId: String): ResponseEntity<String> {
+        logger.info("/revoke called with $keyId")
+        val revoked = identifierRegistery.revoke(keyId);
+        return ResponseEntity.ok(revoked.toString())
     }
 
 }
