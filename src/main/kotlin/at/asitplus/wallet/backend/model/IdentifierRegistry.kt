@@ -1,33 +1,23 @@
 package at.asitplus.wallet.backend.model
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.repository.CrudRepository
-import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
-import javax.transaction.Transactional
-import kotlin.jvm.Throws
 
 @Service
 class IdentifierRegistry(private val identifierRepository: IdentifierRepository) {
 
     @Throws(Exception::class)
-    fun addIdenitfier (key: String) {
+    fun addIdentifier(key: String) {
         val identity: Identifier? = identifierRepository.findByKey(key)
-        identity?.run  { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
+        identity?.run { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
     }
 
     @Throws(Exception::class)
-    fun isRevoked (key: String) : Boolean {
+    fun isRevoked(key: String): Boolean {
         val identity: Identifier? = identifierRepository.findByKey(key)
         return identity?.revoked ?: throw Exception("Not registered")
     }
 
-    fun revoke (key: String) {
+    fun revoke(key: String) {
         val identity: Identifier? = identifierRepository.findByKey(key)
         identity?.let {
             it.revoked = true

@@ -2,8 +2,6 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.Agent
 import at.asitplus.wallet.backend.model.IdentifierRegistry
-import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -35,7 +33,7 @@ class ApiController {
         }
         val vcSerialized = issuer.issueCredential(keyId)
         logger.info("returning $vcSerialized")
-        identifierRegistry.addIdenitfier(keyId);
+        identifierRegistry.addIdentifier(keyId);
         return ResponseEntity.ok(vcSerialized.compactJws)
     }
 
