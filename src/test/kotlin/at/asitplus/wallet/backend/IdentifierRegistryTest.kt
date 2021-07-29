@@ -3,11 +3,12 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.annotation.DirtiesContext
+import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureTestDatabase
@@ -16,7 +17,12 @@ class IdentifierRegistryTest {
     @Autowired
     lateinit var identifierRegistry: IdentifierRegistry
 
-    private val key: String = "2q4t09j0qj09fj́w09"
+    private lateinit var key: String
+
+    @BeforeEach
+    fun beforeEach() {
+        key = UUID.randomUUID().toString()
+    }
 
     @Test
     fun `revocation of non existing key should throw exception`() {
@@ -35,7 +41,6 @@ class IdentifierRegistryTest {
     }
 
     @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     fun `simple positive add and revoke key should work`() {
         identifierRegistry.addIdentifier(key)
         identifierRegistry.isRevoked(key).also { assertEquals(false, it, "key is already revoked") }
@@ -44,7 +49,6 @@ class IdentifierRegistryTest {
     }
 
     @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     fun `double adding key should throw exception`() {
         Assertions.assertThrows(Exception::class.java, {
             identifierRegistry.addIdentifier(key)
