@@ -13,7 +13,7 @@ import javax.transaction.Transactional
 import kotlin.jvm.Throws
 
 @Service
-class IdentifierRegistery(private val identifierRepository: IdentifierRepository) {
+class IdentifierRegistry(private val identifierRepository: IdentifierRepository) {
 
     @Throws(Exception::class)
     fun addIdenitfier (key: String) {

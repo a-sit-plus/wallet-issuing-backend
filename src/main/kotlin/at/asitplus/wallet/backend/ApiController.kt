@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.Agent
-import at.asitplus.wallet.backend.model.IdentifierRegistery
+import at.asitplus.wallet.backend.model.IdentifierRegistry
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -24,7 +24,7 @@ class ApiController {
     lateinit var authTokenService: AuthTokenService
 
     @Autowired
-    lateinit var identifierRegistery: IdentifierRegistery
+    lateinit var identifierRegistry: IdentifierRegistry
 
     @GetMapping("/issue")
     fun issueCredential(@RequestParam keyId: String, @RequestParam token: String): ResponseEntity<String> {
@@ -35,7 +35,7 @@ class ApiController {
         }
         val vcSerialized = issuer.issueCredential(keyId)
         logger.info("returning $vcSerialized")
-        identifierRegistery.addIdenitfier(keyId);
+        identifierRegistry.addIdenitfier(keyId);
         return ResponseEntity.ok(vcSerialized.compactJws)
     }
 
@@ -43,14 +43,14 @@ class ApiController {
     fun checkRevocation(@RequestParam keyId: String): ResponseEntity<String> {
         logger.info("/check called with $keyId")
         // TODO check what we decided over revocation
-        val revoked = identifierRegistery.isRevoked(keyId);
+        val revoked = identifierRegistry.isRevoked(keyId);
         return ResponseEntity.ok(revoked.toString())
     }
 
     @GetMapping("/revoke") // TODO do we need a signed revocation request
     fun revoke(@RequestParam keyId: String): ResponseEntity<String> {
         logger.info("/revoke called with $keyId")
-        val revoked = identifierRegistery.revoke(keyId);
+        val revoked = identifierRegistry.revoke(keyId);
         return ResponseEntity.ok(revoked.toString())
     }
 
