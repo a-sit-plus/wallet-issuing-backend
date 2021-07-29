@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.toBase64Url
+import at.asitplus.wallet.lib.toBase64Url
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
 

@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.toBase64
+import at.asitplus.wallet.lib.toBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter

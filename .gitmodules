@@ -1,0 +1,4 @@
+[submodule "vclib"]
+	path = vclib
+	url = git@gitlab.iaik.tugraz.at:wallet/vc-library-kotlin.git
+	branch = development

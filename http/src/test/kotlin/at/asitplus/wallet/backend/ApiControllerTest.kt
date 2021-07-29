@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.Agent
-import at.asitplus.wallet.backend.data.VerifiableCredentialSerialized
+import at.asitplus.wallet.lib.agent.Agent
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +54,7 @@ class ApiControllerTest {
             }.andReturn()
         val response = result.response.contentAsString
 
-        subject.storeCredential(VerifiableCredentialSerialized(response))
+        subject.storeCredential(response)
     }
 
 }
