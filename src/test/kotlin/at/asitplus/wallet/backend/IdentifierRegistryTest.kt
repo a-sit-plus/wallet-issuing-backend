@@ -4,7 +4,6 @@ import at.asitplus.wallet.backend.model.IdentifierRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.function.Executable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
@@ -19,68 +18,39 @@ class IdentifierRegistryTest {
 
     private val key: String = "2q4t09j0qj09fj́w09"
 
-
     @Test
     fun `revocation of non existing key should throw exception`() {
-        Assertions.assertThrows(Exception::class.java, Executable {
+        Assertions.assertThrows(Exception::class.java, {
             identifierRegistry.isRevoked(key)
-        }, "Can not revoke what is not there (isnt registered)")
+        }, "Can not revoke what is not there (isn't registered)")
             .also { assertEquals(it.message, "Not registered", "Wrong Exception Text") }
-
-        // alternatively
-//        try {
-//            identifierRegistery.revoke(key)
-//        } catch (e: Exception) {
-//            assertEquals(e.message, "Not registered", "Can not revoke what is not there (isnt registered)")
-//            return
-//        }
-//        assertTrue(false, "Should have thrown an exception")
     }
 
     @Test
     fun `check on non existing key should throw an exception`() {
-        Assertions.assertThrows(Exception::class.java, Executable {
-                        identifierRegistry.isRevoked(key)
-        }, "Can not check what is not there (isnt registered)")
+        Assertions.assertThrows(Exception::class.java, {
+            identifierRegistry.isRevoked(key)
+        }, "Can not check what is not there (isn't registered)")
             .also { assertEquals(it.message, "Not registered", "Wrong Exception Text") }
-
-        // alternatively
-//        try {
-//            identifierRegistery.isRevoked(key)
-//        } catch (e: Exception) {
-//            assertEquals(e.message, "Not registered", "Can not revoke what is not there (isnt registered)")
-//            return
-//        }
-//        Assertions.assertTrue(false, "Should have thrown an exception")
     }
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-    fun `simple positive add and revoke key should work` () {
+    fun `simple positive add and revoke key should work`() {
         identifierRegistry.addIdentifier(key)
         identifierRegistry.isRevoked(key).also { assertEquals(false, it, "key is already revoked") }
         identifierRegistry.revoke(key)
-        identifierRegistry.isRevoked(key).also { assertEquals(true, it, "Should be revoked but isnt") }
+        identifierRegistry.isRevoked(key).also { assertEquals(true, it, "Should be revoked but isn't") }
     }
 
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-    fun `double adding key should throw exception` () {
-        Assertions.assertThrows(Exception::class.java, Executable {
+    fun `double adding key should throw exception`() {
+        Assertions.assertThrows(Exception::class.java, {
             identifierRegistry.addIdentifier(key)
             identifierRegistry.addIdentifier(key)
         }, "Double ID registration possible")
             .also { assertEquals(it.message, "Already registered", "Wrong Exception Text") }
-
-        // alternatively
-//        try {
-//            identifierRegistery.addIdenitfier(key)
-//            identifierRegistery.addIdenitfier(key)
-//        } catch (e: Exception) {
-//            assertEquals(e.message, "Already registered", "Double ID registration possible")
-//            return
-//        }
-//        assertTrue(false, "Should have thrown an exception")
     }
 
 }
