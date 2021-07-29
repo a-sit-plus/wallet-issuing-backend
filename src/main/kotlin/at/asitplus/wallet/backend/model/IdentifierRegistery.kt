@@ -10,15 +10,18 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
 import javax.transaction.Transactional
+import kotlin.jvm.Throws
 
 @Service
 class IdentifierRegistery(private val identifierRepository: IdentifierRepository) {
 
+    @Throws(Exception::class)
     fun addIdenitfier (key: String) {
         val identity: Identifier? = identifierRepository.findByKey(key)
-        identity?.run { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
+        identity?.run  { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
     }
 
+    @Throws(Exception::class)
     fun isRevoked (key: String) : Boolean {
         val identity: Identifier? = identifierRepository.findByKey(key)
         return identity?.revoked ?: throw Exception("Not registered")
