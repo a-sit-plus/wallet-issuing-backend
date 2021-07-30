@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.Agent
+import at.asitplus.wallet.lib.agent.Agent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 

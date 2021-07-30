@@ -1,0 +1,4 @@
+[submodule "vclib"]
+	path = vclib
+	url = ../vc-library-kotlin.git
+	branch = development
