@@ -22,6 +22,9 @@ class ApiController {
     lateinit var authTokenService: AuthTokenService
 
     @Autowired
+    lateinit var revocationService: RevocationService
+
+    @Autowired
     lateinit var identifierRegistry: IdentifierRegistry
 
     @GetMapping("/issue")
@@ -37,12 +40,10 @@ class ApiController {
         return ResponseEntity.ok(vcSerialized)
     }
 
-    @GetMapping("/check")
+    @GetMapping("/revocationList")
     fun checkRevocation(@RequestParam keyId: String): ResponseEntity<String> {
         logger.info("/check called with $keyId")
-        // TODO check what we decided over revocation
-        val revoked = identifierRegistry.isRevoked(keyId);
-        return ResponseEntity.ok(revoked.toString())
+        return ResponseEntity.ok(revocationService.getRevocationCredential())
     }
 
     @GetMapping("/revoke") // TODO do we need a signed revocation request

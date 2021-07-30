@@ -1,11 +1,15 @@
 package at.asitplus.wallet.backend.model
 
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 
 
 @Entity
 @Table
-data class Identifier(@Id val key: String, @Column var revoked: Boolean)
+data class Identifier(
+    @Column val key: String,
+    @Column var revoked: Boolean
+) {
+    @Id
+    @GeneratedValue
+    var id: Long? = null
+}
