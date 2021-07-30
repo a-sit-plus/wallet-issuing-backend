@@ -58,4 +58,14 @@ class ApiControllerTest {
         subject.storeCredential(VerifiableCredentialSerialized(response))
     }
 
+
+    @Test
+    fun check_revocation() {
+        val result = mockMvc.get("/check?keyId={keyId}", subject.keyId)
+            .andExpect {
+                status { isOk() }
+            }.andReturn()
+        val response = result.response.contentAsString
+    }
+
 }
