@@ -1,44 +1,50 @@
 import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 import java.util.zip.Deflater
-import java.util.zip.Inflater
+import java.util.zip.DeflaterInputStream
+import java.util.zip.InflaterInputStream
 
 class Utils {
 
     companion object {
 
+        /**
+         * 5 MB seems to be safe for a max. inflated byte array
+         */
+        private const val MAX_DECOMPRESSED_SIZE = 5 * 1024 * 1024
+
         fun ByteArray.zlibCompress(): ByteArray {
-            val input = this;
-
-            // Compress the bytes
-            // 1 to 4 bytes/char for UTF-8
-            val output = ByteArray(input.size * 4)
-            val compressor = Deflater().apply {
-
-                setInput(input)
-                finish()
-            }
-            val compressedDataLength: Int = compressor.deflate(output)
-            return output.copyOfRange(0, compressedDataLength)
+            return DeflaterInputStream(this.inputStream(), Deflater(Deflater.BEST_COMPRESSION)).readAllBytes()
         }
 
+        /**
+         * Safely decompresses ZLIB encoded bytes, with max size [MAX_DECOMPRESSED_SIZE]
+         */
         fun ByteArray.zlibDecompress(): ByteArray {
-            val inflater = Inflater()
-            val outputStream = ByteArrayOutputStream()
-
-            return outputStream.use {
-                val buffer = ByteArray(1024)
-
-                inflater.setInput(this)
-
-                var count = -1
-                while (count != 0) {
-                    count = inflater.inflate(buffer)
-                    outputStream.write(buffer, 0, count)
-                }
-
-                inflater.end()
+            return InflaterInputStream(this.inputStream()).readBytes().also {
+                val inflaterStream = InflaterInputStream(this.inputStream())
+                val outputStream = ByteArrayOutputStream(DEFAULT_BUFFER_SIZE)
+                inflaterStream.copyTo(outputStream)
                 outputStream.toByteArray()
             }
+        }
+
+        // Adapted from kotlin-stdblib's kotlin.io.IOStreams.kt
+        private fun InflaterInputStream.copyTo(out: OutputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE): Long {
+            var bytesCopied: Long = 0
+            val buffer = ByteArray(bufferSize)
+            var bytes = read(buffer)
+            while (bytes >= 0) {
+                out.write(buffer, 0, bytes)
+                bytesCopied += bytes
+                bytes = read(buffer)
+                // begin patch
+                if (bytesCopied > MAX_DECOMPRESSED_SIZE) {
+                    throw IllegalArgumentException("Decompression exceeded $MAX_DECOMPRESSED_SIZE bytes, is: $bytesCopied! Input must be invalid.")
+                }
+                // end patch
+            }
+            return bytesCopied
         }
     }
 }
