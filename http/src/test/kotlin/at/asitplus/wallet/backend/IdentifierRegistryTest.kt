@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
-import Utils.Companion.readBitString
-import Utils.Companion.writeBitString
+import at.asitplus.wallet.backend.model.Identifier
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import org.junit.jupiter.api.Assertions
@@ -12,8 +11,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.util.UUID
 import kotlin.test.assertContentEquals
 
@@ -72,52 +69,21 @@ class IdentifierRegistryTest {
 
     @Test
     fun `revocation list should match revocation calls`() {
-        val should = BooleanArray(10) { false }
+        val toBeRevokedList = mutableListOf<Identifier>()
         for (i in 0..9) {
             val key = UUID.randomUUID().toString()
-            identifierRegistry.addIdentifier(key)
+            val identifier = identifierRegistry.addIdentifier(key)
             if ((key.hashCode() % 2) == 0) {
-                identifierRegistry.revoke(key)
-                should[i] = true
+                toBeRevokedList.add(identifier)
             }
         }
+        val expectedRevocationList = BooleanArray(10) { false }
+        for (toBeRevoked in toBeRevokedList) {
+            identifierRegistry.revoke(toBeRevoked.key)
+            expectedRevocationList[toBeRevoked.revocationListIndex.toInt()] = true
+        }
         val revocationList = identifierRegistry.getRevocationList()
-        assertContentEquals(should, revocationList, "Revocation list should match revocation calls")
-    }
-
-    @Test
-    fun `test encoding and decoding the binary list`() {
-        val ar = booleanArrayOf(
-            true,
-            false,
-            false,
-            true,
-            false,
-            true,
-            true,
-            true,
-            false,
-            true,
-            false,
-            false,
-            false,
-            true,
-            true
-        )
-        val out = ByteArrayOutputStream()
-        writeBitString(out, ar)
-        println("byte amount of size ${out.size()} bytes")
-        assertEquals(2, out.size(), "Not a bit string")
-
-        val res = BooleanArray(15)
-        readBitString(ByteArrayInputStream(out.toByteArray()), res)
-        assertContentEquals(ar, res, "not the same booleans after decoding")
-        out.close()
-
-        val out1 = ByteArrayOutputStream()
-        writeBitString(out1, BooleanArray(17) { (it % 2) != 0 })
-        println("byte amount of size ${out1.size()} bytes")
-        assertEquals(3, out1.size(), "Not a bit string")
+        assertContentEquals(expectedRevocationList, revocationList, "Revocation list should match revocation calls")
     }
 
 }

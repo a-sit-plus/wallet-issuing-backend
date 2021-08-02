@@ -1,37 +1,10 @@
-import java.io.*
+import java.io.ByteArrayOutputStream
 import java.util.zip.Deflater
 import java.util.zip.Inflater
 
 class Utils {
-    companion object {
-        @Throws(IOException::class)
-        fun writeBitString(out: OutputStream, ar: BooleanArray) {
-            var i = 0
-            while (i < ar.size) {
-                var b = 0
-                for (j in Math.min(i + 7, ar.size - 1) downTo i) {
-                    b = b shl 1 or if (ar[j]) 1 else 0
-                }
-                out.write(b)
-                i += 8
-            }
-        }
 
-        @Throws(IOException::class)
-        fun readBitString(`in`: InputStream, ar: BooleanArray) {
-            var i = 0
-            while (i < ar.size) {
-                var b = `in`.read()
-                if (b < 0) throw EOFException()
-                var j = i
-                while (j < i + 8 && j < ar.size) {
-                    ar[j] = b and 1 != 0
-                    b = b ushr 1
-                    j++
-                }
-                i += 8
-            }
-        }
+    companion object {
 
         fun ByteArray.zlibCompress(): ByteArray {
             val input = this;

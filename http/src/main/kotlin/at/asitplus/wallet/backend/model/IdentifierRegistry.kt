@@ -1,16 +1,15 @@
 package at.asitplus.wallet.backend.model
 
 import org.springframework.stereotype.Service
-import java.io.*
 
 
 @Service
 class IdentifierRegistry(private val identifierRepository: IdentifierRepository) {
 
     @Throws(Exception::class)
-    fun addIdentifier(key: String) {
+    fun addIdentifier(key: String): Identifier {
         val identity: Identifier? = identifierRepository.findByKey(key)
-        identity?.run { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
+        return identity?.run { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
     }
 
     @Throws(Exception::class)
@@ -29,7 +28,11 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
     }
 
     fun getRevocationList(): BooleanArray {
-        return identifierRepository.getAllRevoked().toBooleanArray()
+        val result = BooleanArray(identifierRepository.count().toInt()) { false }
+        identifierRepository.findAllByRevokedTrueOrderByRevocationListIndex().forEach {
+            result[it.revocationListIndex.toInt()] = true
+        }
+        return result
     }
 
 }

@@ -1,6 +1,10 @@
 package at.asitplus.wallet.backend.model
 
-import javax.persistence.*
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.Id
+import javax.persistence.Table
 
 
 @Entity
@@ -12,4 +16,8 @@ data class Identifier(
     @Id
     @GeneratedValue
     var id: Long? = null
+
+    @Column
+    @GeneratedValue
+    val revocationListIndex: Long = 0L
 }
