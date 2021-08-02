@@ -27,11 +27,9 @@ class RevocationService {
         val out = ByteArrayOutputStream()
         writeBitString(out, revocationList)
         val byteList = out.toByteArray()
-        val bitstring = ByteArray(16 * 1000) { 0 }
-        byteList.copyInto(bitstring, 0, byteList.size)
-        // zlib compressed
+        val bitString = ByteArray(16 * 1000) { 0 }
+        byteList.copyInto(bitString, 0, byteList.size)
         val zipped = byteList.zlibCompress()
-        // base64 encoded
         return Base64.encode(zipped).toJSONString()
     }
 

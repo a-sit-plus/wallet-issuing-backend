@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import Utils.Companion.readBitString
 import Utils.Companion.writeBitString
 import at.asitplus.wallet.backend.model.IdentifierRegistry
+import at.asitplus.wallet.backend.model.IdentifierRepository
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -25,11 +26,15 @@ class IdentifierRegistryTest {
     @Autowired
     lateinit var identifierRegistry: IdentifierRegistry
 
+    @Autowired
+    lateinit var identifierRepository: IdentifierRepository
+
     private lateinit var key: String
 
     @BeforeEach
     fun beforeEach() {
         key = UUID.randomUUID().toString()
+        identifierRepository.deleteAll()
     }
 
     @Test
@@ -101,7 +106,7 @@ class IdentifierRegistryTest {
         )
         val out = ByteArrayOutputStream()
         writeBitString(out, ar)
-        logger.info("byte amount of size " + out.size() + " bytes")
+        println("byte amount of size ${out.size()} bytes")
         assertEquals(2, out.size(), "Not a bit string")
 
         val res = BooleanArray(15)
@@ -111,7 +116,7 @@ class IdentifierRegistryTest {
 
         val out1 = ByteArrayOutputStream()
         writeBitString(out1, BooleanArray(17) { (it % 2) != 0 })
-        logger.info("byte amount of size " + out1.size() + " bytes")
+        println("byte amount of size ${out1.size()} bytes")
         assertEquals(3, out1.size(), "Not a bit string")
     }
 

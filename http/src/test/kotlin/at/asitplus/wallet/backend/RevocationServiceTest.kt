@@ -42,12 +42,12 @@ class RevocationServiceTest {
                 should[i] = true
             }
         }
-        val revocateionList = revocationService.buildRevocationList()
-        val string = Base64.from(revocateionList)
+        val revocationList = revocationService.buildRevocationList()
+        val string = Base64.from(revocationList)
         val decoded = string.decode()
-        val unziped = decoded.zlibDecompress()
-        val res = BooleanArray(unziped.size)
-        readBitString(ByteArrayInputStream(unziped), res)
+        val decompressed = decoded.zlibDecompress()
+        val res = BooleanArray(decompressed.size)
+        readBitString(ByteArrayInputStream(decompressed), res)
         assertContentEquals(should, res.copyOfRange(0, 10))
     }
 
