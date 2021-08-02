@@ -6,7 +6,6 @@ import at.asitplus.wallet.backend.model.IdentifierRegistry
 import com.nimbusds.jose.util.Base64
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
@@ -18,7 +17,6 @@ import kotlin.test.assertContentEquals
 @SpringBootTest
 @AutoConfigureTestDatabase
 class RevocationServiceTest {
-    private val logger = LoggerFactory.getLogger(this.javaClass)
 
     private lateinit var key: String
 
@@ -35,7 +33,7 @@ class RevocationServiceTest {
 
     @Test
     fun `check revocation credential`() {
-        val should =  BooleanArray(10) {false}
+        val should = BooleanArray(10) { false }
         for (i in 0..9) {
             val key = UUID.randomUUID().toString()
             identifierRegistry.addIdentifier(key)

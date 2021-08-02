@@ -9,16 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.ByteArrayOutputStream
 
-@Autowired
-lateinit var vcAgent: Agent
-
-@Autowired
-lateinit var identifierRegistry: IdentifierRegistry
-
 @Service
 class RevocationService {
-    fun getRevocationCredential(): String {
 
+    @Autowired
+    lateinit var vcAgent: Agent
+
+    @Autowired
+    lateinit var identifierRegistry: IdentifierRegistry
+
+    fun getRevocationCredential(): String {
         return vcAgent.issueCredential("TODO make own Credential with arguments: " + buildRevocationList())
     }
 
@@ -27,14 +27,13 @@ class RevocationService {
         val out = ByteArrayOutputStream()
         writeBitString(out, revocationList)
         val byteList = out.toByteArray()
-        val bitstring = ByteArray(16*1000) {0}
+        val bitstring = ByteArray(16 * 1000) { 0 }
         byteList.copyInto(bitstring, 0, byteList.size)
         // zlib compressed
         val zipped = byteList.zlibCompress()
         // base64 encoded
         return Base64.encode(zipped).toJSONString()
     }
-
 
 
 }
