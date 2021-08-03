@@ -49,6 +49,10 @@ tasks.withType<KotlinCompile> {
     }
 }
 
+tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    launchScript()
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }
