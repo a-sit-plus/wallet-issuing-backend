@@ -23,16 +23,26 @@ class DemoController {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     @Autowired
+    private lateinit var configurationProperties: BackendConfigurationProperties
+
+    @Autowired
     private lateinit var issueCredentialMessenger: IssueCredentialMessenger
 
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
         logger.info("/demo called")
-        val content = "https://wallet.a-sit.at/invite?oob=${issueCredentialMessenger.start().toBase64Url()}"
+        val content =
+            "${configurationProperties.publicContext}/invite?oob=${issueCredentialMessenger.start().toBase64Url()}"
         val size = 400
         model["qrcodewidth"] = size
         model["qrcode"] = createQrCodeImage(content, size).toBase64()
         return ModelAndView("demo", model)
+    }
+
+    @GetMapping("/invite")
+    fun invite(model: ModelMap): ModelAndView {
+        logger.info("/invite called")
+        return ModelAndView("invite", model)
     }
 
     private fun createQrCodeImage(content: String, size: Int): ByteArray {
