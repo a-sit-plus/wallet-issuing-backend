@@ -1,6 +1,11 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.Agent
+import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.MessageWrapper
+import at.asitplus.wallet.lib.agent.NextMessageFinished
+import at.asitplus.wallet.lib.agent.NextMessageToSend
+import at.asitplus.wallet.lib.msg.IssueCredential
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -10,6 +15,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.post
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -17,47 +25,73 @@ import org.springframework.test.web.servlet.get
 class ApiControllerTest {
 
     @Autowired
-    lateinit var mockMvc: MockMvc
+    private lateinit var mockMvc: MockMvc
 
     @Autowired
-    lateinit var authTokenService: AuthTokenService
+    private lateinit var issueCredentialMessenger: IssueCredentialMessenger
 
     private lateinit var subject: Agent
+    private lateinit var subjectIssueCredentialMessenger: IssueCredentialMessenger
 
     @BeforeEach
     fun beforeEach() {
         subject = Agent()
+        subjectIssueCredentialMessenger =
+            IssueCredentialMessenger(subject, MessageWrapper(subject), "https://example.com/issue")
     }
 
     @Test
-    fun issue_missingToken_400() {
-        mockMvc.get("/issue?keyId={keyId}", subject.keyId)
-            .andExpect {
-                status { is4xxClientError() }
-            }.andReturn()
+    fun issue_wrongMessage_400() {
+        val requestCredentialMessage = subjectIssueCredentialMessenger.start()
+
+        mockMvc.post("/issue") {
+            content = requestCredentialMessage
+        }.andExpect {
+            status { isBadRequest() }
+        }.andReturn()
     }
 
     @Test
-    fun issue_wrongToken_401() {
-        mockMvc.get("/issue?keyId={keyId}&token={token}", subject.keyId, "foo")
-            .andExpect {
-                status { isUnauthorized() }
-            }.andReturn()
+    fun issue_wrongInvitation_400() {
+        val oobInvitation =
+            IssueCredentialMessenger(Agent(), MessageWrapper(Agent()), "https://example.com/issue").start()
+
+        val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
+        assertIs<NextMessageToSend>(requestCredentialMessage)
+
+        mockMvc.post("/issue") {
+            content = requestCredentialMessage.message
+        }.andExpect {
+            status { isBadRequest() }
+        }.andReturn()
     }
 
     @Test
-    fun issueCredential() {
-        val token = authTokenService.generateAuthToken()
+    fun issue_success() {
+        val oobInvitation = issueCredentialMessenger.start()
 
-        val result = mockMvc.get("/issue?keyId={keyId}&token={token}", subject.keyId, token)
-            .andExpect {
-                status { isOk() }
-            }.andReturn()
+        val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
+        assertIs<NextMessageToSend>(requestCredentialMessage)
+
+        val result = mockMvc.post("/issue") {
+            content = requestCredentialMessage.message
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
         val response = result.response.contentAsString
+        val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
+        assertIs<NextMessageFinished>(issueCredentialMessage)
+        val lastMessage = issueCredentialMessage.lastMessage
+        assertIs<IssueCredential>(lastMessage)
 
-        subject.storeCredential(response)
+        val issuerJwsVc = lastMessage.attachments.map { it.data }.mapNotNull { it.jws }
+        assertTrue(issuerJwsVc.isNotEmpty())
+
+        issuerJwsVc.forEach {
+            subject.storeCredential(it)
+        }
     }
-
 
     @Test
     @Disabled("TODO implement")

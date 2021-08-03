@@ -4,6 +4,7 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -22,9 +23,6 @@ internal class DemoControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
 
-    @Autowired
-    lateinit var authTokenService: AuthTokenService
-
     @Test
     fun demo_success() {
         val result = mockMvc.get("/demo")
@@ -32,9 +30,9 @@ internal class DemoControllerTest {
                 status { isOk() }
             }.andReturn()
 
-        val token = parseResponse(result)
+        val oobInvitationUrl = parseResponse(result)
 
-        assert(authTokenService.validateToken(token))
+        assertTrue(oobInvitationUrl.contains("?oob="))
     }
 
     private fun parseResponse(result: MvcResult): String {

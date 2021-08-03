@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.toBase64
+import at.asitplus.wallet.lib.toBase64Url
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -21,15 +23,15 @@ class DemoController {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     @Autowired
-    private lateinit var authTokenService: AuthTokenService
+    private lateinit var issueCredentialMessenger: IssueCredentialMessenger
 
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
         logger.info("/demo called")
-        val token = authTokenService.generateAuthToken()
+        val content = "https://wallet.a-sit.at/invite?oob=${issueCredentialMessenger.start().toBase64Url()}"
         val size = 400
         model["qrcodewidth"] = size
-        model["qrcode"] = createQrCodeImage(token, size).toBase64()
+        model["qrcode"] = createQrCodeImage(content, size).toBase64()
         return ModelAndView("demo", model)
     }
 

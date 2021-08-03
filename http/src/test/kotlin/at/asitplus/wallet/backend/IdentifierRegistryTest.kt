@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
@@ -18,7 +17,6 @@ import kotlin.test.assertContentEquals
 @SpringBootTest
 @AutoConfigureTestDatabase
 class IdentifierRegistryTest {
-    private val logger = LoggerFactory.getLogger(this.javaClass)
 
     @Autowired
     lateinit var identifierRegistry: IdentifierRegistry
