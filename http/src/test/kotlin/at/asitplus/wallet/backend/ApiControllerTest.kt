@@ -85,7 +85,7 @@ class ApiControllerTest {
         val lastMessage = issueCredentialMessage.lastMessage
         assertIs<IssueCredential>(lastMessage)
 
-        val issuerJwsVc = lastMessage.attachments.map { it.data }.mapNotNull { it.jws }
+        val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
         assertTrue(issuerJwsVc.isNotEmpty())
 
         issuerJwsVc.forEach {
