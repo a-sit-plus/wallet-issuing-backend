@@ -4,6 +4,7 @@ import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessageFinished
 import at.asitplus.wallet.lib.agent.NextMessageToSend
+import at.asitplus.wallet.lib.agent.NextMessageToSendAndWrap
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,21 +30,25 @@ class ApiController {
     fun issueCredential(@RequestBody body: String): ResponseEntity<String> {
         logger.info("/issue called with body: $body")
         return runBlocking {
-            when (val result = issueCredentialMessenger.parseMessage(body)) {
-                is NextMessageFinished -> {
-                    logger.info("/issue returning empty body")
-                    ResponseEntity.status(HttpStatus.OK).build()
+            try {
+                when (val result = issueCredentialMessenger.parseMessage(body)) {
+                    is NextMessageFinished -> {
+                        logger.info("/issue returning empty body")
+                        ResponseEntity.status(HttpStatus.OK).build()
+                    }
+                    is NextMessageToSend -> {
+                        logger.info("/issue returning ${result.message}")
+                        ResponseEntity.ok(result.message)
+                    }
+                    is NextMessageToSendAndWrap -> TODO()
                 }
-                is NextMessageToSend -> {
-                    logger.info("/issue returning ${result.message}")
-                    ResponseEntity.ok(result.message)
-                }
-                else -> {
-                    logger.info("/issue returning 400, can't process request: {}", result)
-                    ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-                }
+            } catch (e: Throwable) {
+                logger.info("/issue returning 400, can't process request")
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
             }
+
         }
+
     }
 
     @GetMapping("/credentials/status/1")

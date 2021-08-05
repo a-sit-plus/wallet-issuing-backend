@@ -137,7 +137,7 @@ class BackendConfiguration {
         return IssueCredentialMessenger(
             issuerAgent,
             issuerMessageWrapper,
-            configurationProperties.publicContext + "/issue",
+            "${configurationProperties.publicContext}/issue",
             false
         )
     }
