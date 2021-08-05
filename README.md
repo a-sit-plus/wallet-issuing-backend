@@ -11,6 +11,15 @@ Functionality:
 
 View a list of open issues at <https://gitlab.iaik.tugraz.at/wallet/backend/-/boards>
 
+Default public key for issuing credentials is:
+
+```
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaCUPdgNqCIFLVXE8yn5lZGaYjbyC
+ys0go5xhPtbXj0X2jNAUUOddCh8eYoB9dO/ARUyBbccxKmNxO01kd8+/Tg==
+-----END PUBLIC KEY-----
+```
+
 ## Configuration
 
 ```yaml
@@ -32,4 +41,9 @@ server:
 backend:
   public-context: "http://localhost:8080"
   credential-lifetime: PT60M
+  issuer-key:
+    type: FILE
+    file:
+      private-key: file:issuer-key-private.pem
+      public-key: file:issuer-key-public.pem
 ```

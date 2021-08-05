@@ -4,6 +4,8 @@ import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.Claim
+import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.InMemoryCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.ResourceLoader
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -18,6 +21,9 @@ class BackendConfiguration {
 
     @Autowired
     private lateinit var configurationProperties: BackendConfigurationProperties
+
+    @Autowired
+    private lateinit var resourceLoader: ResourceLoader
 
     @Bean
     fun identifierRegistry(@Autowired identifierRepository: IdentifierRepository): IdentifierRegistry {
@@ -99,11 +105,19 @@ class BackendConfiguration {
     }
 
     @Bean
+    fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
+        KeyType.FILE -> FileCryptoService(configurationProperties.issuerKey.file!!, resourceLoader)
+        KeyType.MEMORY -> InMemoryCryptoService()
+    }
+
+    @Bean
     fun issuerAgent(
         @Autowired identifierRegistry: IdentifierRegistry,
-        @Autowired issuerCredentialDataProvider: IssuerCredentialDataProvider
+        @Autowired issuerCredentialDataProvider: IssuerCredentialDataProvider,
+        @Autowired issuerCryptoService: CryptoService
     ): Agent {
         return Agent(
+            cryptoService = issuerCryptoService,
             issuerCredentialStore = identifierRegistry,
             dataProvider = issuerCredentialDataProvider,
             revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1"

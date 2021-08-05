@@ -35,6 +35,7 @@ dependencies {
     implementation("org.json:json:20210307")
     implementation("com.google.zxing:core:3.4.1")
     implementation(project(":vclib"))
+    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

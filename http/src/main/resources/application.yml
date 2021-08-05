@@ -13,6 +13,11 @@ spring:
 backend:
   public-context: "http://localhost:8080"
   credential-lifetime: PT60M
+  issuer-key:
+    type: FILE
+    file:
+      private-key: classpath:issuer-key-private.pem
+      public-key: classpath:issuer-key-public.pem
 
 server:
   port: 8080
