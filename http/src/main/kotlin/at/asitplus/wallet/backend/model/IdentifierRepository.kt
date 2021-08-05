@@ -5,7 +5,10 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface IdentifierRepository : JpaRepository<Identifier, Long> {
+
     fun findByKey(key: String): Identifier?
+
+    fun findAllByRevokedFalse(): Collection<Identifier>
 
     fun findAllByRevokedTrueOrderByRevocationListIndex(): Collection<Identifier>
 

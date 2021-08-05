@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <title>Wallet Demo</title>
+</head>
+<body>
+<h1>Revocation</h1>
+<p>This list contains all issued credentials. Click on one to revoke it. Updates shall be reflected here and in the
+    revocation list credential <a
+            th:href="${revocationListUrl}">/credentials/status/1</a></p>
+<ul>
+    <li th:each="vc : ${vcList}">
+        <a th:href="${revokeActionUrl}+'?key='+${vc}"><span th:text="${vc}">Key</span></a>
+    </li>
+</ul>
+</body>
+</html>

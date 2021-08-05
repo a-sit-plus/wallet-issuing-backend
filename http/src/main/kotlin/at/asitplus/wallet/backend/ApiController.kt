@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessageFinished
@@ -13,16 +12,12 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ApiController {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
-
-    @Autowired
-    private lateinit var identifierRegistry: IdentifierRegistry
 
     @Autowired
     private lateinit var issueCredentialMessenger: IssueCredentialMessenger
@@ -57,13 +52,6 @@ class ApiController {
             logger.info("/credentials/status/1 called")
             ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
         }
-    }
-
-    @GetMapping("/revoke") // TODO do we need a signed revocation request
-    fun revoke(@RequestParam keyId: String): ResponseEntity<String> {
-        logger.info("/revoke called with $keyId")
-        val revoked = identifierRegistry.revoke(keyId);
-        return ResponseEntity.ok(revoked.toString())
     }
 
 }

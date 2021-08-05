@@ -13,10 +13,10 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
 
     @Throws(Exception::class)
     override fun revoke(vcId: String) {
-        identifierRepository.findByKey(vcId)?.let {
-            it.revoked = true
-            identifierRepository.save(it)
-        } ?: throw Exception("Not registered")
+        val identifier = identifierRepository.findByKey(vcId) ?: throw Exception("Not registered")
+
+        identifier.revoked = true
+        identifierRepository.save(identifier)
     }
 
     @Throws(Exception::class)
@@ -33,6 +33,10 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
             result[it.revocationListIndex.toInt()] = true
         }
         return result
+    }
+
+    fun getAllNonRevoked(): List<String> {
+        return identifierRepository.findAllByRevokedFalse().map { it.key }
     }
 
 }
