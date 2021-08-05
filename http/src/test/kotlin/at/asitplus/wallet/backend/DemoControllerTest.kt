@@ -4,7 +4,6 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -15,6 +14,7 @@ import org.springframework.test.web.servlet.get
 import org.springframework.util.Base64Utils
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
+import kotlin.test.assertContains
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -32,7 +32,7 @@ internal class DemoControllerTest {
 
         val oobInvitationUrl = parseResponse(result)
 
-        assertTrue(oobInvitationUrl.contains("?oob="))
+        assertContains(oobInvitationUrl, "?oob=")
     }
 
     private fun parseResponse(result: MvcResult): String {

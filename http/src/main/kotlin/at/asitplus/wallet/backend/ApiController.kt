@@ -5,6 +5,7 @@ import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessageFinished
 import at.asitplus.wallet.lib.agent.NextMessageToSend
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -32,27 +33,30 @@ class ApiController {
     @PostMapping("/issue")
     fun issueCredential(@RequestBody body: String): ResponseEntity<String> {
         logger.info("/issue called with body: $body")
-        return when (val result = issueCredentialMessenger.parseMessage(body)) {
-            is NextMessageFinished -> {
-                logger.info("/issue returning empty body")
-                ResponseEntity.status(HttpStatus.OK).build()
-            }
-            is NextMessageToSend -> {
-                logger.info("/issue returning ${result.message}")
-                ResponseEntity.ok(result.message)
-            }
-            else -> {
-                logger.info("/issue returning 400, can't process request")
-                ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        return runBlocking {
+            when (val result = issueCredentialMessenger.parseMessage(body)) {
+                is NextMessageFinished -> {
+                    logger.info("/issue returning empty body")
+                    ResponseEntity.status(HttpStatus.OK).build()
+                }
+                is NextMessageToSend -> {
+                    logger.info("/issue returning ${result.message}")
+                    ResponseEntity.ok(result.message)
+                }
+                else -> {
+                    logger.info("/issue returning 400, can't process request: {}", result)
+                    ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+                }
             }
         }
-        // TODO store to identifierRegistry
     }
 
     @GetMapping("/credentials/status/1")
     fun checkRevocation(): ResponseEntity<String> {
-        logger.info("/credentials/status/1 called")
-        return ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
+        return runBlocking {
+            logger.info("/credentials/status/1 called")
+            ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
+        }
     }
 
     @GetMapping("/revoke") // TODO do we need a signed revocation request

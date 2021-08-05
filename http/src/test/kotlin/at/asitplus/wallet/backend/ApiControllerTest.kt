@@ -6,6 +6,7 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessageFinished
 import at.asitplus.wallet.lib.agent.NextMessageToSend
 import at.asitplus.wallet.lib.msg.IssueCredential
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,54 +43,64 @@ class ApiControllerTest {
 
     @Test
     fun issue_wrongMessage_400() {
-        val requestCredentialMessage = subjectIssueCredentialMessenger.start()
+        runBlocking {
+            val requestCredentialMessage = subjectIssueCredentialMessenger.start()
 
-        mockMvc.post("/issue") {
-            content = requestCredentialMessage
-        }.andExpect {
-            status { isBadRequest() }
-        }.andReturn()
+            mockMvc.post("/issue") {
+                content = requestCredentialMessage
+            }.andExpect {
+                status { isBadRequest() }
+            }.andReturn()
+        }
     }
 
     @Test
     fun issue_wrongInvitation_400() {
-        val agent = Agent()
-        val oobInvitation =
-            IssueCredentialMessenger(Agent(), MessageWrapper(agent.cryptoService), "https://example.com/issue").start()
+        runBlocking {
+            val agent = Agent()
+            val oobInvitation =
+                IssueCredentialMessenger(
+                    Agent(),
+                    MessageWrapper(agent.cryptoService),
+                    "https://example.com/issue"
+                ).start()
 
-        val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
-        assertIs<NextMessageToSend>(requestCredentialMessage)
+            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
+            assertIs<NextMessageToSend>(requestCredentialMessage)
 
-        mockMvc.post("/issue") {
-            content = requestCredentialMessage.message
-        }.andExpect {
-            status { isBadRequest() }
-        }.andReturn()
+            mockMvc.post("/issue") {
+                content = requestCredentialMessage.message
+            }.andExpect {
+                status { isBadRequest() }
+            }.andReturn()
+        }
     }
 
     @Test
     fun issue_success() {
-        val oobInvitation = issueCredentialMessenger.start()
+        runBlocking {
+            val oobInvitation = issueCredentialMessenger.start()
 
-        val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
-        assertIs<NextMessageToSend>(requestCredentialMessage)
+            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
+            assertIs<NextMessageToSend>(requestCredentialMessage)
 
-        val result = mockMvc.post("/issue") {
-            content = requestCredentialMessage.message
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
+            val result = mockMvc.post("/issue") {
+                content = requestCredentialMessage.message
+            }.andExpect {
+                status { isOk() }
+            }.andReturn()
 
-        val response = result.response.contentAsString
-        val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
-        assertIs<NextMessageFinished>(issueCredentialMessage)
-        val lastMessage = issueCredentialMessage.lastMessage
-        assertIs<IssueCredential>(lastMessage)
+            val response = result.response.contentAsString
+            val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
+            assertIs<NextMessageFinished>(issueCredentialMessage)
+            val lastMessage = issueCredentialMessage.lastMessage
+            assertIs<IssueCredential>(lastMessage)
 
-        val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
-        assertTrue(issuerJwsVc.isNotEmpty())
+            val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
+            assertTrue(issuerJwsVc.isNotEmpty())
 
-        subject.storeCredentials(issuerJwsVc)
+            subject.storeCredentials(issuerJwsVc)
+        }
     }
 
     @Test

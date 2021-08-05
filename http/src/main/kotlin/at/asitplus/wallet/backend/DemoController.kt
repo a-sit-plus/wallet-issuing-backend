@@ -6,6 +6,7 @@ import at.asitplus.wallet.lib.toBase64Url
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
@@ -31,11 +32,14 @@ class DemoController {
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
         logger.info("/demo called")
-        val content =
-            "${configurationProperties.publicContext}/invite?oob=${issueCredentialMessenger.start().toBase64Url()}"
-        val size = 400
-        model["qrcodewidth"] = size
-        model["qrcode"] = createQrCodeImage(content, size).toBase64()
+        runBlocking {
+            val oobMessage = issueCredentialMessenger.start()
+            val content =
+                "${configurationProperties.publicContext}/invite?oob=${oobMessage.toBase64Url()}"
+            val size = 400
+            model["qrcodewidth"] = size
+            model["qrcode"] = createQrCodeImage(content, size).toBase64()
+        }
         return ModelAndView("demo", model)
     }
 
