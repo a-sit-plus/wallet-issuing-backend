@@ -9,3 +9,26 @@ Functionality:
  - Stores references for issued credentials
 
 View a list of open issues at <https://gitlab.iaik.tugraz.at/wallet/backend/-/boards>
+
+## Configuration
+
+```yaml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: "jdbc:h2:mem:userstore"
+
+server:
+  port: 8080
+
+backend:
+  public-context: "http://localhost:8080"
+  credential-lifetime: PT60M
+```
