@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.model.IdentifierRegistry
+import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
@@ -16,20 +18,31 @@ class BackendConfiguration {
     private lateinit var configurationProperties: BackendConfigurationProperties
 
     @Bean
-    fun issuerAgent(): Agent {
-        return Agent()
+    fun identifierRegistry(@Autowired identifierRepository: IdentifierRepository): IdentifierRegistry {
+        return IdentifierRegistry(identifierRepository)
     }
 
     @Bean
-    fun issuerMessageWrapper(): MessageWrapper {
-        return MessageWrapper(issuerAgent())
+    fun issuerAgent(@Autowired identifierRegistry: IdentifierRegistry): Agent {
+        return Agent(
+            issuerCredentialStore = identifierRegistry,
+            revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1"
+        )
     }
 
     @Bean
-    fun issueCredentialMessenger(): IssueCredentialMessenger {
+    fun issuerMessageWrapper(@Autowired issuerAgent: Agent): MessageWrapper {
+        return MessageWrapper(issuerAgent.cryptoService)
+    }
+
+    @Bean
+    fun issueCredentialMessenger(
+        @Autowired issuerAgent: Agent,
+        @Autowired issuerMessageWrapper: MessageWrapper
+    ): IssueCredentialMessenger {
         return IssueCredentialMessenger(
-            issuerAgent(),
-            issuerMessageWrapper(),
+            issuerAgent,
+            issuerMessageWrapper,
             configurationProperties.publicContext + "/issue",
             false
         )

@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.NextMessageError
 import at.asitplus.wallet.lib.agent.NextMessageFinished
 import at.asitplus.wallet.lib.agent.NextMessageToSend
 import org.slf4j.LoggerFactory
@@ -22,22 +21,18 @@ class ApiController {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     @Autowired
-    private lateinit var revocationService: RevocationService
-
-    @Autowired
     private lateinit var identifierRegistry: IdentifierRegistry
 
     @Autowired
     private lateinit var issueCredentialMessenger: IssueCredentialMessenger
 
+    @Autowired
+    private lateinit var issuerAgent: Agent
+
     @PostMapping("/issue")
     fun issueCredential(@RequestBody body: String): ResponseEntity<String> {
         logger.info("/issue called with body: $body")
         return when (val result = issueCredentialMessenger.parseMessage(body)) {
-            is NextMessageError -> {
-                logger.info("/issue returning 400, can't process request")
-                ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-            }
             is NextMessageFinished -> {
                 logger.info("/issue returning empty body")
                 ResponseEntity.status(HttpStatus.OK).build()
@@ -46,14 +41,18 @@ class ApiController {
                 logger.info("/issue returning ${result.message}")
                 ResponseEntity.ok(result.message)
             }
+            else -> {
+                logger.info("/issue returning 400, can't process request")
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+            }
         }
         // TODO store to identifierRegistry
     }
 
-    @GetMapping("/revocationList")
-    fun checkRevocation(@RequestParam keyId: String): ResponseEntity<String> {
-        logger.info("/check called with $keyId")
-        return ResponseEntity.ok(revocationService.getRevocationCredential())
+    @GetMapping("/credentials/status/1")
+    fun checkRevocation(): ResponseEntity<String> {
+        logger.info("/credentials/status/1 called")
+        return ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
     }
 
     @GetMapping("/revoke") // TODO do we need a signed revocation request

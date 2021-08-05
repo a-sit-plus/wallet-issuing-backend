@@ -1,33 +1,33 @@
 package at.asitplus.wallet.backend.model
 
-import org.springframework.stereotype.Service
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 
 
-@Service
-class IdentifierRegistry(private val identifierRepository: IdentifierRepository) {
-
-    @Throws(Exception::class)
-    fun addIdentifier(key: String): Identifier {
-        val identity: Identifier? = identifierRepository.findByKey(key)
-        return identity?.run { throw Exception("Already registered") } ?: identifierRepository.save(Identifier(key, false))
-    }
+class IdentifierRegistry(private val identifierRepository: IdentifierRepository) : IssuerCredentialStore {
 
     @Throws(Exception::class)
     fun isRevoked(key: String): Boolean {
-        val identity: Identifier? = identifierRepository.findByKey(key)
-        return identity?.revoked ?: throw Exception("Not registered")
+        return identifierRepository.findByKey(key)?.revoked
+            ?: throw Exception("Not registered")
     }
 
     @Throws(Exception::class)
-    fun revoke(key: String) {
-        val identity: Identifier? = identifierRepository.findByKey(key)
-        identity?.let {
+    override fun revoke(vcId: String) {
+        identifierRepository.findByKey(vcId)?.let {
             it.revoked = true
             identifierRepository.save(it)
         } ?: throw Exception("Not registered")
     }
 
-    fun getRevocationList(): BooleanArray {
+    @Throws(Exception::class)
+    override fun storeGetNextIndex(vcId: String): Int {
+        if (identifierRepository.findByKey(vcId) != null)
+            throw Exception("Already registered")
+        val newIdentifier = identifierRepository.save(Identifier(vcId, false))
+        return newIdentifier.revocationListIndex.toInt()
+    }
+
+    override fun getRevocationList(): BooleanArray {
         val result = BooleanArray(identifierRepository.count().toInt()) { false }
         identifierRepository.findAllByRevokedTrueOrderByRevocationListIndex().forEach {
             result[it.revocationListIndex.toInt()] = true

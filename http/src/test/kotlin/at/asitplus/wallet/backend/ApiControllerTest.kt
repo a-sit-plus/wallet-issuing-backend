@@ -7,7 +7,6 @@ import at.asitplus.wallet.lib.agent.NextMessageFinished
 import at.asitplus.wallet.lib.agent.NextMessageToSend
 import at.asitplus.wallet.lib.msg.IssueCredential
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -31,13 +30,14 @@ class ApiControllerTest {
     private lateinit var issueCredentialMessenger: IssueCredentialMessenger
 
     private lateinit var subject: Agent
+
     private lateinit var subjectIssueCredentialMessenger: IssueCredentialMessenger
 
     @BeforeEach
     fun beforeEach() {
         subject = Agent()
         subjectIssueCredentialMessenger =
-            IssueCredentialMessenger(subject, MessageWrapper(subject), "https://example.com/issue")
+            IssueCredentialMessenger(subject, MessageWrapper(subject.cryptoService), "https://example.com/issue")
     }
 
     @Test
@@ -53,8 +53,9 @@ class ApiControllerTest {
 
     @Test
     fun issue_wrongInvitation_400() {
+        val agent = Agent()
         val oobInvitation =
-            IssueCredentialMessenger(Agent(), MessageWrapper(Agent()), "https://example.com/issue").start()
+            IssueCredentialMessenger(Agent(), MessageWrapper(agent.cryptoService), "https://example.com/issue").start()
 
         val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
         assertIs<NextMessageToSend>(requestCredentialMessage)
@@ -88,19 +89,18 @@ class ApiControllerTest {
         val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
         assertTrue(issuerJwsVc.isNotEmpty())
 
-        issuerJwsVc.forEach {
-            subject.storeCredential(it)
-        }
+        subject.storeCredentials(issuerJwsVc)
     }
 
     @Test
-    @Disabled("TODO implement")
     fun check_revocation() {
-        val result = mockMvc.get("/check?keyId={keyId}", subject.keyId)
+        val result = mockMvc.get("/credentials/status/1")
             .andExpect {
                 status { isOk() }
             }.andReturn()
         val response = result.response.contentAsString
+
+        println(response)
     }
 
 }

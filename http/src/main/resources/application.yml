@@ -11,4 +11,7 @@ spring:
     url: "jdbc:h2:mem:userstore"
 
 backend:
-  public-context: "https://eid.a-sit.at/wallet"
+  public-context: "http://localhost:8080"
+
+server:
+  port: 8080
