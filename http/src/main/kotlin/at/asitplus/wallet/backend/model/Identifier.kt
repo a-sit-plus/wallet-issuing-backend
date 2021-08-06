@@ -10,7 +10,7 @@ import javax.persistence.Table
 @Entity
 @Table
 data class Identifier(
-    @Column val key: String,
+    @Column val vcId: String,
     @Column var revoked: Boolean
 ) {
     @Id

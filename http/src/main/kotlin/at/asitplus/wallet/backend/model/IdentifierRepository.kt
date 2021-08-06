@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface IdentifierRepository : JpaRepository<Identifier, Long> {
 
-    fun findByKey(key: String): Identifier?
+    fun findByVcId(vcId: String): Identifier?
 
     fun findAllByRevokedFalse(): Collection<Identifier>
 

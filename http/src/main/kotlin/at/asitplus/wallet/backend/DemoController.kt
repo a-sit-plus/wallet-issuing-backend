@@ -55,9 +55,9 @@ class DemoController {
     }
 
     @GetMapping("/revoke")
-    fun revokeByKey(model: ModelMap, @RequestParam("key") vcKey: String): ModelAndView {
-        logger.info("/revoke called with key=$vcKey")
-        identifierRegistry.revoke(vcKey)
+    fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
+        logger.info("/revoke called with vcId=$vcId")
+        identifierRegistry.revoke(vcId)
         return buildRevokeList(model)
     }
 

@@ -6,14 +6,14 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 class IdentifierRegistry(private val identifierRepository: IdentifierRepository) : IssuerCredentialStore {
 
     @Throws(Exception::class)
-    fun isRevoked(key: String): Boolean {
-        return identifierRepository.findByKey(key)?.revoked
+    fun isRevoked(vcId: String): Boolean {
+        return identifierRepository.findByVcId(vcId)?.revoked
             ?: throw Exception("Not registered")
     }
 
     @Throws(Exception::class)
     override fun revoke(vcId: String) {
-        val identifier = identifierRepository.findByKey(vcId) ?: throw Exception("Not registered")
+        val identifier = identifierRepository.findByVcId(vcId) ?: throw Exception("Not registered")
 
         identifier.revoked = true
         identifierRepository.save(identifier)
@@ -21,7 +21,7 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
 
     @Throws(Exception::class)
     override fun storeGetNextIndex(vcId: String): Int {
-        if (identifierRepository.findByKey(vcId) != null)
+        if (identifierRepository.findByVcId(vcId) != null)
             throw Exception("Already registered")
         val newIdentifier = identifierRepository.save(Identifier(vcId, false))
         return newIdentifier.revocationListIndex.toInt()
@@ -34,7 +34,7 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
     }
 
     fun getAllNonRevoked(): List<String> {
-        return identifierRepository.findAllByRevokedFalse().map { it.key }
+        return identifierRepository.findAllByRevokedFalse().map { it.vcId }
     }
 
 }

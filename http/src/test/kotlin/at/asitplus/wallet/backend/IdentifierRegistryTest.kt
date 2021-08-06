@@ -33,7 +33,7 @@ class IdentifierRegistryTest {
     }
 
     @Test
-    fun `revocation of non existing key should throw exception`() {
+    fun `revocation of non-existing vcId should throw exception`() {
         Assertions.assertThrows(Exception::class.java, {
             identifierRegistry.isRevoked(vcId)
         }, "Can not revoke what is not there (isn't registered)")
@@ -41,7 +41,7 @@ class IdentifierRegistryTest {
     }
 
     @Test
-    fun `check on non existing key should throw an exception`() {
+    fun `check on non-existing vcId should throw an exception`() {
         Assertions.assertThrows(Exception::class.java, {
             identifierRegistry.isRevoked(vcId)
         }, "Can not check what is not there (isn't registered)")
@@ -49,15 +49,15 @@ class IdentifierRegistryTest {
     }
 
     @Test
-    fun `simple positive add and revoke key should work`() {
+    fun `simple positive add and revoke vcId should work`() {
         identifierRegistry.storeGetNextIndex(vcId)
-        identifierRegistry.isRevoked(vcId).also { assertEquals(false, it, "key is already revoked") }
+        identifierRegistry.isRevoked(vcId).also { assertEquals(false, it, "vcId is already revoked") }
         identifierRegistry.revoke(vcId)
-        identifierRegistry.isRevoked(vcId).also { assertEquals(true, it, "Should be revoked but isn't") }
+        identifierRegistry.isRevoked(vcId).also { assertEquals(true, it, "vcId is not revoked") }
     }
 
     @Test
-    fun `double adding key should throw exception`() {
+    fun `double adding vcId should throw exception`() {
         Assertions.assertThrows(Exception::class.java, {
             identifierRegistry.storeGetNextIndex(vcId)
             identifierRegistry.storeGetNextIndex(vcId)
@@ -68,11 +68,11 @@ class IdentifierRegistryTest {
     @Test
     fun `revocation list should match revocation calls`() {
         val toBeRevokedList = mutableMapOf<Int, String>()
-        for (i in 0..9) {
-            val key = UUID.randomUUID().toString()
-            val revocationListIndex = identifierRegistry.storeGetNextIndex(key)
+        for (i in 1..256) {
+            val vcId = UUID.randomUUID().toString()
+            val revocationListIndex = identifierRegistry.storeGetNextIndex(vcId)
             if (Random.nextBoolean()) {
-                toBeRevokedList[revocationListIndex] = key
+                toBeRevokedList[revocationListIndex] = vcId
             }
         }
         toBeRevokedList.forEach { identifierRegistry.revoke(it.value) }

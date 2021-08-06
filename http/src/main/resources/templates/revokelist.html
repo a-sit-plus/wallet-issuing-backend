@@ -12,7 +12,7 @@
             th:href="${revocationListUrl}">/credentials/status/1</a></p>
 <ul>
     <li th:each="vc : ${vcList}">
-        <a th:href="${revokeActionUrl}+'?key='+${vc}"><span th:text="${vc}">Key</span></a>
+        <a th:href="${revokeActionUrl}+'?vcId='+${vc}"><span th:text="${vc}">Key</span></a>
     </li>
 </ul>
 </body>

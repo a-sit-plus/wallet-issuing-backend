@@ -97,7 +97,7 @@ class DemoControllerTest {
             }.andReturn()
 
         assertNotNull(result.modelAndView)
-        val revokeActionUrl = "${result.modelAndView!!.model["revokeActionUrl"]}?key=$vcId"
+        val revokeActionUrl = "${result.modelAndView!!.model["revokeActionUrl"]}?vcId=$vcId"
         mockMvc.get(revokeActionUrl).andExpect { status { isOk() } }
 
     }
