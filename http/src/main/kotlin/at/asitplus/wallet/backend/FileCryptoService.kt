@@ -12,9 +12,6 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDHDecrypter
 import com.nimbusds.jose.crypto.ECDSASigner
-import com.nimbusds.jose.jwk.Curve
-import com.nimbusds.jose.jwk.ECKey
-import com.nimbusds.jose.jwk.JWK
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.PEMParser
@@ -26,7 +23,6 @@ import java.nio.charset.Charset
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.interfaces.ECPrivateKey
-import java.security.interfaces.ECPublicKey
 import kotlin.coroutines.suspendCoroutine
 
 class FileCryptoService(
@@ -51,16 +47,14 @@ class FileCryptoService(
         StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
 
 
-    override val jwk: JWK = ECKey.Builder(Curve.P_256, publicKey as ECPublicKey).build()
-
     override val keyId = keyIdService.calcKeyId(publicKey)
 
     override fun buildJwsHeader(): JWSHeader.Builder {
-        return JWSHeader.Builder(JWSAlgorithm.ES256).keyID(keyId).jwk(jwk)
+        return JWSHeader.Builder(JWSAlgorithm.ES256).keyID(keyId)
     }
 
     override fun buildJweHeader(): JWEHeader.Builder {
-        return JWEHeader.Builder(JWEAlgorithm.ECDH_ES_A256KW, EncryptionMethod.A256GCM).keyID(keyId).jwk(jwk)
+        return JWEHeader.Builder(JWEAlgorithm.ECDH_ES_A256KW, EncryptionMethod.A256GCM).keyID(keyId)
     }
 
     override suspend fun signJwsObject(jwsObject: JWSObject): JWSObject = suspendCoroutine {
