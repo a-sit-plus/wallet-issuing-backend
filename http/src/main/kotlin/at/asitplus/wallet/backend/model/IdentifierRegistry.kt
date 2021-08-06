@@ -27,12 +27,10 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
         return newIdentifier.revocationListIndex.toInt()
     }
 
-    override fun getRevocationList(): BooleanArray {
-        val result = BooleanArray(identifierRepository.count().toInt()) { false }
-        identifierRepository.findAllByRevokedTrueOrderByRevocationListIndex().forEach {
-            result[it.revocationListIndex.toInt()] = true
+    override fun getRevokedStatusListIndexList(): Collection<Int> {
+        return identifierRepository.findAllByRevokedTrueOrderByRevocationListIndex().map {
+            it.revocationListIndex.toInt()
         }
-        return result
     }
 
     fun getAllNonRevoked(): List<String> {

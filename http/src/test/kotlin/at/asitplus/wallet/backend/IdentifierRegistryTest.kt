@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import java.util.UUID
+import kotlin.random.Random
 import kotlin.test.assertContentEquals
 
 
@@ -70,16 +71,13 @@ class IdentifierRegistryTest {
         for (i in 0..9) {
             val key = UUID.randomUUID().toString()
             val revocationListIndex = identifierRegistry.storeGetNextIndex(key)
-            if ((key.hashCode() % 2) == 0) {
+            if (Random.nextBoolean()) {
                 toBeRevokedList[revocationListIndex] = key
             }
         }
-        val expectedRevocationList = BooleanArray(10) { false }
-        for (toBeRevoked in toBeRevokedList) {
-            identifierRegistry.revoke(toBeRevoked.value)
-            expectedRevocationList[toBeRevoked.key] = true
-        }
-        val revocationList = identifierRegistry.getRevocationList()
+        toBeRevokedList.forEach { identifierRegistry.revoke(it.value) }
+        val expectedRevocationList = toBeRevokedList.map { it.key }
+        val revocationList = identifierRegistry.getRevokedStatusListIndexList()
         assertContentEquals(expectedRevocationList, revocationList, "Revocation list should match revocation calls")
     }
 
