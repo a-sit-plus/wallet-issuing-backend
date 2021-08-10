@@ -16,6 +16,7 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
 import java.io.StringReader
@@ -31,6 +32,8 @@ class FileCryptoService(
     keyIdService: KeyIdService = DefaultKeyIdService()
 ) : CryptoService {
 
+    private val logger = LoggerFactory.getLogger(this.javaClass)
+
     private val privateKey: PrivateKey
     private val publicKey: PublicKey
 
@@ -41,6 +44,7 @@ class FileCryptoService(
         val publicKeyString = loadResource(resourceLoader, config.publicKey.toString())
         val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
         publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
+        logger.info("Loaded public key with keyId ${keyIdService.calcKeyId(publicKey)}")
     }
 
     private fun loadResource(resourceLoader: ResourceLoader, path: String) =
