@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.toBase64
 import at.asitplus.wallet.lib.toBase64Url
 import com.google.zxing.BarcodeFormat
@@ -39,11 +40,13 @@ class DemoController {
         logger.info("/demo called")
         runBlocking {
             val oobMessage = issueCredentialMessenger.start()
-            val content =
-                "${configurationProperties.publicContext}/invite?oob=${oobMessage.toBase64Url()}"
-            val size = 400
-            model["qrcodewidth"] = size
-            model["qrcode"] = createQrCodeImage(content, size).toBase64()
+            if (oobMessage is NextMessage.Send) {
+                val content = "${configurationProperties.publicContext}/invite?oob=${oobMessage.message.toBase64Url()}"
+                val size = 400
+                model["qrcodewidth"] = size
+                model["qrcode"] = createQrCodeImage(content, size).toBase64()
+            }
+            // todo error
         }
         return ModelAndView("demo", model)
     }

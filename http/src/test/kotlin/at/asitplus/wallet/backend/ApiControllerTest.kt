@@ -44,9 +44,10 @@ class ApiControllerTest {
     fun issue_wrongMessage_400() {
         runBlocking {
             val requestCredentialMessage = subjectIssueCredentialMessenger.start()
+            assertIs<NextMessage.Send>(requestCredentialMessage)
 
             mockMvc.post("/issue") {
-                content = requestCredentialMessage
+                content = requestCredentialMessage.message
             }.andExpect {
                 status { isBadRequest() }
             }.andReturn()
@@ -57,14 +58,14 @@ class ApiControllerTest {
     fun issue_wrongInvitation_400() {
         runBlocking {
             val agent = Agent()
-            val oobInvitation =
-                IssueCredentialMessenger(
-                    Agent(),
-                    MessageWrapper(agent.cryptoService),
-                    "https://example.com/issue"
-                ).start()
+            val oobInvitation = IssueCredentialMessenger(
+                Agent(),
+                MessageWrapper(agent.cryptoService),
+                "https://example.com/issue"
+            ).start()
+            assertIs<NextMessage.Send>(oobInvitation)
 
-            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
+            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
             assertIs<NextMessage.Send>(requestCredentialMessage)
 
             mockMvc.post("/issue") {
@@ -79,8 +80,9 @@ class ApiControllerTest {
     fun issue_success() {
         runBlocking {
             val oobInvitation = issueCredentialMessenger.start()
+            assertIs<NextMessage.Send>(oobInvitation)
 
-            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
+            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
             assertIs<NextMessage.Send>(requestCredentialMessage)
 
             val result = mockMvc.post("/issue") {
