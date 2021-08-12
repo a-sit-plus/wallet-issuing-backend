@@ -2,9 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.NextMessageFinished
-import at.asitplus.wallet.lib.agent.NextMessageToSend
-import at.asitplus.wallet.lib.agent.NextMessageToSendAndWrap
+import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -32,15 +30,15 @@ class ApiController {
         return runBlocking {
             try {
                 when (val result = issueCredentialMessenger.parseMessage(body)) {
-                    is NextMessageFinished -> {
+                    is NextMessage.Finished -> {
                         logger.info("/issue returning empty body")
                         ResponseEntity.status(HttpStatus.OK).build()
                     }
-                    is NextMessageToSend -> {
+                    is NextMessage.Send -> {
                         logger.info("/issue returning ${result.message}")
                         ResponseEntity.ok(result.message)
                     }
-                    is NextMessageToSendAndWrap -> TODO()
+                    is NextMessage.SendAndWrap -> TODO()
                 }
             } catch (e: Throwable) {
                 logger.info("/issue returning 400, can't process request")

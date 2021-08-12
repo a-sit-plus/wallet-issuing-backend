@@ -3,8 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
-import at.asitplus.wallet.lib.agent.NextMessageFinished
-import at.asitplus.wallet.lib.agent.NextMessageToSend
+import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.msg.IssueCredential
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
@@ -66,7 +65,7 @@ class ApiControllerTest {
                 ).start()
 
             val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
-            assertIs<NextMessageToSend>(requestCredentialMessage)
+            assertIs<NextMessage.Send>(requestCredentialMessage)
 
             mockMvc.post("/issue") {
                 content = requestCredentialMessage.message
@@ -82,7 +81,7 @@ class ApiControllerTest {
             val oobInvitation = issueCredentialMessenger.start()
 
             val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation)
-            assertIs<NextMessageToSend>(requestCredentialMessage)
+            assertIs<NextMessage.Send>(requestCredentialMessage)
 
             val result = mockMvc.post("/issue") {
                 content = requestCredentialMessage.message
@@ -92,7 +91,7 @@ class ApiControllerTest {
 
             val response = result.response.contentAsString
             val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
-            assertIs<NextMessageFinished>(issueCredentialMessage)
+            assertIs<NextMessage.Finished>(issueCredentialMessage)
             val lastMessage = issueCredentialMessage.lastMessage
             assertIs<IssueCredential>(lastMessage)
 
