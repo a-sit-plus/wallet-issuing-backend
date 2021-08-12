@@ -2,8 +2,6 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,6 +10,11 @@ import org.springframework.boot.test.context.SpringBootTest
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 
 @SpringBootTest
@@ -33,44 +36,33 @@ class IdentifierRegistryTest {
     }
 
     @Test
-    fun `revocation of non-existing vcId should throw exception`() {
-        assertThrows(Exception::class.java, {
-            identifierRegistry.revoke(vcId)
-        }, "Can not revoke what is not there (isn't registered)")
-            .also { assertEquals(it.message, "Not registered", "Wrong Exception Text") }
+    fun `revocation of non-existing vcId should do nothing`() {
+        assertFalse(identifierRegistry.revoke(vcId))
     }
 
     @Test
-    fun `check on non-existing vcId should throw an exception`() {
-        assertThrows(Exception::class.java, {
-            identifierRegistry.isRevoked(vcId)
-        }, "Can not check what is not there (isn't registered)")
-            .also { assertEquals(it.message, "Not registered", "Wrong Exception Text") }
+    fun `check on non-existing vcId should return null`() {
+        assertNull(identifierRegistry.isRevoked(vcId))
     }
 
     @Test
     fun `simple positive add and revoke vcId should work`() {
         identifierRegistry.storeGetNextIndex(vcId)
-        identifierRegistry.isRevoked(vcId)
-            .also { assertEquals(false, it, "vcId is already revoked") }
-        identifierRegistry.revoke(vcId)
-        identifierRegistry.isRevoked(vcId)
-            .also { assertEquals(true, it, "vcId is not revoked") }
+        assertEquals(false, identifierRegistry.isRevoked(vcId))
+        assertTrue(identifierRegistry.revoke(vcId))
+        assertEquals(true, identifierRegistry.isRevoked(vcId))
     }
 
     @Test
-    fun `double adding vcId should throw exception`() {
-        assertThrows(Exception::class.java, {
-            identifierRegistry.storeGetNextIndex(vcId)
-            identifierRegistry.storeGetNextIndex(vcId)
-        }, "Double ID registration possible")
-            .also { assertEquals(it.message, "Already registered", "Wrong Exception Text") }
+    fun `double adding vcId should return null`() {
+        assertNotNull(identifierRegistry.storeGetNextIndex(vcId))
+        assertNull(identifierRegistry.storeGetNextIndex(vcId))
     }
 
     @Test
     fun `revocation list should match revocation calls`() {
         val expectedRevocationList = revokeRandomCredentials()
-        
+
         val revocationList = identifierRegistry.getRevokedStatusListIndexList()
         assertContentEquals(expectedRevocationList, revocationList, "Revocation list should match revocation calls")
     }
@@ -81,7 +73,7 @@ class IdentifierRegistryTest {
             val vcId = UUID.randomUUID().toString()
             val revocationListIndex = identifierRegistry.storeGetNextIndex(vcId)
             if (Random.nextBoolean()) {
-                expectedRevocationList.add(revocationListIndex)
+                expectedRevocationList.add(revocationListIndex!!)
                 identifierRegistry.revoke(vcId)
             }
         }

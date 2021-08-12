@@ -73,7 +73,7 @@ class DemoControllerTest {
         val vcId = UUID.randomUUID().toString()
 
         identifierRegistry.storeGetNextIndex(vcId)
-        identifierRegistry.revoke(vcId)
+        assertTrue(identifierRegistry.revoke(vcId))
 
         val result = mockMvc.get("/revoke/list")
             .andExpect { status { isOk() } }

@@ -5,24 +5,20 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 
 class IdentifierRegistry(private val identifierRepository: IdentifierRepository) : IssuerCredentialStore {
 
-    @Throws(Exception::class)
-    fun isRevoked(vcId: String): Boolean {
+    fun isRevoked(vcId: String): Boolean? {
         return identifierRepository.findByVcId(vcId)?.revoked
-            ?: throw Exception("Not registered")
     }
 
-    @Throws(Exception::class)
-    override fun revoke(vcId: String) {
-        val identifier = identifierRepository.findByVcId(vcId) ?: throw Exception("Not registered")
-
+    override fun revoke(vcId: String): Boolean {
+        val identifier = identifierRepository.findByVcId(vcId) ?: return false
         identifier.revoked = true
         identifierRepository.save(identifier)
+        return true
     }
 
-    @Throws(Exception::class)
-    override fun storeGetNextIndex(vcId: String): Int {
+    override fun storeGetNextIndex(vcId: String): Int? {
         if (identifierRepository.findByVcId(vcId) != null)
-            throw Exception("Already registered")
+            return null
         val newIdentifier = identifierRepository.save(Identifier(vcId, false))
         return newIdentifier.revocationListIndex.toInt()
     }
