@@ -38,22 +38,34 @@ class ApiController {
                         logger.info("/issue returning ${result.message}")
                         ResponseEntity.ok(result.message)
                     }
-                    is NextMessage.SendAndWrap -> TODO()
+                    is NextMessage.SendAndWrap -> {
+                        logger.error("/issue returning 500, should sendAndWrap message")
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                    }
+                    is NextMessage.IncorrectState -> {
+                        logger.error("/issue returning 400, incorrect protocol state")
+                        ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+                    }
                 }
             } catch (e: Throwable) {
-                logger.info("/issue returning 400, can't process request")
-                ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+                // still necessary to send a correct status to callers
+                logger.error("/issue returning 500, server error", e)
+                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
             }
-
         }
-
     }
+
 
     @GetMapping("/credentials/status/1")
     fun checkRevocation(): ResponseEntity<String> {
+        logger.info("/credentials/status/1 called")
         return runBlocking {
-            logger.info("/credentials/status/1 called")
-            ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
+            try {
+                ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
+            } catch (e: Throwable) {
+                logger.error("/credentials/status/1 returning 500, server error", e)
+                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+            }
         }
     }
 

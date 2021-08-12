@@ -7,7 +7,12 @@
 </head>
 <body>
 <h1>Wallet Demo</h1>
-<p>Scan this QR Code with your Wallet App to load credentials for your PupilID.</p>
-<img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcode}" alt=""/>
+<div th:unless="${error} != null">
+    <p>Scan this QR Code with your Wallet App to load credentials for your PupilID.</p>
+    <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
+</div>
+<div th:if="${error} != null">
+    <p>Internal server error occurred, please retry later</p>
+</div>
 </body>
 </html>

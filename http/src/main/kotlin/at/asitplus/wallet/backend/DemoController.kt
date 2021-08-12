@@ -45,8 +45,9 @@ class DemoController {
                 val size = 400
                 model["qrcodewidth"] = size
                 model["qrcode"] = createQrCodeImage(content, size).toBase64()
+            } else {
+                model["error"] = "Wrong internal state"
             }
-            // todo error
         }
         return ModelAndView("demo", model)
     }
