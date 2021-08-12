@@ -45,13 +45,14 @@ class FileCryptoService(
         val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
         publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
         logger.info("Loaded public key with keyId ${keyIdService.calcKeyId(publicKey)}")
+        require(publicKey != null)
     }
 
     private fun loadResource(resourceLoader: ResourceLoader, path: String) =
         StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
 
 
-    override val keyId = keyIdService.calcKeyId(publicKey)
+    override val keyId = keyIdService.calcKeyId(publicKey)!!
 
     override fun buildJwsHeader(): JWSHeader.Builder {
         return JWSHeader.Builder(JWSAlgorithm.ES256).keyID(keyId)
