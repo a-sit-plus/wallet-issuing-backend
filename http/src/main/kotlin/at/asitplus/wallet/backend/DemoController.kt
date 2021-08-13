@@ -73,9 +73,23 @@ class DemoController {
     }
 
     @GetMapping("/invite")
-    fun invite(model: ModelMap): ModelAndView {
-        logger.info("/invite called")
+    fun invite(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
+        logger.info("/invite?oob=$oob called")
+        val content = "${configurationProperties.publicContext}/invite?oob=${oob}"
+        val size = 400
+        model["qrcodewidth"] = size
+        model["qrcode"] = createQrCodeImage(content, size).toBase64()
         return ModelAndView("invite", model)
+    }
+
+    @GetMapping("/present")
+    fun present(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
+        logger.info("/present?oob=$oob called")
+        val content = "${configurationProperties.publicContext}/present?oob=${oob}"
+        val size = 400
+        model["qrcodewidth"] = size
+        model["qrcode"] = createQrCodeImage(content, size).toBase64()
+        return ModelAndView("present", model)
     }
 
     private fun createQrCodeImage(content: String, size: Int): ByteArray {
