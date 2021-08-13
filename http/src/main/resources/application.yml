@@ -10,6 +10,13 @@ spring:
   datasource:
     url: "jdbc:h2:mem:userstore"
 
+logging:
+  level:
+    at:
+      asitplus:
+        wallet:
+          lib: debug
+
 backend:
   public-context: "http://localhost:8080"
   credential-lifetime: PT60M
