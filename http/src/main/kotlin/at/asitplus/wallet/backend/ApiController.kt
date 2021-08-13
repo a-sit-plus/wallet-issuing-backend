@@ -38,11 +38,7 @@ class ApiController {
                         logger.info("/issue returning ${result.message}")
                         ResponseEntity.ok(result.message)
                     }
-                    is NextMessage.SendAndWrap -> {
-                        logger.error("/issue returning 500, should sendAndWrap message")
-                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-                    }
-                    is NextMessage.IncorrectState -> {
+                    is NextMessage.Error -> {
                         logger.error("/issue returning 400, incorrect protocol state")
                         ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
                     }
