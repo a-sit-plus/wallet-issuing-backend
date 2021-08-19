@@ -41,6 +41,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation(kotlin("test"))
+    implementation ("com.squareup.okhttp3:okhttp")
 }
 
 tasks.withType<KotlinCompile> {
