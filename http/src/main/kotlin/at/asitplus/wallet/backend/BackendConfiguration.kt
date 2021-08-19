@@ -92,6 +92,34 @@ class BackendConfiguration {
             val lastName = nameArray!![0].jsonPrimitive.content
         }
 
+        private var address = object {
+
+            private val string = client.newCall(
+                Request.Builder()
+                    .url("https://randommer.io/random-address")
+                    .post(
+                        FormBody.Builder()
+                            .add("number", "1")
+                            .add("culture", "de_AT")
+                            .build()
+                    )
+                    .build()
+            ).execute()
+                .takeIf { it.isSuccessful }
+                ?.let { response ->
+                    val body = Json.parseToJsonElement(response.body()!!.string()).jsonArray
+                    body[0].jsonPrimitive.content
+                }
+
+            val school = string?.split(",")?.toMutableList()?.also{ it.removeAt(1)}
+            ?.toList()?.joinToString(",") ?: "Breitenseer Straße 13, 1140, Wien, Austria"
+
+            val county = string?.split(",")?.get(3) ?: "Wien"
+
+            val zip = string?.split(",")?.get(2) ?: "1010"
+        }
+
+
         private var encodedPhoto = Request.Builder()
             .url("https://api.generated.photos/api/v1/faces?age=child&page=1&per_page=1&gender=${gender}")
             .addHeader("Authorization", "API-Key L6VjhxOfJUKWu3xrLnwVIg") //L6VjhxOfJUKWu3xrLnwVIg
@@ -99,7 +127,6 @@ class BackendConfiguration {
                 client.newCall(request1).execute()
                     .takeIf { response1 -> response1.isSuccessful }
                     ?.let { response ->
-
                         val body = Json.parseToJsonElement(response.body()!!.string()).jsonObject
                         val faces = body["faces"]!!.jsonArray
                         val face = faces.get(0).jsonObject
@@ -116,13 +143,12 @@ class BackendConfiguration {
                     }
             } ?: fallbackPhoto
 
-
         override fun getClaim(subjectId: String, attribute: String) = when (attribute) {
             "photo" -> Claim(attribute, encodedPhoto, "image/jpeg", defaultLifetime)
             "schulname" -> Claim(attribute, "Quarto Testschule", "application/text", defaultLifetime)
             "schuladresse" -> Claim(
                 attribute,
-                "1140 Wien, Breitenseer Straße 13",
+                address.school,
                 "application/text",
                 defaultLifetime
             )
@@ -134,8 +160,8 @@ class BackendConfiguration {
             "titelnach" -> Claim(attribute, "", "application/text", defaultLifetime)
             "geburtsdatum" -> Claim(attribute, "1997-12-26", "application/text", defaultLifetime)
             "gültigBis" -> Claim(attribute, "2021-07-31", "application/text", defaultLifetime)
-            "wohnort" -> Claim(attribute, "Wien", "application/text", defaultLifetime)
-            "wohnort-plz" -> Claim(attribute, "1010", "application/text", defaultLifetime)
+            "wohnort" -> Claim(attribute, address.county, "application/text", defaultLifetime)
+            "wohnort-plz" -> Claim(attribute, address.zip, "application/text", defaultLifetime)
             "klasse" -> Claim(attribute, "3B", "application/text", defaultLifetime)
             else -> null
         }
