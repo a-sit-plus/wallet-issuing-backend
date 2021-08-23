@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.model.IdentifierRegistry
+import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.toBase64
@@ -18,8 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.util.Collections
+import java.util.*
 import javax.imageio.ImageIO
+import javax.servlet.http.HttpServletResponse
 
 @Controller
 class DemoController {
@@ -34,6 +36,9 @@ class DemoController {
 
     @Autowired
     private lateinit var identifierRegistry: IdentifierRegistry
+
+    @Autowired
+    private lateinit var issuer: Agent
 
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
@@ -65,10 +70,19 @@ class DemoController {
         return buildRevokeList(model)
     }
 
+    @GetMapping("/fake")
+    fun revokeByVcId(response: HttpServletResponse) {
+        runBlocking {
+            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
+        }
+        response.sendRedirect("revoke/list")
+    }
+
     private fun buildRevokeList(model: ModelMap): ModelAndView {
         model["vcList"] = identifierRegistry.getAllNonRevoked()
         model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
+        model["fakeItemUrl"] = "${configurationProperties.publicContext}/fake"
         return ModelAndView("revokelist", model)
     }
 

@@ -10,7 +10,13 @@
 <p>This list contains all issued credentials. Click on one to revoke it. Updates shall be reflected here and in the
     revocation list credential <a
             th:href="${revocationListUrl}">/credentials/status/1</a></p>
+
+<p><a th:href="${fakeItemUrl}">fake a item</a></p>
+
+<hr>
+
 <ul>
+    <p th:if="${vcList.isEmpty()}">No credential exists yet.</p>
     <li th:each="vc : ${vcList}">
         <a th:href="${revokeActionUrl}+'?vcId='+${vc}"><span th:text="${vc}">Key</span></a>
     </li>
