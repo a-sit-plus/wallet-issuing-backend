@@ -15,11 +15,20 @@
 
 <hr>
 
-<ul>
-    <p th:if="${vcList.isEmpty()}">No credential exists yet.</p>
-    <li th:each="vc : ${vcList}">
-        <a th:href="${revokeActionUrl}+'?vcId='+${vc}"><span th:text="${vc}">Key</span></a>
-    </li>
-</ul>
+<p th:if="${vcList.isEmpty()}">No credential exists yet.</p>
+<table>
+    <tr>
+        <th>Subject ID</th>
+        <th>Attribute Name</th>
+        <th>Issuence Date</th>
+        <th>Action</th>
+    </tr>
+    <tr th:each="vc : ${vcList}">
+        <td><span th:text="${vc.subjectId}">Key</span></td>
+        <td><span th:text="${vc.attributeName}">Key</span></td>
+        <td><span th:text="${vc.issuenceDate}">Key</span></td>
+        <td><a th:href="${revokeActionUrl}+'?vcId='+${vc.vcId}">revoke</a></td>
+    </tr>
+</table>
 </body>
 </html>

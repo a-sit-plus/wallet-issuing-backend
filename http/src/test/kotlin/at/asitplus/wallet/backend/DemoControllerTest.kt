@@ -56,7 +56,7 @@ class DemoControllerTest {
     fun `revokeList contains issued credentials`() {
         val vcId = UUID.randomUUID().toString()
 
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, "" ,"")
 
         val result = mockMvc.get("/revoke/list")
             .andExpect { status { isOk() } }
@@ -72,7 +72,7 @@ class DemoControllerTest {
     fun `revokeList should not contain revoked entries`() {
         val vcId = UUID.randomUUID().toString()
 
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, "", "")
         assertTrue(identifierRegistry.revoke(vcId))
 
         val result = mockMvc.get("/revoke/list")
@@ -89,7 +89,7 @@ class DemoControllerTest {
     fun revokeList_revoke_success() {
         val vcId = UUID.randomUUID().toString()
 
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, "" ,"")
 
         val result = mockMvc.get("/revoke/list")
             .andExpect {

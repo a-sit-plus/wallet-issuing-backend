@@ -79,7 +79,7 @@ class DemoController {
     }
 
     private fun buildRevokeList(model: ModelMap): ModelAndView {
-        model["vcList"] = identifierRegistry.getAllNonRevoked()
+        model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()
         model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
         model["fakeItemUrl"] = "${configurationProperties.publicContext}/fake"
