@@ -32,14 +32,18 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
 
     fun getAllNonRevokedWithDetails(): List<RevocationListInfo> {
         return identifierRepository.findAllByRevokedFalse().map { RevocationListInfo(it.vcId,
-            it.createdOn?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")) ?: "Error saving the time", it.attributeName, it.subjectId) }
+            it.createdOn?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")) ?: RevocationListInfo.DATE_ERROR_MSG, it.attributeName, it.subjectId) }
     }
 
     data class RevocationListInfo (
         val vcId: String,
-        val issuenceDate: String,
+        val issuanceDate: String,
         val attributeName: String,
         val subjectId: String
-            )
+            ) {
+        companion object {
+            val DATE_ERROR_MSG = "Error saving the issuance date"
+        }
+    }
 
 }

@@ -18,8 +18,8 @@ import java.time.LocalDateTime
 data class Identifier(
     @Column val vcId: String,
     @Column var revoked: Boolean,
-    @Column var attributeName: String,
-    @Column var subjectId: String
+    @Column val attributeName: String,
+    @Column val subjectId: String
 ) {
     @Id
     @GeneratedValue

@@ -26,7 +26,7 @@
     <tr th:each="vc : ${vcList}">
         <td><span th:text="${vc.subjectId}">Key</span></td>
         <td><span th:text="${vc.attributeName}">Key</span></td>
-        <td><span th:text="${vc.issuenceDate}">Key</span></td>
+        <td><span th:text="${vc.issuanceDate}">Key</span></td>
         <td><a th:href="${revokeActionUrl}+'?vcId='+${vc.vcId}">revoke</a></td>
     </tr>
 </table>
