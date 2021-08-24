@@ -22,15 +22,11 @@ class IssuerCredentialRandomDataProvider(
 
     fun getResponse(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
-    // random Parameters
-    private val gender = listOf("male", "female").random()
-    private val gen_ = when (gender) {
-        "male" -> "m"
-        else -> "f"
-    }
+    private val randomGender = listOf("male", "female").random()
+
     private val name = object {
         private val nameArray =
-            getResponse("https://www.behindthename.com/api/random.json?usage=ger&gender=${gen_}&key=lu244794741")
+            getResponse("https://www.behindthename.com/api/random.json?usage=ger&gender=${randomGender[0]}&key=lu244794741")
                 .takeIf { it.isSuccessful }
                 ?.let {
                     it.body()?.string()?.let { jsonString -> Json.parseToJsonElement(jsonString).jsonObject }
@@ -70,7 +66,7 @@ class IssuerCredentialRandomDataProvider(
 
 
     private var encodedPhoto = Request.Builder()
-        .url("https://api.generated.photos/api/v1/faces?age=child&page=1&per_page=1&gender=${gender}")
+        .url("https://api.generated.photos/api/v1/faces?age=child&page=1&per_page=1&gender=${randomGender}")
         .addHeader("Authorization", "API-Key L6VjhxOfJUKWu3xrLnwVIg")
         .build().let { request1 ->
             client.newCall(request1).execute()
@@ -83,8 +79,8 @@ class IssuerCredentialRandomDataProvider(
                     val picture = urls?.find { url -> url.jsonObject.containsKey(desiredPictureSize) }?.jsonObject
                     val picUrl = picture?.get(desiredPictureSize)?.jsonPrimitive?.content
 
-                    picUrl?.let {
-                        url -> getResponse(url)
+                    picUrl?.let { url ->
+                        getResponse(url)
                             .takeIf { it.isSuccessful }
                             ?.let { picResp ->
                                 picResp.body()?.bytes()?.let {
