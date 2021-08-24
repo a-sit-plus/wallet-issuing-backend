@@ -36,35 +36,6 @@ class BackendConfiguration {
         return IdentifierRegistry(identifierRepository)
     }
 
-    // Fallback code
-    fun issuerCredentialDataProvider() = object : IssuerCredentialDataProvider {
-        private val defaultLifetime = configurationProperties.credentialLifetime
-
-        override fun getClaim(subjectId: String, attribute: String) = when (attribute) {
-            "photo" -> Claim(attribute, fallbackPhoto, "image/jpeg", defaultLifetime)
-            "schulname" -> Claim(attribute, "Quarto Testschule", "application/text", defaultLifetime)
-            "schuladresse" -> Claim(
-                attribute,
-                "1140 Wien, Breitenseer Straße 13",
-                "application/text",
-                defaultLifetime
-            )
-            "schulkennzahl" -> Claim(attribute, "101010", "application/text", defaultLifetime)
-            "schülerkennzahl" -> Claim(attribute, "00200000/00000004", "application/text", defaultLifetime)
-            "vorname" -> Claim(attribute, "Susanne", "application/text", defaultLifetime)
-            "nachname" -> Claim(attribute, "Meier", "application/text", defaultLifetime)
-            "titelvor" -> Claim(attribute, "DI", "application/text", defaultLifetime)
-            "titelnach" -> Claim(attribute, "BSc", "application/text", defaultLifetime)
-            "geburtsdatum" -> Claim(attribute, "1997-12-26", "application/text", defaultLifetime)
-            "gültigBis" -> Claim(attribute, "2021-07-31", "application/text", defaultLifetime)
-            "wohnort" -> Claim(attribute, "Wien", "application/text", defaultLifetime)
-            "wohnort-plz" -> Claim(attribute, "1010", "application/text", defaultLifetime)
-            "klasse" -> Claim(attribute, "3B", "application/text", defaultLifetime)
-            else -> null
-        }
-
-    }
-
     @Bean
     fun issuerCredentialRandomDataProvider() = IssuerCredentialRandomDataProvider(configurationProperties.credentialLifetime, fallbackPhoto)
 
