@@ -36,22 +36,15 @@ class IssuerCredentialRandomDataProvider(
 
     private var address = object {
 
-        private val rawAddressStr = client.newCall(
-            Request.Builder()
-                .url("https://randommer.io/random-address")
-                .post(
-                    FormBody.Builder()
-                        .add("number", "1")
-                        .add("culture", "de_AT")
-                        .build()
-                )
-                .build()
-        ).execute()
+        private val rawAddressStr = client.newCall(buildRequest()).execute()
             .takeIf { it.isSuccessful }
-            ?.let { response ->
-                response.body()?.string()?.let { Json.parseToJsonElement(it).jsonArray }
-                    ?.get(0)?.jsonPrimitive?.content
-            }
+            ?.body()?.string()?.let { Json.parseToJsonElement(it).jsonArray }
+            ?.get(0)?.jsonPrimitive?.content
+
+        private fun buildRequest() = Request.Builder()
+            .url("https://randommer.io/random-address")
+            .post(FormBody.Builder().add("number", "1").add("culture", "de_AT").build())
+            .build()
 
         val school = rawAddressStr?.split(",")?.toMutableList()?.also { it.removeAt(1) }
             ?.toList()?.joinToString(",") ?: "Breitenseer Straße 13, 1140, Wien, Austria"
@@ -88,12 +81,7 @@ class IssuerCredentialRandomDataProvider(
     override fun getClaim(subjectId: String, attribute: String) = when (attribute) {
         "photo" -> Claim(attribute, encodedPhoto, "image/jpeg", defaultLifetime)
         "schulname" -> Claim(attribute, "Quarto Testschule", "application/text", defaultLifetime)
-        "schuladresse" -> Claim(
-            attribute,
-            address.school,
-            "application/text",
-            defaultLifetime
-        )
+        "schuladresse" -> Claim(attribute, address.school, "application/text", defaultLifetime)
         "schulkennzahl" -> Claim(attribute, "101010", "application/text", defaultLifetime)
         "schülerkennzahl" -> Claim(attribute, "00200000/00000004", "application/text", defaultLifetime)
         "vorname" -> Claim(attribute, name.firstName, "application/text", defaultLifetime)
