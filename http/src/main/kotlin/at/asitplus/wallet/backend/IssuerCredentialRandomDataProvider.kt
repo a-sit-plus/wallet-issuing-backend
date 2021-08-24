@@ -71,18 +71,13 @@ class IssuerCredentialRandomDataProvider(
                 val face = faces?.get(0)?.jsonObject
                 val urls = face?.get("urls")?.jsonArray
                 val picture = urls?.find { url -> url.jsonObject.containsKey(desiredPictureSize) }?.jsonObject
-                val picUrl = picture?.get(desiredPictureSize)?.jsonPrimitive?.content
-
-                picUrl?.let { url ->
-                    executeGet(url)
-                        .takeIf { it.isSuccessful }
-                        ?.let { picResp ->
-                            picResp.body()?.bytes()?.let {
-                                Base64Utils.encode(it).decodeToString()
-                            }
-                        }
-                }
+                picture?.get(desiredPictureSize)?.jsonPrimitive?.content?.let(this::loadPicture)
             } ?: fallbackPhoto
+
+    private fun loadPicture(url: String): String? {
+        return executeGet(url).takeIf { it.isSuccessful }?.body()?.bytes()
+            ?.let { Base64Utils.encode(it).decodeToString() }
+    }
 
     private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
