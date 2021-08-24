@@ -19,14 +19,11 @@ class IssuerCredentialRandomDataProvider(
 
     private val desiredPictureSize = "256"
     private val client = OkHttpClient()
-
-    fun getResponse(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
-
     private val randomGender = listOf("male", "female").random()
 
     private val name = object {
         private val nameArray =
-            getResponse("https://www.behindthename.com/api/random.json?usage=ger&gender=${randomGender[0]}&key=lu244794741")
+            executeGet("https://www.behindthename.com/api/random.json?usage=ger&gender=${randomGender[0]}&key=lu244794741")
                 .takeIf { it.isSuccessful }
                 ?.let {
                     it.body()?.string()?.let { jsonString -> Json.parseToJsonElement(jsonString).jsonObject }
@@ -65,31 +62,33 @@ class IssuerCredentialRandomDataProvider(
     }
 
 
-    private var encodedPhoto = Request.Builder()
-        .url("https://api.generated.photos/api/v1/faces?age=child&page=1&per_page=1&gender=${randomGender}")
-        .addHeader("Authorization", "API-Key L6VjhxOfJUKWu3xrLnwVIg")
-        .build().let { request1 ->
-            client.newCall(request1).execute()
-                .takeIf { it.isSuccessful }
-                ?.let { jsonResp ->
-                    val body = jsonResp.body()?.string()?.let { Json.parseToJsonElement(it).jsonObject }
-                    val faces = body?.get("faces")?.jsonArray
-                    val face = faces?.get(0)?.jsonObject
-                    val urls = face?.get("urls")?.jsonArray
-                    val picture = urls?.find { url -> url.jsonObject.containsKey(desiredPictureSize) }?.jsonObject
-                    val picUrl = picture?.get(desiredPictureSize)?.jsonPrimitive?.content
+    private var encodedPhoto =
+        executeGetWithApiKey("https://api.generated.photos/api/v1/faces?age=child&page=1&per_page=1&gender=$randomGender")
+            .takeIf { it.isSuccessful }
+            ?.let { jsonResp ->
+                val body = jsonResp.body()?.string()?.let { Json.parseToJsonElement(it).jsonObject }
+                val faces = body?.get("faces")?.jsonArray
+                val face = faces?.get(0)?.jsonObject
+                val urls = face?.get("urls")?.jsonArray
+                val picture = urls?.find { url -> url.jsonObject.containsKey(desiredPictureSize) }?.jsonObject
+                val picUrl = picture?.get(desiredPictureSize)?.jsonPrimitive?.content
 
-                    picUrl?.let { url ->
-                        getResponse(url)
-                            .takeIf { it.isSuccessful }
-                            ?.let { picResp ->
-                                picResp.body()?.bytes()?.let {
-                                    Base64Utils.encode(it).decodeToString()
-                                }
+                picUrl?.let { url ->
+                    executeGet(url)
+                        .takeIf { it.isSuccessful }
+                        ?.let { picResp ->
+                            picResp.body()?.bytes()?.let {
+                                Base64Utils.encode(it).decodeToString()
                             }
-                    }
+                        }
                 }
-        } ?: fallbackPhoto
+            } ?: fallbackPhoto
+
+    private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
+
+    private fun executeGetWithApiKey(url: String) =
+        client.newCall(Request.Builder().url(url).addHeader("Authorization", "API-Key L6VjhxOfJUKWu3xrLnwVIg").build())
+            .execute()
 
     override fun getClaim(subjectId: String, attribute: String) = when (attribute) {
         "photo" -> Claim(attribute, encodedPhoto, "image/jpeg", defaultLifetime)
