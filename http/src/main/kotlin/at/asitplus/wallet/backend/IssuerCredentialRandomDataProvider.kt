@@ -25,10 +25,8 @@ class IssuerCredentialRandomDataProvider(
         private val nameArray =
             executeGet("https://www.behindthename.com/api/random.json?usage=ger&gender=${randomGender[0]}&key=lu244794741")
                 .takeIf { it.isSuccessful }
-                ?.let {
-                    it.body()?.string()?.let { jsonString -> Json.parseToJsonElement(jsonString).jsonObject }
-                        ?.get("names")?.jsonArray
-                }
+                ?.body()?.string()?.let { jsonString -> Json.parseToJsonElement(jsonString).jsonObject }
+                ?.get("names")?.jsonArray
 
         val firstName = nameArray?.get(1)?.jsonPrimitive?.content ?: "Susanne"
         val lastName = nameArray?.get(0)?.jsonPrimitive?.content ?: "Meier"
