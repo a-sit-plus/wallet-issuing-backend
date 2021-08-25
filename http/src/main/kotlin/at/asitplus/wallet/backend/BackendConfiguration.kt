@@ -36,10 +36,15 @@ class BackendConfiguration {
 
     @Bean
     fun issuerCredentialRandomDataProvider(): IssuerCredentialRandomDataProvider {
-        val listOfPhotos = resourcePatternResolver.getResources(configurationProperties.randomPhotoLocation.toString() + "/*.jpg").filter { it.exists() }.map { it.inputStream }.map { it.readAllBytes() }.map { it.toBase64() }
+        val mapOfPhotos =
+            resourcePatternResolver.getResources(configurationProperties.randomPhotoLocation.toString() + "/*.jpg")
+                .filter { it.exists() }
+                .map { it.filename to it.inputStream }
+                .map { it.first to it.second.readAllBytes() }.
+                map { it.first to it.second.toBase64() }
         return IssuerCredentialRandomDataProvider(
             configurationProperties.credentialLifetime,
-            listOfPhotos
+            mapOfPhotos.toMap()
         )
     }
 
