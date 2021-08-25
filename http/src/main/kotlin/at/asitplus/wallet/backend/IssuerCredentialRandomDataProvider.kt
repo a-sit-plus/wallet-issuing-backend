@@ -18,7 +18,7 @@ import java.util.*
 
 class IssuerCredentialRandomDataProvider(
     private val defaultLifetime: Duration,
-    private val fallbackPhoto: String
+    private val listOfPhotos: List<String>
 ) : IssuerCredentialDataProvider {
     private val desiredPictureSize = "256"
     private val client = OkHttpClient()
@@ -75,30 +75,11 @@ class IssuerCredentialRandomDataProvider(
 
         val zip = address.rawStr?.split(",")?.get(2) ?: "1010"
 
-
-        var encodedPhoto =
-            executeGetWithApiKey("https://api.generated.photos/api/v1/faces?age=child&page=1&per_page=1&gender=$randomGender")
-                .takeIf { it.isSuccessful }
-                ?.let { jsonResp ->
-                    val body = jsonResp.body()?.string()?.let { Json.parseToJsonElement(it).jsonObject }
-                    val faces = body?.get("faces")?.jsonArray
-                    val face = faces?.get(0)?.jsonObject
-                    val urls = face?.get("urls")?.jsonArray
-                    val picture = urls?.find { url -> url.jsonObject.containsKey(desiredPictureSize) }?.jsonObject
-                    picture?.get(desiredPictureSize)?.jsonPrimitive?.content?.let { loadPicture(it) }
-                } ?: fallbackPhoto
+        var encodedPhoto = listOfPhotos.random()
     }
 
-    private fun loadPicture(url: String): String? {
-        return executeGet(url).takeIf { it.isSuccessful }?.body()?.bytes()
-            ?.let { Base64Utils.encode(it).decodeToString() }
-    }
 
     private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
-
-    private fun executeGetWithApiKey(url: String) =
-        client.newCall(Request.Builder().url(url).addHeader("Authorization", "API-Key L6VjhxOfJUKWu3xrLnwVIg").build())
-            .execute()
 
     override fun getClaim(subjectId: String, attribute: String) = run { PupilAttributes() }.let {
         when (attribute) {
@@ -109,8 +90,8 @@ class IssuerCredentialRandomDataProvider(
             "schülerkennzahl" -> Claim(attribute, it.pupilIdNumber, "application/text", defaultLifetime)
             "vorname" -> Claim(attribute, it.firstName, "application/text", defaultLifetime)
             "nachname" -> Claim(attribute, it.lastName, "application/text", defaultLifetime)
-            "titelvor" -> Claim(attribute, "", "application/text", defaultLifetime)
-            "titelnach" -> Claim(attribute, "", "application/text", defaultLifetime)
+            "titelvor" -> Claim(attribute, " ", "application/text", defaultLifetime)
+            "titelnach" -> Claim(attribute, " ", "application/text", defaultLifetime)
             "geburtsdatum" -> Claim(attribute, it.birthDate, "application/text", defaultLifetime)
             "gültigBis" -> Claim(attribute, "2021-07-31", "application/text", defaultLifetime)
             "wohnort" -> Claim(attribute, it.county, "application/text", defaultLifetime)

@@ -20,6 +20,8 @@ ys0go5xhPtbXj0X2jNAUUOddCh8eYoB9dO/ARUyBbccxKmNxO01kd8+/Tg==
 -----END PUBLIC KEY-----
 ```
 
+with it's `kid` of `did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=`.
+
 ## Configuration
 
 ```yaml
@@ -41,6 +43,7 @@ server:
 backend:
   public-context: "http://localhost:8080"
   credential-lifetime: PT60M
+  random-photo-location: file:/path/to/photos-in-jpg/
   issuer-key:
     type: FILE
     file:
