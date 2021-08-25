@@ -10,6 +10,7 @@ import java.time.Duration
 data class BackendConfigurationProperties(
     val publicContext: String,
     val credentialLifetime: Duration = Duration.ofMinutes(60),
+    val randomPhotoLocation: URI = URI.create("classpath:photos"),
     val issuerKey: KeyConfiguration = KeyConfiguration(),
 )
 

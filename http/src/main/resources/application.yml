@@ -20,6 +20,7 @@ logging:
 backend:
   public-context: "http://localhost:8080"
   credential-lifetime: PT60M
+  random-photo-location: classpath:photos
   issuer-key:
     type: FILE
     file:

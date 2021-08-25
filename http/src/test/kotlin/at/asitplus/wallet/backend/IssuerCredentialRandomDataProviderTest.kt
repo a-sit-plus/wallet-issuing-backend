@@ -13,22 +13,27 @@ class IssuerCredentialRandomDataProviderTest {
 
     @Test
     fun `claims should be different on successive calls`() {
-        val fallbackPhoto = UUID.randomUUID().toString()
+        val listOfPhotos = (1..10).map { UUID.randomUUID().toString() }
         val subjectId = UUID.randomUUID().toString()
-        val attribute = PupilIdAttributes.listOfAttributes.random()
-        val dataProvider = IssuerCredentialRandomDataProvider(Duration.ofSeconds(1), fallbackPhoto)
+        val firstSetOfValues = mutableListOf<String>()
+        val secondSetOfValues = mutableListOf<String>()
+        for (attribute in PupilIdAttributes.listOfAttributes) {
+            val dataProvider = IssuerCredentialRandomDataProvider(Duration.ofSeconds(1), listOfPhotos)
 
-        val firstClaim = dataProvider.getClaim(subjectId, attribute)
-        assertNotNull(firstClaim)
-        assertEquals(attribute, firstClaim.name)
-        assertTrue(firstClaim.value.isNotEmpty())
+            val firstClaim = dataProvider.getClaim(subjectId, attribute)
+            assertNotNull(firstClaim)
+            assertEquals(attribute, firstClaim.name)
+            assertTrue(firstClaim.value.isNotEmpty())
 
-        val secondClaim = dataProvider.getClaim(subjectId, attribute)
-        assertNotNull(secondClaim)
-        assertEquals(attribute, secondClaim.name)
-        assertTrue(secondClaim.value.isNotEmpty())
+            val secondClaim = dataProvider.getClaim(subjectId, attribute)
+            assertNotNull(secondClaim)
+            assertEquals(attribute, secondClaim.name)
+            assertTrue(secondClaim.value.isNotEmpty())
 
-        assertNotEquals(firstClaim.value, secondClaim.value)
+            firstSetOfValues += firstClaim.value
+            secondSetOfValues += secondClaim.value
+        }
+        assertNotEquals(firstSetOfValues, secondSetOfValues) //
 
     }
 
