@@ -4,11 +4,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta charset="UTF-8">
     <title>Wallet Demo</title>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.1.0/css/bootstrap.min.css} "/>
 </head>
-<body>
-<h1>Invitation</h1>
-<p>You've received an invitation to issue credentials for your Wallet App. Please install it from the Android Play Store or iOS App Store, or download a beta release from <a href="https://wallet.a-sit.at/">wallet.a-sit.at</a>.</p>
-<p>Afterwards, you can scan this QR Code with your Wallet App to load credentials for your PupilID:</p>
-<img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
+<body style="background: #ececec;">
+<div th:replace="fragments/navbar.html :: navbar"></div>
+<div class="container my-3">
+    <div class="h-100 p-5 bg-light border rounded-3">
+    <h1 class="display-4">Invitation Demo</h1>
+    <p class="lead">You've received an invitation to issue credentials for your Wallet App. Please install it from the
+        Android Play Store or iOS App Store, or download a beta release from
+        <a href="https://wallet.a-sit.at/">wallet.a-sit.at</a>.
+    </p>
+    </div>
+    <div class="d-flex justify-content-center my-3">
+        <div class="card rounded-3" style="width: 18rem;">
+            <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""
+                 class="card-img-bottom"/>
+            <div class="card-body">
+                <h1 class="card-title">Invitation</h1>
+                <p class="card-text">Now you can scan the QR Code with your Wallet App to load credentials for
+                    your
+                    PupilID</p>
+                <a th:href="@{/invite?oob=1234}" class="btn btn-primary">Reload</a>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
