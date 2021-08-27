@@ -19,7 +19,9 @@ import java.io.ByteArrayInputStream
 import java.util.UUID
 import javax.imageio.ImageIO
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -70,15 +72,12 @@ class DemoControllerTest {
         assertNotNull(result.modelAndView)
         val vcList = result.modelAndView!!.model["vcList"]
         assertIs<Collection<IdentifierRegistry.RevocationListInfo>>(vcList)
-        assertTrue(
-            vcList.stream().anyMatch {
-                it.vcId.contentEquals(vcId) &&
-                        it.attributeName.contentEquals(attributeName) &&
-                        it.subjectId.contentEquals(subjectId) &&
-                        !it.issuanceDate.contentEquals(IdentifierRegistry.RevocationListInfo.DATE_ERROR_MSG)
-            },
-            "Does not contain required elements"
-        )
+        assertEquals(1, vcList.size)
+        val vc = vcList.first()
+        assertEquals(vcId, vc.vcId)
+        assertEquals(subjectId, vc.subjectId)
+        assertEquals(attributeName, vc.attributeName)
+        assertNotEquals(IdentifierRegistry.RevocationListInfo.DATE_ERROR_MSG, vc.issuanceDate)
     }
 
     @Test
