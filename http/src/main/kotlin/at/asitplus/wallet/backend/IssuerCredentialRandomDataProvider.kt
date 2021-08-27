@@ -12,26 +12,29 @@ import okhttp3.Request
 import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.Random
+import kotlin.random.nextInt
 
 
 class IssuerCredentialRandomDataProvider(
     private val defaultLifetime: Duration,
     private val listOfPhotos: Map<String?, String>
 ) : IssuerCredentialDataProvider {
+
     private val pupilAttributesCache: MutableMap<String, PupilAttributes> = mutableMapOf()
-    private val desiredPictureSize = "256"
     private val client = OkHttpClient()
 
     inner class PupilAttributes {
         val randomGender = listOf("male", "female").random()
-        val randomSchool = listOf(
+        private val randomSchoolPrefix = listOf(
             "Schiller", "Tesla", "Newton", "Einstein", "Marie Curie", "Rosalind Franklin",
             "Anne Frank", "Geschwister Scholl"
-        ).random() + " " + listOf(
+        ).random()
+        private val randomSchoolSuffix = listOf(
             "Realgymnasium", "Volksschule", "Gymnasium",
             "Mittelschule", "HTL", "HAK", "Hauptschule"
         ).random()
+        val randomSchool = "$randomSchoolPrefix $randomSchoolSuffix"
         val schoolCode = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
         val pupilIdNumber = (1..2)
             .map { (1..8).map { "0123456789".random() }.joinToString("") }
@@ -44,8 +47,6 @@ class IssuerCredentialRandomDataProvider(
             LocalDate.now().minusDays(minAge + Random().nextInt(upperBound).toLong())
                 .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
         }
-
-
         private val name = object {
             val nameArray =
                 executeGet("https://www.behindthename.com/api/random.json?usage=ger&gender=${randomGender[0]}&key=lu244794741")
@@ -84,7 +85,7 @@ class IssuerCredentialRandomDataProvider(
     private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
     override fun getClaim(subjectId: String, attribute: String) = run {
-        pupilAttributesCache[subjectId] ?: PupilAttributes().also { pupilAttributesCache[subjectId] = it}
+        pupilAttributesCache[subjectId] ?: PupilAttributes().also { pupilAttributesCache[subjectId] = it }
     }.let {
         when (attribute) {
             "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", defaultLifetime)
