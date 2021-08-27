@@ -39,9 +39,10 @@ class BackendConfiguration {
         val mapOfPhotos =
             resourcePatternResolver.getResources(configurationProperties.randomPhotoLocation.toString() + "/*.jpg")
                 .filter { it.exists() }
-                .map { it.filename to it.inputStream }
-                .map { it.first to it.second.readAllBytes() }.
-                map { it.first to it.second.toBase64() }
+                .filter { it.filename != null }
+                .map { it.filename!! to it.inputStream }
+                .map { it.first to it.second.readAllBytes() }
+                .map { it.first to it.second.toBase64() }
         return IssuerCredentialRandomDataProvider(
             configurationProperties.credentialLifetime,
             mapOfPhotos.toMap()
