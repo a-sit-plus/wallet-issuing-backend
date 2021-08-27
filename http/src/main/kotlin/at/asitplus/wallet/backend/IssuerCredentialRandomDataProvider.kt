@@ -83,10 +83,10 @@ class IssuerCredentialRandomDataProvider(
 
     private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
-    override fun getClaim(subjectId: String, attribute: String) = run {
-        pupilAttributesCache[subjectId] ?: PupilAttributes().also { pupilAttributesCache[subjectId] = it }
-    }.let {
-        when (attribute) {
+    override fun getClaim(subjectId: String, attribute: String): Claim? {
+        val it = pupilAttributesCache[subjectId]
+            ?: PupilAttributes().also { pupilAttributesCache[subjectId] = it }
+        return when (attribute) {
             "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", defaultLifetime)
             "schulname" -> Claim(attribute, it.randomSchool, "application/text", defaultLifetime)
             "schuladresse" -> Claim(attribute, it.school, "application/text", defaultLifetime)
