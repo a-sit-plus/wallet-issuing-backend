@@ -15,8 +15,8 @@
         <a class="navbar-brand" th:href="@{/}">Wallet Backend</a>
         <ul class="navbar-nav mr-auto">
             <li class="nav-item ps-2"><a th:href="@{/demo}" class="nav-link">Demo</a></li>
-            <li class="nav-item ps-2"><a th:href="@{/invite?oob=1234}" class="nav-link">Invite Wallet</a></li>
-            <li class="nav-item ps-2"><a th:href="@{/present?oob=1234}" class="nav-link">Invite Verifier</a></li>
+            <li class="nav-item ps-2"><a th:href="@{/invite/wallet?oob=1234}" class="nav-link">Invite Wallet</a></li>
+            <li class="nav-item ps-2"><a th:href="@{/invite/verify?oob=1234}" class="nav-link">Invite Verifier</a></li>
             <li class="nav-item ps-2"><a th:href="@{/revoke/list}" class="nav-link">Revoke</a></li>
         </ul>
     </div>
