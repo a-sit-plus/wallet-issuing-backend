@@ -70,19 +70,10 @@ class DemoController {
         return buildRevokeList(model)
     }
 
-    @GetMapping("/fake")
-    fun revokeByVcId(response: HttpServletResponse) {
-        runBlocking {
-            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
-        }
-        response.sendRedirect("revoke/list")
-    }
-
     private fun buildRevokeList(model: ModelMap): ModelAndView {
         model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()
         model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
-        model["fakeItemUrl"] = "${configurationProperties.publicContext}/fake"
         return ModelAndView("revokelist", model)
     }
 
