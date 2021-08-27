@@ -13,12 +13,11 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
-import kotlin.random.nextInt
 
 
 class IssuerCredentialRandomDataProvider(
     private val defaultLifetime: Duration,
-    private val listOfPhotos: Map<String?, String>
+    private val listOfPhotos: Map<String, String>
 ) : IssuerCredentialDataProvider {
 
     private val pupilAttributesCache: MutableMap<String, PupilAttributes> = mutableMapOf()
@@ -77,7 +76,7 @@ class IssuerCredentialRandomDataProvider(
         val zip = address.rawStr?.split(",")?.get(2) ?: "1010"
 
         var encodedPhoto = listOfPhotos
-            .filter { (it.key?.get(0)?.equals(randomGender[0]) ?: false) }
+            .filter { it.key[0] == randomGender[0] }
             .values.ifEmpty { listOf(fallbackPhoto) }.random()
     }
 
