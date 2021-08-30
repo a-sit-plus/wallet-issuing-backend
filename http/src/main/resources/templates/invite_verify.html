@@ -12,16 +12,16 @@
     <h1 class="display-4">Verify Invitation Demo</h1>
     <p class="lead">You've received an invitation to verify credentials of a Wallet App. Please install the Verifier
         App from the
-        Android Play Store or iOS App Store, or download a beta release from <a href="https://wallet.a-sit.at/">wallet.a-sit.at</a>.
+        Android Play Store or iOS App Store, or download a beta release from the <a th:href="@{/}">homepage</a>.
     </p>
 
     <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
     <div th:replace="fragments/icons.html :: info_icon"></div>
-    Afterwards, you can scan this QR Code with the Verifier App to verify the PupilID</p>
+    Afterwards, you can scan this QR Code with the Verifier App to verify the PupilID.</p>
     <div class="d-flex justify-content-center my-3">
-    <img th:width="${qrcodewidth}"
-         th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
-        </div>
+        <img th:width="${qrcodewidth}"
+             th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
+    </div>
 </div>
 </body>
 </html>

@@ -83,7 +83,7 @@ class DemoController {
         model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
         model["fakeItemUrl"] = "${configurationProperties.publicContext}/fake"
-        return ModelAndView("revokelist", model)
+        return ModelAndView("revoke_list", model)
     }
 
     @GetMapping("/invite/wallet")
