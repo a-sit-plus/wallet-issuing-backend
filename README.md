@@ -50,3 +50,15 @@ backend:
       private-key: file:issuer-key-private.pem
       public-key: file:issuer-key-public.pem
 ```
+
+### Spring Boot Admin Client
+
+```yaml
+spring:
+  application:
+    name: "Wallet Backend"
+  boot:
+    admin:
+      client:
+        url: http://localhost:9900
+```
