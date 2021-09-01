@@ -17,8 +17,6 @@
         revocation list credential
             <a th:href="${revocationListUrl}">/credentials/status/1</a>.</span></p>
 
-    <p><a th:href="${fakeItemUrl}" class="btn btn-info">Fake an item</a></p>
-
     <p th:if="${vcList.isEmpty()}" class="alert alert-danger">
         <span th:replace="fragments/icons.html :: danger_icon"></span>
         No credential exists yet.</p>
@@ -26,7 +24,7 @@
         <tr>
             <th>Subject ID</th>
             <th>Attribute Name</th>
-            <th>Issuence Date</th>
+            <th>Issuance Date</th>
             <th>Action</th>
         </tr>
         <tr th:each="vc : ${vcList}">

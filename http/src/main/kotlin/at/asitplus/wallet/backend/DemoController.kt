@@ -70,13 +70,14 @@ class DemoController {
         return buildRevokeList(model)
     }
 
-    @GetMapping("/fake")
-    fun revokeByVcId(response: HttpServletResponse) {
-        runBlocking {
-            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
-        }
-        response.sendRedirect("revoke/list")
-    }
+//    // For testing revoke/list, uncomment this
+//    @GetMapping("/fake")
+//    fun revokeByVcId(response: HttpServletResponse) {
+//        runBlocking {
+//            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
+//        }
+//        response.sendRedirect("revoke/list")
+//    }
 
     private fun buildRevokeList(model: ModelMap): ModelAndView {
         model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()
