@@ -19,9 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.util.*
+import java.util.Collections
 import javax.imageio.ImageIO
-import javax.servlet.http.HttpServletResponse
 
 @Controller
 class DemoController {
@@ -32,7 +31,10 @@ class DemoController {
     private lateinit var configurationProperties: BackendConfigurationProperties
 
     @Autowired
-    private lateinit var issueCredentialMessenger: IssueCredentialMessenger
+    private lateinit var issueCredentialMessengerPupilId: IssueCredentialMessenger
+
+    @Autowired
+    private lateinit var issueCredentialMessengerGreenPass: IssueCredentialMessenger
 
     @Autowired
     private lateinit var identifierRegistry: IdentifierRegistry
@@ -43,16 +45,25 @@ class DemoController {
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
         logger.info("/demo called")
+        val size = 400
         runBlocking {
-            val oobMessage = issueCredentialMessenger.start()
-            if (oobMessage is NextMessage.Send) {
-                val content = "${configurationProperties.publicContext}/invite/wallet?oob=${oobMessage.message.toBase64Url()}"
-                val size = 400
-                model["qrcodewidth"] = size
-                model["qrcode"] = createQrCodeImage(content, size).toBase64()
+            val oobPupilId = issueCredentialMessengerPupilId.start()
+            if (oobPupilId is NextMessage.Send) {
+                val content =
+                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobPupilId.message.toBase64Url()}"
+                model["qrcodePupilId"] = createQrCodeImage(content, size).toBase64()
             } else {
                 model["error"] = "Wrong internal state"
             }
+            val oobGreenPass = issueCredentialMessengerGreenPass.start()
+            if (oobGreenPass is NextMessage.Send) {
+                val content =
+                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobGreenPass.message.toBase64Url()}"
+                model["qrcodeGreenPass"] = createQrCodeImage(content, size).toBase64()
+            } else {
+                model["error"] = "Wrong internal state"
+            }
+            model["qrcodewidth"] = size
         }
         return ModelAndView("demo", model)
     }
@@ -70,14 +81,14 @@ class DemoController {
         return buildRevokeList(model)
     }
 
-//    // For testing revoke/list, uncomment this
-//    @GetMapping("/fake")
-//    fun revokeByVcId(response: HttpServletResponse) {
-//        runBlocking {
-//            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
-//        }
-//        response.sendRedirect("revoke/list")
-//    }
+    //    // For testing revoke/list, uncomment this
+    //    @GetMapping("/fake")
+    //    fun revokeByVcId(response: HttpServletResponse) {
+    //        runBlocking {
+    //            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
+    //        }
+    //        response.sendRedirect("revoke/list")
+    //    }
 
     private fun buildRevokeList(model: ModelMap): ModelAndView {
         model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()

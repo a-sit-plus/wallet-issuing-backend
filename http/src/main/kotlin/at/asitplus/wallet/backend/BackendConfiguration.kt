@@ -4,10 +4,12 @@ import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
 import at.asitplus.wallet.lib.agent.InMemoryCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
+import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.toBase64
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -75,7 +77,7 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun issueCredentialMessenger(
+    fun issueCredentialMessengerPupilId(
         @Autowired issuerAgent: Agent,
         @Autowired issuerMessageWrapper: MessageWrapper
     ): IssueCredentialMessenger {
@@ -83,8 +85,31 @@ class BackendConfiguration {
             issuerAgent,
             issuerMessageWrapper,
             "${configurationProperties.publicContext}/issue",
-            false
+            false,
+            oobCredentialSchema = SchemaIndex.CRED_PUPIL_ID
         )
+    }
+
+    @Bean
+    fun issueCredentialMessengerGreenPass(
+        @Autowired issuerAgent: Agent,
+        @Autowired issuerMessageWrapper: MessageWrapper
+    ): IssueCredentialMessenger {
+        return IssueCredentialMessenger(
+            issuerAgent,
+            issuerMessageWrapper,
+            "${configurationProperties.publicContext}/issue",
+            false,
+            oobCredentialSchema = SchemaIndex.CRED_GREEN_PASS
+        )
+    }
+
+    @Bean
+    fun delegatingProtocolMessenger(
+        @Autowired issueCredentialMessengerPupilId: IssueCredentialMessenger,
+        @Autowired issueCredentialMessengerGreenPass: IssueCredentialMessenger,
+    ): DelegatingProtocolMessenger {
+        return DelegatingProtocolMessenger(listOf(issueCredentialMessengerPupilId, issueCredentialMessengerGreenPass))
     }
 
 }

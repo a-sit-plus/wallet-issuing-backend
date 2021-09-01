@@ -56,9 +56,10 @@ class DemoControllerTest {
             .andExpect { status { isOk() } }
             .andReturn()
 
-        val oobInvitationUrl = parseResponse(result)
-
-        assertContains(oobInvitationUrl, "?oob=")
+        val oobUrlGreenPass = parseResponse(result, "qrcodeGreenPass")
+        assertContains(oobUrlGreenPass, "?oob=")
+        val oobUrlPupilId = parseResponse(result, "qrcodePupilId")
+        assertContains(oobUrlPupilId, "?oob=")
     }
 
     @Test
@@ -110,8 +111,8 @@ class DemoControllerTest {
 
     }
 
-    private fun parseResponse(result: MvcResult): String {
-        val qrCodeEncoded = result.modelAndView!!.model["qrcode"].toString()
+    private fun parseResponse(result: MvcResult, attributeName: String): String {
+        val qrCodeEncoded = result.modelAndView!!.model[attributeName].toString()
         val response = Base64Utils.decodeFromString(qrCodeEncoded)
         val image = ImageIO.read(ByteArrayInputStream(response))
         val pixels = image.getRGB(0, 0, image.width, image.height, null, 0, image.width)

@@ -5,7 +5,7 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.msg.IssueCredential
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runBlockingTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,7 +27,10 @@ class ApiControllerTest {
     private lateinit var mockMvc: MockMvc
 
     @Autowired
-    private lateinit var issueCredentialMessenger: IssueCredentialMessenger
+    private lateinit var issueCredentialMessengerPupilId: IssueCredentialMessenger
+
+    @Autowired
+    private lateinit var issueCredentialMessengerGreenPass: IssueCredentialMessenger
 
     private lateinit var subject: Agent
 
@@ -41,67 +44,73 @@ class ApiControllerTest {
     }
 
     @Test
-    fun issue_wrongMessage_400() {
-        runBlocking {
-            val requestCredentialMessage = subjectIssueCredentialMessenger.start()
-            assertIs<NextMessage.Send>(requestCredentialMessage)
+    fun issue_wrongMessage_400() = runBlockingTest {
+        val requestCredentialMessage = subjectIssueCredentialMessenger.start()
+        assertIs<NextMessage.Send>(requestCredentialMessage)
 
-            mockMvc.post("/issue") {
-                content = requestCredentialMessage.message
-            }.andExpect {
-                status { isBadRequest() }
-            }.andReturn()
-        }
+        mockMvc.post("/issue") {
+            content = requestCredentialMessage.message
+        }.andExpect {
+            status { isBadRequest() }
+        }.andReturn()
     }
 
     @Test
-    fun issue_wrongInvitation_400() {
-        runBlocking {
-            val agent = Agent()
-            val oobInvitation = IssueCredentialMessenger(
-                Agent(),
-                MessageWrapper(agent.cryptoService),
-                "https://example.com/issue"
-            ).start()
-            assertIs<NextMessage.Send>(oobInvitation)
+    fun issue_wrongInvitation_400() = runBlockingTest {
+        val agent = Agent()
+        val oobInvitation = IssueCredentialMessenger(
+            Agent(),
+            MessageWrapper(agent.cryptoService),
+            "https://example.com/issue"
+        ).start()
+        assertIs<NextMessage.Send>(oobInvitation)
 
-            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
-            assertIs<NextMessage.Send>(requestCredentialMessage)
+        val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
+        assertIs<NextMessage.Send>(requestCredentialMessage)
 
-            mockMvc.post("/issue") {
-                content = requestCredentialMessage.message
-            }.andExpect {
-                status { isBadRequest() }
-            }.andReturn()
-        }
+        mockMvc.post("/issue") {
+            content = requestCredentialMessage.message
+        }.andExpect {
+            status { isBadRequest() }
+        }.andReturn()
     }
 
     @Test
-    fun issue_success() {
-        runBlocking {
-            val oobInvitation = issueCredentialMessenger.start()
-            assertIs<NextMessage.Send>(oobInvitation)
+    fun issue_success_pupilid() = runBlockingTest {
+        val oobInvitation = issueCredentialMessengerPupilId.start()
+        assertIs<NextMessage.Send>(oobInvitation)
 
-            val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
-            assertIs<NextMessage.Send>(requestCredentialMessage)
+        simulateWallet(oobInvitation)
+    }
 
-            val result = mockMvc.post("/issue") {
-                content = requestCredentialMessage.message
-            }.andExpect {
-                status { isOk() }
-            }.andReturn()
+    @Test
+    fun issue_success_greenPass() = runBlockingTest {
+        val oobInvitation = issueCredentialMessengerGreenPass.start()
+        assertIs<NextMessage.Send>(oobInvitation)
 
-            val response = result.response.contentAsString
-            val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
-            assertIs<NextMessage.Finished>(issueCredentialMessage)
-            val lastMessage = issueCredentialMessage.lastMessage
-            assertIs<IssueCredential>(lastMessage)
+        simulateWallet(oobInvitation)
+    }
 
-            val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
-            assertTrue(issuerJwsVc.isNotEmpty())
+    private suspend fun simulateWallet(oobInvitation: NextMessage.Send) {
+        val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
+        assertIs<NextMessage.Send>(requestCredentialMessage)
 
-            subject.storeCredentials(issuerJwsVc)
-        }
+        val result = mockMvc.post("/issue") {
+            content = requestCredentialMessage.message
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val response = result.response.contentAsString
+        val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
+        assertIs<NextMessage.Finished>(issueCredentialMessage)
+        val lastMessage = issueCredentialMessage.lastMessage
+        assertIs<IssueCredential>(lastMessage)
+
+        val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
+        assertTrue(issuerJwsVc.isNotEmpty())
+
+        subject.storeCredentials(issuerJwsVc)
     }
 
     @Test

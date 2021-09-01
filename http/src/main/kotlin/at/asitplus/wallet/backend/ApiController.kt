@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.Agent
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
@@ -19,7 +19,7 @@ class ApiController {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     @Autowired
-    private lateinit var issueCredentialMessenger: IssueCredentialMessenger
+    private lateinit var delegatingProtocolMessenger: DelegatingProtocolMessenger
 
     @Autowired
     private lateinit var issuerAgent: Agent
@@ -29,7 +29,7 @@ class ApiController {
         logger.info("/issue called with body: $body")
         return runBlocking {
             try {
-                when (val result = issueCredentialMessenger.parseMessage(body)) {
+                when (val result = delegatingProtocolMessenger.parseMessage(body)) {
                     is NextMessage.Finished -> {
                         logger.info("/issue returning empty body")
                         ResponseEntity.status(HttpStatus.OK).build()

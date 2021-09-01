@@ -9,15 +9,20 @@
 <body style="background: #ececec;">
 <div th:replace="fragments/navbar.html :: navbar"></div>
 <div class="container pt-3">
-    <h1 class="display-4">Wallet Demo</h1>
+    <h1 class="display-4">Initialize Wallet</h1>
     <div th:unless="${error} != null">
-        <p class="lead">This is a credential demo issuing a PupilID credential of a fictive pupil.</p>
+        <p class="lead">This is a credential demo issuing random credentials for a Wallet App.</p>
         <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
             <span th:replace="fragments/icons.html :: info_icon"></span>
-            Scan this QR Code with
-            your Wallet App to load credentials for your PupilID.</p>
+            Scan this QR Code with your Wallet App to load credentials for your PupilID.</p>
         <div class="d-flex justify-content-center my-3">
-            <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
+            <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcodePupilId}" alt="" src=""/>
+        </div>
+        <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
+            <span th:replace="fragments/icons.html :: info_icon"></span>
+            Scan this QR Code with your Wallet App to load credentials for your Green Pass.</p>
+        <div class="d-flex justify-content-center my-3">
+            <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcodeGreenPass}" alt="" src=""/>
         </div>
     </div>
     <div th:if="${error} != null">
