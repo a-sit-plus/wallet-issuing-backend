@@ -20,7 +20,7 @@ import kotlin.test.assertContains
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class DemoControllerTest {
+class InitializationControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -38,7 +38,7 @@ class DemoControllerTest {
 
     @Test
     fun demo_success() {
-        val result = mockMvc.get("/demo")
+        val result = mockMvc.get("/initialize")
             .andExpect { status { isOk() } }
             .andReturn()
 

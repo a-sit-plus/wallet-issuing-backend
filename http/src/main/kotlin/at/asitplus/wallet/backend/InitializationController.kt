@@ -21,7 +21,7 @@ import java.util.Collections
 import javax.imageio.ImageIO
 
 @Controller
-class DemoController {
+class InitializationController {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
@@ -34,9 +34,9 @@ class DemoController {
     @Autowired
     private lateinit var issueCredentialMessengerGreenPass: IssueCredentialMessenger
 
-    @GetMapping("/demo")
+    @GetMapping("/initialize")
     fun demo(model: ModelMap): ModelAndView {
-        logger.info("/demo called")
+        logger.info("/initialize called")
         val size = 400
         runBlocking {
             val oobPupilId = issueCredentialMessengerPupilId.start()
@@ -57,7 +57,7 @@ class DemoController {
             }
             model["qrcodewidth"] = size
         }
-        return ModelAndView("demo", model)
+        return ModelAndView("initialize", model)
     }
 
     @GetMapping("/invite/wallet")
