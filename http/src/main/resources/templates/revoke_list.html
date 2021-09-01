@@ -35,10 +35,8 @@
     <h1 class="display-4">Revocation</h1>
     <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
         <span th:replace="fragments/icons.html :: info_icon"></span>
-        <span>This list contains all issued credentials. Click on "revoke" revokes the corresponding credential. Updates shall be
-        reflected here and in the
-        revocation list credential
-            <a th:href="${revocationListUrl}">/credentials/status/1</a>.</span></p>
+        <span>This list contains all valid credentials. To revoke a credential, click on the red button to its right.
+            Any updates here have direct effect on the revocation list.</span></p>
 
     <p th:if="${vcList.isEmpty()}" class="alert alert-danger">
         <span th:replace="fragments/icons.html :: danger_icon"></span>
