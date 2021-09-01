@@ -35,6 +35,7 @@ dependencies {
     implementation("org.json:json:20210307")
     implementation("com.google.zxing:core:3.4.1")
     implementation("org.webjars:bootstrap:5.1.0")
+    implementation("de.codecentric:spring-boot-admin-starter-client:2.5.1")
     implementation(project(":vclib"))
     implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
     runtimeOnly("com.h2database:h2")
