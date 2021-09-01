@@ -1,12 +1,6 @@
 spring:
   application:
     name: "Wallet Backend"
-  boot:
-    admin:
-      client:
-        url: http://localhost:9900
-        username: "todo"
-        password: "todo"
   jpa:
     hibernate:
       ddl-auto: update
@@ -37,12 +31,3 @@ backend:
 
 server:
   port: 8080
-
-management:
-  endpoint:
-    health:
-      show-details: always
-  endpoints:
-    web:
-      exposure:
-        include: "*"

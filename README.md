@@ -61,4 +61,12 @@ spring:
     admin:
       client:
         url: http://localhost:9900
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
 ```
