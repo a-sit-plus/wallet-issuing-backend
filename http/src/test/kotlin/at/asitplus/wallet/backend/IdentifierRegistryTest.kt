@@ -28,10 +28,14 @@ class IdentifierRegistryTest {
     lateinit var identifierRepository: IdentifierRepository
 
     private lateinit var vcId: String
+    private lateinit var attributeName: String
+    private lateinit var subjectId: String
 
     @BeforeEach
     fun beforeEach() {
         vcId = UUID.randomUUID().toString()
+        attributeName = UUID.randomUUID().toString()
+        subjectId = UUID.randomUUID().toString()
         identifierRepository.deleteAll()
     }
 
@@ -47,7 +51,7 @@ class IdentifierRegistryTest {
 
     @Test
     fun `simple positive add and revoke vcId should work`() {
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
         assertEquals(false, identifierRegistry.isRevoked(vcId))
         assertTrue(identifierRegistry.revoke(vcId))
         assertEquals(true, identifierRegistry.isRevoked(vcId))
@@ -55,8 +59,8 @@ class IdentifierRegistryTest {
 
     @Test
     fun `double adding vcId should return null`() {
-        assertNotNull(identifierRegistry.storeGetNextIndex(vcId))
-        assertNull(identifierRegistry.storeGetNextIndex(vcId))
+        assertNotNull(identifierRegistry.storeGetNextIndex(vcId,attributeName, subjectId))
+        assertNull(identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId))
     }
 
     @Test
@@ -71,7 +75,7 @@ class IdentifierRegistryTest {
         val expectedRevocationList = mutableListOf<Int>()
         for (i in 1..256) {
             val vcId = UUID.randomUUID().toString()
-            val revocationListIndex = identifierRegistry.storeGetNextIndex(vcId)
+            val revocationListIndex = identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)
                 identifierRegistry.revoke(vcId)

@@ -34,6 +34,7 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:9.11.1")
     implementation("org.json:json:20210307")
     implementation("com.google.zxing:core:3.4.1")
+    implementation("org.webjars:bootstrap:5.1.0")
     implementation(project(":vclib"))
     implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
     runtimeOnly("com.h2database:h2")

@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.model.IdentifierRegistry
+import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.toBase64
@@ -18,8 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.util.Collections
+import java.util.*
 import javax.imageio.ImageIO
+import javax.servlet.http.HttpServletResponse
 
 @Controller
 class DemoController {
@@ -35,13 +37,16 @@ class DemoController {
     @Autowired
     private lateinit var identifierRegistry: IdentifierRegistry
 
+    @Autowired
+    private lateinit var issuer: Agent
+
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
         logger.info("/demo called")
         runBlocking {
             val oobMessage = issueCredentialMessenger.start()
             if (oobMessage is NextMessage.Send) {
-                val content = "${configurationProperties.publicContext}/invite?oob=${oobMessage.message.toBase64Url()}"
+                val content = "${configurationProperties.publicContext}/invite/wallet?oob=${oobMessage.message.toBase64Url()}"
                 val size = 400
                 model["qrcodewidth"] = size
                 model["qrcode"] = createQrCodeImage(content, size).toBase64()
@@ -65,31 +70,40 @@ class DemoController {
         return buildRevokeList(model)
     }
 
+//    // For testing revoke/list, uncomment this
+//    @GetMapping("/fake")
+//    fun revokeByVcId(response: HttpServletResponse) {
+//        runBlocking {
+//            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
+//        }
+//        response.sendRedirect("revoke/list")
+//    }
+
     private fun buildRevokeList(model: ModelMap): ModelAndView {
-        model["vcList"] = identifierRegistry.getAllNonRevoked()
+        model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()
         model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
-        return ModelAndView("revokelist", model)
+        return ModelAndView("revoke_list", model)
     }
 
-    @GetMapping("/invite")
+    @GetMapping("/invite/wallet")
     fun invite(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
-        logger.info("/invite?oob=$oob called")
-        val content = "${configurationProperties.publicContext}/invite?oob=${oob}"
+        logger.info("/invite/wallet?oob=$oob called")
+        val content = "${configurationProperties.publicContext}/invite/wallet?oob=${oob}"
         val size = 400
         model["qrcodewidth"] = size
         model["qrcode"] = createQrCodeImage(content, size).toBase64()
-        return ModelAndView("invite", model)
+        return ModelAndView("invite_wallet", model)
     }
 
-    @GetMapping("/present")
+    @GetMapping("/invite/verify")
     fun present(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
-        logger.info("/present?oob=$oob called")
-        val content = "${configurationProperties.publicContext}/present?oob=${oob}"
+        logger.info("/invite/verify?oob=$oob called")
+        val content = "${configurationProperties.publicContext}/invite/verify?oob=${oob}"
         val size = 400
         model["qrcodewidth"] = size
         model["qrcode"] = createQrCodeImage(content, size).toBase64()
-        return ModelAndView("present", model)
+        return ModelAndView("invite_verify", model)
     }
 
     private fun createQrCodeImage(content: String, size: Int): ByteArray {

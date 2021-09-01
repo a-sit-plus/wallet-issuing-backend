@@ -19,7 +19,9 @@ import java.io.ByteArrayInputStream
 import java.util.UUID
 import javax.imageio.ImageIO
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -36,9 +38,16 @@ class DemoControllerTest {
     @Autowired
     private lateinit var identifierRepository: IdentifierRepository
 
+    private lateinit var vcId: String
+    private lateinit var attributeName: String
+    private lateinit var subjectId: String
+
     @BeforeEach
     fun beforeEach() {
         identifierRepository.deleteAll()
+        vcId = UUID.randomUUID().toString()
+        attributeName = UUID.randomUUID().toString()
+        subjectId = UUID.randomUUID().toString()
     }
 
     @Test
@@ -54,9 +63,7 @@ class DemoControllerTest {
 
     @Test
     fun `revokeList contains issued credentials`() {
-        val vcId = UUID.randomUUID().toString()
-
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
 
         val result = mockMvc.get("/revoke/list")
             .andExpect { status { isOk() } }
@@ -64,15 +71,18 @@ class DemoControllerTest {
 
         assertNotNull(result.modelAndView)
         val vcList = result.modelAndView!!.model["vcList"]
-        assertIs<Collection<String>>(vcList)
-        assertContains(vcList, vcId)
+        assertIs<Collection<IdentifierRegistry.RevocationListInfo>>(vcList)
+        assertEquals(1, vcList.size)
+        val vc = vcList.first()
+        assertEquals(vcId, vc.vcId)
+        assertEquals(subjectId, vc.subjectId)
+        assertEquals(attributeName, vc.attributeName)
+        assertNotEquals(IdentifierRegistry.RevocationListInfo.DATE_ERROR_MSG, vc.issuanceDate)
     }
 
     @Test
     fun `revokeList should not contain revoked entries`() {
-        val vcId = UUID.randomUUID().toString()
-
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
         assertTrue(identifierRegistry.revoke(vcId))
 
         val result = mockMvc.get("/revoke/list")
@@ -81,15 +91,13 @@ class DemoControllerTest {
 
         assertNotNull(result.modelAndView)
         val vcList = result.modelAndView!!.model["vcList"]
-        assertIs<Collection<String>>(vcList)
+        assertIs<Collection<IdentifierRegistry.RevocationListInfo>>(vcList)
         assertTrue(vcList.isEmpty())
     }
 
     @Test
     fun revokeList_revoke_success() {
-        val vcId = UUID.randomUUID().toString()
-
-        identifierRegistry.storeGetNextIndex(vcId)
+        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
 
         val result = mockMvc.get("/revoke/list")
             .andExpect {
