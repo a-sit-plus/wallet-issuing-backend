@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="headerfiles">
+    <meta charset="UTF-8"/>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.1.0/css/bootstrap.min.css} "/>
+</head>
+<body>
+<p>Go to non-fragment pages to see fragments in action</p>
+<aside>
+    <div>This is a sidebar</div>
+</aside>
+<div class="another">This is navbar</div>
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">Wallet Backend</a>
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item ps-2"><a th:href="@{/demo}" class="nav-link">Demo</a></li>
+            <li class="nav-item ps-2"><a th:href="@{/revoke/list}" class="nav-link">Revoke</a></li>
+        </ul>
+    </div>
+</nav>
+</body>
+</html>
