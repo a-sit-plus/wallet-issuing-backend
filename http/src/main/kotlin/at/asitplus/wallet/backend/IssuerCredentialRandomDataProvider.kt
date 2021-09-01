@@ -56,6 +56,16 @@ class IssuerCredentialRandomDataProvider(
         }
         val firstName = name.nameArray?.get(1)?.jsonPrimitive?.content ?: "Susanne"
         val lastName = name.nameArray?.get(0)?.jsonPrimitive?.content ?: "Meier"
+        val titelVor = listOf(
+            "DI",
+            "Dr. rer. nat.",
+            "Dr. med. univ.",
+            "Dr. med. dent.",
+            "Mag. phil.",
+            "Mag. iur.",
+            "Ing."
+        ).random()
+        val titelNach = listOf("MSc", "MA", "BSc", "BA", "LLM", "PhD", "MBA", "MP", "MAS").random()
 
         private val address = object {
             val rawStr = client.newCall(buildRequest()).execute()
@@ -97,6 +107,8 @@ class IssuerCredentialRandomDataProvider(
                     "schülerkennzahl" -> Claim(attribute, it.pupilIdNumber, lifetime)
                     "vorname" -> Claim(attribute, it.firstName, lifetime)
                     "nachname" -> Claim(attribute, it.lastName, lifetime)
+                    "titelvor" -> Claim(attribute, it.titelVor, lifetime)
+                    "titelnach" -> Claim(attribute, it.titelNach, lifetime)
                     "geburtsdatum" -> Claim(attribute, it.birthDate, lifetime)
                     "gültigBis" -> Claim(attribute, "2021-07-31", lifetime)
                     "wohnort" -> Claim(attribute, it.county, lifetime)
