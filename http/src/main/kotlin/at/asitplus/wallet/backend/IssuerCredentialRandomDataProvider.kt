@@ -121,6 +121,7 @@ class IssuerCredentialRandomDataProvider(
                 when (attribute.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
                     "name" -> Claim(attribute, "${it.firstName} ${it.lastName}", lifetime)
                     "date-of-birth" -> Claim(attribute, it.birthDate, lifetime)
+                    "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", lifetime)
                     "vaccination" -> Claim(attribute, "Moderna 2/2", lifetime)
                     "test" -> Claim(attribute, "RAT", lifetime)
                     "recovery" -> Claim(attribute, "2021-02-10", lifetime)
