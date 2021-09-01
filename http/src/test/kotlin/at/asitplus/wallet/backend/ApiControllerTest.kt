@@ -120,8 +120,6 @@ class ApiControllerTest {
                 status { isOk() }
             }.andReturn()
         val response = result.response.contentAsString
-
-        println(response)
     }
 
 }
