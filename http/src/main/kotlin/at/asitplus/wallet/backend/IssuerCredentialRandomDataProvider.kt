@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.Claim
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import at.asitplus.wallet.lib.data.SchemaIndex
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -16,14 +17,14 @@ import java.util.Random
 
 
 class IssuerCredentialRandomDataProvider(
-    private val defaultLifetime: Duration,
+    private val lifetime: Duration,
     private val listOfPhotos: Map<String, String>
 ) : IssuerCredentialDataProvider {
 
-    private val pupilAttributesCache: MutableMap<String, PupilAttributes> = mutableMapOf()
+    private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
     private val client = OkHttpClient()
 
-    inner class PupilAttributes {
+    inner class RandomAttributeSet {
         val randomGender = listOf("male", "female").random()
         private val randomSchoolPrefix = listOf(
             "Schiller", "Tesla", "Newton", "Einstein", "Marie Curie", "Rosalind Franklin",
@@ -84,23 +85,36 @@ class IssuerCredentialRandomDataProvider(
     private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
     override fun getClaim(subjectId: String, attribute: String): Claim? {
-        val it = pupilAttributesCache[subjectId]
-            ?: PupilAttributes().also { pupilAttributesCache[subjectId] = it }
-        return when (attribute) {
-            "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", defaultLifetime)
-            "schulname" -> Claim(attribute, it.randomSchool, "application/text", defaultLifetime)
-            "schuladresse" -> Claim(attribute, it.school, "application/text", defaultLifetime)
-            "schulkennzahl" -> Claim(attribute, it.schoolCode, "application/text", defaultLifetime)
-            "schülerkennzahl" -> Claim(attribute, it.pupilIdNumber, "application/text", defaultLifetime)
-            "vorname" -> Claim(attribute, it.firstName, "application/text", defaultLifetime)
-            "nachname" -> Claim(attribute, it.lastName, "application/text", defaultLifetime)
-            "titelvor" -> Claim(attribute, " ", "application/text", defaultLifetime)
-            "titelnach" -> Claim(attribute, " ", "application/text", defaultLifetime)
-            "geburtsdatum" -> Claim(attribute, it.birthDate, "application/text", defaultLifetime)
-            "gültigBis" -> Claim(attribute, "2021-07-31", "application/text", defaultLifetime)
-            "wohnort" -> Claim(attribute, it.county, "application/text", defaultLifetime)
-            "wohnort-plz" -> Claim(attribute, it.zip, "application/text", defaultLifetime)
-            "klasse" -> Claim(attribute, it.schoolClass, "application/text", defaultLifetime)
+        val it = randomAttributeCache[subjectId]
+            ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
+        return when {
+            attribute.startsWith(SchemaIndex.ATTR_PUPIL_ID_PREFIX) -> {
+                when (attribute.removePrefix(SchemaIndex.ATTR_PUPIL_ID_PREFIX + "/")) {
+                    "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", lifetime)
+                    "schulname" -> Claim(attribute, it.randomSchool, lifetime)
+                    "schuladresse" -> Claim(attribute, it.school, lifetime)
+                    "schulkennzahl" -> Claim(attribute, it.schoolCode, lifetime)
+                    "schülerkennzahl" -> Claim(attribute, it.pupilIdNumber, lifetime)
+                    "vorname" -> Claim(attribute, it.firstName, lifetime)
+                    "nachname" -> Claim(attribute, it.lastName, lifetime)
+                    "geburtsdatum" -> Claim(attribute, it.birthDate, lifetime)
+                    "gültigBis" -> Claim(attribute, "2021-07-31", lifetime)
+                    "wohnort" -> Claim(attribute, it.county, lifetime)
+                    "wohnort-plz" -> Claim(attribute, it.zip, lifetime)
+                    "klasse" -> Claim(attribute, it.schoolClass, lifetime)
+                    else -> null
+                }
+            }
+            attribute.startsWith(SchemaIndex.ATTR_GREEN_PASS_PREFIX) -> {
+                when (attribute.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
+                    "name" -> Claim(attribute, "${it.firstName} ${it.lastName}", lifetime)
+                    "date-of-birth" -> Claim(attribute, it.birthDate, lifetime)
+                    "vaccination" -> Claim(attribute, "Moderna 2/2", lifetime)
+                    "test" -> Claim(attribute, "RAT", lifetime)
+                    "recovery" -> Claim(attribute, "2021-02-10", lifetime)
+                    else -> null
+                }
+            }
             else -> null
         }
     }
