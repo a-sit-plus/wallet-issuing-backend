@@ -1,7 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.model.IdentifierRegistry
-import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.toBase64
@@ -36,12 +34,6 @@ class DemoController {
     @Autowired
     private lateinit var issueCredentialMessengerGreenPass: IssueCredentialMessenger
 
-    @Autowired
-    private lateinit var identifierRegistry: IdentifierRegistry
-
-    @Autowired
-    private lateinit var issuer: Agent
-
     @GetMapping("/demo")
     fun demo(model: ModelMap): ModelAndView {
         logger.info("/demo called")
@@ -66,35 +58,6 @@ class DemoController {
             model["qrcodewidth"] = size
         }
         return ModelAndView("demo", model)
-    }
-
-    @GetMapping("/revoke/list")
-    fun revokeList(model: ModelMap): ModelAndView {
-        logger.info("/revoke/list called")
-        return buildRevokeList(model)
-    }
-
-    @GetMapping("/revoke")
-    fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
-        logger.info("/revoke called with vcId=$vcId")
-        identifierRegistry.revoke(vcId)
-        return buildRevokeList(model)
-    }
-
-    //    // For testing revoke/list, uncomment this
-    //    @GetMapping("/fake")
-    //    fun revokeByVcId(response: HttpServletResponse) {
-    //        runBlocking {
-    //            issuer.issuePupilIdCredentials(UUID.randomUUID().toString())
-    //        }
-    //        response.sendRedirect("revoke/list")
-    //    }
-
-    private fun buildRevokeList(model: ModelMap): ModelAndView {
-        model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()
-        model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
-        model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
-        return ModelAndView("revoke_list", model)
     }
 
     @GetMapping("/invite/wallet")
