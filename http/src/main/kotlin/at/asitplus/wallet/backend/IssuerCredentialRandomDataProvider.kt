@@ -122,9 +122,9 @@ class IssuerCredentialRandomDataProvider(
                     "name" -> Claim(attribute, "${it.firstName} ${it.lastName}", lifetime)
                     "date-of-birth" -> Claim(attribute, it.birthDate, lifetime)
                     "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", lifetime)
-                    "vaccination" -> Claim(attribute, "Moderna 2/2", lifetime)
-                    "test" -> Claim(attribute, "RAT", lifetime)
-                    "recovery" -> Claim(attribute, "2021-02-10", lifetime)
+                    "vaccination" -> Claim(attribute, "Moderna 2/2, on 2021-08-10, Vienna", lifetime)
+                    "test" -> Claim(attribute, "Negative RAT, on 2021-09-10, Graz", lifetime)
+                    "recovery" -> Claim(attribute, "Recovered, on 2021-02-10", lifetime)
                     else -> null
                 }
             }
