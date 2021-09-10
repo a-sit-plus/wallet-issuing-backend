@@ -42,6 +42,14 @@ class ApiController {
                         logger.error("/issue returning 400, incorrect protocol state")
                         ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
                     }
+                    is NextMessage.SendProblemReport -> {
+                        logger.info("/issue returning problem report ${result.message}")
+                        ResponseEntity.ok(result.message)
+                    }
+                    is NextMessage.ReceivedProblemReport -> {
+                        logger.info("/issue received a problem report ${result.message}")
+                        ResponseEntity.ok().build()
+                    }
                 }
             } catch (e: Throwable) {
                 // still necessary to send a correct status to callers
