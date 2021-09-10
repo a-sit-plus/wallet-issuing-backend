@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "at.asitplus.wallet"
-version = "0.0.1-SNAPSHOT"
+version = "0.1.0"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 configurations {
@@ -50,7 +50,7 @@ dependencies {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "11"
+        jvmTarget = "1.8"
     }
 }
 
