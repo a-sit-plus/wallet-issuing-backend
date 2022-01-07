@@ -11,4 +11,4 @@ pluginManagement {
     }
 }
 
-include("vclib", "http")
+include("http")

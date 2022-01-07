@@ -10,13 +10,14 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 
 
-class IssuerCredentialRandomDataProvider(
+class IssuerCredentialRandomDataProvider @OptIn(ExperimentalTime::class) constructor(
     private val lifetime: Duration,
     private val listOfPhotos: Map<String, String>
 ) : IssuerCredentialDataProvider {

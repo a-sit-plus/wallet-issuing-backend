@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.lib.Base64
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
-import at.asitplus.wallet.lib.toBase64
-import at.asitplus.wallet.lib.toBase64Url
+import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -42,16 +42,16 @@ class InitializationController {
             val oobPupilId = issueCredentialMessengerPupilId.start()
             if (oobPupilId is NextMessage.Send) {
                 val content =
-                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobPupilId.message.toBase64Url()}"
-                model["qrcodePupilId"] = createQrCodeImage(content, size).toBase64()
+                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobPupilId.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)}"
+                model["qrcodePupilId"] = createQrCodeImage(content, size).encodeBase64()
             } else {
                 model["error"] = "Wrong internal state"
             }
             val oobGreenPass = issueCredentialMessengerGreenPass.start()
             if (oobGreenPass is NextMessage.Send) {
                 val content =
-                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobGreenPass.message.toBase64Url()}"
-                model["qrcodeGreenPass"] = createQrCodeImage(content, size).toBase64()
+                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobGreenPass.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)}"
+                model["qrcodeGreenPass"] = createQrCodeImage(content, size).encodeBase64()
             } else {
                 model["error"] = "Wrong internal state"
             }
@@ -66,7 +66,7 @@ class InitializationController {
         val content = "${configurationProperties.publicContext}/invite/wallet?oob=${oob}"
         val size = 400
         model["qrcodewidth"] = size
-        model["qrcode"] = createQrCodeImage(content, size).toBase64()
+        model["qrcode"] = createQrCodeImage(content, size).encodeBase64()
         return ModelAndView("invite_wallet", model)
     }
 
@@ -76,7 +76,7 @@ class InitializationController {
         val content = "${configurationProperties.publicContext}/invite/verify?oob=${oob}"
         val size = 400
         model["qrcodewidth"] = size
-        model["qrcode"] = createQrCodeImage(content, size).toBase64()
+        model["qrcode"] = createQrCodeImage(content, size).encodeBase64()
         return ModelAndView("invite_verify", model)
     }
 

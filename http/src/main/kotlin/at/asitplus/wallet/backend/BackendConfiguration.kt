@@ -5,18 +5,19 @@ import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
-import at.asitplus.wallet.lib.agent.InMemoryCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.SchemaIndex
-import at.asitplus.wallet.lib.toBase64
+import at.asitplus.wallet.lib.encodeBase64
+import at.asitplus.wallet.lib.jvm.InMemoryCryptoServiceJvm
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
+import kotlin.time.ExperimentalTime
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -36,6 +37,7 @@ class BackendConfiguration {
         return IdentifierRegistry(identifierRepository)
     }
 
+    @OptIn(ExperimentalTime::class)
     @Bean
     fun issuerCredentialRandomDataProvider(): IssuerCredentialRandomDataProvider {
         val mapOfPhotos =
@@ -44,9 +46,9 @@ class BackendConfiguration {
                 .filter { it.filename != null }
                 .map { it.filename!! to it.inputStream }
                 .map { it.first to it.second.readAllBytes() }
-                .map { it.first to it.second.toBase64() }
+                .map { it.first to it.second.encodeBase64() }
         return IssuerCredentialRandomDataProvider(
-            configurationProperties.credentialLifetime,
+            kotlin.time.Duration.minutes(configurationProperties.credentialLifetime.toMinutes()),
             mapOfPhotos.toMap()
         )
     }
@@ -54,7 +56,7 @@ class BackendConfiguration {
     @Bean
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
         KeyType.FILE -> FileCryptoService(configurationProperties.issuerKey.file!!, resourceLoader)
-        KeyType.MEMORY -> InMemoryCryptoService()
+        KeyType.MEMORY -> InMemoryCryptoServiceJvm()
     }
 
     @Bean
