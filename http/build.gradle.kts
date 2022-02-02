@@ -31,22 +31,23 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
-    implementation("com.nimbusds:nimbus-jose-jwt:9.11.1")
-    implementation("org.json:json:20210307")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("com.nimbusds:nimbus-jose-jwt:9.16")
+    implementation("org.json:json:20211205")
     implementation("com.google.zxing:core:3.4.1")
-    implementation("org.webjars:bootstrap:5.1.0")
-    implementation("de.codecentric:spring-boot-admin-starter-client:2.5.1")
+    implementation("org.webjars:bootstrap:5.1.1")
+    implementation("de.codecentric:spring-boot-admin-starter-client:2.6.2")
     implementation("at.asitplus.wallet:shared-jvm:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+    implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
+    implementation ("com.squareup.okhttp3:okhttp")
+    implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation(kotlin("test"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.1")
-    implementation ("com.squareup.okhttp3:okhttp")
+    testImplementation(kotlin("test-junit"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
 }
 
 tasks.withType<KotlinCompile> {
@@ -56,7 +57,7 @@ tasks.withType<KotlinCompile> {
     }
 }
 
-tasks.withType<Test> {
+tasks.test {
     useJUnitPlatform()
     testLogging {
         showStandardStreams = true
@@ -66,10 +67,6 @@ tasks.withType<Test> {
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     launchScript()
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
 }
 
 val gitLabPrivateToken: String? by extra
