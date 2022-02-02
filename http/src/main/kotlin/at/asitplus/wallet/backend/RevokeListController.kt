@@ -47,17 +47,4 @@ class RevokeListController {
         return ModelAndView("revoke_list", model)
     }
 
-    private fun createQrCodeImage(content: String, size: Int): ByteArray {
-        val options = Collections.singletonMap(EncodeHintType.MARGIN, 0)
-        val bits = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, size, size, options)
-        val image = BufferedImage(bits.width, bits.height, BufferedImage.TYPE_INT_RGB)
-        for (y in 0 until bits.height) {
-            for (x in 0 until bits.width) {
-                image.setRGB(x, y, if (bits[x, y]) 0 else 0xffffff)
-            }
-        }
-        val outputStream = ByteArrayOutputStream()
-        ImageIO.write(image, "png", outputStream)
-        return outputStream.toByteArray()
-    }
 }
