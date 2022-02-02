@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 
 @SpringBootTest
@@ -96,5 +97,22 @@ class RevocationControllerTest {
         }.andReturn()
     }
 
+    @Test
+    fun devices_wrongMessage_400() = runTest {
+        mockMvc.get("/revoke/devices/") {
+            accept = MediaType.APPLICATION_JSON
+        }.andExpect {
+            status { isNotFound() }
+        }.andReturn()
+    }
+
+    @Test
+    fun devices_bpk_200() = runTest {
+        mockMvc.get("/revoke/devices/foo") {
+            accept = MediaType.APPLICATION_JSON
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+    }
 
 }

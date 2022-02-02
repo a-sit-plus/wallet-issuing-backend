@@ -42,6 +42,8 @@ dependencies {
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation ("com.squareup.okhttp3:okhttp")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
+    implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
+    implementation("org.springdoc:springdoc-openapi-security:1.6.5")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
