@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,10 +25,10 @@ class BindingControllerTest {
     private lateinit var mapper: ObjectMapper
 
     @Test
-    fun create_noauthn_forbidden() = runTest {
-        val request = BindingController.BindingRequest("unit test")
+    fun start_noAuthn_forbidden() = runTest {
+        val request = BindingController.BindingParamsRequest("unit test")
 
-        mockMvc.post("/binding/create") {
+        mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
         }.andExpect {
@@ -37,10 +38,10 @@ class BindingControllerTest {
 
     @Test
     @WithMockUser(authorities = ["PUPIL"])
-    fun binding_withMockUser_ok() = runTest {
-        val request = BindingController.BindingRequest("unit test")
+    fun start_withMockUser_ok() = runTest {
+        val request = BindingController.BindingParamsRequest("unit test")
 
-        val result = mockMvc.post("/binding/create") {
+        val result = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
         }.andExpect {
@@ -49,11 +50,11 @@ class BindingControllerTest {
     }
 
     @Test
-    fun create_nonce_ok() = runTest {
-        val request = BindingController.BindingRequest("unit test")
+    fun start_nonce_ok() = runTest {
+        val request = BindingController.BindingParamsRequest("unit test")
         val nonce = Random.Default.nextBytes(32).encodeBase16()
 
-        mockMvc.post("/binding/create") {
+        mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
             header("Authorization", "Nonce $nonce")
@@ -61,4 +62,33 @@ class BindingControllerTest {
             status { isOk() }
         }.andReturn()
     }
+
+    @Test
+    fun start_create_ok() = runTest {
+        val requestStart = BindingController.BindingParamsRequest("unit test")
+        val nonce = Random.Default.nextBytes(32).encodeBase16()
+
+        val startResponse = mockMvc.post("/binding/start") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestStart)
+            header("Authorization", "Nonce $nonce")
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+        val challenge =
+            mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
+
+        val requestCsr = BindingController.BindingCsrRequest(challenge, Random.nextBytes(32))
+        mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestCsr)
+            // TODO should not need to send nonce again
+            header("Authorization", "Nonce $nonce")
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+
+    }
+
 }

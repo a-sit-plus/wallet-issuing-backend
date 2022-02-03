@@ -11,11 +11,15 @@ spring:
             non_contextual_creation: true
   datasource:
     url: "jdbc:h2:mem:userstore"
+  test:
+    mockmvc:
+      print: log_debug
 
 logging:
   level:
     at.asitplus.wallet.lib: debug
     org.springframework.security: debug
+    org.springframework.web: debug
 
 backend:
   public-context: "http://localhost:8080"
@@ -31,3 +35,4 @@ server:
   port: 8080
 
 debug: true
+
