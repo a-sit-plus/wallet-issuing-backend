@@ -5,6 +5,8 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.config.http.SessionCreationPolicy
+
 
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -12,10 +14,13 @@ class WebSecurityConfig(val nonceAuthenticationProvider: NonceAuthenticationProv
 
     override fun configure(http: HttpSecurity) {
         http.csrf().disable()
+            // TODO sessionFixation
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
             .addFilter(NonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
     }
 
     override fun configure(auth: AuthenticationManagerBuilder?) {
         auth?.authenticationProvider(nonceAuthenticationProvider)
     }
+
 }

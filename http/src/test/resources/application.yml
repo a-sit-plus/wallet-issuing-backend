@@ -20,6 +20,7 @@ logging:
     at.asitplus.wallet.lib: debug
     org.springframework.security: debug
     org.springframework.web: debug
+    org.springframework.test.web.servlet: debug
 
 backend:
   public-context: "http://localhost:8080"

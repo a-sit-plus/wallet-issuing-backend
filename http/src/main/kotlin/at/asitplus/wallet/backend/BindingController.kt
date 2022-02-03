@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
+import javax.servlet.http.HttpSession
 import kotlin.random.Random
 
 
@@ -36,10 +37,11 @@ class BindingController {
     )
     @PostMapping("/binding/create")
     @PreAuthorize("hasAuthority(\"PUPIL\")")
-    fun postBindingCsr(@RequestBody body: BindingCsrRequest, principal: Principal): ResponseEntity<BindingCsrResponse> {
+    fun postBindingCsr(@RequestBody body: BindingCsrRequest, principal: Principal, session: HttpSession): ResponseEntity<BindingCsrResponse> {
         // TODO verify challenge
         logger.info("/binding/create called for {} with {}", principal, body)
         //val auth = SecurityContextHolder.getContext().authentication
+        session.invalidate()
         return ResponseEntity.ok(BindingCsrResponse(Random.nextBytes(32)))
     }
 

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockHttpSession
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
@@ -41,7 +42,7 @@ class BindingControllerTest {
     fun start_withMockUser_ok() = runTest {
         val request = BindingController.BindingParamsRequest("unit test")
 
-        val result = mockMvc.post("/binding/start") {
+        mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
         }.andExpect {
@@ -75,6 +76,8 @@ class BindingControllerTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
+        // MockMvc won't get the cookie, so we'll need to transfer the session
+        val mockSession = startResponse.request.session as MockHttpSession
         val challenge =
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
@@ -82,12 +85,45 @@ class BindingControllerTest {
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
-            // TODO should not need to send nonce again
+            session = mockSession
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+    }
+    
+    @Test
+    fun start_create_create_sessionInvalid() = runTest {
+        val requestStart = BindingController.BindingParamsRequest("unit test")
+        val nonce = Random.Default.nextBytes(32).encodeBase16()
+
+        val startResponse = mockMvc.post("/binding/start") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestStart)
             header("Authorization", "Nonce $nonce")
         }.andExpect {
             status { isOk() }
         }.andReturn()
+        // MockMvc won't get the cookie, so we'll need to transfer the session
+        val mockSession = startResponse.request.session as MockHttpSession
+        val challenge =
+            mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
+        val requestCsr = BindingController.BindingCsrRequest(challenge, Random.nextBytes(32))
+        mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestCsr)
+            session = mockSession
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestCsr)
+            session = mockSession
+        }.andExpect {
+            status { isForbidden() }
+        }.andReturn()
 
     }
 
