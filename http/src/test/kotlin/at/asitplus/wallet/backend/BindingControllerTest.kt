@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -10,6 +11,7 @@ import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
+import kotlin.random.Random
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,7 +36,7 @@ class BindingControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(authorities = ["PUPIL"])
     fun binding_withMockUser_ok() = runTest {
         val request = BindingController.BindingRequest("unit test")
 
@@ -44,8 +46,19 @@ class BindingControllerTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-
-        println(result.response.contentAsString)
     }
 
+    @Test
+    fun create_nonce_ok() = runTest {
+        val request = BindingController.BindingRequest("unit test")
+        val nonce = Random.Default.nextBytes(32).encodeBase16()
+
+        mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(request)
+            header("Authorization", "Nonce $nonce")
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+    }
 }

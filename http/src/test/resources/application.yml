@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: "Wallet Backend"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: "jdbc:h2:mem:userstore"
+
+logging:
+  level:
+    at.asitplus.wallet.lib: debug
+    org.springframework.security: debug
+
+backend:
+  public-context: "http://localhost:8080"
+  credential-lifetime: PT60M
+  random-photo-location: classpath:photos
+  issuer-key:
+    type: FILE
+    file:
+      private-key: classpath:issuer-key-private.pem
+      public-key: classpath:issuer-key-public.pem
+
+server:
+  port: 8080
+
+debug: true

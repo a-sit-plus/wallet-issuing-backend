@@ -22,7 +22,7 @@ class BindingController {
         description = "Get parameters to initiate a binding between app and identity."
     )
     @PostMapping("/binding/create")
-    @PreAuthorize("isFullyAuthenticated()")
+    @PreAuthorize("hasAuthority(\"PUPIL\")")
     fun createBinding(@RequestBody body: BindingRequest, principal: Principal): ResponseEntity<BindingResponse> {
         logger.info("/binding/create called for {} with {}", principal, body)
         //val auth = SecurityContextHolder.getContext().authentication
