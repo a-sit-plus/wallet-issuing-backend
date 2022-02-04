@@ -76,8 +76,7 @@ class BindingControllerTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-        // MockMvc won't get the cookie, so we'll need to transfer the session
-        val mockSession = startResponse.request.session as MockHttpSession
+        val xAuthToken = startResponse.response.getHeaderValue("X-Auth-Token")!!
         val challenge =
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
@@ -85,12 +84,12 @@ class BindingControllerTest {
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
-            session = mockSession
+            header("X-Auth-Token", xAuthToken)
         }.andExpect {
             status { isOk() }
         }.andReturn()
     }
-    
+
     @Test
     fun start_create_create_sessionInvalid() = runTest {
         val requestStart = BindingController.BindingParamsRequest("unit test")
@@ -103,8 +102,7 @@ class BindingControllerTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-        // MockMvc won't get the cookie, so we'll need to transfer the session
-        val mockSession = startResponse.request.session as MockHttpSession
+        val xAuthToken = startResponse.response.getHeaderValue("X-Auth-Token")!!
         val challenge =
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
@@ -112,7 +110,7 @@ class BindingControllerTest {
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
-            session = mockSession
+            header("X-Auth-Token", xAuthToken)
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -120,11 +118,10 @@ class BindingControllerTest {
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
-            session = mockSession
+            header("X-Auth-Token", xAuthToken)
         }.andExpect {
             status { isForbidden() }
         }.andReturn()
-
     }
 
 }
