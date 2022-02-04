@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 
 @RestController
-class BindingController {
+class BindingController(private val challengeService: ChallengeService) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
@@ -28,7 +28,8 @@ class BindingController {
         principal: Principal
     ): ResponseEntity<BindingParamsResponse> {
         logger.info("/binding/start called for {} with {}", principal, body)
-        return ResponseEntity.ok(BindingParamsResponse(Random.nextBytes(32)))
+        val challenge = challengeService.generate()
+        return ResponseEntity.ok(BindingParamsResponse(challenge))
     }
 
     @Operation(
@@ -37,12 +38,19 @@ class BindingController {
     )
     @PostMapping("/binding/create")
     @PreAuthorize("hasAuthority(\"PUPIL\")")
-    fun postBindingCsr(@RequestBody body: BindingCsrRequest, principal: Principal, session: HttpSession): ResponseEntity<BindingCsrResponse> {
-        // TODO verify challenge
+    fun postBindingCsr(
+        @RequestBody body: BindingCsrRequest,
+        principal: Principal,
+        session: HttpSession
+    ): ResponseEntity<BindingCsrResponse> {
         logger.info("/binding/create called for {} with {}", principal, body)
+        if (!challengeService.verifyAndRemove(body.challenge)) {
+            return ResponseEntity.badRequest().build()
+        }
         //val auth = SecurityContextHolder.getContext().authentication
         session.invalidate()
-        return ResponseEntity.ok(BindingCsrResponse(Random.nextBytes(32)))
+        val certificate = Random.nextBytes(32)
+        return ResponseEntity.ok(BindingCsrResponse(certificate))
     }
 
     data class BindingParamsRequest(

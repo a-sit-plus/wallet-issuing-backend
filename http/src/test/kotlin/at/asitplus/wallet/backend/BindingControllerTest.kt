@@ -91,6 +91,30 @@ class BindingControllerTest {
     }
 
     @Test
+    fun start_create_invalidChallenge() = runTest {
+        val requestStart = BindingController.BindingParamsRequest("unit test")
+        val nonce = Random.Default.nextBytes(32).encodeBase16()
+
+        val startResponse = mockMvc.post("/binding/start") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestStart)
+            header("Authorization", "Nonce $nonce")
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+        val xAuthToken = startResponse.response.getHeaderValue("X-Auth-Token")!!
+
+        val requestCsr = BindingController.BindingCsrRequest(Random.nextBytes(32), Random.nextBytes(32))
+        mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(requestCsr)
+            header("X-Auth-Token", xAuthToken)
+        }.andExpect {
+            status { isBadRequest() }
+        }.andReturn()
+    }
+
+    @Test
     fun start_create_create_sessionInvalid() = runTest {
         val requestStart = BindingController.BindingParamsRequest("unit test")
         val nonce = Random.Default.nextBytes(32).encodeBase16()
