@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
 import javax.servlet.http.HttpSession
-import kotlin.random.Random
 
 
 @RestController
-class BindingController(private val challengeService: ChallengeService) {
+class BindingController(
+    private val challengeService: ChallengeService,
+    private val certificateService: CertificateService,
+) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
@@ -44,13 +46,14 @@ class BindingController(private val challengeService: ChallengeService) {
         session: HttpSession
     ): ResponseEntity<BindingCsrResponse> {
         logger.info("/binding/create called for {} with {}", principal, body)
+        // TODO Validate challenge is contained in CSR, extract from there
         if (!challengeService.verifyAndRemove(body.challenge)) {
             return ResponseEntity.badRequest().build()
         }
-        //val auth = SecurityContextHolder.getContext().authentication
-        session.invalidate()
-        val certificate = Random.nextBytes(32)
-        return ResponseEntity.ok(BindingCsrResponse(certificate))
+        val certificate = certificateService.sign(body.csr)
+        return ResponseEntity.ok(BindingCsrResponse(certificate)).also {
+            session.invalidate()
+        }
     }
 
     data class BindingParamsRequest(
