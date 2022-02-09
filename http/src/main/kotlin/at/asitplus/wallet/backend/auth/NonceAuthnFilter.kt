@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.auth
 
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.AuthenticationManager

@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.auth
 
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class NonceAuthenticationProvider : AuthenticationProvider {
+    
     override fun authenticate(authentication: Authentication?): Authentication {
         if (authentication !is PreAuthenticatedAuthenticationToken)
             throw BadCredentialsException("not supported")
