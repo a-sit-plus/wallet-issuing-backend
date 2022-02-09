@@ -37,10 +37,11 @@ assembleJdk11:
     - tags
   script: |
     ./gradlew --continue clean assemble test build
+  allow_failure: true
   artifacts:
     when: always
     reports:
-      junit: "build/test-results/test/**/TEST-*.xml"
+      junit: "**/build/test-results/test/**/TEST-*.xml"
 
 publishToGitlab:
   stage: package
