@@ -34,7 +34,7 @@ class BindingControllerTest {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
         }.andExpect {
-            status { isForbidden() }
+            status { isUnauthorized() }
         }.andReturn()
     }
 
@@ -145,7 +145,7 @@ class BindingControllerTest {
             content = mapper.writeValueAsString(requestCsr)
             header("X-Auth-Token", xAuthToken)
         }.andExpect {
-            status { isForbidden() }
+            status { isUnauthorized() }
         }.andReturn()
     }
 

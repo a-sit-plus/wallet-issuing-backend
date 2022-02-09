@@ -1,5 +1,8 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.DeviceBindingAuthenticationEntryPoint
+import at.asitplus.wallet.backend.auth.DeviceBindingAuthenticationProvider
+import at.asitplus.wallet.backend.auth.DeviceBindingAuthnFilter
 import at.asitplus.wallet.backend.auth.NonceAuthenticationProvider
 import at.asitplus.wallet.backend.auth.NonceAuthnFilter
 import org.springframework.context.annotation.Bean
@@ -15,20 +18,26 @@ import org.springframework.session.web.http.HeaderHttpSessionIdResolver
 import org.springframework.session.web.http.HttpSessionIdResolver
 import java.util.concurrent.ConcurrentHashMap
 
-
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableSpringHttpSession
-class WebSecurityConfig(val nonceAuthenticationProvider: NonceAuthenticationProvider) : WebSecurityConfigurerAdapter() {
+class WebSecurityGeneralConfig(
+    private val deviceBindingAuthenticationProvider: DeviceBindingAuthenticationProvider,
+    private val nonceAuthenticationProvider: NonceAuthenticationProvider,
+
+    ) : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
         http.csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
+            .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .addFilter(NonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
+            .exceptionHandling().authenticationEntryPoint(DeviceBindingAuthenticationEntryPoint())
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.authenticationProvider(nonceAuthenticationProvider)
+        auth.authenticationProvider(deviceBindingAuthenticationProvider)
+            .authenticationProvider(nonceAuthenticationProvider)
     }
 
     @Bean
