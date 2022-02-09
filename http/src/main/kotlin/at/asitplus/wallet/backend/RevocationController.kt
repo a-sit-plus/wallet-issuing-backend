@@ -1,12 +1,14 @@
 package at.asitplus.wallet.backend
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Schema
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -40,9 +42,9 @@ class RevocationController {
         summary = "Get a list of active devices for a pupil",
         description = "Get a list of devices for one pupil, specified by their `bpk`."
     )
-    @GetMapping("/revoke/devices/{bpk}")
-    fun readDevice(@PathVariable("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
-        logger.info("/revoke/devices called for '{}'", bpk)
+    @GetMapping("/revoke/devices")
+    fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
+        logger.info("/revoke/devices called for bpk '{}'", bpk)
         return ResponseEntity.ok(
             DeviceListResponse(
                 listOf(
@@ -53,21 +55,30 @@ class RevocationController {
         )
     }
 
+    @Schema(description = "List of registered mobile devices")
     data class DeviceListResponse(
         val list: Collection<DeviceListResponseEntry>,
     )
 
+    @Schema(description = "Single registered mobile device")
     data class DeviceListResponseEntry(
+        @Schema(example = "81113d6f-aa19-438a-96e7-abd1ee56d5ae")
         val id: String,
+        @Schema(example = "Pixel 3")
         val name: String,
     )
 
+    @Schema(description = "Request for revocation of device binding or PupilId")
     data class RevocationRequest(
+        @Schema(example = "BF:j/NxdRQhp+tNyE9WhHdBSYuy3hA=")
         val bpk: String,
+        @Schema(example = "81113d6f-aa19-438a-96e7-abd1ee56d5ae")
         val deviceId: String? = null,
     )
 
+    @Schema(description = "Response of a revocation call")
     data class RevocationResponse(
+        @Schema(example = "true")
         val success: Boolean,
     )
 

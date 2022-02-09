@@ -98,17 +98,26 @@ class RevocationControllerTest {
     }
 
     @Test
-    fun devices_wrongMessage_400() = runTest {
-        mockMvc.get("/revoke/devices/") {
+    fun devices_noParam_400() = runTest {
+        mockMvc.get("/revoke/devices") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
-            status { isNotFound() }
+            status { isBadRequest() }
         }.andReturn()
     }
 
     @Test
     fun devices_bpk_200() = runTest {
-        mockMvc.get("/revoke/devices/foo") {
+        mockMvc.get("/revoke/devices?bpk=foo") {
+            accept = MediaType.APPLICATION_JSON
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+    }
+
+    @Test
+    fun devices_bpkEncoded_200() = runTest {
+        mockMvc.get("/revoke/devices?bpk=%3D%2B%2F") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
             status { isOk() }
