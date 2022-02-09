@@ -25,8 +25,8 @@ class WebSecurityConfig(val nonceAuthenticationProvider: NonceAuthenticationProv
             .addFilter(NonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
     }
 
-    override fun configure(auth: AuthenticationManagerBuilder?) {
-        auth?.authenticationProvider(nonceAuthenticationProvider)
+    override fun configure(auth: AuthenticationManagerBuilder) {
+        auth.authenticationProvider(nonceAuthenticationProvider)
     }
 
     @Bean

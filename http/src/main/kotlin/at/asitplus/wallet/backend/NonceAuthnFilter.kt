@@ -11,8 +11,8 @@ import javax.servlet.http.HttpServletRequest
  */
 class NonceAuthnFilter : RequestHeaderAuthenticationFilter() {
 
-    override fun getPreAuthenticatedPrincipal(request: HttpServletRequest?): Any? {
-        val headerValue = request?.getHeader(HttpHeaders.AUTHORIZATION) ?: return null
+    override fun getPreAuthenticatedPrincipal(request: HttpServletRequest): Any? {
+        val headerValue = request.getHeader(HttpHeaders.AUTHORIZATION) ?: return null
         val nonce = headerValue.replace("Nonce ", "")
         return NonceAuthenticationToken(nonce)
     }

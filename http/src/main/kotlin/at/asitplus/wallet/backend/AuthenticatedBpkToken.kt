@@ -6,7 +6,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 /**
  * Is created by [NonceAuthenticationProvider], which exchanges nonce from [NonceAuthenticationToken].
  */
-class AuthenticatedBpkToken(private val bpk: String) : AbstractAuthenticationToken(listOf(SimpleGrantedAuthority("PUPIL"))) {
+class AuthenticatedBpkToken(private val bpk: String) :
+    AbstractAuthenticationToken(listOf(SimpleGrantedAuthority("PUPIL"))) {
 
     override fun isAuthenticated(): Boolean {
         return true
