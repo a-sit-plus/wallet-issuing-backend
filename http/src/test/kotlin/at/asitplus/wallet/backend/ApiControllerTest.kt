@@ -4,8 +4,9 @@ import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.jvm.AgentJvm
 import at.asitplus.wallet.lib.msg.IssueCredential
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,13 +39,13 @@ class ApiControllerTest {
 
     @BeforeEach
     fun beforeEach() {
-        subject = Agent()
+        subject = AgentJvm.new()
         subjectIssueCredentialMessenger =
             IssueCredentialMessenger(subject, MessageWrapper(subject.cryptoService), "https://example.com/issue")
     }
 
     @Test
-    fun issue_wrongMessage_400() = runBlockingTest {
+    fun issue_wrongMessage_400() = runTest {
         val requestCredentialMessage = subjectIssueCredentialMessenger.start()
         assertIs<NextMessage.Send>(requestCredentialMessage)
 
@@ -56,10 +57,10 @@ class ApiControllerTest {
     }
 
     @Test
-    fun issue_wrongInvitation_400() = runBlockingTest {
-        val agent = Agent()
+    fun issue_wrongInvitation_400() = runTest {
+        val agent = AgentJvm.new()
         val oobInvitation = IssueCredentialMessenger(
-            Agent(),
+            AgentJvm.new(),
             MessageWrapper(agent.cryptoService),
             "https://example.com/issue"
         ).start()
@@ -76,7 +77,7 @@ class ApiControllerTest {
     }
 
     @Test
-    fun issue_success_pupilid() = runBlockingTest {
+    fun issue_success_pupilid() = runTest {
         val oobInvitation = issueCredentialMessengerPupilId.start()
         assertIs<NextMessage.Send>(oobInvitation)
 
@@ -84,7 +85,7 @@ class ApiControllerTest {
     }
 
     @Test
-    fun issue_success_greenPass() = runBlockingTest {
+    fun issue_success_greenPass() = runTest {
         val oobInvitation = issueCredentialMessengerGreenPass.start()
         assertIs<NextMessage.Send>(oobInvitation)
 

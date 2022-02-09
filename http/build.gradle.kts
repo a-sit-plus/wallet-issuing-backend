@@ -33,7 +33,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
-    implementation("com.nimbusds:nimbus-jose-jwt:9.16")
+    implementation("com.nimbusds:nimbus-jose-jwt:9.18")
     implementation("org.json:json:20211205")
     implementation("com.google.zxing:core:3.4.1")
     implementation("org.webjars:bootstrap:5.1.1")
