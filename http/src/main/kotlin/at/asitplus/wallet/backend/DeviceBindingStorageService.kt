@@ -1,17 +1,22 @@
 package at.asitplus.wallet.backend
 
-import org.springframework.stereotype.Service
+interface DeviceBindingStorageService {
 
-@Service
-class DeviceBindingStorageService {
+    fun store(bpk: String, certificate: ByteArray)
+
+    fun lookupBpk(decodedCert: ByteArray): String?
+
+}
+
+class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
 
     private val map = mutableMapOf<String, ByteArray>()
 
-    fun store(bpk: String, certificate: ByteArray) {
+    override fun store(bpk: String, certificate: ByteArray) {
         map[bpk] = certificate
     }
 
-    fun lookupBpk(decodedCert: ByteArray): String? {
+    override fun lookupBpk(decodedCert: ByteArray): String? {
         return map.filterValues { it.contentEquals(decodedCert) }.keys.singleOrNull()
     }
 

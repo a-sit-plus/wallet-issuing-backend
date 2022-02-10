@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.NonceToBpkService
 import at.asitplus.wallet.backend.auth.DummyNonceToBpkService
+import at.asitplus.wallet.backend.auth.NonceToBpkService
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
@@ -58,6 +58,24 @@ class BackendConfiguration {
     @Bean
     fun challengeService(): ChallengeService {
         return SimpleChallengeService()
+    }
+
+    @Bean
+    fun deviceBindingStorageService(): DeviceBindingStorageService {
+        return InMemoryDeviceBindingStorageService()
+    }
+
+    @Bean
+    fun pupilIdService(@Autowired issueCredentialMessengerPupilId: IssueCredentialMessenger): PupilIdService {
+        return DefaultPupilIdService(issueCredentialMessengerPupilId)
+    }
+
+    @Bean
+    fun deviceBindingResponseValidator(
+        deviceBindingStorageService: DeviceBindingStorageService,
+        deviceBindingAuthnChallengeService: ChallengeService,
+    ): DeviceBindingResponseValidator {
+        return SimpleDeviceBindingResponseValidator(deviceBindingStorageService, deviceBindingAuthnChallengeService)
     }
 
     @Bean
@@ -134,6 +152,7 @@ class BackendConfiguration {
             true,
             credentialScheme = ConstantIndex.GreenPass,
         )
+
     }
 
     @Bean

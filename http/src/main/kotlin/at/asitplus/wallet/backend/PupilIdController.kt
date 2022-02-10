@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
 import kotlinx.coroutines.runBlocking
@@ -15,7 +14,7 @@ import java.security.Principal
 
 @RestController
 class PupilIdController(
-    private val issueCredentialMessengerPupilId: IssueCredentialMessenger,
+    private val pupilIdService: PupilIdService
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -31,7 +30,7 @@ class PupilIdController(
         principal: Principal
     ) = runBlocking {
         log.info("/pupilid/issue called for {} with '{}'", principal, body)
-        when (val result = issueCredentialMessengerPupilId.parseMessage(body)) {
+        when (val result = pupilIdService.parseMessage(body)) {
             is NextMessage.Finished -> {
                 log.info("/pupilid/issue returning empty body, has finished")
                 ResponseEntity.status(HttpStatus.OK).build()

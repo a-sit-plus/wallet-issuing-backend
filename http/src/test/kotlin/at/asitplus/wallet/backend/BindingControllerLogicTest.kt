@@ -3,7 +3,11 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.auth.NonceToBpkService
 import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
+import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -15,11 +19,14 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.cert.CertificateFactory
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.test.assertContentEquals
 
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
@@ -30,84 +37,25 @@ class BindingControllerLogicTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @Autowired
-    private lateinit var mapper: ObjectMapper
-
     @MockBean
     private lateinit var nonceToBpkService: NonceToBpkService
 
-    @MockBean
-    private lateinit var certificateService: CertificateService
+    @Autowired
+    private lateinit var mapper: ObjectMapper
 
-    @MockBean
-    private lateinit var challengeService: ChallengeService
-
-    private lateinit var challenge: ByteArray
     private lateinit var nonce: String
-    private lateinit var csr: ByteArray
-    private lateinit var certificate: ByteArray
-    private lateinit var startRequest: BindingController.BindingParamsRequest
 
     @BeforeEach
     fun beforeEach() {
-        challenge = Random.nextBytes(32)
-        whenever(challengeService.generate()).thenReturn(challenge)
-        whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         nonce = Random.nextBytes(32).encodeBase16()
         whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn("bpk")
-        csr = Random.nextBytes(32)
-        certificate = Random.nextBytes(32)
-        whenever(certificateService.verifyAndSign(eq(csr))).thenReturn(certificate)
-        startRequest = BindingController.BindingParamsRequest(UUID.randomUUID().toString())
-    }
-
-    @Test
-    fun start_noAuthn_forbidden() = runTest {
-        mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-        }.andExpect {
-            status { isUnauthorized() }
-        }.andReturn()
-    }
-
-    @Test
-    @WithMockUser(authorities = ["PUPIL"])
-    fun start_withMockUser_ok() = runTest {
-        mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
-    }
-
-    @Test
-    fun start_nonce_ok() = runTest {
-        mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
-    }
-
-    @Test
-    fun start_nonceNotKnown_unauthorized() = runTest {
-        whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn(null)
-
-        mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
-        }.andExpect {
-            status { isUnauthorized() }
-        }.andReturn()
     }
 
     @Test
     fun start_create_ok() = runTest {
+        val startRequest = BindingController.BindingParamsRequest(UUID.randomUUID().toString())
+        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
+
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -115,88 +63,30 @@ class BindingControllerLogicTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
+
+        val challenge =
+            mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair))
 
-        mockMvc.post("/binding/create") {
+        val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }
         }.andReturn()
+
+        val certBytes =
+            mapper.readValue<BindingController.BindingCsrResponse>(createResponse.response.contentAsString).certificate
+        val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
+        assertContentEquals(keyPair.public.encoded, certificate.publicKey.encoded)
     }
 
-    @Test
-    fun start_create_noSession() = runTest {
-        val startResponse = mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
-
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
-
-        mockMvc.post("/binding/create") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(csrRequest)
-        }.andExpect {
-            status { isUnauthorized() }
-        }.andReturn()
-    }
-
-    @Test
-    fun start_create_invalidChallenge() = runTest {
-        val startResponse = mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
-
-        val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr)
-
-        mockMvc.post("/binding/create") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(csrRequest)
-            header(X_AUTH_TOKEN, xAuthToken)
-        }.andExpect {
-            status { isBadRequest() }
-        }.andReturn()
-    }
-
-    @Test
-    fun start_create_create_sessionInvalid() = runTest {
-        val startResponse = mockMvc.post("/binding/start") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
-
-        val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
-
-        mockMvc.post("/binding/create") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(csrRequest)
-            header(X_AUTH_TOKEN, xAuthToken)
-        }.andExpect {
-            status { isOk() }
-        }.andReturn()
-
-        mockMvc.post("/binding/create") {
-            contentType = MediaType.APPLICATION_JSON
-            content = mapper.writeValueAsString(csrRequest)
-            header(X_AUTH_TOKEN, xAuthToken)
-        }.andExpect {
-            status { isUnauthorized() }
-        }.andReturn()
+    private fun generateCsr(keyPair: KeyPair): ByteArray {
+        return JcaPKCS10CertificationRequestBuilder(X500Name("CN=Subject"), keyPair.public).build(
+            JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
+        ).encoded
     }
 }

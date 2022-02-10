@@ -1,30 +1,22 @@
 package at.asitplus.wallet.backend.auth
 
-import at.asitplus.wallet.backend.ChallengeService
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase64
-import com.nimbusds.jose.JWSObject
-import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
+import at.asitplus.wallet.backend.DeviceBindingResponseValidator
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken
 import org.springframework.stereotype.Component
-import java.security.cert.CertificateFactory
 
 /**
  * Converts a [DeviceBindingAuthenticationToken] into a [AuthenticatedDeviceBindingToken] by validating the response to the challenge.
  */
 @Component
 class DeviceBindingAuthenticationProvider(
-    private val deviceBindingStorageService: DeviceBindingStorageService,
-    private val deviceBindingAuthnChallengeService: ChallengeService,
+    private val deviceBindingResponseValidator: DeviceBindingResponseValidator,
 ) : AuthenticationProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
-    private val certificateFactory = CertificateFactory.getInstance("X.509")
 
     override fun authenticate(authentication: Authentication?): Authentication {
         if (authentication !is PreAuthenticatedAuthenticationToken)
@@ -33,36 +25,7 @@ class DeviceBindingAuthenticationProvider(
         if (principal !is DeviceBindingAuthenticationToken)
             throw BadCredentialsException("not supported")
         log.info("Trying to authenticate '{}'", principal.response)
-        val jwsObject = try {
-            JWSObject.parse(principal.response)
-        } catch (e: Throwable) {
-            log.warn("JWS not parsed", e)
-            throw BadCredentialsException("jws not parsed", e)
-        }
-        val decodedCert = jwsObject.header.x509CertChain.firstOrNull()?.decode()
-            ?: throw BadCredentialsException("no x5c")
-                .also { log.warn("No x5c in JWS header") }
-        val publicKey = try {
-            certificateFactory.generateCertificate(decodedCert.inputStream()).publicKey
-        } catch (e: Throwable) {
-            throw BadCredentialsException("certificate not parsed")
-                .also { log.warn("Certificate not parsed") }
-        }
-        if (!jwsObject.verify(DefaultJWSVerifierFactory().createJWSVerifier(jwsObject.header, publicKey)))
-            throw BadCredentialsException("signature not valid")
-                .also { log.warn("Signature on JWS not valid") }
-        val payloadJsonObject = jwsObject.payload.toJSONObject()
-        if (!payloadJsonObject.containsKey("challenge"))
-            throw BadCredentialsException("challenge not found")
-                .also { log.warn("No challenge in JWS payload") }
-        val decodedChallenge = payloadJsonObject["challenge"].toString().decodeBase64ToArray()
-        if (decodedChallenge == null || !deviceBindingAuthnChallengeService.verifyAndRemove(decodedChallenge))
-            throw BadCredentialsException("challenge not valid")
-                .also { log.warn("Challenge in JWS payload not valid") }
-        val bpk = deviceBindingStorageService.lookupBpk(decodedCert)
-            ?: throw BadCredentialsException("cert not found")
-                .also { log.warn("No BPK found for certificate {}", decodedCert.encodeBase64()) }
-        log.info("Authenticated '{}' to '{}'", principal.response, bpk)
+        val bpk = deviceBindingResponseValidator.validate(principal.response)
         return AuthenticatedDeviceBindingToken(bpk)
     }
 

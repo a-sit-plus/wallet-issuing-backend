@@ -42,7 +42,9 @@ class InitializationController {
             val oobPupilId = issueCredentialMessengerPupilId.startCreatingInvitation()
             if (oobPupilId is NextMessage.Send) {
                 val content =
-                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobPupilId.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)}"
+                    "${configurationProperties.publicContext}/invite/wallet?oob=${
+                        oobPupilId.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)
+                    }"
                 model["qrcodePupilId"] = createQrCodeImage(content, size).encodeBase64()
             } else {
                 model["error"] = "Wrong internal state"
@@ -50,7 +52,9 @@ class InitializationController {
             val oobGreenPass = issueCredentialMessengerGreenPass.startCreatingInvitation()
             if (oobGreenPass is NextMessage.Send) {
                 val content =
-                    "${configurationProperties.publicContext}/invite/wallet?oob=${oobGreenPass.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)}"
+                    "${configurationProperties.publicContext}/invite/wallet?oob=${
+                        oobGreenPass.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)
+                    }"
                 model["qrcodeGreenPass"] = createQrCodeImage(content, size).encodeBase64()
             } else {
                 model["error"] = "Wrong internal state"
