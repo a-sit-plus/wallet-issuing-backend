@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class RevocationController {
 
-    private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Revoke one or more device bindings for a pupil",
@@ -22,7 +21,7 @@ class RevocationController {
     )
     @PostMapping("/revoke/binding")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
-        logger.info("/revoke/binding called with {}", body)
+        log.info("/revoke/binding called with {}", body)
         return ResponseEntity.ok(RevocationResponse(true))
     }
 
@@ -32,7 +31,7 @@ class RevocationController {
     )
     @PostMapping("/revoke/pupilid")
     fun revokePupilId(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
-        logger.info("/revoke/pupilid called with {}", body)
+        log.info("/revoke/pupilid called with {}", body)
         if (body.deviceId != null)
             return ResponseEntity.badRequest().build()
         return ResponseEntity.ok(RevocationResponse(true))
@@ -44,7 +43,7 @@ class RevocationController {
     )
     @GetMapping("/revoke/devices")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
-        logger.info("/revoke/devices called for bpk '{}'", bpk)
+        log.info("/revoke/devices called for bpk '{}'", bpk)
         return ResponseEntity.ok(
             DeviceListResponse(
                 listOf(

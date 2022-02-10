@@ -23,7 +23,7 @@ import javax.imageio.ImageIO
 @Controller
 class InitializationController {
 
-    private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Autowired
     private lateinit var configurationProperties: BackendConfigurationProperties
@@ -36,7 +36,7 @@ class InitializationController {
 
     @GetMapping("/initialize")
     fun demo(model: ModelMap): ModelAndView {
-        logger.info("/initialize called")
+        log.info("/initialize called")
         val size = 400
         runBlocking {
             val oobPupilId = issueCredentialMessengerPupilId.startCreatingInvitation()
@@ -62,7 +62,7 @@ class InitializationController {
 
     @GetMapping("/invite/wallet")
     fun invite(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
-        logger.info("/invite/wallet?oob=$oob called")
+        log.info("/invite/wallet?oob=$oob called")
         val content = "${configurationProperties.publicContext}/invite/wallet?oob=${oob}"
         val size = 400
         model["qrcodewidth"] = size
@@ -72,7 +72,7 @@ class InitializationController {
 
     @GetMapping("/invite/verify")
     fun present(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
-        logger.info("/invite/verify?oob=$oob called")
+        log.info("/invite/verify?oob=$oob called")
         val content = "${configurationProperties.publicContext}/invite/verify?oob=${oob}"
         val size = 400
         model["qrcodewidth"] = size

@@ -6,7 +6,7 @@ interface NonceToBpkService {
 
 }
 
-class SimpleNonceToBpkService : NonceToBpkService {
+class DummyNonceToBpkService : NonceToBpkService {
 
     override fun exchangeForBpk(nonce: String): String {
         return "bpk"

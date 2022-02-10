@@ -18,7 +18,7 @@ class BindingController(
     private val deviceBindingStorageService: DeviceBindingStorageService,
 ) {
 
-    private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Initiate binding",
@@ -30,7 +30,7 @@ class BindingController(
         @RequestBody body: BindingParamsRequest,
         principal: Principal
     ): ResponseEntity<BindingParamsResponse> {
-        logger.info("/binding/start called for {} with {}", principal, body)
+        log.info("/binding/start called for {} with {}", principal, body)
         val challenge = challengeService.generate()
         return ResponseEntity.ok(BindingParamsResponse(challenge))
     }
@@ -46,7 +46,7 @@ class BindingController(
         principal: Principal,
         session: HttpSession
     ): ResponseEntity<BindingCsrResponse> {
-        logger.info("/binding/create called for {} with {}", principal, body)
+        log.info("/binding/create called for {} with {}", principal, body)
         if (!challengeService.verifyAndRemove(body.challenge)) {
             return ResponseEntity.badRequest().build()
         }

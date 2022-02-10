@@ -1,16 +1,12 @@
 package at.asitplus.wallet.backend.model
 
 import org.hibernate.annotations.CreationTimestamp
-import org.springframework.data.annotation.CreatedDate
+import java.time.LocalDateTime
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
 import javax.persistence.Table
-import java.time.LocalDateTime
-
-
-
 
 
 @Entity

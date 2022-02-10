@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.Authentication
@@ -14,6 +15,8 @@ class NonceAuthenticationProvider(
     private val nonceToBpkService: NonceToBpkService
 ) : AuthenticationProvider {
 
+    private val log = LoggerFactory.getLogger(this.javaClass)
+
     override fun authenticate(authentication: Authentication?): Authentication {
         if (authentication !is PreAuthenticatedAuthenticationToken)
             throw BadCredentialsException("not supported")
@@ -22,6 +25,7 @@ class NonceAuthenticationProvider(
             throw BadCredentialsException("not supported")
         val bpk = nonceToBpkService.exchangeForBpk(principal.nonce)
             ?: throw BadCredentialsException("Error")
+        log.info("Exchanged nonce '{}' for bpk '{}'", principal.nonce, bpk)
         return AuthenticatedBpkToken(bpk)
     }
 

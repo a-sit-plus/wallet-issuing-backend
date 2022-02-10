@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.NonceToBpkService
-import at.asitplus.wallet.backend.auth.SimpleNonceToBpkService
+import at.asitplus.wallet.backend.auth.DummyNonceToBpkService
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
@@ -11,9 +11,7 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.encodeBase64
-import at.asitplus.wallet.lib.jvm.AgentJvm
 import at.asitplus.wallet.lib.jvm.BitSetAdapterJvm
 import at.asitplus.wallet.lib.jvm.InMemoryCryptoServiceJvm
 import at.asitplus.wallet.lib.jvm.JwsServiceJvm
@@ -29,7 +27,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.ExperimentalTime
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -50,7 +47,7 @@ class BackendConfiguration {
 
     @Bean
     fun nonceToBpkService(): NonceToBpkService {
-        return SimpleNonceToBpkService()
+        return DummyNonceToBpkService()
     }
 
     @Bean

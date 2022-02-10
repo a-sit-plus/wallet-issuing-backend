@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.KeyIdService
 import at.asitplus.wallet.lib.KeyIdServiceDummy
-import at.asitplus.wallet.lib.PublicKeyHolder
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.jvm.PublicKeyHolderJvm
 import at.asitplus.wallet.lib.jws.JsonWebKey
@@ -15,11 +14,7 @@ import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsContentType
 import at.asitplus.wallet.lib.jws.JwsHeader
-import com.nimbusds.jose.EncryptionMethod
-import com.nimbusds.jose.JWEAlgorithm
-import com.nimbusds.jose.JWEHeader
 import com.nimbusds.jose.JWEObject
-import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
@@ -47,7 +42,7 @@ class FileCryptoService(
     keyIdService: KeyIdService = KeyIdServiceDummy()
 ) : CryptoService {
 
-    private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val privateKey: PrivateKey
     private val publicKey: PublicKey
@@ -59,7 +54,7 @@ class FileCryptoService(
         val publicKeyString = loadResource(resourceLoader, config.publicKey.toString())
         val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
         publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
-        logger.info("Loaded public key with keyId ${keyIdService.calcKeyId(PublicKeyHolderJvm(publicKey))}")
+        log.info("Loaded public key with keyId ${keyIdService.calcKeyId(PublicKeyHolderJvm(publicKey))}")
         require(publicKey != null)
     }
 

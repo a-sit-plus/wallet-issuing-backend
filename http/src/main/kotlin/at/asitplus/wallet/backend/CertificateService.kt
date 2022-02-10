@@ -25,7 +25,7 @@ class CertificateService(
         Security.addProvider(BouncyCastleProvider())
     }
 
-    private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val keyPair: KeyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
     private val issuer = X500Name("CN=Issuer")
@@ -36,7 +36,7 @@ class CertificateService(
             val csr = PKCS10CertificationRequest(csrEncoded)
             val publicKey = BouncyCastleProvider.getPublicKey(csr.subjectPublicKeyInfo)
             if (!csr.isSignatureValid(JcaContentVerifierProviderBuilder().build(publicKey))) {
-                logger.warn("verifyAndSign: CSR signature invalid")
+                log.warn("verifyAndSign: CSR signature invalid")
                 return null
             }
             val x500Name = issuer
@@ -49,7 +49,7 @@ class CertificateService(
                 csr.subjectPublicKeyInfo
             ).build(contentSigner).encoded
         } catch (e: Throwable) {
-            logger.warn("verifyAndSign: error", e)
+            log.warn("verifyAndSign: error", e)
             return null
         }
     }

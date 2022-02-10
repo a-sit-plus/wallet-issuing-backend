@@ -18,7 +18,7 @@ class PupilIdController(
     private val issueCredentialMessengerPupilId: IssueCredentialMessenger,
 ) {
 
-    private val logger = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Issue credentials",
@@ -30,26 +30,26 @@ class PupilIdController(
         @RequestBody body: String,
         principal: Principal
     ) = runBlocking {
-        logger.info("/pupilid/issue called for {} with '{}'", principal, body)
+        log.info("/pupilid/issue called for {} with '{}'", principal, body)
         when (val result = issueCredentialMessengerPupilId.parseMessage(body)) {
             is NextMessage.Finished -> {
-                logger.info("/pupilid/issue returning empty body, has finished")
+                log.info("/pupilid/issue returning empty body, has finished")
                 ResponseEntity.status(HttpStatus.OK).build()
             }
             is NextMessage.Send -> {
-                logger.info("/pupilid/issue returning ${result.message}")
+                log.info("/pupilid/issue returning ${result.message}")
                 ResponseEntity.ok(result.message)
             }
             is NextMessage.Error -> {
-                logger.error("/pupilid/issue returning 400, incorrect protocol state")
+                log.error("/pupilid/issue returning 400, incorrect protocol state")
                 ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
             }
             is NextMessage.SendProblemReport -> {
-                logger.info("/pupilid/issue returning problem report ${result.message}")
+                log.info("/pupilid/issue returning problem report ${result.message}")
                 ResponseEntity.ok(result.message)
             }
             is NextMessage.ReceivedProblemReport -> {
-                logger.info("/pupilid/issue received a problem report ${result.message}")
+                log.info("/pupilid/issue received a problem report ${result.message}")
                 ResponseEntity.ok().build()
             }
         }
