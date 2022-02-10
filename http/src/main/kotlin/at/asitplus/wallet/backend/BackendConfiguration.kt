@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.NonceToBpkService
+import at.asitplus.wallet.backend.auth.SimpleNonceToBpkService
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.agent.Agent
@@ -44,6 +46,11 @@ class BackendConfiguration {
 
     init {
         Napier.base(DebugAntilog())
+    }
+
+    @Bean
+    fun nonceToBpkService(): NonceToBpkService {
+        return SimpleNonceToBpkService()
     }
 
     @Bean

@@ -10,19 +10,19 @@ import org.springframework.stereotype.Component
  * Converts a [NonceAuthenticationToken] into a [AuthenticatedBpkToken] by exchanging the nonce with a bPK
  */
 @Component
-class NonceAuthenticationProvider : AuthenticationProvider {
-    
+class NonceAuthenticationProvider(
+    private val nonceToBpkService: NonceToBpkService
+) : AuthenticationProvider {
+
     override fun authenticate(authentication: Authentication?): Authentication {
         if (authentication !is PreAuthenticatedAuthenticationToken)
             throw BadCredentialsException("not supported")
         val principal = authentication.principal
         if (principal !is NonceAuthenticationToken)
             throw BadCredentialsException("not supported")
-        // TODO exchange nonce for bpk
-        if (principal.nonce.length == 64) {
-            return AuthenticatedBpkToken("bpk")
-        }
-        throw BadCredentialsException("Error")
+        val bpk = nonceToBpkService.exchangeForBpk(principal.nonce)
+            ?: throw BadCredentialsException("Error")
+        return AuthenticatedBpkToken(bpk)
     }
 
     override fun supports(authentication: Class<*>): Boolean {

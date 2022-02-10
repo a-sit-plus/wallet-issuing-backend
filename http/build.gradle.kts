@@ -52,6 +52,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation(kotlin("test-junit"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
 }
 
 tasks.withType<KotlinCompile> {
