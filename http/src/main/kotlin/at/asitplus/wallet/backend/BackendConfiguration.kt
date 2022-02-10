@@ -51,6 +51,16 @@ class BackendConfiguration {
     }
 
     @Bean
+    fun certificateService(): CertificateService {
+        return InMemoryCertificateService()
+    }
+
+    @Bean
+    fun challengeService(): ChallengeService {
+        return SimpleChallengeService()
+    }
+
+    @Bean
     fun identifierRegistry(@Autowired identifierRepository: IdentifierRepository): IdentifierRegistry {
         return IdentifierRegistry(identifierRepository)
     }

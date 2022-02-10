@@ -7,7 +7,6 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -16,10 +15,15 @@ import java.time.Instant
 import java.util.Date
 import kotlin.random.Random
 
-@Service
-class CertificateService(
+interface CertificateService {
+
+    fun verifyAndSign(csrEncoded: ByteArray): ByteArray?
+
+}
+
+class InMemoryCertificateService(
     private val lifetimeSeconds: Long = 60
-) {
+) : CertificateService {
 
     init {
         Security.addProvider(BouncyCastleProvider())
@@ -31,7 +35,7 @@ class CertificateService(
     private val issuer = X500Name("CN=Issuer")
     private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
 
-    fun verifyAndSign(csrEncoded: ByteArray): ByteArray? {
+    override fun verifyAndSign(csrEncoded: ByteArray): ByteArray? {
         try {
             val csr = PKCS10CertificationRequest(csrEncoded)
             val publicKey = BouncyCastleProvider.getPublicKey(csr.subjectPublicKeyInfo)
