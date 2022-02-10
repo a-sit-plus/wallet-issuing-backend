@@ -103,7 +103,7 @@ class BackendConfiguration {
             issuerAgent,
             issuerMessageWrapper,
             "${configurationProperties.publicContext}/issue",
-            false,
+            true,
             credentialScheme = ConstantIndex.PupilId,
         )
     }
@@ -117,7 +117,7 @@ class BackendConfiguration {
             issuerAgent,
             issuerMessageWrapper,
             "${configurationProperties.publicContext}/issue",
-            false,
+            true,
             credentialScheme = ConstantIndex.GreenPass,
         )
     }
