@@ -4,16 +4,21 @@ import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
+import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.mock.web.MockHttpSession
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
+import java.security.KeyPair
+import java.security.KeyPairGenerator
 import kotlin.random.Random
 
 @SpringBootTest
@@ -59,7 +64,7 @@ class BindingControllerTest {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
-            header("Authorization", "Nonce $nonce")
+            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -69,11 +74,12 @@ class BindingControllerTest {
     fun start_create_ok() = runTest {
         val requestStart = BindingController.BindingParamsRequest("unit test")
         val nonce = Random.Default.nextBytes(32).encodeBase16()
+        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestStart)
-            header("Authorization", "Nonce $nonce")
+            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -81,7 +87,7 @@ class BindingControllerTest {
         val challenge =
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
-        val requestCsr = BindingController.BindingCsrRequest(challenge, Random.nextBytes(32))
+        val requestCsr = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair))
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
@@ -95,17 +101,18 @@ class BindingControllerTest {
     fun start_create_invalidChallenge() = runTest {
         val requestStart = BindingController.BindingParamsRequest("unit test")
         val nonce = Random.Default.nextBytes(32).encodeBase16()
+        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestStart)
-            header("Authorization", "Nonce $nonce")
+            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
         }.andReturn()
         val xAuthToken = startResponse.response.getHeaderValue("X-Auth-Token")!!
 
-        val requestCsr = BindingController.BindingCsrRequest(Random.nextBytes(32), Random.nextBytes(32))
+        val requestCsr = BindingController.BindingCsrRequest(Random.nextBytes(32), generateCsr(keyPair))
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
@@ -119,11 +126,12 @@ class BindingControllerTest {
     fun start_create_create_sessionInvalid() = runTest {
         val requestStart = BindingController.BindingParamsRequest("unit test")
         val nonce = Random.Default.nextBytes(32).encodeBase16()
+        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestStart)
-            header("Authorization", "Nonce $nonce")
+            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -131,7 +139,7 @@ class BindingControllerTest {
         val challenge =
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
-        val requestCsr = BindingController.BindingCsrRequest(challenge, Random.nextBytes(32))
+        val requestCsr = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair))
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(requestCsr)
@@ -147,6 +155,12 @@ class BindingControllerTest {
         }.andExpect {
             status { isUnauthorized() }
         }.andReturn()
+    }
+
+    private fun generateCsr(keyPair: KeyPair): ByteArray {
+        return JcaPKCS10CertificationRequestBuilder(X500Name("CN=Subject"), keyPair.public).build(
+            JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
+        ).encoded
     }
 
 }

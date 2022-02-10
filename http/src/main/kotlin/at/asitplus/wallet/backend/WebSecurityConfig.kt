@@ -24,15 +24,16 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSecurityGeneralConfig(
     private val deviceBindingAuthenticationProvider: DeviceBindingAuthenticationProvider,
     private val nonceAuthenticationProvider: NonceAuthenticationProvider,
-
-    ) : WebSecurityConfigurerAdapter() {
+    private val deviceBindingAuthnChallengeService: ChallengeService,
+) : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
         http.csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .addFilter(NonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
-            .exceptionHandling().authenticationEntryPoint(DeviceBindingAuthenticationEntryPoint())
+            .exceptionHandling()
+            .authenticationEntryPoint(DeviceBindingAuthenticationEntryPoint(deviceBindingAuthnChallengeService))
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {

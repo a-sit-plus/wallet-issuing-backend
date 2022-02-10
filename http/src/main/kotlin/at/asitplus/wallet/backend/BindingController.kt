@@ -15,6 +15,7 @@ import javax.servlet.http.HttpSession
 class BindingController(
     private val challengeService: ChallengeService,
     private val certificateService: CertificateService,
+    private val deviceBindingStorageService: DeviceBindingStorageService,
 ) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
@@ -46,14 +47,14 @@ class BindingController(
         session: HttpSession
     ): ResponseEntity<BindingCsrResponse> {
         logger.info("/binding/create called for {} with {}", principal, body)
-        // TODO Validate challenge is contained in CSR, extract from there
         if (!challengeService.verifyAndRemove(body.challenge)) {
             return ResponseEntity.badRequest().build()
         }
-        val certificate = certificateService.sign(body.csr)
-        return ResponseEntity.ok(BindingCsrResponse(certificate)).also {
-            session.invalidate()
-        }
+        val certificate = certificateService.verifyAndSign(body.csr)
+            ?: return ResponseEntity.badRequest().build()
+        deviceBindingStorageService.store(principal.name, certificate)
+        return ResponseEntity.ok(BindingCsrResponse(certificate))
+            .also { session.invalidate() }
     }
 
     data class BindingParamsRequest(

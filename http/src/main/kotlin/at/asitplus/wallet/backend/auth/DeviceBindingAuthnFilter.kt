@@ -14,8 +14,8 @@ class DeviceBindingAuthnFilter : RequestHeaderAuthenticationFilter() {
     override fun getPreAuthenticatedPrincipal(request: HttpServletRequest): Any? {
         val headerValue = request.getHeader(HttpHeaders.AUTHORIZATION) ?: return null
         if (!headerValue.startsWith("Response ")) return null
-        val nonce = headerValue.removePrefix("Response ")
-        return DeviceBindingAuthenticationToken(nonce)
+        val stripped = headerValue.removePrefix("Response ")
+        return DeviceBindingAuthenticationToken(stripped)
     }
 
 }
