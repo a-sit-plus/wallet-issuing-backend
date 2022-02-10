@@ -45,6 +45,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
     implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
     implementation("org.springdoc:springdoc-openapi-security:1.6.5")
+    implementation("io.github.aakira:napier:2.3.0")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -63,7 +64,10 @@ tasks.withType<KotlinCompile> {
 tasks.test {
     useJUnitPlatform()
     testLogging {
+        showExceptions = true
         showStandardStreams = true
+        events = setOf(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED, org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED)
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
     systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG")
 }

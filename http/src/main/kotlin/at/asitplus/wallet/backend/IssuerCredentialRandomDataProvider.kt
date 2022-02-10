@@ -14,10 +14,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 
 
-class IssuerCredentialRandomDataProvider @OptIn(ExperimentalTime::class) constructor(
+class IssuerCredentialRandomDataProvider constructor(
     private val lifetime: Duration,
     private val listOfPhotos: Map<String, String>
 ) : IssuerCredentialDataProvider {

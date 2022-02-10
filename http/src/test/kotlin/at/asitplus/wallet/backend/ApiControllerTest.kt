@@ -5,6 +5,8 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.jvm.AgentJvm
+import at.asitplus.wallet.lib.jvm.JwsServiceJvm
+import at.asitplus.wallet.lib.jvm.KeyIdServiceJvm
 import at.asitplus.wallet.lib.msg.IssueCredential
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -40,13 +42,16 @@ class ApiControllerTest {
     @BeforeEach
     fun beforeEach() {
         subject = AgentJvm.new()
-        subjectIssueCredentialMessenger =
-            IssueCredentialMessenger(subject, MessageWrapper(subject.cryptoService), "https://example.com/issue")
+        subjectIssueCredentialMessenger = IssueCredentialMessenger(
+            subject,
+            MessageWrapper(subject.cryptoService, KeyIdServiceJvm(), JwsServiceJvm()),
+            "https://example.com/issue"
+        )
     }
 
     @Test
     fun issue_wrongMessage_400() = runTest {
-        val requestCredentialMessage = subjectIssueCredentialMessenger.start()
+        val requestCredentialMessage = subjectIssueCredentialMessenger.startCreatingInvitation()
         assertIs<NextMessage.Send>(requestCredentialMessage)
 
         mockMvc.post("/issue") {
@@ -61,9 +66,9 @@ class ApiControllerTest {
         val agent = AgentJvm.new()
         val oobInvitation = IssueCredentialMessenger(
             AgentJvm.new(),
-            MessageWrapper(agent.cryptoService),
+            MessageWrapper(agent.cryptoService, KeyIdServiceJvm(), JwsServiceJvm()),
             "https://example.com/issue"
-        ).start()
+        ).startCreatingInvitation()
         assertIs<NextMessage.Send>(oobInvitation)
 
         val requestCredentialMessage = subjectIssueCredentialMessenger.parseMessage(oobInvitation.message)
@@ -78,7 +83,7 @@ class ApiControllerTest {
 
     @Test
     fun issue_success_pupilid() = runTest {
-        val oobInvitation = issueCredentialMessengerPupilId.start()
+        val oobInvitation = issueCredentialMessengerPupilId.startCreatingInvitation()
         assertIs<NextMessage.Send>(oobInvitation)
 
         simulateWallet(oobInvitation)
@@ -86,7 +91,7 @@ class ApiControllerTest {
 
     @Test
     fun issue_success_greenPass() = runTest {
-        val oobInvitation = issueCredentialMessengerGreenPass.start()
+        val oobInvitation = issueCredentialMessengerGreenPass.startCreatingInvitation()
         assertIs<NextMessage.Send>(oobInvitation)
 
         simulateWallet(oobInvitation)

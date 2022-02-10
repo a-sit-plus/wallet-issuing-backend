@@ -10,6 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 class IssuerCredentialRandomDataProviderTest {
@@ -18,13 +19,12 @@ class IssuerCredentialRandomDataProviderTest {
     private lateinit var subjectId2: String
     private lateinit var dataProvider: IssuerCredentialRandomDataProvider
 
-    @OptIn(ExperimentalTime::class)
     @BeforeTest
     fun setup() {
         val listOfPhotos = (1..10).associate { UUID.randomUUID().toString() to UUID.randomUUID().toString() }
         subjectId1 = UUID.randomUUID().toString() // each subject has own attribute set
         subjectId2 = UUID.randomUUID().toString()
-        dataProvider = IssuerCredentialRandomDataProvider(kotlin.time.Duration.seconds(1), listOfPhotos)
+        dataProvider = IssuerCredentialRandomDataProvider(1.seconds, listOfPhotos)
     }
 
     @Test

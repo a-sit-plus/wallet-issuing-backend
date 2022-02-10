@@ -8,15 +8,25 @@ import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
+import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.encodeBase64
+import at.asitplus.wallet.lib.jvm.AgentJvm
+import at.asitplus.wallet.lib.jvm.BitSetAdapterJvm
 import at.asitplus.wallet.lib.jvm.InMemoryCryptoServiceJvm
+import at.asitplus.wallet.lib.jvm.JwsServiceJvm
+import at.asitplus.wallet.lib.jvm.KeyIdServiceJvm
+import at.asitplus.wallet.lib.jvm.ValidatorJvm
+import at.asitplus.wallet.lib.jvm.ZlibServiceJvm
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
 
 @Configuration
@@ -32,12 +42,15 @@ class BackendConfiguration {
     @Autowired
     private lateinit var resourcePatternResolver: ResourcePatternResolver
 
+    init {
+        Napier.base(DebugAntilog())
+    }
+
     @Bean
     fun identifierRegistry(@Autowired identifierRepository: IdentifierRepository): IdentifierRegistry {
         return IdentifierRegistry(identifierRepository)
     }
 
-    @OptIn(ExperimentalTime::class)
     @Bean
     fun issuerCredentialRandomDataProvider(): IssuerCredentialRandomDataProvider {
         val mapOfPhotos =
@@ -48,14 +61,14 @@ class BackendConfiguration {
                 .map { it.first to it.second.readAllBytes() }
                 .map { it.first to it.second.encodeBase64() }
         return IssuerCredentialRandomDataProvider(
-            kotlin.time.Duration.minutes(configurationProperties.credentialLifetime.toMinutes()),
+            configurationProperties.credentialLifetime.toMinutes().minutes,
             mapOfPhotos.toMap()
         )
     }
 
     @Bean
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
-        KeyType.FILE -> FileCryptoService(configurationProperties.issuerKey.file!!, resourceLoader)
+        KeyType.FILE -> FileCryptoService(configurationProperties.issuerKey.file!!, resourceLoader, KeyIdServiceJvm())
         KeyType.MEMORY -> InMemoryCryptoServiceJvm()
     }
 
@@ -66,16 +79,19 @@ class BackendConfiguration {
         @Autowired issuerCryptoService: CryptoService
     ): Agent {
         return Agent(
+            validator = ValidatorJvm.new(),
             cryptoService = issuerCryptoService,
             issuerCredentialStore = identifierRegistry,
             dataProvider = issuerCredentialRandomDataProvider,
-            revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1"
+            revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
+            zlibService = ZlibServiceJvm(),
+            bitSetAdapter = BitSetAdapterJvm()
         )
     }
 
     @Bean
     fun issuerMessageWrapper(@Autowired issuerAgent: Agent): MessageWrapper {
-        return MessageWrapper(issuerAgent.cryptoService)
+        return MessageWrapper(issuerAgent.cryptoService, KeyIdServiceJvm(), JwsServiceJvm())
     }
 
     @Bean
@@ -88,7 +104,7 @@ class BackendConfiguration {
             issuerMessageWrapper,
             "${configurationProperties.publicContext}/issue",
             false,
-            oobCredentialSchema = SchemaIndex.CRED_PUPIL_ID
+            credentialScheme = ConstantIndex.PupilId,
         )
     }
 
@@ -102,7 +118,7 @@ class BackendConfiguration {
             issuerMessageWrapper,
             "${configurationProperties.publicContext}/issue",
             false,
-            oobCredentialSchema = SchemaIndex.CRED_GREEN_PASS
+            credentialScheme = ConstantIndex.GreenPass,
         )
     }
 

@@ -39,7 +39,7 @@ class InitializationController {
         logger.info("/initialize called")
         val size = 400
         runBlocking {
-            val oobPupilId = issueCredentialMessengerPupilId.start()
+            val oobPupilId = issueCredentialMessengerPupilId.startCreatingInvitation()
             if (oobPupilId is NextMessage.Send) {
                 val content =
                     "${configurationProperties.publicContext}/invite/wallet?oob=${oobPupilId.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)}"
@@ -47,7 +47,7 @@ class InitializationController {
             } else {
                 model["error"] = "Wrong internal state"
             }
-            val oobGreenPass = issueCredentialMessengerGreenPass.start()
+            val oobGreenPass = issueCredentialMessengerGreenPass.startCreatingInvitation()
             if (oobGreenPass is NextMessage.Send) {
                 val content =
                     "${configurationProperties.publicContext}/invite/wallet?oob=${oobGreenPass.message.encodeToByteArray().encodeBase64(Base64.UrlSafeNoPadding)}"
