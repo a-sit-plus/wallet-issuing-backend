@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -86,7 +87,7 @@ class PupilIdControllerFullRunTest {
         }.andReturn()
 
         val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
-        assertIs<NextMessage.Finished>(parsedMessage)
+        assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
     }
 
     private fun calcChallengeResponse(challenge: ByteArray, certificate: ByteArray, privateKey: PrivateKey): String {

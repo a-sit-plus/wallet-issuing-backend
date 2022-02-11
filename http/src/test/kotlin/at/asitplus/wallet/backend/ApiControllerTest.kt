@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.jvm.AgentJvm
@@ -109,14 +110,9 @@ class ApiControllerTest {
 
         val response = result.response.contentAsString
         val issueCredentialMessage = subjectIssueCredentialMessenger.parseMessage(response)
-        assertIs<NextMessage.Finished>(issueCredentialMessage)
-        val lastMessage = issueCredentialMessage.lastMessage
-        assertIs<IssueCredential>(lastMessage)
-
-        val issuerJwsVc = lastMessage.attachments!!.map { it.data }.mapNotNull { it.jws }
-        assertTrue(issuerJwsVc.isNotEmpty())
-
-        subject.storeCredentials(issuerJwsVc)
+        assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(issueCredentialMessage)
+        val issuerJwsVc = issueCredentialMessage.result
+        assertTrue(issuerJwsVc.accepted.isNotEmpty())
     }
 
     @Test

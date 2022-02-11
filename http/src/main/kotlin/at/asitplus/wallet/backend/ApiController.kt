@@ -26,7 +26,7 @@ class ApiController(
         log.info("/issue called with body: $body")
         try {
             when (val result = delegatingProtocolMessenger.parseMessage(body)) {
-                is NextMessage.Finished -> {
+                is NextMessage.Result<*> -> {
                     log.info("/issue returning empty body")
                     ResponseEntity.status(HttpStatus.OK).build()
                 }

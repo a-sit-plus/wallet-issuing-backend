@@ -34,7 +34,7 @@ class PupilIdController(
     ): ResponseEntity<String> {
         log.info("/pupilid/issue called for {} with '{}'", principal, body)
         when (val result = pupilIdService.parseMessage(body)) {
-            is NextMessage.Finished -> {
+            is NextMessage.Result<*> -> {
                 log.info("/pupilid/issue returning empty body, has finished")
                 return ResponseEntity.status(HttpStatus.OK).build<String>()
                     .also { request.logout() }

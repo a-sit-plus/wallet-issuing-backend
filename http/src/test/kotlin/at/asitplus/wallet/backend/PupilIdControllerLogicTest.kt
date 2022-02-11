@@ -72,7 +72,7 @@ class PupilIdControllerLogicTest {
         }.andReturn()
 
         val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
-        assertIs<NextMessage.Finished>(parsedMessage)
+        assertIs<NextMessage.Result<*>>(parsedMessage)
         verify(subjectCredentialStore, times(AttributeIndex.pupilIdAttributes.count())).storeCredential(any(), any())
     }
 
