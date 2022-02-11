@@ -4,9 +4,7 @@ import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.stub
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -24,6 +22,8 @@ import kotlin.random.Random
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class PupilIdControllerTest {
+
+    private val X_AUTH_TOKEN = "X-Auth-Token"
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -47,9 +47,7 @@ class PupilIdControllerTest {
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         challengeResponse = UUID.randomUUID().toString()
-        pupilIdService.stub {
-            onBlocking { parseMessage(eq(clientMessage)) }.doReturn(NextMessage.Send(serverMessage, null))
-        }
+        whenever(pupilIdService.parseMessage(eq(clientMessage))).thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingResponseValidator.validate(eq(challengeResponse))).thenReturn(bpk)
     }
 
@@ -84,12 +82,68 @@ class PupilIdControllerTest {
             header { exists(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
 
-        mockMvc.post("/pupilid/issue") {
+        val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
             header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
         }.andExpect {
             status { isOk() }
+            header { exists("X-AUTH-TOKEN") }
+        }.andReturn()
+
+        println("X-AUTH-TOKEN")
+        println(response.response.getHeader("X-AUTH-TOKEN"))
+    }
+
+    @Test
+    fun start_challengeResponse_sessionInvalid() = runTest {
+        val firstResponse = mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = clientMessage
+        }.andExpect {
+            status { isUnauthorized() }
+            header { exists(HttpHeaders.WWW_AUTHENTICATE) }
+        }.andReturn()
+
+        val xAuthToken = firstResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
+
+        val secondResponse = mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = clientMessage
+            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+            header { doesNotExist(X_AUTH_TOKEN) }
+        }.andReturn()
+
+        mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = clientMessage
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isUnauthorized() }
+        }.andReturn()
+    }
+
+    @Test
+    fun start_challengeResponse_invalid() = runTest {
+        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse))).thenReturn(null)
+
+        mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = clientMessage
+        }.andExpect {
+            status { isUnauthorized() }
+            header { exists(HttpHeaders.WWW_AUTHENTICATE) }
+        }.andReturn()
+
+        mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = clientMessage
+            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+        }.andExpect {
+            status { isUnauthorized() }
         }.andReturn()
     }
 

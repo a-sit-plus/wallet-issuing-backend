@@ -10,7 +10,7 @@ import java.security.cert.CertificateFactory
 
 interface DeviceBindingResponseValidator {
 
-    fun validate(response: String): String
+    fun validate(response: String): String?
 
 }
 
@@ -22,7 +22,7 @@ class SimpleDeviceBindingResponseValidator(
     private val log = LoggerFactory.getLogger(this.javaClass)
     private val certificateFactory = CertificateFactory.getInstance("X.509")
 
-    override fun validate(response: String): String {
+    override fun validate(response: String): String? {
         val jwsObject = try {
             JWSObject.parse(response)
         } catch (e: Throwable) {
@@ -50,8 +50,7 @@ class SimpleDeviceBindingResponseValidator(
             throw BadCredentialsException("challenge not valid")
                 .also { log.warn("Challenge in JWS payload not valid") }
         val bpk = deviceBindingStorageService.lookupBpk(decodedCert)
-            ?: throw BadCredentialsException("cert not found")
-                .also { log.warn("No BPK found for certificate {}", decodedCert.encodeBase64()) }
+        log.debug("Translated cert '{}' into bpk '{}'", decodedCert.encodeBase64(), bpk)
         return bpk
     }
 

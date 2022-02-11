@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
+import javax.servlet.http.HttpSession
 
 @RestController
 class PupilIdController(
@@ -27,10 +27,12 @@ class PupilIdController(
     @PreAuthorize("hasAuthority(\"DEVICE_BINDING\")")
     fun issueCredential(
         @RequestBody body: String,
-        principal: Principal
-    ) = runBlocking {
+        principal: Principal,
+        session: HttpSession
+    ): ResponseEntity<String> {
         log.info("/pupilid/issue called for {} with '{}'", principal, body)
-        when (val result = pupilIdService.parseMessage(body)) {
+        session.invalidate()
+        return when (val result = pupilIdService.parseMessage(body)) {
             is NextMessage.Finished -> {
                 log.info("/pupilid/issue returning empty body, has finished")
                 ResponseEntity.status(HttpStatus.OK).build()

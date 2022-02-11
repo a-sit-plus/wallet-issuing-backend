@@ -35,7 +35,7 @@ import kotlin.test.assertIs
 
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
-class PupilIdControllerLogicTest {
+class PupilIdControllerFullRunTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

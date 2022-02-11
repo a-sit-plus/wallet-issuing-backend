@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.NonceToBpkService
-import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
@@ -25,12 +24,11 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.cert.CertificateFactory
 import java.util.UUID
-import kotlin.random.Random
 import kotlin.test.assertContentEquals
 
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
-class BindingControllerLogicTest {
+class BindingControllerFullRunTest {
 
     private val X_AUTH_TOKEN = "X-Auth-Token"
 
@@ -44,11 +42,13 @@ class BindingControllerLogicTest {
     private lateinit var mapper: ObjectMapper
 
     private lateinit var nonce: String
+    private lateinit var bpk: String
 
     @BeforeEach
     fun beforeEach() {
-        nonce = Random.nextBytes(32).encodeBase16()
-        whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn("bpk")
+        nonce = UUID.randomUUID().toString()
+        bpk = UUID.randomUUID().toString()
+        whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn(bpk)
     }
 
     @Test

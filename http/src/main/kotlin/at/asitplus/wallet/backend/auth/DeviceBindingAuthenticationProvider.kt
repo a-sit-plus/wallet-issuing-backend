@@ -26,6 +26,7 @@ class DeviceBindingAuthenticationProvider(
             throw BadCredentialsException("not supported")
         log.info("Trying to authenticate '{}'", principal.response)
         val bpk = deviceBindingResponseValidator.validate(principal.response)
+            ?: throw BadCredentialsException("bpk not found")
         return AuthenticatedDeviceBindingToken(bpk)
     }
 

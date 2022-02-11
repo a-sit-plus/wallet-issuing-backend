@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.NonceToBpkService
-import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -53,7 +52,7 @@ class BindingControllerTest {
         challenge = Random.nextBytes(32)
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
-        nonce = Random.nextBytes(32).encodeBase16()
+        nonce = UUID.randomUUID().toString()
         whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn("bpk")
         csr = Random.nextBytes(32)
         certificate = Random.nextBytes(32)
@@ -114,6 +113,7 @@ class BindingControllerTest {
             header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
+            header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
@@ -130,12 +130,13 @@ class BindingControllerTest {
 
     @Test
     fun start_create_noSession() = runTest {
-        val startResponse = mockMvc.post("/binding/start") {
+        mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
             header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
+            header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
         val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
@@ -156,6 +157,7 @@ class BindingControllerTest {
             header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
+            header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
@@ -178,6 +180,7 @@ class BindingControllerTest {
             header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
         }.andExpect {
             status { isOk() }
+            header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
@@ -189,6 +192,7 @@ class BindingControllerTest {
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }
+            header { string(X_AUTH_TOKEN, "") }
         }.andReturn()
 
         mockMvc.post("/binding/create") {
