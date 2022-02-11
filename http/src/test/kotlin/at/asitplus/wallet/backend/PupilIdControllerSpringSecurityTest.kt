@@ -19,6 +19,10 @@ import org.springframework.test.web.servlet.post
 import java.util.UUID
 import kotlin.random.Random
 
+/**
+ * Tests the Spring Security parts of the authentication for [PupilIdController],
+ * i.e. it tests the filter, authentication provider, token and so on.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class PupilIdControllerSpringSecurityTest {

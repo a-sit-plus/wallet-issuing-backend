@@ -84,7 +84,7 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun issuerCredentialRandomDataProvider(): IssuerCredentialRandomDataProvider {
+    fun issuerCredentialRandomDataProvider(): IssuerCredentialDataProvider {
         val mapOfPhotos =
             resourcePatternResolver.getResources(configurationProperties.randomPhotoLocation.toString() + "/*.jpg")
                 .filter { it.exists() }
@@ -107,14 +107,14 @@ class BackendConfiguration {
     @Bean
     fun issuerAgent(
         @Autowired identifierRegistry: IdentifierRegistry,
-        @Autowired issuerCredentialRandomDataProvider: IssuerCredentialDataProvider,
+        @Autowired issuerCredentialDataProvider: IssuerCredentialDataProvider,
         @Autowired issuerCryptoService: CryptoService
     ): Agent {
         return Agent(
             validator = ValidatorJvm.new(),
             cryptoService = issuerCryptoService,
             issuerCredentialStore = identifierRegistry,
-            dataProvider = issuerCredentialRandomDataProvider,
+            dataProvider = issuerCredentialDataProvider,
             revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
             zlibService = ZlibServiceJvm(),
             bitSetAdapter = BitSetAdapterJvm()

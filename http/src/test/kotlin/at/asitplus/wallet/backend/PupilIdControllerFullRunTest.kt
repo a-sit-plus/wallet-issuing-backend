@@ -33,6 +33,9 @@ import java.security.interfaces.ECPrivateKey
 import java.util.UUID
 import kotlin.test.assertIs
 
+/**
+ * Simulates a full run of a client for using the [PupilIdController].
+ */
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class PupilIdControllerFullRunTest {
