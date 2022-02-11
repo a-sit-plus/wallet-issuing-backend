@@ -21,7 +21,7 @@ import kotlin.random.Random
 
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
-class PupilIdControllerTest {
+class PupilIdControllerSpringSecurityTest {
 
     private val X_AUTH_TOKEN = "X-Auth-Token"
 
