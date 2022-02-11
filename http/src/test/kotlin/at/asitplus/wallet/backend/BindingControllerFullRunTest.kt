@@ -30,8 +30,6 @@ import kotlin.test.assertContentEquals
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class BindingControllerFullRunTest {
 
-    private val X_AUTH_TOKEN = "X-Auth-Token"
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -88,5 +86,9 @@ class BindingControllerFullRunTest {
         return JcaPKCS10CertificationRequestBuilder(X500Name("CN=Subject"), keyPair.public).build(
             JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
         ).encoded
+    }
+
+    companion object {
+        private const val X_AUTH_TOKEN = "X-Auth-Token"
     }
 }

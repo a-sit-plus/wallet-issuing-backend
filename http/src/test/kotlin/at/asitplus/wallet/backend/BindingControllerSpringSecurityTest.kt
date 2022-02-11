@@ -24,8 +24,6 @@ import kotlin.random.Random
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class BindingControllerSpringSecurityTest {
 
-    private val X_AUTH_TOKEN = "X-Auth-Token"
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -202,5 +200,9 @@ class BindingControllerSpringSecurityTest {
         }.andExpect {
             status { isUnauthorized() }
         }.andReturn()
+    }
+
+    companion object {
+        private const val X_AUTH_TOKEN = "X-Auth-Token"
     }
 }

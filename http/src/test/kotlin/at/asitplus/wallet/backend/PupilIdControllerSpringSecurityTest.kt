@@ -23,8 +23,6 @@ import kotlin.random.Random
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class PupilIdControllerSpringSecurityTest {
 
-    private val X_AUTH_TOKEN = "X-Auth-Token"
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -82,13 +80,13 @@ class PupilIdControllerSpringSecurityTest {
             header { exists(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
 
-        val response = mockMvc.post("/pupilid/issue") {
+        mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
             header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
         }.andExpect {
             status { isOk() }
-            header { exists("X-AUTH-TOKEN") }
+            header { exists(X_AUTH_TOKEN) }
         }.andReturn()
     }
 
@@ -142,6 +140,10 @@ class PupilIdControllerSpringSecurityTest {
         }.andExpect {
             status { isUnauthorized() }
         }.andReturn()
+    }
+
+    companion object {
+        private const val X_AUTH_TOKEN = "X-Auth-Token"
     }
 
 }
