@@ -90,9 +90,6 @@ class PupilIdControllerSpringSecurityTest {
             status { isOk() }
             header { exists("X-AUTH-TOKEN") }
         }.andReturn()
-
-        println("X-AUTH-TOKEN")
-        println(response.response.getHeader("X-AUTH-TOKEN"))
     }
 
     @Test
@@ -107,7 +104,7 @@ class PupilIdControllerSpringSecurityTest {
 
         val xAuthToken = firstResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
 
-        val secondResponse = mockMvc.post("/pupilid/issue") {
+        mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
             header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")

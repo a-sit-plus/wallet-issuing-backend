@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableSpringHttpSession
-class WebSecurityGeneralConfig(
+class WebSecurityConfig(
     private val deviceBindingAuthenticationProvider: DeviceBindingAuthenticationProvider,
     private val nonceAuthenticationProvider: NonceAuthenticationProvider,
     private val deviceBindingAuthnChallengeService: ChallengeService,
@@ -33,7 +33,8 @@ class WebSecurityGeneralConfig(
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .addFilter(NonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .exceptionHandling()
-            .authenticationEntryPoint(DeviceBindingAuthenticationEntryPoint(deviceBindingAuthnChallengeService))
+            .authenticationEntryPoint(DeviceBindingAuthenticationEntryPoint(deviceBindingAuthnChallengeService)).and()
+            .logout().invalidateHttpSession(true).clearAuthentication(true).and()
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {

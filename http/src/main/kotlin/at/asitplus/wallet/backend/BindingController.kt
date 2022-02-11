@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
-import javax.servlet.http.HttpSession
+import javax.servlet.http.HttpServletRequest
 
 
 @RestController
@@ -44,7 +44,7 @@ class BindingController(
     fun postBindingCsr(
         @RequestBody body: BindingCsrRequest,
         principal: Principal,
-        session: HttpSession
+        request: HttpServletRequest,
     ): ResponseEntity<BindingCsrResponse> {
         log.info("/binding/create called for {} with {}", principal, body)
         if (!challengeService.verifyAndRemove(body.challenge)) {
@@ -54,7 +54,7 @@ class BindingController(
             ?: return ResponseEntity.badRequest().build()
         deviceBindingStorageService.store(principal.name, certificate)
         return ResponseEntity.ok(BindingCsrResponse(certificate))
-            .also { session.invalidate() }
+            .also { request.logout() }
     }
 
     data class BindingParamsRequest(
