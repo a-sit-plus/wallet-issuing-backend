@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
 import at.asitplus.wallet.lib.agent.MessageWrapper
@@ -7,9 +8,6 @@ import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
-import at.asitplus.wallet.lib.jvm.AgentJvm
-import at.asitplus.wallet.lib.jvm.JwsServiceJvm
-import at.asitplus.wallet.lib.jvm.KeyIdServiceJvm
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -47,10 +45,10 @@ class PupilIdControllerFullRunTest {
     @MockBean
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
-    private val subjectAgent = AgentJvm.new()
+    private val subjectAgent = Agent()
     private val subjectMessenger = IssueCredentialMessenger(
         agent = subjectAgent,
-        messageWrapper = MessageWrapper(subjectAgent.cryptoService, KeyIdServiceJvm(), JwsServiceJvm()),
+        messageWrapper = MessageWrapper(subjectAgent.cryptoService),
         credentialScheme = ConstantIndex.PupilId
     )
 

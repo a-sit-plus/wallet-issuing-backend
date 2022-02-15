@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
+import at.asitplus.wallet.lib.data.AtomicAttributeCredential
+import at.asitplus.wallet.lib.data.CredentialSubject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,12 +32,14 @@ class IdentifierRegistryTest {
     private lateinit var vcId: String
     private lateinit var attributeName: String
     private lateinit var subjectId: String
+    private lateinit var credentialSubject: CredentialSubject
 
     @BeforeEach
     fun beforeEach() {
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
+        credentialSubject = AtomicAttributeCredential(subjectId, attributeName, "foo")
         identifierRepository.deleteAll()
     }
 
@@ -51,7 +55,7 @@ class IdentifierRegistryTest {
 
     @Test
     fun `simple positive add and revoke vcId should work`() {
-        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
+        identifierRegistry.storeGetNextIndex(vcId, credentialSubject)
         assertEquals(false, identifierRegistry.isRevoked(vcId))
         assertTrue(identifierRegistry.revoke(vcId))
         assertEquals(true, identifierRegistry.isRevoked(vcId))
@@ -59,8 +63,8 @@ class IdentifierRegistryTest {
 
     @Test
     fun `double adding vcId should return null`() {
-        assertNotNull(identifierRegistry.storeGetNextIndex(vcId,attributeName, subjectId))
-        assertNull(identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId))
+        assertNotNull(identifierRegistry.storeGetNextIndex(vcId, credentialSubject))
+        assertNull(identifierRegistry.storeGetNextIndex(vcId, credentialSubject))
     }
 
     @Test
@@ -75,7 +79,7 @@ class IdentifierRegistryTest {
         val expectedRevocationList = mutableListOf<Int>()
         for (i in 1..256) {
             val vcId = UUID.randomUUID().toString()
-            val revocationListIndex = identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
+            val revocationListIndex = identifierRegistry.storeGetNextIndex(vcId, credentialSubject)
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)
                 identifierRegistry.revoke(vcId)

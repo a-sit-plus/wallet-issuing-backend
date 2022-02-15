@@ -8,12 +8,6 @@ import at.asitplus.wallet.lib.agent.ProblemReporter
 import at.asitplus.wallet.lib.agent.SubjectCredentialStore
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.jvm.BitSetAdapterJvm
-import at.asitplus.wallet.lib.jvm.InMemoryCryptoServiceJvm
-import at.asitplus.wallet.lib.jvm.JwsServiceJvm
-import at.asitplus.wallet.lib.jvm.KeyIdServiceJvm
-import at.asitplus.wallet.lib.jvm.ValidatorJvm
-import at.asitplus.wallet.lib.jvm.ZlibServiceJvm
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -44,14 +38,8 @@ class PupilIdControllerLogicTest {
     private lateinit var mockMvc: MockMvc
 
     private val subjectCredentialStore = mock<SubjectCredentialStore>()
-    private val subjectAgent = Agent(
-        validator = ValidatorJvm.new(),
-        cryptoService = InMemoryCryptoServiceJvm(),
-        zlibService = ZlibServiceJvm(),
-        bitSetAdapter = BitSetAdapterJvm(),
-        subjectCredentialStore = subjectCredentialStore,
-    )
-    private val messageWrapper = MessageWrapper(subjectAgent.cryptoService, KeyIdServiceJvm(), JwsServiceJvm())
+    private val subjectAgent = Agent(subjectCredentialStore = subjectCredentialStore)
+    private val messageWrapper = MessageWrapper(subjectAgent.cryptoService)
     private val subjectMessenger = IssueCredentialMessenger(
         agent = subjectAgent,
         messageWrapper = messageWrapper,
@@ -73,7 +61,7 @@ class PupilIdControllerLogicTest {
 
         val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.Result<*>>(parsedMessage)
-        verify(subjectCredentialStore, times(AttributeIndex.pupilIdAttributes.count())).storeCredential(any(), any())
+        verify(subjectCredentialStore, times(1)).storeCredential(any(), any())
     }
 
     @Test

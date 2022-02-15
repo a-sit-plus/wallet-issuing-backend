@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.KeyIdService
-import at.asitplus.wallet.lib.KeyIdServiceDummy
+import at.asitplus.wallet.lib.PublicKeyHolderJvm
 import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.jvm.PublicKeyHolderJvm
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JweAlgorithm
 import at.asitplus.wallet.lib.jws.JweEncrypted
@@ -39,7 +39,7 @@ import kotlin.coroutines.suspendCoroutine
 class FileCryptoService(
     config: KeyFileConfiguration,
     resourceLoader: ResourceLoader,
-    keyIdService: KeyIdService = KeyIdServiceDummy()
+    keyIdService: KeyIdService = DefaultKeyIdService()
 ) : CryptoService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -65,7 +65,13 @@ class FileCryptoService(
     override val keyId = keyIdService.calcKeyId(PublicKeyHolderJvm(publicKey))!!
 
     override fun buildJweHeader(type: JwsContentType, contentType: JwsContentType?): JweHeader {
-        return JweHeader(JweAlgorithm.ECDH_ES_A256KW, JweEncryption.A256GCM, keyId, contentType = contentType, type = type)
+        return JweHeader(
+            JweAlgorithm.ECDH_ES_A256KW,
+            JweEncryption.A256GCM,
+            keyId,
+            contentType = contentType,
+            type = type
+        )
     }
 
     override fun buildJwsHeader(type: JwsContentType, contentType: JwsContentType?): JwsHeader {
@@ -77,7 +83,7 @@ class FileCryptoService(
         curve = "P-256",
         keyId = keyId,
         x = ECKey.encodeCoordinate(256, (publicKey as ECPublicKey).w.affineX).decode(),
-        y = ECKey.encodeCoordinate(256, (publicKey as ECPublicKey).w.affineY).decode(),
+        y = ECKey.encodeCoordinate(256, publicKey.w.affineY).decode(),
     )
 
     override suspend fun signJwsObject(jwsHeader: JwsHeader, jwsPayload: ByteArray): String = suspendCoroutine {

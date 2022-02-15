@@ -4,20 +4,16 @@ import at.asitplus.wallet.backend.auth.DummyNonceToBpkService
 import at.asitplus.wallet.backend.auth.NonceToBpkService
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
+import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.encodeBase64
-import at.asitplus.wallet.lib.jvm.BitSetAdapterJvm
-import at.asitplus.wallet.lib.jvm.InMemoryCryptoServiceJvm
-import at.asitplus.wallet.lib.jvm.JwsServiceJvm
-import at.asitplus.wallet.lib.jvm.KeyIdServiceJvm
-import at.asitplus.wallet.lib.jvm.ValidatorJvm
-import at.asitplus.wallet.lib.jvm.ZlibServiceJvm
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import org.springframework.beans.factory.annotation.Autowired
@@ -100,8 +96,12 @@ class BackendConfiguration {
 
     @Bean
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
-        KeyType.FILE -> FileCryptoService(configurationProperties.issuerKey.file!!, resourceLoader, KeyIdServiceJvm())
-        KeyType.MEMORY -> InMemoryCryptoServiceJvm()
+        KeyType.FILE -> FileCryptoService(
+            configurationProperties.issuerKey.file!!,
+            resourceLoader,
+            DefaultKeyIdService()
+        )
+        KeyType.MEMORY -> DefaultCryptoService()
     }
 
     @Bean
@@ -111,19 +111,16 @@ class BackendConfiguration {
         @Autowired issuerCryptoService: CryptoService
     ): Agent {
         return Agent(
-            validator = ValidatorJvm.new(),
             cryptoService = issuerCryptoService,
             issuerCredentialStore = identifierRegistry,
             dataProvider = issuerCredentialDataProvider,
             revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
-            zlibService = ZlibServiceJvm(),
-            bitSetAdapter = BitSetAdapterJvm()
         )
     }
 
     @Bean
     fun issuerMessageWrapper(@Autowired issuerAgent: Agent): MessageWrapper {
-        return MessageWrapper(issuerAgent.cryptoService, KeyIdServiceJvm(), JwsServiceJvm())
+        return MessageWrapper(issuerAgent.cryptoService)
     }
 
     @Bean

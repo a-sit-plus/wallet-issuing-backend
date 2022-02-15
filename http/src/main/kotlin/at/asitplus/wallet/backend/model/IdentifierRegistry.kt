@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.model
 
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.data.AtomicAttributeCredential
+import at.asitplus.wallet.lib.data.CredentialSubject
 import java.time.format.DateTimeFormatter
 
 
@@ -17,11 +19,18 @@ class IdentifierRegistry(private val identifierRepository: IdentifierRepository)
         return true
     }
 
-    override fun storeGetNextIndex(vcId: String, attributeName: String, subjectId: String): Int? {
+    override fun storeGetNextIndex(vcId: String, credentialSubject: CredentialSubject): Int? {
         if (identifierRepository.findByVcId(vcId) != null)
             return null
-        val newIdentifier = identifierRepository.save(Identifier(vcId, false, attributeName, subjectId))
-        return newIdentifier.revocationListIndex.toInt()
+        if (credentialSubject is AtomicAttributeCredential) {
+            return identifierRepository.save(
+                Identifier(vcId, false, credentialSubject.name, credentialSubject.id)
+            ).revocationListIndex.toInt()
+        } else {
+            return identifierRepository.save(
+                Identifier(vcId, false, "TODO", credentialSubject.id)
+            ).revocationListIndex.toInt()
+        }
     }
 
     override fun getRevokedStatusListIndexList(): Collection<Int> {

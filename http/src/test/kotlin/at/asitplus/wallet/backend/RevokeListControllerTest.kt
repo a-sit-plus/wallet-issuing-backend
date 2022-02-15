@@ -2,23 +2,16 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
-import com.google.zxing.BinaryBitmap
-import com.google.zxing.RGBLuminanceSource
-import com.google.zxing.common.HybridBinarizer
-import com.google.zxing.qrcode.QRCodeReader
+import at.asitplus.wallet.lib.data.AtomicAttributeCredential
+import at.asitplus.wallet.lib.data.CredentialSubject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
-import org.springframework.util.Base64Utils
-import java.io.ByteArrayInputStream
 import java.util.UUID
-import javax.imageio.ImageIO
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
@@ -41,6 +34,7 @@ class RevokeListControllerTest {
     private lateinit var vcId: String
     private lateinit var attributeName: String
     private lateinit var subjectId: String
+    private lateinit var credentialSubject: CredentialSubject
 
     @BeforeEach
     fun beforeEach() {
@@ -48,11 +42,12 @@ class RevokeListControllerTest {
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
+        credentialSubject = AtomicAttributeCredential(subjectId, attributeName, "foo")
     }
 
     @Test
     fun `revokeList contains issued credentials`() {
-        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
+        identifierRegistry.storeGetNextIndex(vcId, credentialSubject)
 
         val result = mockMvc.get("/revoke/list")
             .andExpect { status { isOk() } }
@@ -71,7 +66,7 @@ class RevokeListControllerTest {
 
     @Test
     fun `revokeList should not contain revoked entries`() {
-        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
+        identifierRegistry.storeGetNextIndex(vcId, credentialSubject)
         assertTrue(identifierRegistry.revoke(vcId))
 
         val result = mockMvc.get("/revoke/list")
@@ -86,7 +81,7 @@ class RevokeListControllerTest {
 
     @Test
     fun revokeList_revoke_success() {
-        identifierRegistry.storeGetNextIndex(vcId, attributeName, subjectId)
+        identifierRegistry.storeGetNextIndex(vcId, credentialSubject)
 
         val result = mockMvc.get("/revoke/list")
             .andExpect {

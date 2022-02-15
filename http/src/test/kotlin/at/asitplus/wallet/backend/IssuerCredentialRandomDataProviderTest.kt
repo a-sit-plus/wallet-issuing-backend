@@ -1,17 +1,16 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.Claim
+import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
-import java.time.Duration
 import java.util.UUID
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 class IssuerCredentialRandomDataProviderTest {
 
@@ -31,14 +30,16 @@ class IssuerCredentialRandomDataProviderTest {
     fun `claims for pupil id should be different on successive calls`() {
         val firstSetOfValues = mutableListOf<String>()
         val secondSetOfValues = mutableListOf<String>()
-        for (attribute in AttributeIndex.pupilIdAttributes) {
+        for (attribute in AttributeIndex.genericAttributes) {
             dataProvider.getClaim(subjectId1, attribute).let {
+                assertIs<AtomicAttributeCredential>(it)
                 assertClaim(it, attribute)
-                firstSetOfValues += it!!.value
+                firstSetOfValues += it.value
             }
             dataProvider.getClaim(subjectId2, attribute).let {
+                assertIs<AtomicAttributeCredential>(it)
                 assertClaim(it, attribute)
-                secondSetOfValues += it!!.value
+                secondSetOfValues += it.value
             }
         }
         assertNotEquals(firstSetOfValues, secondSetOfValues)
@@ -50,18 +51,20 @@ class IssuerCredentialRandomDataProviderTest {
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.greenPassAttributes) {
             dataProvider.getClaim(subjectId1, attribute).let {
+                assertIs<AtomicAttributeCredential>(it)
                 assertClaim(it, attribute)
-                firstSetOfValues += it!!.value
+                firstSetOfValues += it.value
             }
             dataProvider.getClaim(subjectId2, attribute).let {
+                assertIs<AtomicAttributeCredential>(it)
                 assertClaim(it, attribute)
-                secondSetOfValues += it!!.value
+                secondSetOfValues += it.value
             }
         }
         assertNotEquals(firstSetOfValues, secondSetOfValues)
     }
 
-    private fun assertClaim(firstClaim: Claim?, attribute: String) {
+    private fun assertClaim(firstClaim: AtomicAttributeCredential?, attribute: String) {
         assertNotNull(firstClaim)
         assertEquals(attribute, firstClaim.name)
         assertTrue(firstClaim.value.isNotEmpty())

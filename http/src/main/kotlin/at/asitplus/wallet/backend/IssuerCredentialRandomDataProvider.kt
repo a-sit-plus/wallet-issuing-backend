@@ -1,8 +1,12 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.Claim
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import at.asitplus.wallet.lib.data.AtomicAttributeCredential
+import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
+import at.asitplus.wallet.lib.encodeBase64ToByteArray
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -94,42 +98,64 @@ class IssuerCredentialRandomDataProvider constructor(
 
     private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
-    override fun getClaim(subjectId: String, attribute: String): Claim? {
+    override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
         val it = randomAttributeCache[subjectId]
             ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
         return when {
-            attribute.startsWith(SchemaIndex.ATTR_PUPIL_ID_PREFIX) -> {
-                when (attribute.removePrefix(SchemaIndex.ATTR_PUPIL_ID_PREFIX + "/")) {
-                    "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", lifetime)
-                    "schulname" -> Claim(attribute, it.randomSchool, lifetime)
-                    "schuladresse" -> Claim(attribute, it.school, lifetime)
-                    "schulkennzahl" -> Claim(attribute, it.schoolCode, lifetime)
-                    "schülerkennzahl" -> Claim(attribute, it.pupilIdNumber, lifetime)
-                    "vorname" -> Claim(attribute, it.firstName, lifetime)
-                    "nachname" -> Claim(attribute, it.lastName, lifetime)
-                    "titelvor" -> Claim(attribute, it.titelVor, lifetime)
-                    "titelnach" -> Claim(attribute, it.titelNach, lifetime)
-                    "geburtsdatum" -> Claim(attribute, it.birthDate, lifetime)
-                    "gültigBis" -> Claim(attribute, "2021-07-31", lifetime)
-                    "wohnort" -> Claim(attribute, it.county, lifetime)
-                    "wohnort-plz" -> Claim(attribute, it.zip, lifetime)
-                    "klasse" -> Claim(attribute, it.schoolClass, lifetime)
+            attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX) -> {
+                when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
+                    "vorname" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
+                    "nachname" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
                     else -> null
                 }
             }
-            attribute.startsWith(SchemaIndex.ATTR_GREEN_PASS_PREFIX) -> {
-                when (attribute.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
-                    "name" -> Claim(attribute, "${it.firstName} ${it.lastName}", lifetime)
-                    "date-of-birth" -> Claim(attribute, it.birthDate, lifetime)
-                    "photo" -> Claim(attribute, it.encodedPhoto, "image/jpeg", lifetime)
-                    "vaccination" -> Claim(attribute, "Moderna 2/2, on 2021-08-10, Vienna", lifetime)
-                    "test" -> Claim(attribute, "Negative RAT, on 2021-09-10, Graz", lifetime)
-                    "recovery" -> Claim(attribute, "Recovered, on 2021-02-10", lifetime)
+            attributeName.startsWith(SchemaIndex.ATTR_GREEN_PASS_PREFIX) -> {
+                when (attributeName.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
+                    "name" -> AtomicAttributeCredential(subjectId, attributeName, "${it.firstName} ${it.lastName}")
+                    "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.birthDate)
+                    "photo" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto, "image/jpeg")
+                    "vaccination" -> AtomicAttributeCredential(
+                        subjectId,
+                        attributeName,
+                        "Moderna 2/2, on 2021-08-10, Vienna"
+                    )
+                    "test" -> AtomicAttributeCredential(subjectId, attributeName, "Negative RAT, on 2021-09-10, Graz")
+                    "recovery" -> AtomicAttributeCredential(subjectId, attributeName, "Recovered, on 2021-02-10")
                     else -> null
                 }
             }
             else -> null
         }
+    }
+
+    override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
+        val it = randomAttributeCache[subjectId]
+            ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
+        return when (attributeType) {
+            ConstantIndex.PupilId.vcType -> {
+                PupilIdCredential(
+                    id = subjectId,
+                    schoolName = it.randomSchool,
+                    schoolAddress = it.school,
+                    schoolNumber = it.schoolCode,
+                    pupilNumber = it.pupilIdNumber,
+                    firstName = it.firstName,
+                    lastName = it.lastName,
+                    dateOfBirth = it.birthDate,
+                    validUntil = "2023-09-01",
+                    postCity = it.county,
+                    postCode = it.zip,
+                    picture = it.encodedPhoto.encodeToByteArray().encodeBase64ToByteArray()
+                )
+            }
+            else -> {
+                null
+            }
+        }
+    }
+
+    override fun getLifetime(): Duration {
+        return lifetime
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

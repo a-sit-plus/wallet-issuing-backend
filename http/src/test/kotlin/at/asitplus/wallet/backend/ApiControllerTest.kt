@@ -5,10 +5,6 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
-import at.asitplus.wallet.lib.jvm.AgentJvm
-import at.asitplus.wallet.lib.jvm.JwsServiceJvm
-import at.asitplus.wallet.lib.jvm.KeyIdServiceJvm
-import at.asitplus.wallet.lib.msg.IssueCredential
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,10 +38,10 @@ class ApiControllerTest {
 
     @BeforeEach
     fun beforeEach() {
-        subject = AgentJvm.new()
+        subject = Agent()
         subjectIssueCredentialMessenger = IssueCredentialMessenger(
             subject,
-            MessageWrapper(subject.cryptoService, KeyIdServiceJvm(), JwsServiceJvm()),
+            MessageWrapper(subject.cryptoService),
             "https://example.com/issue"
         )
     }
@@ -64,10 +60,10 @@ class ApiControllerTest {
 
     @Test
     fun issue_wrongInvitation_400() = runTest {
-        val agent = AgentJvm.new()
+        val agent = Agent()
         val oobInvitation = IssueCredentialMessenger(
-            AgentJvm.new(),
-            MessageWrapper(agent.cryptoService, KeyIdServiceJvm(), JwsServiceJvm()),
+            Agent(),
+            MessageWrapper(agent.cryptoService),
             "https://example.com/issue"
         ).startCreatingInvitation()
         assertIs<NextMessage.Send>(oobInvitation)
@@ -117,11 +113,10 @@ class ApiControllerTest {
 
     @Test
     fun check_revocation() {
-        val result = mockMvc.get("/credentials/status/1")
+        mockMvc.get("/credentials/status/1")
             .andExpect {
                 status { isOk() }
             }.andReturn()
-        val response = result.response.contentAsString
     }
 
 }
