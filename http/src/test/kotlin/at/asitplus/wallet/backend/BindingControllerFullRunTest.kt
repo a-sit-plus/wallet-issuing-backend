@@ -44,11 +44,13 @@ class BindingControllerFullRunTest {
 
     private lateinit var nonce: String
     private lateinit var bpk: String
+    private lateinit var deviceName: String
 
     @BeforeEach
     fun beforeEach() {
         nonce = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
+        deviceName = UUID.randomUUID().toString()
         whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn(bpk)
     }
 
@@ -69,7 +71,7 @@ class BindingControllerFullRunTest {
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair))
+        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair), deviceName)
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON

@@ -46,6 +46,7 @@ class BindingControllerSpringSecurityTest {
     private lateinit var challenge: ByteArray
     private lateinit var nonce: String
     private lateinit var csr: ByteArray
+    private lateinit var deviceName: String
     private lateinit var certificate: ByteArray
     private lateinit var startRequest: BindingController.BindingParamsRequest
 
@@ -57,6 +58,7 @@ class BindingControllerSpringSecurityTest {
         nonce = UUID.randomUUID().toString()
         whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn("bpk")
         csr = Random.nextBytes(32)
+        deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         whenever(certificateService.verifyAndSign(eq(csr))).thenReturn(certificate)
         startRequest = BindingController.BindingParamsRequest(UUID.randomUUID().toString())
@@ -119,7 +121,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -141,7 +143,7 @@ class BindingControllerSpringSecurityTest {
             header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -163,7 +165,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr)
+        val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr, deviceName)
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -186,7 +188,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON

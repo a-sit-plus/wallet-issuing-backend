@@ -6,7 +6,6 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.agent.ProblemReporter
 import at.asitplus.wallet.lib.agent.SubjectCredentialStore
-import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.DummyNonceToBpkService
 import at.asitplus.wallet.backend.auth.NonceToBpkService
+import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.model.IdentifierRegistry
 import at.asitplus.wallet.backend.model.IdentifierRepository
 import at.asitplus.wallet.lib.DefaultKeyIdService
@@ -57,8 +59,8 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun deviceBindingStorageService(): DeviceBindingStorageService {
-        return InMemoryDeviceBindingStorageService()
+    fun deviceBindingStorageService(deviceBindingRepository: DeviceBindingRepository): DeviceBindingStorageService {
+        return DatabaseDeviceBindingStorageService(deviceBindingRepository)
     }
 
     @Bean

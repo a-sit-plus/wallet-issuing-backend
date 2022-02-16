@@ -52,7 +52,7 @@ class BindingController(
         }
         val certificate = certificateService.verifyAndSign(body.csr)
             ?: return ResponseEntity.badRequest().build()
-        deviceBindingStorageService.store(principal.name, certificate)
+        deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
         return ResponseEntity.ok(BindingCsrResponse(certificate))
             .also { request.logout() }
     }
@@ -68,6 +68,7 @@ class BindingController(
     data class BindingCsrRequest(
         val challenge: ByteArray,
         val csr: ByteArray,
+        val deviceName: String,
     )
 
     data class BindingCsrResponse(
