@@ -8,7 +8,9 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component
 
 /**
- * Converts a [NonceAuthenticationToken] into a [AuthenticatedBpkToken] by exchanging the nonce with a bPK
+ *
+ * Authenticates user by reading information from a [NonceAuthenticationToken],
+ * by passing information to [NonceToBpkService.validate].
  */
 @Component
 class NonceAuthenticationProvider(
@@ -23,10 +25,13 @@ class NonceAuthenticationProvider(
         val principal = authentication.principal
         if (principal !is NonceAuthenticationToken)
             throw BadCredentialsException("not supported")
-        val bpk = nonceToBpkService.exchangeForBpk(principal.nonce)
+        val credentials = principal.credentials
+        if (credentials !is String)
+            throw BadCredentialsException("not supported")
+        val bpk = nonceToBpkService.validate(credentials)
             ?: throw BadCredentialsException("Error")
-        log.info("Exchanged nonce '{}' for bpk '{}'", principal.nonce, bpk)
-        return AuthenticatedBpkToken(bpk)
+        log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)
+        return NonceAuthenticationToken(credentials, bpk)
     }
 
     override fun supports(authentication: Class<*>): Boolean {

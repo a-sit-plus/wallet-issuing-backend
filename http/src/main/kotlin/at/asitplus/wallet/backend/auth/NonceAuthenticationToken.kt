@@ -1,19 +1,38 @@
 package at.asitplus.wallet.backend.auth
 
 import org.springframework.security.authentication.AbstractAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 
-/**
- * Is created from the HTTP header value in [NonceAuthnFilter].
- * Gets exchanged into an [AuthenticatedBpkToken] in [NonceAuthenticationProvider].
- */
-class NonceAuthenticationToken(val nonce: String) : AbstractAuthenticationToken(null) {
+class NonceAuthenticationToken : AbstractAuthenticationToken {
+
+    private val credentials: String
+    private val principal: String?
+
+    /**
+     * Called from [NonceAuthnFilter].
+     */
+    constructor(nonce: String) : super(null) {
+        this.credentials = nonce
+        this.principal = null
+        this.isAuthenticated = false
+    }
+
+    /**
+     * Called from [NonceAuthenticationProvider]
+     * after successful authentication.
+     */
+    constructor(nonce: String, bpk: String) : super(listOf(SimpleGrantedAuthority("PUPIL"))) {
+        this.credentials = nonce
+        this.principal = bpk
+        this.isAuthenticated = true
+    }
 
     override fun getCredentials(): Any {
-        return nonce
+        return credentials
     }
 
     override fun getPrincipal(): Any? {
-        return null
+        return principal
     }
 
 }

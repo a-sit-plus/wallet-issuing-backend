@@ -2,13 +2,13 @@ package at.asitplus.wallet.backend.auth
 
 interface NonceToBpkService {
 
-    fun exchangeForBpk(nonce: String): String?
+    fun validate(nonce: String): String?
 
 }
 
 class DummyNonceToBpkService : NonceToBpkService {
 
-    override fun exchangeForBpk(nonce: String): String {
+    override fun validate(nonce: String): String {
         return "bpk"
     }
 

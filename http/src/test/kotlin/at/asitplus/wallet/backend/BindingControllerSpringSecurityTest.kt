@@ -56,7 +56,7 @@ class BindingControllerSpringSecurityTest {
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         nonce = UUID.randomUUID().toString()
-        whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn("bpk")
+        whenever(nonceToBpkService.validate(eq(nonce))).thenReturn("bpk")
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
@@ -98,7 +98,7 @@ class BindingControllerSpringSecurityTest {
 
     @Test
     fun start_nonceNotKnown_unauthorized() = runTest {
-        whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn(null)
+        whenever(nonceToBpkService.validate(eq(nonce))).thenReturn(null)
 
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON

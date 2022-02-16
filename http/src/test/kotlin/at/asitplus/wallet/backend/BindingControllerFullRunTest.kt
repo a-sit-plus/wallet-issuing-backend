@@ -51,7 +51,7 @@ class BindingControllerFullRunTest {
         nonce = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
-        whenever(nonceToBpkService.exchangeForBpk(eq(nonce))).thenReturn(bpk)
+        whenever(nonceToBpkService.validate(eq(nonce))).thenReturn(bpk)
     }
 
     @Test
