@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class RevokeListControllerTest {
+class MvpRevokeListControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

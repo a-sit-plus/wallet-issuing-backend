@@ -20,7 +20,7 @@ import kotlin.test.assertContains
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class InitializationControllerTest {
+class MvpInitControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

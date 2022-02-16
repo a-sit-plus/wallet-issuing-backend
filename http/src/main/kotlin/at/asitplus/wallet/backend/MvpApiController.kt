@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ApiController(
+class MvpApisController(
     private val delegatingProtocolMessenger: DelegatingProtocolMessenger,
     private val issuerAgent: Agent,
 ) {

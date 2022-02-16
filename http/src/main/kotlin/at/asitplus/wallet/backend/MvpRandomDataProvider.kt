@@ -13,7 +13,7 @@ import java.util.Random
 import kotlin.time.Duration
 
 
-class IssuerCredentialRandomDataProvider constructor(
+class MvpRandomDataProvider constructor(
     private val lifetime: Duration,
     private val listOfPhotos: Map<String, String>
 ) : IssuerCredentialDataProvider {

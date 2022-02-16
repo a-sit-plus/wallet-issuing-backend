@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser
-class ApiControllerTest {
+class MvpApiControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

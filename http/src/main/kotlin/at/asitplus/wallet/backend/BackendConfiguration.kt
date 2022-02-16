@@ -88,7 +88,7 @@ class BackendConfiguration {
                 .map { it.filename!! to it.inputStream }
                 .map { it.first to it.second.readAllBytes() }
                 .map { it.first to it.second.encodeBase64() }
-        return IssuerCredentialRandomDataProvider(
+        return MvpRandomDataProvider(
             configurationProperties.credentialLifetime.toMinutes().minutes,
             mapOfPhotos.toMap()
         )

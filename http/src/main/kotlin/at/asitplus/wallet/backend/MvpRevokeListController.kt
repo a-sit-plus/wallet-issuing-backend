@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
 
 @Controller
-class RevokeListController {
+class MvpRevokeListController {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 

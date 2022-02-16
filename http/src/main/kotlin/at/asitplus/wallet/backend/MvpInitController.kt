@@ -21,7 +21,7 @@ import java.util.Collections
 import javax.imageio.ImageIO
 
 @Controller
-class InitializationController {
+class MvpInitController {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
