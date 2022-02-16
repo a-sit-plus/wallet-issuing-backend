@@ -1,18 +1,17 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingToken
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpSession
 
 @RestController
 class PupilIdController(
@@ -33,7 +32,11 @@ class PupilIdController(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
         log.info("/pupilid/issue called for {} with '{}'", principal, body)
-        when (val result = pupilIdService.parseMessage(body)) {
+        val deviceBindingCertificate = (principal as? AuthenticatedDeviceBindingToken)?.credentials as? ByteArray
+            ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build<String?>()
+                .also { log.warn("Principal does not contain device binding certificate") }
+                .also { request.logout() }
+        when (val result = pupilIdService.parseMessage(body, deviceBindingCertificate)) {
             is NextMessage.Result<*> -> {
                 log.info("/pupilid/issue returning empty body, has finished")
                 return ResponseEntity.status(HttpStatus.OK).build<String>()

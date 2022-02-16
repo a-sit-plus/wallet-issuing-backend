@@ -49,8 +49,10 @@ class PupilIdControllerSpringSecurityTest {
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         challengeResponse = UUID.randomUUID().toString()
-        whenever(pupilIdService.parseMessage(eq(clientMessage))).thenReturn(NextMessage.Send(serverMessage, null))
-        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse))).thenReturn(bpk)
+        whenever(pupilIdService.parseMessage(eq(clientMessage), eq(certificate)))
+            .thenReturn(NextMessage.Send(serverMessage, null))
+        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse)))
+            .thenReturn(DeviceBindingValidatorResult(bpk, certificate))
     }
 
     @Test
@@ -65,6 +67,7 @@ class PupilIdControllerSpringSecurityTest {
 
     @Test
     @WithMockUser(authorities = ["DEVICE_BINDING"])
+    //@WithUserDetails(userDetailsServiceBeanName = "")
     fun start_withMockUser_ok() = runTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -127,7 +130,8 @@ class PupilIdControllerSpringSecurityTest {
 
     @Test
     fun start_challengeResponse_invalid() = runTest {
-        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse))).thenReturn(null)
+        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse)))
+            .thenReturn(null)
 
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON

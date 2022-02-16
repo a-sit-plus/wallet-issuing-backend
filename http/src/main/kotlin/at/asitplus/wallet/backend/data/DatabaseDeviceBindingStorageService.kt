@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.DeviceListEntry
 import java.util.UUID
 
 class DatabaseDeviceBindingStorageService(
@@ -22,4 +23,8 @@ class DatabaseDeviceBindingStorageService(
         return deviceBindingRepository.findByCertificate(decodedCert)?.bpk
     }
 
+    override fun lookupDevices(bpk: String): Collection<DeviceListEntry>? {
+        return deviceBindingRepository.findAllByBpk(bpk)
+            ?.map { DeviceListEntry(it.deviceName, it.deviceId) }
+    }
 }

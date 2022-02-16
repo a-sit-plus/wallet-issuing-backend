@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class RevocationController {
+class RevocationController(
+    private val bindingStorageService: DeviceBindingStorageService
+) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -44,12 +46,13 @@ class RevocationController {
     @GetMapping("/revoke/devices")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
         log.info("/revoke/devices called for bpk '{}'", bpk)
+        val list = bindingStorageService.lookupDevices(bpk)
+        if (list.isNullOrEmpty()) {
+            return ResponseEntity.notFound().build()
+        }
         return ResponseEntity.ok(
             DeviceListResponse(
-                listOf(
-                    DeviceListResponseEntry("id1", "Pixel 3"),
-                    DeviceListResponseEntry("id2", "iPhone 7")
-                )
+                list.map { DeviceListResponseEntry(it.deviceId, it.deviceName) }
             )
         )
     }

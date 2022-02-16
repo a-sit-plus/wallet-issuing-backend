@@ -8,7 +8,14 @@ interface DeviceBindingStorageService {
 
     fun lookupBpk(decodedCert: ByteArray): String?
 
+    fun lookupDevices(bpk: String): Collection<DeviceListEntry>?
+
 }
+
+data class DeviceListEntry(
+    val deviceName: String,
+    val deviceId: String,
+)
 
 class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
 
@@ -20,6 +27,11 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
 
     override fun lookupBpk(decodedCert: ByteArray): String? {
         return list.find { it.certificate.contentEquals(decodedCert) }?.bpk
+    }
+
+    override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
+        return list.filter { it.bpk == bpk }
+            .map { DeviceListEntry(it.deviceName, it.deviceId) }
     }
 
     data class Entry(

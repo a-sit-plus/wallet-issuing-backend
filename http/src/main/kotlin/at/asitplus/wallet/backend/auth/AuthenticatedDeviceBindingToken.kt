@@ -6,15 +6,15 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 /**
  * Is created by [DeviceBindingAuthenticationProvider], which validates response to challenge from [DeviceBindingAuthenticationToken].
  */
-class AuthenticatedDeviceBindingToken(private val bpk: String) :
+class AuthenticatedDeviceBindingToken(private val bpk: String, private val certificate: ByteArray) :
     AbstractAuthenticationToken(listOf(SimpleGrantedAuthority("DEVICE_BINDING"))) {
 
     override fun isAuthenticated(): Boolean {
         return true
     }
 
-    override fun getCredentials(): Any? {
-        return null
+    override fun getCredentials(): Any {
+        return certificate
     }
 
     override fun getPrincipal(): Any {

@@ -25,9 +25,9 @@ class DeviceBindingAuthenticationProvider(
         if (principal !is DeviceBindingAuthenticationToken)
             throw BadCredentialsException("not supported")
         log.info("Trying to authenticate '{}'", principal.response)
-        val bpk = deviceBindingResponseValidator.validate(principal.response)
+        val result = deviceBindingResponseValidator.validate(principal.response)
             ?: throw BadCredentialsException("bpk not found")
-        return AuthenticatedDeviceBindingToken(bpk)
+        return AuthenticatedDeviceBindingToken(result.bpk, result.certificate)
     }
 
     override fun supports(authentication: Class<*>): Boolean {

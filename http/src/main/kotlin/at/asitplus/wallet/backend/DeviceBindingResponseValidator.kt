@@ -10,9 +10,14 @@ import java.security.cert.CertificateFactory
 
 interface DeviceBindingResponseValidator {
 
-    fun validate(response: String): String?
+    fun validate(response: String): DeviceBindingValidatorResult?
 
 }
+
+data class DeviceBindingValidatorResult(
+    val bpk: String,
+    val certificate: ByteArray,
+)
 
 class SimpleDeviceBindingResponseValidator(
     private val deviceBindingStorageService: DeviceBindingStorageService,
@@ -22,7 +27,7 @@ class SimpleDeviceBindingResponseValidator(
     private val log = LoggerFactory.getLogger(this.javaClass)
     private val certificateFactory = CertificateFactory.getInstance("X.509")
 
-    override fun validate(response: String): String? {
+    override fun validate(response: String): DeviceBindingValidatorResult? {
         val jwsObject = try {
             JWSObject.parse(response)
         } catch (e: Throwable) {
@@ -51,7 +56,9 @@ class SimpleDeviceBindingResponseValidator(
                 .also { log.warn("Challenge in JWS payload not valid") }
         val bpk = deviceBindingStorageService.lookupBpk(decodedCert)
         log.debug("Translated cert '{}' into bpk '{}'", decodedCert.encodeBase64(), bpk)
-        return bpk
+        if (bpk == null)
+            return null
+        return DeviceBindingValidatorResult(bpk, decodedCert)
     }
 
 }
