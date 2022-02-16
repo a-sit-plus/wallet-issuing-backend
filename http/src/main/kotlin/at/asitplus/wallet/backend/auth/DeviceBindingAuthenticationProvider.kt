@@ -9,8 +9,8 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component
 
 /**
- * Converts a [DeviceBindingAuthenticationToken] into a [AuthenticatedDeviceBindingToken]
- * by validating the response to the challenge.
+ * Authenticates user by reading information from a [DeviceBindingAuthenticationToken],
+ * by passing information to [DeviceBindingResponseValidator.validate].
  */
 @Component
 class DeviceBindingAuthenticationProvider(
@@ -25,10 +25,13 @@ class DeviceBindingAuthenticationProvider(
         val principal = authentication.principal
         if (principal !is DeviceBindingAuthenticationToken)
             throw BadCredentialsException("not supported")
-        log.info("Trying to authenticate '{}'", principal.response)
-        val result = deviceBindingResponseValidator.validate(principal.response)
+        val credentials = principal.credentials
+        log.info("Trying to authenticate '{}'", credentials)
+        if (credentials !is String)
+            throw BadCredentialsException("not supported")
+        val result = deviceBindingResponseValidator.validate(credentials)
             ?: throw BadCredentialsException("bpk not found")
-        return AuthenticatedDeviceBindingToken(result.bpk, result.certificate)
+        return DeviceBindingAuthenticationToken(credentials, result.bpk, result.certificate)
     }
 
     override fun supports(authentication: Class<*>): Boolean {
