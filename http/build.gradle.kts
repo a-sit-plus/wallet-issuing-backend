@@ -41,7 +41,6 @@ dependencies {
     implementation("at.asitplus.wallet:shared-jvm:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
-    implementation ("com.squareup.okhttp3:okhttp")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
     implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
     implementation("org.springdoc:springdoc-openapi-security:1.6.5")

@@ -7,13 +7,6 @@ import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.encodeBase64ToByteArray
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.FormBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
@@ -26,7 +19,6 @@ class IssuerCredentialRandomDataProvider constructor(
 ) : IssuerCredentialDataProvider {
 
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
-    private val client = OkHttpClient()
 
     inner class RandomAttributeSet {
         val randomGender = listOf("male", "female").random()
@@ -38,65 +30,34 @@ class IssuerCredentialRandomDataProvider constructor(
             "Realgymnasium", "Volksschule", "Gymnasium",
             "Mittelschule", "HTL", "HAK", "Hauptschule"
         ).random()
-        val randomSchool = "$randomSchoolPrefix $randomSchoolSuffix"
-        val schoolCode = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
-        val pupilIdNumber = (1..2)
-            .map { (1..8).map { "0123456789".random() }.joinToString("") }
-            .joinToString("/") // e.g. 00200000/00000004
-        val schoolClass = "12345".random().toString() + "ABCDEF".random()
-        val birthDate = run {
+        val schoolName = "$randomSchoolPrefix $randomSchoolSuffix"
+        val schoolNumber = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
+        val pupilNumber =  // e.g. 00200000/00000004
+            (1..2).joinToString("/") { (1..8).map { "0123456789".random() }.joinToString("") }
+        val dateOfBirth: String = run {
             val maxAge = 18 * 12 * 31
             val minAge = 6 * 12 * 31
             val upperBound = maxAge - minAge + 1
             LocalDate.now().minusDays(minAge + Random().nextInt(upperBound).toLong())
                 .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
         }
-        private val name = object {
-            val nameArray =
-                executeGet("https://www.behindthename.com/api/random.json?usage=ger&gender=${randomGender[0]}&key=lu244794741")
-                    .takeIf { it.isSuccessful }
-                    ?.body()?.string()?.let { jsonString -> Json.parseToJsonElement(jsonString).jsonObject }
-                    ?.get("names")?.jsonArray
+        val firstName = if (randomGender == "male") {
+            listOf("Lukas", "Tobias", "Maximilian", "Luca", "David").random()
+        } else {
+            listOf("Anna", "Hannah", "Lena", "Sarah", "Sophie").random()
         }
-        val firstName = name.nameArray?.get(1)?.jsonPrimitive?.content ?: "Susanne"
-        val lastName = name.nameArray?.get(0)?.jsonPrimitive?.content ?: "Meier"
-        val titelVor = listOf(
-            "DI",
-            "Dr. rer. nat.",
-            "Dr. med. univ.",
-            "Dr. med. dent.",
-            "Mag. phil.",
-            "Mag. iur.",
-            "Ing."
+        val lastName = listOf(
+            "Gruber", "Huber", "Wagner", "Müller",
+            "Pichler", "Moser", "Steiner", "Maier"
         ).random()
-        val titelNach = listOf("MSc", "MA", "BSc", "BA", "LLM", "PhD", "MBA", "MP", "MAS").random()
 
-        private val address = object {
-            val rawStr = client.newCall(buildRequest()).execute()
-                .takeIf { it.isSuccessful }
-                ?.body()?.string()?.let { Json.parseToJsonElement(it).jsonArray }
-                ?.get(0)?.jsonPrimitive?.content
-
-            fun buildRequest() = Request.Builder()
-                .url("https://randommer.io/random-address")
-                .post(FormBody.Builder().add("number", "1").add("culture", "de_AT").build())
-                .build()
-        }
-
-        val school = address.rawStr?.split(",")?.toMutableList()?.also { it.removeAt(1) }
-            ?.toList()?.joinToString(",") ?: "Breitenseer Straße 13, 1140, Wien, Austria"
-
-        val county = address.rawStr?.split(",")?.get(3) ?: "Wien"
-
-        val zip = address.rawStr?.split(",")?.get(2) ?: "1010"
-
+        val schoolAddress = "Musterstraße 10, 1010 Wien"
+        val city = listOf("Wien", "Mödling", "Linz", "Salzburg", "Innsbruck", "Klagenfurt", "Graz").random()
+        val zip = listOf("1010", "2050", "4050", "5060", "6070", "7080", "8090").random()
         var encodedPhoto = listOfPhotos
             .filter { it.key[0] == randomGender[0] }
             .values.ifEmpty { listOf(fallbackPhoto) }.random()
     }
-
-
-    private fun executeGet(url: String) = client.newCall(Request.Builder().url(url).build()).execute()
 
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
         val it = randomAttributeCache[subjectId]
@@ -112,7 +73,7 @@ class IssuerCredentialRandomDataProvider constructor(
             attributeName.startsWith(SchemaIndex.ATTR_GREEN_PASS_PREFIX) -> {
                 when (attributeName.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
                     "name" -> AtomicAttributeCredential(subjectId, attributeName, "${it.firstName} ${it.lastName}")
-                    "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.birthDate)
+                    "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
                     "photo" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto, "image/jpeg")
                     "vaccination" -> AtomicAttributeCredential(
                         subjectId,
@@ -135,15 +96,15 @@ class IssuerCredentialRandomDataProvider constructor(
             ConstantIndex.PupilId.vcType -> {
                 PupilIdCredential(
                     id = subjectId,
-                    schoolName = it.randomSchool,
-                    schoolAddress = it.school,
-                    schoolNumber = it.schoolCode,
-                    pupilNumber = it.pupilIdNumber,
+                    schoolName = it.schoolName,
+                    schoolAddress = it.schoolAddress,
+                    schoolNumber = it.schoolNumber,
+                    pupilNumber = it.pupilNumber,
                     firstName = it.firstName,
                     lastName = it.lastName,
-                    dateOfBirth = it.birthDate,
+                    dateOfBirth = it.dateOfBirth,
                     validUntil = "2023-09-01",
-                    postCity = it.county,
+                    postCity = it.city,
                     postCode = it.zip,
                     picture = it.encodedPhoto.encodeToByteArray().encodeBase64ToByteArray()
                 )
