@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.PupilIdControllerSpringSecurityTest.UserDetailsServiceInt.certificate
+import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -10,10 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Bean
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.test.context.support.WithUserDetails
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.UUID
@@ -23,7 +29,7 @@ import kotlin.random.Random
  * Tests the Spring Security parts of the authentication for [PupilIdController],
  * i.e. it tests the filter, authentication provider, token and so on.
  */
-@SpringBootTest
+@SpringBootTest(classes = [PupilIdControllerSpringSecurityTest.TestConfig::class])
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class PupilIdControllerSpringSecurityTest {
 
@@ -42,14 +48,41 @@ class PupilIdControllerSpringSecurityTest {
     private lateinit var bpk: String
     private lateinit var challengeResponse: String
 
+    /**
+     * Workaround to be able to read the random [certificate] (for other mock beans),
+     * that will be used in the user details of the authenticated user.
+     */
+    private object UserDetailsServiceInt : UserDetailsService {
+
+        val bpk = UUID.randomUUID().toString()
+        val certificate: ByteArray = Random.nextBytes(32)
+
+        override fun loadUserByUsername(username: String): UserDetails {
+            return AuthenticatedDeviceBindingUser(bpk, certificate)
+        }
+
+    }
+
+    /**
+     * Class needed to define a bean called [userDetailsServiceInt] that
+     * can be picked up by the [WithUserDetails] annotation in a test case
+     */
+    @TestConfiguration
+    internal class TestConfig {
+        @Bean
+        fun userDetailsServiceInt(): UserDetailsService {
+            return UserDetailsServiceInt
+        }
+    }
+
     @BeforeEach
     fun beforeEach() {
         clientMessage = UUID.randomUUID().toString()
         serverMessage = UUID.randomUUID().toString()
-        bpk = UUID.randomUUID().toString()
-        certificate = Random.nextBytes(32)
+        bpk = UserDetailsServiceInt.bpk
+        certificate = UserDetailsServiceInt.certificate
         challengeResponse = UUID.randomUUID().toString()
-        whenever(pupilIdService.parseMessage(eq(clientMessage), eq(certificate)))
+        whenever(pupilIdService.parseMessage(eq(clientMessage), eq(bpk), eq(certificate)))
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingResponseValidator.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingValidatorResult(bpk, certificate))
@@ -66,8 +99,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
-    //@WithUserDetails(userDetailsServiceBeanName = "")
+    @WithUserDetails(userDetailsServiceBeanName = "userDetailsServiceInt")
     fun start_withMockUser_ok() = runTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON

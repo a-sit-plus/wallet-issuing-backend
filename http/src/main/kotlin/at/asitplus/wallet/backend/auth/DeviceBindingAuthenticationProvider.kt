@@ -9,7 +9,8 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component
 
 /**
- * Converts a [DeviceBindingAuthenticationToken] into a [AuthenticatedDeviceBindingToken] by validating the response to the challenge.
+ * Converts a [DeviceBindingAuthenticationToken] into a [AuthenticatedDeviceBindingToken]
+ * by validating the response to the challenge.
  */
 @Component
 class DeviceBindingAuthenticationProvider(

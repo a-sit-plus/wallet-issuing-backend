@@ -1,16 +1,16 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingToken
+import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
-import java.security.Principal
 import javax.servlet.http.HttpServletRequest
 
 @RestController
@@ -28,15 +28,17 @@ class PupilIdController(
     @PreAuthorize("hasAuthority(\"DEVICE_BINDING\")")
     fun issueCredential(
         @RequestBody body: String,
-        principal: Principal,
+        authentication: Authentication,
         request: HttpServletRequest,
     ): ResponseEntity<String> {
-        log.info("/pupilid/issue called for {} with '{}'", principal, body)
-        val deviceBindingCertificate = (principal as? AuthenticatedDeviceBindingToken)?.credentials as? ByteArray
-            ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build<String?>()
+        log.info("/pupilid/issue called for {} with '{}'", authentication, body)
+        val principal = authentication.principal
+        if (principal !is AuthenticatedDeviceBindingUser) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build<String?>()
                 .also { log.warn("Principal does not contain device binding certificate") }
                 .also { request.logout() }
-        when (val result = pupilIdService.parseMessage(body, deviceBindingCertificate)) {
+        }
+        when (val result = pupilIdService.parseMessage(body, principal.bpk, principal.certificate)) {
             is NextMessage.Result<*> -> {
                 log.info("/pupilid/issue returning empty body, has finished")
                 return ResponseEntity.status(HttpStatus.OK).build<String>()
@@ -60,6 +62,11 @@ class PupilIdController(
             is NextMessage.ReceivedProblemReport -> {
                 log.info("/pupilid/issue received a problem report ${result.message}")
                 return ResponseEntity.ok().build<String>()
+                    .also { request.logout() }
+            }
+            else -> {
+                log.info("/pupilid/issue received something else: ${result}")
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
                     .also { request.logout() }
             }
         }

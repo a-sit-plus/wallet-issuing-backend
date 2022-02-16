@@ -16,6 +16,8 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.encodeBase64
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -38,7 +40,7 @@ class BackendConfiguration {
     private lateinit var resourcePatternResolver: ResourcePatternResolver
 
     init {
-        //Napier.base(DebugAntilog())
+        Napier.base(DebugAntilog())
     }
 
     @Bean
@@ -62,11 +64,8 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun pupilIdService(
-        issueCredentialMessengerPupilId: IssueCredentialMessenger,
-        deviceBindingStorageService: DeviceBindingStorageService
-    ): PupilIdService {
-        return DefaultPupilIdService(issueCredentialMessengerPupilId, deviceBindingStorageService)
+    fun pupilIdService(issueCredentialMessengerPupilId: IssueCredentialMessenger): PupilIdService {
+        return DefaultPupilIdService(issueCredentialMessengerPupilId)
     }
 
     @Bean
