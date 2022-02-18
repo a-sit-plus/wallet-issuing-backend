@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.model.IdentifierRegistry
+import at.asitplus.wallet.backend.data.PupilIdCredentialStore
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
@@ -18,7 +18,7 @@ class MvpRevokeListController {
     private lateinit var configurationProperties: BackendConfigurationProperties
 
     @Autowired
-    private lateinit var identifierRegistry: IdentifierRegistry
+    private lateinit var issuerCredentialStore: PupilIdCredentialStore
 
     @GetMapping("/revoke/list")
     fun revokeList(model: ModelMap): ModelAndView {
@@ -29,12 +29,12 @@ class MvpRevokeListController {
     @GetMapping("/revoke")
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         log.info("/revoke called with vcId=$vcId")
-        identifierRegistry.revoke(vcId)
+        issuerCredentialStore.revoke(vcId)
         return buildRevokeList(model)
     }
 
     private fun buildRevokeList(model: ModelMap): ModelAndView {
-        model["vcList"] = identifierRegistry.getAllNonRevokedWithDetails()
+        model["vcList"] = issuerCredentialStore.getAllNonRevokedWithDetails()
         model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/revoke"
         return ModelAndView("revoke_list", model)

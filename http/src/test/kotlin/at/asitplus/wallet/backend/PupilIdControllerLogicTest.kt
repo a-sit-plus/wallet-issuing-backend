@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.PupilIdControllerLogicTest.UserDetailsServiceInt.certificate
 import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
@@ -45,6 +47,9 @@ class PupilIdControllerLogicTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
+    @Autowired
+    private lateinit var deviceBindingRepository: DeviceBindingRepository
+
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
 
@@ -87,6 +92,11 @@ class PupilIdControllerLogicTest {
     fun beforeEach() {
         bpk = UserDetailsServiceInt.bpk
         certificate = UserDetailsServiceInt.certificate
+        val deviceName = UUID.randomUUID().toString()
+        val deviceId = UUID.randomUUID().toString()
+        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+            deviceBindingRepository.save(DeviceBinding(bpk, certificate, deviceName, deviceId))
+        }
     }
 
     @Test

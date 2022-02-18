@@ -4,8 +4,8 @@ import at.asitplus.wallet.backend.auth.DummyExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.model.IdentifierRegistry
-import at.asitplus.wallet.backend.model.IdentifierRepository
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.PupilIdCredentialStore
 import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
@@ -13,6 +13,7 @@ import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.encodeBase64
@@ -77,8 +78,11 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun identifierRegistry(@Autowired identifierRepository: IdentifierRepository): IdentifierRegistry {
-        return IdentifierRegistry(identifierRepository)
+    fun issuerCredentialStore(
+        issuedCredentialRepository: IssuedCredentialRepository,
+        deviceBindingRepository: DeviceBindingRepository
+    ): PupilIdCredentialStore {
+        return PupilIdCredentialStore(issuedCredentialRepository, deviceBindingRepository)
     }
 
     @Bean
@@ -108,13 +112,13 @@ class BackendConfiguration {
 
     @Bean
     fun issuerAgent(
-        @Autowired identifierRegistry: IdentifierRegistry,
+        @Autowired issuerCredentialStore: IssuerCredentialStore,
         @Autowired issuerCredentialDataProvider: IssuerCredentialDataProvider,
         @Autowired issuerCryptoService: CryptoService
     ): Agent {
         return Agent(
             cryptoService = issuerCryptoService,
-            issuerCredentialStore = identifierRegistry,
+            issuerCredentialStore = issuerCredentialStore,
             dataProvider = issuerCredentialDataProvider,
             revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
         )

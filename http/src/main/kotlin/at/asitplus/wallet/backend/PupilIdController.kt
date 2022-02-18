@@ -65,8 +65,8 @@ class PupilIdController(
                     .also { request.logout() }
             }
             else -> {
-                log.info("/pupilid/issue received something else: ${result}")
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
+                log.info("/pupilid/issue received something else: $result")
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
                     .also { request.logout() }
             }
         }

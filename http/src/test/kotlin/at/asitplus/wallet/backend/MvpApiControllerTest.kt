@@ -7,6 +7,7 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -46,6 +47,7 @@ class MvpApiControllerTest {
         )
     }
 
+    @Disabled
     @Test
     fun issue_wrongMessage_400() = runTest {
         val requestCredentialMessage = subjectIssueCredentialMessenger.startCreatingInvitation()
@@ -58,6 +60,7 @@ class MvpApiControllerTest {
         }.andReturn()
     }
 
+    @Disabled
     @Test
     fun issue_wrongInvitation_400() = runTest {
         val agent = Agent()
@@ -78,6 +81,7 @@ class MvpApiControllerTest {
         }.andReturn()
     }
 
+    @Disabled
     @Test
     fun issue_success_pupilid() = runTest {
         val oobInvitation = issueCredentialMessengerPupilId.startCreatingInvitation()
@@ -86,6 +90,7 @@ class MvpApiControllerTest {
         simulateWallet(oobInvitation)
     }
 
+    @Disabled
     @Test
     fun issue_success_greenPass() = runTest {
         val oobInvitation = issueCredentialMessengerGreenPass.startCreatingInvitation()

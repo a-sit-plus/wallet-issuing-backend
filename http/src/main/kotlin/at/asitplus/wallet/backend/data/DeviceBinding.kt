@@ -7,6 +7,7 @@ import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
 import javax.persistence.Lob
+import javax.persistence.OneToMany
 
 @Entity
 class DeviceBinding() {
@@ -38,4 +39,8 @@ class DeviceBinding() {
 
     @Column
     lateinit var deviceId: String
+
+    @OneToMany
+    lateinit var issuedCredentialList: Collection<IssuedCredential>
+
 }

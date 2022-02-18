@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
@@ -14,15 +16,14 @@ import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.util.Base64
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
@@ -42,8 +43,8 @@ class PupilIdControllerFullRunTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @MockBean
-    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    @Autowired
+    private lateinit var deviceBindingRepository: DeviceBindingRepository
 
     private val subjectAgent = Agent()
     private val subjectMessenger = IssueCredentialMessenger(
@@ -58,7 +59,11 @@ class PupilIdControllerFullRunTest {
         if (request !is NextMessage.Send) throw Exception("Internal Error")
         val clientCertificateService = ClientCertificateService()
         val bpk = UUID.randomUUID().toString()
-        whenever(deviceBindingStorageService.lookupBpk(eq(clientCertificateService.cert.encoded))).thenReturn(bpk)
+        val clientCert = clientCertificateService.cert.encoded
+        val clientPrivateKey = clientCertificateService.keyPair.private
+        withContext(Dispatchers.IO) {
+            deviceBindingRepository.save(DeviceBinding(bpk, clientCert, "foo", "bar"))
+        }
 
         val firstResponse = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -70,11 +75,7 @@ class PupilIdControllerFullRunTest {
 
         val headerValue = firstResponse.response.getHeaderValue(HttpHeaders.WWW_AUTHENTICATE)
         val challenge = headerValue.toString().removePrefix("Challenge ").decodeBase64ToArray()!!
-        val challengeResponse = calcChallengeResponse(
-            challenge,
-            clientCertificateService.cert.encoded,
-            clientCertificateService.keyPair.private
-        )
+        val challengeResponse = calcChallengeResponse(challenge, clientCert, clientPrivateKey)
 
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
