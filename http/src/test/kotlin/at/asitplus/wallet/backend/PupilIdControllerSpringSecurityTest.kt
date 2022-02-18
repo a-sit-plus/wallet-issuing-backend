@@ -40,7 +40,7 @@ class PupilIdControllerSpringSecurityTest {
     private lateinit var pupilIdService: PupilIdService
 
     @MockBean
-    private lateinit var deviceBindingResponseValidator: DeviceBindingResponseValidator
+    private lateinit var deviceBindingAuthnService: DeviceBindingAuthnService
 
     private lateinit var clientMessage: String
     private lateinit var serverMessage: String
@@ -84,8 +84,8 @@ class PupilIdControllerSpringSecurityTest {
         challengeResponse = UUID.randomUUID().toString()
         whenever(pupilIdService.parseMessage(eq(clientMessage), eq(bpk), eq(certificate)))
             .thenReturn(NextMessage.Send(serverMessage, null))
-        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse)))
-            .thenReturn(DeviceBindingValidatorResult(bpk, certificate))
+        whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
+            .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
     }
 
     @Test
@@ -162,7 +162,7 @@ class PupilIdControllerSpringSecurityTest {
 
     @Test
     fun start_challengeResponse_invalid() = runTest {
-        whenever(deviceBindingResponseValidator.validate(eq(challengeResponse)))
+        whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(null)
 
         mockMvc.post("/pupilid/issue") {

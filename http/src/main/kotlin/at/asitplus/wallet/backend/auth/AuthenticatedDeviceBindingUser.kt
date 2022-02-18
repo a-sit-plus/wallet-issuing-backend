@@ -4,7 +4,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
 /**
- * Is created by [DeviceBindingAuthenticationProvider], which validates response to challenge from [DeviceBindingAuthenticationToken].
+ * Is created by [DeviceBindingAuthnProvider], which validates response to challenge from [DeviceBindingAuthnToken].
  */
 class AuthenticatedDeviceBindingUser(val bpk: String, val certificate: ByteArray) :
     UserDetails {

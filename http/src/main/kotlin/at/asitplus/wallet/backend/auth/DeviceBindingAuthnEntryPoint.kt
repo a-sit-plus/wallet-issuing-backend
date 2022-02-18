@@ -12,10 +12,10 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
- * Sends a challenge to the client, since it is not authenticated. Response to this challenge will be picked up by [DeviceBindingAuthnFilter], which creates a [DeviceBindingAuthenticationToken].
+ * Sends a challenge to the client, since it is not authenticated. Response to this challenge will be picked up by [DeviceBindingAuthnFilter], which creates a [DeviceBindingAuthnToken].
  */
 @Component
-class DeviceBindingAuthenticationEntryPoint(
+class DeviceBindingAuthnEntryPoint(
     private val deviceBindingAuthnChallengeService: ChallengeService
 ) : AuthenticationEntryPoint {
 

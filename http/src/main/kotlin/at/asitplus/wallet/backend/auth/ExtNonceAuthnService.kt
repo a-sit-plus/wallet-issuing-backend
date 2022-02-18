@@ -1,12 +1,12 @@
 package at.asitplus.wallet.backend.auth
 
-interface NonceToBpkService {
+interface ExtNonceAuthnService {
 
     fun validate(nonce: String): String?
 
 }
 
-class DummyNonceToBpkService : NonceToBpkService {
+class DummyExtNonceAuthnService : ExtNonceAuthnService {
 
     override fun validate(nonce: String): String {
         return "bpk"

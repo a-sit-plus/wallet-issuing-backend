@@ -3,13 +3,13 @@ package at.asitplus.wallet.backend.auth
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 
-class NonceAuthenticationToken : AbstractAuthenticationToken {
+class ExtNonceAuthnToken : AbstractAuthenticationToken {
 
     private val credentials: String
     private val principal: String?
 
     /**
-     * Called from [NonceAuthnFilter].
+     * Called from [ExtNonceAuthnFilter].
      */
     constructor(nonce: String) : super(null) {
         this.credentials = nonce
@@ -18,7 +18,7 @@ class NonceAuthenticationToken : AbstractAuthenticationToken {
     }
 
     /**
-     * Called from [NonceAuthenticationProvider]
+     * Called from [ExtNonceAuthnProvider]
      * after successful authentication.
      */
     constructor(nonce: String, bpk: String) : super(listOf(SimpleGrantedAuthority("PUPIL"))) {

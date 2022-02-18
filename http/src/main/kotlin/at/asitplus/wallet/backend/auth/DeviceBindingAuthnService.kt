@@ -8,26 +8,26 @@ import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.BadCredentialsException
 import java.security.cert.CertificateFactory
 
-interface DeviceBindingResponseValidator {
+interface DeviceBindingAuthnService {
 
-    fun validate(response: String): DeviceBindingValidatorResult?
+    fun validate(response: String): DeviceBindingAuthnResult?
 
 }
 
-data class DeviceBindingValidatorResult(
+data class DeviceBindingAuthnResult(
     val bpk: String,
     val certificate: ByteArray,
 )
 
-class SimpleDeviceBindingResponseValidator(
+class SimpleDeviceBindingAuthnService(
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val deviceBindingAuthnChallengeService: ChallengeService,
-) : DeviceBindingResponseValidator {
+) : DeviceBindingAuthnService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
     private val certificateFactory = CertificateFactory.getInstance("X.509")
 
-    override fun validate(response: String): DeviceBindingValidatorResult? {
+    override fun validate(response: String): DeviceBindingAuthnResult? {
         val jwsObject = try {
             JWSObject.parse(response)
         } catch (e: Throwable) {
@@ -58,7 +58,7 @@ class SimpleDeviceBindingResponseValidator(
         log.debug("Translated cert '{}' into bpk '{}'", decodedCert.encodeBase64(), bpk)
         if (bpk == null)
             return null
-        return DeviceBindingValidatorResult(bpk, decodedCert)
+        return DeviceBindingAuthnResult(bpk, decodedCert)
     }
 
 }

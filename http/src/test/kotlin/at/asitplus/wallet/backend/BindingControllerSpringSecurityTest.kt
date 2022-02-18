@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.NonceToBpkService
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -35,7 +35,7 @@ class BindingControllerSpringSecurityTest {
     private lateinit var mapper: ObjectMapper
 
     @MockBean
-    private lateinit var nonceToBpkService: NonceToBpkService
+    private lateinit var extNonceAuthnService: ExtNonceAuthnService
 
     @MockBean
     private lateinit var certificateService: CertificateService
@@ -56,7 +56,7 @@ class BindingControllerSpringSecurityTest {
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         nonce = UUID.randomUUID().toString()
-        whenever(nonceToBpkService.validate(eq(nonce))).thenReturn("bpk")
+        whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn("bpk")
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
@@ -98,7 +98,7 @@ class BindingControllerSpringSecurityTest {
 
     @Test
     fun start_nonceNotKnown_unauthorized() = runTest {
-        whenever(nonceToBpkService.validate(eq(nonce))).thenReturn(null)
+        whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn(null)
 
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON

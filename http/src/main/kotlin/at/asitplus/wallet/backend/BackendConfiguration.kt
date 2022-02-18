@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.DummyNonceToBpkService
-import at.asitplus.wallet.backend.auth.NonceToBpkService
+import at.asitplus.wallet.backend.auth.DummyExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.model.IdentifierRegistry
@@ -44,8 +44,8 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun nonceToBpkService(): NonceToBpkService {
-        return DummyNonceToBpkService()
+    fun nonceToBpkService(): ExtNonceAuthnService {
+        return DummyExtNonceAuthnService()
     }
 
     @Bean
@@ -72,8 +72,8 @@ class BackendConfiguration {
     fun deviceBindingResponseValidator(
         deviceBindingStorageService: DeviceBindingStorageService,
         deviceBindingAuthnChallengeService: ChallengeService,
-    ): DeviceBindingResponseValidator {
-        return SimpleDeviceBindingResponseValidator(deviceBindingStorageService, deviceBindingAuthnChallengeService)
+    ): DeviceBindingAuthnService {
+        return SimpleDeviceBindingAuthnService(deviceBindingStorageService, deviceBindingAuthnChallengeService)
     }
 
     @Bean

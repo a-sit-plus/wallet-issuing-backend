@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.DeviceBindingAuthnService
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
@@ -8,13 +9,12 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component
 
 /**
- *
- * Authenticates user by reading information from a [NonceAuthenticationToken],
- * by passing information to [NonceToBpkService.validate].
+ * Authenticates user by reading information from a [DeviceBindingAuthnToken],
+ * by passing information to [DeviceBindingAuthnService.validate].
  */
 @Component
-class NonceAuthenticationProvider(
-    private val nonceToBpkService: NonceToBpkService
+class DeviceBindingAuthnProvider(
+    private val deviceBindingAuthnService: DeviceBindingAuthnService,
 ) : AuthenticationProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -23,15 +23,15 @@ class NonceAuthenticationProvider(
         if (authentication !is PreAuthenticatedAuthenticationToken)
             throw BadCredentialsException("not supported")
         val principal = authentication.principal
-        if (principal !is NonceAuthenticationToken)
+        if (principal !is DeviceBindingAuthnToken)
             throw BadCredentialsException("not supported")
         val credentials = principal.credentials
+        log.info("Trying to authenticate '{}'", credentials)
         if (credentials !is String)
             throw BadCredentialsException("not supported")
-        val bpk = nonceToBpkService.validate(credentials)
-            ?: throw BadCredentialsException("Error")
-        log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)
-        return NonceAuthenticationToken(credentials, bpk)
+        val result = deviceBindingAuthnService.validate(credentials)
+            ?: throw BadCredentialsException("bpk not found")
+        return DeviceBindingAuthnToken(credentials, result.bpk, result.certificate)
     }
 
     override fun supports(authentication: Class<*>): Boolean {

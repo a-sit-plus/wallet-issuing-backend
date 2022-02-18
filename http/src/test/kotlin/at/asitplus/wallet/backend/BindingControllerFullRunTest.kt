@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.NonceToBpkService
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
@@ -37,7 +37,7 @@ class BindingControllerFullRunTest {
     private lateinit var mockMvc: MockMvc
 
     @MockBean
-    private lateinit var nonceToBpkService: NonceToBpkService
+    private lateinit var extNonceAuthnService: ExtNonceAuthnService
 
     @Autowired
     private lateinit var mapper: ObjectMapper
@@ -51,7 +51,7 @@ class BindingControllerFullRunTest {
         nonce = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
-        whenever(nonceToBpkService.validate(eq(nonce))).thenReturn(bpk)
+        whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn(bpk)
     }
 
     @Test

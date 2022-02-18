@@ -1,10 +1,10 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.DeviceBindingAuthenticationEntryPoint
-import at.asitplus.wallet.backend.auth.DeviceBindingAuthenticationProvider
+import at.asitplus.wallet.backend.auth.DeviceBindingAuthnEntryPoint
+import at.asitplus.wallet.backend.auth.DeviceBindingAuthnProvider
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnFilter
-import at.asitplus.wallet.backend.auth.NonceAuthenticationProvider
-import at.asitplus.wallet.backend.auth.NonceAuthnFilter
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnProvider
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
@@ -22,8 +22,8 @@ import java.util.concurrent.ConcurrentHashMap
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableSpringHttpSession
 class WebSecurityConfig(
-    private val deviceBindingAuthenticationProvider: DeviceBindingAuthenticationProvider,
-    private val nonceAuthenticationProvider: NonceAuthenticationProvider,
+    private val deviceBindingAuthnProvider: DeviceBindingAuthnProvider,
+    private val extNonceAuthnProvider: ExtNonceAuthnProvider,
     private val deviceBindingAuthnChallengeService: ChallengeService,
 ) : WebSecurityConfigurerAdapter() {
 
@@ -31,15 +31,15 @@ class WebSecurityConfig(
         http.csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
-            .addFilter(NonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
+            .addFilter(ExtNonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .exceptionHandling()
-            .authenticationEntryPoint(DeviceBindingAuthenticationEntryPoint(deviceBindingAuthnChallengeService)).and()
+            .authenticationEntryPoint(DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService)).and()
             .logout().invalidateHttpSession(true).clearAuthentication(true).and()
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.authenticationProvider(deviceBindingAuthenticationProvider)
-            .authenticationProvider(nonceAuthenticationProvider)
+        auth.authenticationProvider(deviceBindingAuthnProvider)
+            .authenticationProvider(extNonceAuthnProvider)
     }
 
     @Bean

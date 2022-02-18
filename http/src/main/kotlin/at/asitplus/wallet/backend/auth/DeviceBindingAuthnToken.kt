@@ -4,7 +4,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
-class DeviceBindingAuthenticationToken : AbstractAuthenticationToken {
+class DeviceBindingAuthnToken : AbstractAuthenticationToken {
 
     val response: String
     private val principal: UserDetails?
@@ -19,7 +19,7 @@ class DeviceBindingAuthenticationToken : AbstractAuthenticationToken {
     }
 
     /**
-     * Called from [DeviceBindingAuthenticationProvider]
+     * Called from [DeviceBindingAuthnProvider]
      * after successful authentication
      */
     constructor(
