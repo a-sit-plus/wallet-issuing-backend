@@ -10,6 +10,7 @@ interface ChallengeService {
     fun generate(): ByteArray
 
     fun verifyAndRemove(challenge: ByteArray): Boolean
+
 }
 
 class SimpleChallengeService : ChallengeService {

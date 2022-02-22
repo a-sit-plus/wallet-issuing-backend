@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest
 
 @RestController
 class PupilIdController(
-    private val pupilIdService: PupilIdService
+    private val pupilIdService: PupilIdService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

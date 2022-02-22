@@ -26,14 +26,6 @@ with it's `kid` of `did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=`.
 
 `GET /credentials/status/1` returns the revocation list in a VC-compatible format, i.e. [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/).
 
-`POST /issue` for the MVP to issue credentials into the App. User needs to scan an invitation barcode from `GET /initialize`.
-
-`GET /initialize` displays QR codes for the MVP to scan with the App and start getting credentials.
-
-`GET /revoke/list` displays a list of revoked credentials for the MVP.
-
-`GET /revoke?vcId={foo}` revokes a credential for the MVP.
-
 `POST /pupilid/issue` issues a PupilId into the App. User needs to perform a device binding first.
 
 `POST /binding/start` initiates the device binding process in the App. User needs to scan a QR Code with a nonce first to be authorized to access this endpoint.
@@ -45,6 +37,18 @@ with it's `kid` of `did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=`.
 `POST /revoke/pupilid` revokes a PupilId instance, by the pupil's `bpk` or `deviceId`. Clients are external services, and authenticated with an API key.
 
 `GET /revoke/devices?bpk={foo}` lists all devices for the pupil with `bpk`. Clients are external services, and authenticated with an API key.
+
+`GET /debug/initialize` shows a QR code that can be used by the Wallet App to get a nonce to use as the authentication token during the device binding process, only used for debug deployments.
+
+`GET /debug/credential/list` displays a list of issued credentials, only used for debug deployments.
+
+`GET /debug/credential/revoke?vcId={foo}` revokes a credential, only used for debug deployments.
+
+`GET /help/wallet` displays a help page if the user scans a debug initialization QR Code with a standard camera app (instead of the Wallet App).
+
+`GET /invite/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
+
+// TODO Noch besser beschreiben, OpenAPI Spec dazu legen, Prozesse auch kurz
 
 ## Configuration
 

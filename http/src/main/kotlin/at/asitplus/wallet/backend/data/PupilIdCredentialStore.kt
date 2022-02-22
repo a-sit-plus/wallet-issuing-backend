@@ -14,6 +14,8 @@ class PupilIdCredentialStore(
     private val deviceBindingRepo: DeviceBindingRepository
 ) : IssuerCredentialStore {
 
+    // TODO Besser das Interface nur als adapter implementieren
+
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun revoke(vcId: String): Boolean {
@@ -21,6 +23,12 @@ class PupilIdCredentialStore(
         identifier.revoked = true
         repository.save(identifier)
         return true
+    }
+
+    // TODO Besser in eine Service-Klasse auslagern?
+    fun revokeByBpk(): Boolean {
+        //repository.findByDeviceBinding_Bpk()
+        return false
     }
 
     override fun storeGetNextIndex(

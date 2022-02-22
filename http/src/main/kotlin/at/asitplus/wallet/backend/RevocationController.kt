@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.PupilIdCredentialStore
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
 import org.slf4j.LoggerFactory
@@ -12,7 +13,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class RevocationController(
-    private val bindingStorageService: DeviceBindingStorageService
+    private val bindingStorageService: DeviceBindingStorageService,
+    private val pupilIdCredentialStore: PupilIdCredentialStore,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -36,6 +38,9 @@ class RevocationController(
         log.info("/revoke/pupilid called with {}", body)
         if (body.deviceId != null)
             return ResponseEntity.badRequest().build()
+        // TODO Mit Code verknüpfen
+        // TODO Auch andere Klassen durchschauen, wo noch TODOS sein sollten
+        pupilIdCredentialStore.revokeByBpk()
         return ResponseEntity.ok(RevocationResponse(true))
     }
 

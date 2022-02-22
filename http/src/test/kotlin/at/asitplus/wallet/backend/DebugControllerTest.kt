@@ -18,9 +18,13 @@ import java.util.UUID
 import javax.imageio.ImageIO
 import kotlin.test.assertContains
 
-@SpringBootTest
+@SpringBootTest(
+    properties = [
+        "backend.debug.enabled=true"
+    ]
+)
 @AutoConfigureMockMvc
-class MvpInitControllerTest {
+class DebugControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -38,14 +42,12 @@ class MvpInitControllerTest {
 
     @Test
     fun demo_success() {
-        val result = mockMvc.get("/initialize")
+        val result = mockMvc.get("/debug/initialize")
             .andExpect { status { isOk() } }
             .andReturn()
 
-        val oobUrlGreenPass = parseResponse(result, "qrcodeGreenPass")
-        assertContains(oobUrlGreenPass, "?oob=")
-        val oobUrlPupilId = parseResponse(result, "qrcodePupilId")
-        assertContains(oobUrlPupilId, "?oob=")
+        val nonceUrl = parseResponse(result, "qrcode")
+        assertContains(nonceUrl, "?nonce=")
     }
 
     private fun parseResponse(result: MvcResult, attributeName: String): String {

@@ -1,7 +1,8 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.DummyExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.DebugExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.NoopExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
@@ -10,7 +11,6 @@ import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
-import at.asitplus.wallet.lib.agent.DelegatingProtocolMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
@@ -45,8 +45,12 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun nonceToBpkService(): ExtNonceAuthnService {
-        return DummyExtNonceAuthnService()
+    fun extNonceAuthnService(): ExtNonceAuthnService {
+        if (configurationProperties.debug.enabled) {
+            return DebugExtNonceAuthnService(SimpleChallengeService())
+        } else {
+            return NoopExtNonceAuthnService()
+        }
     }
 
     @Bean
@@ -94,7 +98,7 @@ class BackendConfiguration {
                 .map { it.filename!! to it.inputStream }
                 .map { it.first to it.second.readAllBytes() }
                 .map { it.first to it.second.encodeBase64() }
-        return MvpRandomDataProvider(
+        return RandomCredentialDataProvider(
             configurationProperties.credentialLifetime.toMinutes().minutes,
             mapOfPhotos.toMap()
         )
@@ -112,9 +116,9 @@ class BackendConfiguration {
 
     @Bean
     fun issuerAgent(
-        @Autowired issuerCredentialStore: IssuerCredentialStore,
-        @Autowired issuerCredentialDataProvider: IssuerCredentialDataProvider,
-        @Autowired issuerCryptoService: CryptoService
+        issuerCredentialStore: IssuerCredentialStore,
+        issuerCredentialDataProvider: IssuerCredentialDataProvider,
+        issuerCryptoService: CryptoService
     ): Agent {
         return Agent(
             cryptoService = issuerCryptoService,
@@ -125,14 +129,14 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun issuerMessageWrapper(@Autowired issuerAgent: Agent): MessageWrapper {
+    fun issuerMessageWrapper(issuerAgent: Agent): MessageWrapper {
         return MessageWrapper(issuerAgent.cryptoService)
     }
 
     @Bean
     fun issueCredentialMessengerPupilId(
-        @Autowired issuerAgent: Agent,
-        @Autowired issuerMessageWrapper: MessageWrapper
+        issuerAgent: Agent,
+        issuerMessageWrapper: MessageWrapper
     ): IssueCredentialMessenger {
         return IssueCredentialMessenger(
             issuerAgent,
@@ -141,29 +145,6 @@ class BackendConfiguration {
             true,
             credentialScheme = ConstantIndex.PupilId,
         )
-    }
-
-    @Bean
-    fun issueCredentialMessengerGreenPass(
-        @Autowired issuerAgent: Agent,
-        @Autowired issuerMessageWrapper: MessageWrapper
-    ): IssueCredentialMessenger {
-        return IssueCredentialMessenger(
-            issuerAgent,
-            issuerMessageWrapper,
-            "${configurationProperties.publicContext}/issue",
-            true,
-            credentialScheme = ConstantIndex.GreenPass,
-        )
-
-    }
-
-    @Bean
-    fun delegatingProtocolMessenger(
-        @Autowired issueCredentialMessengerPupilId: IssueCredentialMessenger,
-        @Autowired issueCredentialMessengerGreenPass: IssueCredentialMessenger,
-    ): DelegatingProtocolMessenger {
-        return DelegatingProtocolMessenger(listOf(issueCredentialMessengerPupilId, issueCredentialMessengerGreenPass))
     }
 
 }

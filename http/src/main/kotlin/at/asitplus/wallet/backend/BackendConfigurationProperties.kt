@@ -18,6 +18,13 @@ data class BackendConfigurationProperties(
     val credentialLifetime: Duration = Duration.ofMinutes(60),
     val randomPhotoLocation: URI = URI.create("classpath:photos"),
     val issuerKey: KeyConfiguration = KeyConfiguration(),
+    val debug: DebugConfigurationProperties = DebugConfigurationProperties(),
+)
+
+@ConstructorBinding
+data class DebugConfigurationProperties(
+    val enabled: Boolean = false,
+    val qrCodeSize: Int = 400,
 )
 
 @ConstructorBinding

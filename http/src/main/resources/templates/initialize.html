@@ -6,6 +6,9 @@
     <title>Wallet Demo</title>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.1.0/css/bootstrap.min.css} "/>
 </head>
+<!--/*@thymesVar id="error" type="java.lang.String"*/-->
+<!--/*@thymesVar id="qrcode" type="java.lang.String"*/-->
+<!--/*@thymesVar id="qrcodeWidth" type="java.lang.Integer"*/-->
 <body style="background: #ececec;">
 <div th:replace="fragments/navbar.html :: navbar"></div>
 <div class="container pt-3">
@@ -14,19 +17,14 @@
         <p class="lead">This is a credential demo issuing random credentials for a Wallet App.</p>
         <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
             <span th:replace="fragments/icons.html :: info_icon"></span>
-            Scan this QR Code with your Wallet App to load credentials for your PupilID.</p>
+            Scan this QR Code with your Wallet App to create a device binding, to be able to load credentials.</p>
         <div class="d-flex justify-content-center my-3">
-            <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcodePupilId}" alt="" src=""/>
-        </div>
-        <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
-            <span th:replace="fragments/icons.html :: info_icon"></span>
-            Scan this QR Code with your Wallet App to load credentials for your Green Pass.</p>
-        <div class="d-flex justify-content-center my-3">
-            <img th:width="${qrcodewidth}" th:src="'data:image/png;base64,'+${qrcodeGreenPass}" alt="" src=""/>
+            <img th:width="${qrcodeWidth}" th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
         </div>
     </div>
     <div th:if="${error} != null">
-        <p>Internal server error occurred, please retry later</p>
+        <p>Internal server error occurred, please retry later.</p>
+        <p>Details: <span th:text="${error}"></span></p>
     </div>
 </div>
 </body>
