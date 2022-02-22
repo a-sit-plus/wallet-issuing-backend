@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,7 +23,8 @@ class PupilIdController(
 
     @Operation(
         summary = "Issue credentials",
-        description = "Issues a fresh instance of a PupilId to the Wallet app."
+        description = "Issues a fresh instance of a PupilId to the Wallet app.",
+        security = [SecurityRequirement(name = "deviceBinding")],
     )
     @PostMapping("/pupilid/issue")
     @PreAuthorize("hasAuthority(\"DEVICE_BINDING\")")

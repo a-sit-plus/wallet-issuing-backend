@@ -35,6 +35,13 @@ class OpenApiConfiguration {
                         .name("X-API—Key")
                         .`in`(SecurityScheme.In.HEADER)
                         .description("API Key to be used for calls to the revocation controller, contained in header `X-API-Key`.")
+                ).addSecuritySchemes(
+                    "deviceBinding",
+                    SecurityScheme()
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("bearer")
+                        .bearerFormat("JWT")
+                        .description("Response to challenge sent in header `WWW—Authenticate`, shall contain JWT signed with device binding key.")
                 )
             )
             .info(Info().title("PupilId API").description("PupilId Backend Service"))
