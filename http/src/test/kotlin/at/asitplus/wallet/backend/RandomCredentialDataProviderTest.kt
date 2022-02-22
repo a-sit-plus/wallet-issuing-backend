@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
 import java.util.UUID
+import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +21,7 @@ class RandomCredentialDataProviderTest {
 
     @BeforeTest
     fun setup() {
-        val listOfPhotos = (1..10).associate { UUID.randomUUID().toString() to UUID.randomUUID().toString() }
+        val listOfPhotos = (1..10).associate { UUID.randomUUID().toString() to Random.Default.nextBytes(32) }
         subjectId1 = UUID.randomUUID().toString() // each subject has own attribute set
         subjectId2 = UUID.randomUUID().toString()
         dataProvider = RandomCredentialDataProvider(1.seconds, listOfPhotos)

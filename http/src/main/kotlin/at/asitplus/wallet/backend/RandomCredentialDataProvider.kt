@@ -6,7 +6,8 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
-import at.asitplus.wallet.lib.encodeBase64ToByteArray
+import at.asitplus.wallet.lib.decodeBase64ToArray
+import at.asitplus.wallet.lib.encodeBase64
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
@@ -15,7 +16,7 @@ import kotlin.time.Duration
 
 class RandomCredentialDataProvider constructor(
     private val lifetime: Duration,
-    private val listOfPhotos: Map<String, String>
+    private val listOfPhotos: Map<String, ByteArray>
 ) : IssuerCredentialDataProvider {
 
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
@@ -54,9 +55,10 @@ class RandomCredentialDataProvider constructor(
         val schoolAddress = "Musterstraße 10, 1010 Wien"
         val city = listOf("Wien", "Mödling", "Linz", "Salzburg", "Innsbruck", "Klagenfurt", "Graz").random()
         val zip = listOf("1010", "2050", "4050", "5060", "6070", "7080", "8090").random()
-        var encodedPhoto = listOfPhotos
+        var encodedPhoto: ByteArray = listOfPhotos
             .filter { it.key[0] == randomGender[0] }
-            .values.ifEmpty { listOf(fallbackPhoto) }.random()
+            .values
+            .ifEmpty { listOf(fallbackPhoto.decodeBase64ToArray()!!) }.random()
     }
 
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
@@ -74,7 +76,12 @@ class RandomCredentialDataProvider constructor(
                 when (attributeName.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
                     "name" -> AtomicAttributeCredential(subjectId, attributeName, "${it.firstName} ${it.lastName}")
                     "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
-                    "photo" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto, "image/jpeg")
+                    "photo" -> AtomicAttributeCredential(
+                        subjectId,
+                        attributeName,
+                        it.encodedPhoto.encodeBase64(),
+                        "image/jpeg"
+                    )
                     "vaccination" -> AtomicAttributeCredential(
                         subjectId,
                         attributeName,
@@ -106,7 +113,7 @@ class RandomCredentialDataProvider constructor(
                     validUntil = "2023-09-01",
                     postCity = it.city,
                     postCode = it.zip,
-                    picture = it.encodedPhoto.encodeToByteArray().encodeBase64ToByteArray()
+                    picture = it.encodedPhoto
                 )
             }
             else -> {
