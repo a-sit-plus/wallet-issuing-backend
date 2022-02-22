@@ -6,7 +6,7 @@ import kotlinx.coroutines.runBlocking
 
 interface PupilIdService {
 
-    fun parseMessage(it: String, bpk: String, deviceBindingCertificate: ByteArray): NextMessage?
+    fun parseMessage(it: String): NextMessage?
 
 }
 
@@ -14,7 +14,7 @@ class DefaultPupilIdService(
     private val issueCredentialMessengerPupilId: IssueCredentialMessenger,
 ) : PupilIdService {
 
-    override fun parseMessage(it: String, bpk: String, deviceBindingCertificate: ByteArray) =
+    override fun parseMessage(it: String) =
         runBlocking {
             return@runBlocking issueCredentialMessengerPupilId.parseMessage(it)
         }

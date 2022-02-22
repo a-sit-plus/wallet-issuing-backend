@@ -84,7 +84,7 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun deviceBindingResponseValidator(
+    fun deviceBindingAuthnService(
         deviceBindingStorageService: DeviceBindingStorageService,
         deviceBindingAuthnChallengeService: ChallengeService,
     ): DeviceBindingAuthnService {

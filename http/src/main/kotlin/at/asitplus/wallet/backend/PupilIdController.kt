@@ -32,13 +32,7 @@ class PupilIdController(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
         log.info("/pupilid/issue called for {} with '{}'", authentication, body)
-        val principal = authentication.principal
-        if (principal !is AuthenticatedDeviceBindingUser) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build<String?>()
-                .also { log.warn("Principal does not contain device binding certificate") }
-                .also { request.logout() }
-        }
-        when (val result = pupilIdService.parseMessage(body, principal.bpk, principal.certificate)) {
+        when (val result = pupilIdService.parseMessage(body)) {
             is NextMessage.Result<*> -> {
                 log.info("/pupilid/issue returning empty body, has finished")
                 return ResponseEntity.status(HttpStatus.OK).build<String>()
