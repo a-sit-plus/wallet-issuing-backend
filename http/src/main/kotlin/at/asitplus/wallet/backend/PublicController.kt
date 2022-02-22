@@ -17,8 +17,8 @@ class PublicController(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
-        summary = "Get a the revocation list",
-        description = "Get a list revoked credentials in 'Revocation List 2020' format"
+        summary = "Get the revocation list",
+        description = "Get a list of revoked credentials in 'Revocation List 2020' format"
     )
     @GetMapping("/credentials/status/1")
     fun checkRevocation() = runBlocking {
