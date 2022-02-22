@@ -18,9 +18,9 @@ class OpenApiConfiguration {
                     "extNonce",
                     SecurityScheme()
                         .type(SecurityScheme.Type.APIKEY)
-                        .name("Authorization")
+                        .name("X-Auth-ExtNonce")
                         .`in`(SecurityScheme.In.HEADER)
-                        .description("Nonce to be scanned from QR Code created by ECO, to be transmitted in the header `Authorization` after `Nonce `.")
+                        .description("Nonce to be scanned from QR Code created by ECO, to be transmitted in the header `X-Auth-ExtNonce`.")
                 ).addSecuritySchemes(
                     "xAuthToken",
                     SecurityScheme()

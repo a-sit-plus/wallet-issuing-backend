@@ -33,7 +33,7 @@ Public endpoints are the following:
 
 ### Device Binding
 
-The call to `/binding/start` requires authentication with a Nonce extracted from a QR Code displayed by ECO, to be sent in the header `Authorization` after `Nonce `. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token`.
+The call to `/binding/start` requires authentication with a Nonce extracted from a QR Code displayed by ECO, to be sent in the header `X-Auth-ExtNonce`. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token`.
 
 `POST /binding/start` initiates the device binding process in the App. User needs to scan a QR Code with a nonce first to be authorized to access this endpoint.
 

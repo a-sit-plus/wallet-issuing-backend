@@ -72,7 +72,7 @@ class RevocationControllerSpringSecurityTest {
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
-            header("X-API-Key", apiKey)
+            header(X_API_KEY, apiKey)
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -85,10 +85,13 @@ class RevocationControllerSpringSecurityTest {
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
-            header("X-API-Key", apiKey)
+            header(X_API_KEY, apiKey)
         }.andExpect {
             status { isUnauthorized() }
         }.andReturn()
     }
 
+    companion object {
+        private const val X_API_KEY = "X-API-Key"
+    }
 }

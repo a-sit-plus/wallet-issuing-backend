@@ -90,7 +90,7 @@ class BindingControllerSpringSecurityTest {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
+            header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -103,7 +103,7 @@ class BindingControllerSpringSecurityTest {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
+            header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isUnauthorized() }
         }.andReturn()
@@ -114,7 +114,7 @@ class BindingControllerSpringSecurityTest {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
+            header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isOk() }
             header { exists(X_AUTH_TOKEN) }
@@ -137,7 +137,7 @@ class BindingControllerSpringSecurityTest {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
+            header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isOk() }
             header { exists(X_AUTH_TOKEN) }
@@ -158,7 +158,7 @@ class BindingControllerSpringSecurityTest {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
+            header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isOk() }
             header { exists(X_AUTH_TOKEN) }
@@ -181,7 +181,7 @@ class BindingControllerSpringSecurityTest {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
-            header(HttpHeaders.AUTHORIZATION, "Nonce $nonce")
+            header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isOk() }
             header { exists(X_AUTH_TOKEN) }
@@ -210,5 +210,6 @@ class BindingControllerSpringSecurityTest {
 
     companion object {
         private const val X_AUTH_TOKEN = "X-Auth-Token"
+        private const val X_AUTH_EXT_NONCE = "X-Auth-ExtNonce"
     }
 }

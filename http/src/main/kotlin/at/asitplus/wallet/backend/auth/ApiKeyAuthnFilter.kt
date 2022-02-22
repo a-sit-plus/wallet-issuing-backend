@@ -15,7 +15,7 @@ class ApiKeyAuthnFilter : RequestHeaderAuthenticationFilter() {
 
     override fun getPreAuthenticatedPrincipal(request: HttpServletRequest): Any? {
         val headerValue = request.getHeader("X-API-Key") ?: return null
-        log.debug("Reading nonce '{}'", headerValue)
+        log.debug("Reading apiKey '{}'", headerValue)
         return ApiKeyAuthnToken(headerValue)
     }
 
