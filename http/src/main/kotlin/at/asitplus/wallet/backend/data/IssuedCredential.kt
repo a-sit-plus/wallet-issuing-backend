@@ -11,11 +11,18 @@ import javax.persistence.ManyToOne
 @Entity
 class IssuedCredential() {
 
-    constructor(vcId: String, subjectId: String, validUntil: Instant, deviceBinding: DeviceBinding) : this() {
+    constructor(
+        vcId: String,
+        subjectId: String,
+        validUntil: Instant,
+        deviceBinding: DeviceBinding,
+        attributeName: String
+    ) : this() {
         this.vcId = vcId
         this.subjectId = subjectId
         this.validUntil = validUntil
         this.deviceBinding = deviceBinding
+        this.attributeName = attributeName
     }
 
     @Id
@@ -31,6 +38,9 @@ class IssuedCredential() {
 
     @Column
     lateinit var subjectId: String
+
+    @Column
+    lateinit var attributeName: String
 
     @Column
     lateinit var validUntil: Instant

@@ -1,13 +1,16 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
+import at.asitplus.wallet.backend.data.IssuedCredential
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
@@ -19,13 +22,15 @@ import java.io.ByteArrayOutputStream
 import java.util.Collections
 import java.util.UUID
 import javax.imageio.ImageIO
-import kotlin.time.Duration.Companion.seconds
+import kotlin.random.Random
 
 @Controller
 class DebugController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
     private val pupilIdRevocationService: PupilIdRevocationService,
+    private val credentialRepo: IssuedCredentialRepository,
+    private val deviceBindingRepo: DeviceBindingRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -76,7 +81,7 @@ class DebugController(
     fun revokeList(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/list called")
-        return buildRevokeList(model)
+        return buildCredentialList(model)
     }
 
     @GetMapping("/debug/credential/revoke")
@@ -84,30 +89,34 @@ class DebugController(
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId=$vcId")
         pupilIdRevocationService.revokeCredentialsByVcId(vcId)
-        return buildRevokeList(model)
+        return ModelAndView("redirect:/debug/credential/list")
     }
 
     @GetMapping("/debug/credential/create")
     fun createCredential(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/create called")
-        pupilIdRevocationService.storeGetNextIndex(
-            UUID.randomUUID().toString(),
-            AtomicAttributeCredential(UUID.randomUUID().toString(), "Name", "Value"),
-            Clock.System.now(),
-            Clock.System.now() + 300.seconds
-        )
-        return buildRevokeList(model)
+        val attributeName = UUID.randomUUID().toString()
+        val attributeValue = UUID.randomUUID().toString()
+        val credentialSubject = AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
+        val exp = java.time.Instant.now().plusSeconds(3600)
+        val deviceBinding = DeviceBinding("bpk", Random.Default.nextBytes(32), "deviceName", "deviceId").also {
+            deviceBindingRepo.save(it)
+        }
+        IssuedCredential(UUID.randomUUID().toString(), credentialSubject.id, exp, deviceBinding, attributeName).also {
+            credentialRepo.save(it)
+        }
+        return ModelAndView("redirect:/debug/credential/list")
     }
 
-    private fun buildRevokeList(model: ModelMap): ModelAndView {
-        val vcList = pupilIdRevocationService.getAllNonRevokedWithDetails()
-        model["vcList"] = vcList
-        if (vcList.isEmpty()) {
-            model["createCredentialUrl"] = "${configurationProperties.publicContext}/debug/credential/create"
+    private fun buildCredentialList(model: ModelMap): ModelAndView {
+        val vcList = pupilIdRevocationService.getAllNonRevokedWithDetails().map {
+            CredentialListDto(it.vcId, it.createdOn.toString(), it.attributeName, it.subjectId)
         }
+        model["vcList"] = vcList
+        model["createCredentialUrl"] = "${configurationProperties.publicContext}/debug/credential/create"
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/debug/credential/revoke"
-        return ModelAndView("revoke_list", model)
+        return ModelAndView("credential_list", model)
     }
 
     private fun createQrCodeImage(content: String, size: Int): ByteArray {
@@ -124,3 +133,14 @@ class DebugController(
         return outputStream.toByteArray()
     }
 }
+
+
+/**
+ * Used in "credential_list.html"
+ */
+data class CredentialListDto(
+    val vcId: String,
+    val issuanceDate: String,
+    val attributeName: String,
+    val subjectId: String
+)

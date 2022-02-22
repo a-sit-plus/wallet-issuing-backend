@@ -23,20 +23,10 @@ interface PupilIdRevocationService {
 
     fun isRevoked(vcId: String): Boolean?
 
-    fun getAllNonRevokedWithDetails(): List<RevocationListInfo>
+    fun getAllNonRevokedWithDetails(): Collection<IssuedCredential>
 
     fun getRevokedStatusListIndexList(): Collection<Int>
 }
-
-/**
- * Used in "revoke_list.html"
- */
-data class RevocationListInfo(
-    val vcId: String,
-    val issuanceDate: String,
-    val attributeName: String,
-    val subjectId: String
-)
 
 class DefaultPupilIdRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
@@ -64,7 +54,8 @@ class DefaultPupilIdRevocationService(
                 log.error("Got no authenticated user when trying to store vcId '$vcId'")
             }
         val exp = java.time.Instant.ofEpochMilli(expirationDate.toEpochMilliseconds())
-        val issuedCredential = IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding)
+        val issuedCredential =
+            IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, credentialSubject.javaClass.simpleName)
         val savedCredential = credentialRepo.save(issuedCredential)
         return savedCredential.revocationListIndex.toInt()
     }
@@ -105,10 +96,7 @@ class DefaultPupilIdRevocationService(
             .map { it.revocationListIndex.toInt() }
     }
 
-
-    override fun getAllNonRevokedWithDetails(): List<RevocationListInfo> {
-        return credentialRepo.findAllByRevokedFalse().map {
-            RevocationListInfo(it.vcId, it.createdOn.toString(), "PupilId", it.subjectId)
-        }
+    override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
+        return credentialRepo.findAllByRevokedFalse()
     }
 }

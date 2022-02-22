@@ -44,11 +44,11 @@ with it's `kid` of `did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=`.
 
 `GET /debug/credential/revoke?vcId={foo}` revokes a credential, only used for debug deployments.
 
+`GET /debug/credential/create` creates a new credential, only used for debug deployments.
+
 `GET /help/wallet` displays a help page if the user scans a debug initialization QR Code with a standard camera app (instead of the Wallet App).
 
 `GET /invite/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
-
-// TODO Noch besser beschreiben, OpenAPI Spec dazu legen, Prozesse auch kurz
 
 ## Configuration
 
