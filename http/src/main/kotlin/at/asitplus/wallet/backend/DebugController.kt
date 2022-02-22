@@ -12,6 +12,7 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
@@ -50,6 +51,13 @@ class DebugController(
             model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
         }
         return ModelAndView("initialize", model)
+    }
+
+    @GetMapping("/debug/nonce")
+    fun getNonce(): ResponseEntity<String> {
+        if (!configurationProperties.debug.enabled) return ResponseEntity.ok("")
+        log.info("/debug/nonce called")
+        return ResponseEntity.ok(extNonceAuthnService.generateNonce())
     }
 
     /**
