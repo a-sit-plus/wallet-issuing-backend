@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.PupilIdCredentialStore
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
 import org.slf4j.LoggerFactory
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class RevocationController(
     private val bindingStorageService: DeviceBindingStorageService,
-    private val pupilIdCredentialStore: PupilIdCredentialStore,
+    private val pupilIdRevocationService: PupilIdRevocationService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -26,7 +25,8 @@ class RevocationController(
     @PostMapping("/revoke/binding")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/binding called with {}", body)
-        return ResponseEntity.ok(RevocationResponse(true))
+        val success = pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(body.bpk, body.deviceId)
+        return ResponseEntity.ok(RevocationResponse(success))
     }
 
     @Operation(
@@ -38,10 +38,8 @@ class RevocationController(
         log.info("/revoke/pupilid called with {}", body)
         if (body.deviceId != null)
             return ResponseEntity.badRequest().build()
-        // TODO Mit Code verknüpfen
-        // TODO Auch andere Klassen durchschauen, wo noch TODOS sein sollten
-        pupilIdCredentialStore.revokeByBpk()
-        return ResponseEntity.ok(RevocationResponse(true))
+        val success = pupilIdRevocationService.revokeCredentialsByBpk(body.bpk)
+        return ResponseEntity.ok(RevocationResponse(success))
     }
 
     @Operation(

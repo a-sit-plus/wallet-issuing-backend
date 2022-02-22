@@ -1,7 +1,8 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.wallet.backend.PupilIdRevocationService
 import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
-import at.asitplus.wallet.backend.data.PupilIdCredentialStoreTest.UserDetailsServiceInt.certificate
+import at.asitplus.wallet.backend.data.PupilIdRevocationServiceTest.UserDetailsServiceInt.certificate
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
 import org.junit.jupiter.api.BeforeEach
@@ -24,12 +25,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-@SpringBootTest(classes = [PupilIdCredentialStoreTest.TestConfig::class])
+@SpringBootTest(classes = [PupilIdRevocationServiceTest.TestConfig::class])
 @AutoConfigureTestDatabase
-class PupilIdCredentialStoreTest {
+class PupilIdRevocationServiceTest {
 
     @Autowired
-    private lateinit var credentialStore: PupilIdCredentialStore
+    private lateinit var pupilIdRevocationService: PupilIdRevocationService
 
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
@@ -89,29 +90,29 @@ class PupilIdCredentialStoreTest {
     @Test
     @WithUserDetails(userDetailsServiceBeanName = "userDetailsServiceInt")
     fun `revocation of non-existing vcId should do nothing`() {
-        assertFalse(credentialStore.revoke(vcId))
+        assertFalse(pupilIdRevocationService.revokeCredentialsByVcId(vcId))
     }
 
     @Test
     @WithUserDetails(userDetailsServiceBeanName = "userDetailsServiceInt")
     fun `check on non-existing vcId should return null`() {
-        assertNull(credentialStore.isRevoked(vcId))
+        assertNull(pupilIdRevocationService.isRevoked(vcId))
     }
 
     @Test
     @WithUserDetails(userDetailsServiceBeanName = "userDetailsServiceInt")
     fun `simple positive add and revoke vcId should work`() {
-        credentialStore.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
-        assertEquals(false, credentialStore.isRevoked(vcId))
-        assertTrue(credentialStore.revoke(vcId))
-        assertEquals(true, credentialStore.isRevoked(vcId))
+        pupilIdRevocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
+        assertEquals(false, pupilIdRevocationService.isRevoked(vcId))
+        assertTrue(pupilIdRevocationService.revokeCredentialsByVcId(vcId))
+        assertEquals(true, pupilIdRevocationService.isRevoked(vcId))
     }
 
     @Test
     @WithUserDetails(userDetailsServiceBeanName = "userDetailsServiceInt")
     fun `double adding vcId should return null`() {
-        assertNotNull(credentialStore.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate))
-        assertNull(credentialStore.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate))
+        assertNotNull(pupilIdRevocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate))
+        assertNull(pupilIdRevocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate))
     }
 
     @Test
@@ -119,7 +120,7 @@ class PupilIdCredentialStoreTest {
     fun `revocation list should match revocation calls`() {
         val expectedRevocationList = revokeRandomCredentials()
 
-        val revocationList = credentialStore.getRevokedStatusListIndexList()
+        val revocationList = pupilIdRevocationService.getRevokedStatusListIndexList()
         assertContentEquals(expectedRevocationList, revocationList, "Revocation list should match revocation calls")
     }
 
@@ -128,10 +129,10 @@ class PupilIdCredentialStoreTest {
         for (i in 1..256) {
             val vcId = UUID.randomUUID().toString()
             val revocationListIndex =
-                credentialStore.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
+                pupilIdRevocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)
-                credentialStore.revoke(vcId)
+                pupilIdRevocationService.revokeCredentialsByVcId(vcId)
             }
         }
         return expectedRevocationList

@@ -6,7 +6,7 @@ import at.asitplus.wallet.backend.auth.NoopExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.PupilIdCredentialStore
+import at.asitplus.wallet.backend.data.PupilIdCredentialStoreAdapter
 import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
@@ -69,8 +69,18 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun pupilIdService(issueCredentialMessengerPupilId: IssueCredentialMessenger): PupilIdService {
+    fun pupilIdService(
+        issueCredentialMessengerPupilId: IssueCredentialMessenger,
+    ): PupilIdService {
         return DefaultPupilIdService(issueCredentialMessengerPupilId)
+    }
+
+    @Bean
+    fun pupilIdRevocationService(
+        credentialRepo: IssuedCredentialRepository,
+        deviceBindingRepo: DeviceBindingRepository,
+    ): PupilIdRevocationService {
+        return DefaultPupilIdRevocationService(credentialRepo, deviceBindingRepo)
     }
 
     @Bean
@@ -83,10 +93,9 @@ class BackendConfiguration {
 
     @Bean
     fun issuerCredentialStore(
-        issuedCredentialRepository: IssuedCredentialRepository,
-        deviceBindingRepository: DeviceBindingRepository
-    ): PupilIdCredentialStore {
-        return PupilIdCredentialStore(issuedCredentialRepository, deviceBindingRepository)
+        pupilIdRevocationService: PupilIdRevocationService,
+    ): PupilIdCredentialStoreAdapter {
+        return PupilIdCredentialStoreAdapter(pupilIdRevocationService)
     }
 
     @Bean

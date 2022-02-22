@@ -12,6 +12,11 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
     fun findAllByRevokedTrueOrderByRevocationListIndex(): Collection<IssuedCredential>
 
-    fun findByDeviceBinding_Bpk(bpk: String): IssuedCredential?
+    fun findByRevokedFalseAndDeviceBinding_Bpk(bpk: String): Collection<IssuedCredential>
+
+    fun findByRevokedFalseAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
+        bpk: String,
+        deviceId: String
+    ): Collection<IssuedCredential>
 
 }

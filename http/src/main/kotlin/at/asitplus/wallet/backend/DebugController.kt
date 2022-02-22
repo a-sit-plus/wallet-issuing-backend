@@ -1,12 +1,13 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.backend.data.PupilIdCredentialStore
+import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
@@ -16,13 +17,15 @@ import org.springframework.web.servlet.ModelAndView
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.util.Collections
+import java.util.UUID
 import javax.imageio.ImageIO
+import kotlin.time.Duration.Companion.seconds
 
 @Controller
 class DebugController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
-    private val issuerCredentialStore: PupilIdCredentialStore,
+    private val pupilIdRevocationService: PupilIdRevocationService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -80,13 +83,29 @@ class DebugController(
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId=$vcId")
-        issuerCredentialStore.revoke(vcId)
+        pupilIdRevocationService.revokeCredentialsByVcId(vcId)
+        return buildRevokeList(model)
+    }
+
+    @GetMapping("/debug/credential/create")
+    fun createCredential(model: ModelMap): ModelAndView {
+        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
+        log.info("/debug/credential/create called")
+        pupilIdRevocationService.storeGetNextIndex(
+            UUID.randomUUID().toString(),
+            AtomicAttributeCredential(UUID.randomUUID().toString(), "Name", "Value"),
+            Clock.System.now(),
+            Clock.System.now() + 300.seconds
+        )
         return buildRevokeList(model)
     }
 
     private fun buildRevokeList(model: ModelMap): ModelAndView {
-        model["vcList"] = issuerCredentialStore.getAllNonRevokedWithDetails()
-        model["revocationListUrl"] = "${configurationProperties.publicContext}/credentials/status/1"
+        val vcList = pupilIdRevocationService.getAllNonRevokedWithDetails()
+        model["vcList"] = vcList
+        if (vcList.isEmpty()) {
+            model["createCredentialUrl"] = "${configurationProperties.publicContext}/debug/credential/create"
+        }
         model["revokeActionUrl"] = "${configurationProperties.publicContext}/debug/credential/revoke"
         return ModelAndView("revoke_list", model)
     }

@@ -40,7 +40,9 @@
 
     <p th:if="${vcList.isEmpty()}" class="alert alert-danger">
         <span th:replace="fragments/icons.html :: danger_icon"></span>
-        No credential exists yet.</p>
+        No credential exists yet.
+        <a th:href="${createCredentialUrl}" class="btn">Create fake credential</a>
+    </p>
     <table id="table" class="table table-striped">
         <thead>
         <tr>

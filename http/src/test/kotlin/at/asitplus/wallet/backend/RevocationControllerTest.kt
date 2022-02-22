@@ -31,6 +31,9 @@ class RevocationControllerTest {
     @MockBean
     private lateinit var bindingStorageService: DeviceBindingStorageService
 
+    @MockBean
+    private lateinit var pupilIdRevocationService: PupilIdRevocationService
+
     private lateinit var bpk: String
     private lateinit var deviceName: String
     private lateinit var deviceId: String
@@ -42,6 +45,12 @@ class RevocationControllerTest {
         deviceId = UUID.randomUUID().toString()
         whenever(bindingStorageService.lookupDevices(eq(bpk)))
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
+        whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
+            .thenReturn(true)
+        whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(null)))
+            .thenReturn(true)
+        whenever(pupilIdRevocationService.revokeCredentialsByBpk(eq(bpk)))
+            .thenReturn(true)
     }
 
     @Test
@@ -56,7 +65,7 @@ class RevocationControllerTest {
 
     @Test
     fun binding_bpk_200() = runTest {
-        val request = RevocationController.RevocationRequest("bpk")
+        val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(true)
 
         mockMvc.post("/revoke/binding") {
@@ -70,7 +79,7 @@ class RevocationControllerTest {
 
     @Test
     fun binding_bpkAndDeviceId_200() = runTest {
-        val request = RevocationController.RevocationRequest("bpk", "deviceId")
+        val request = RevocationController.RevocationRequest(bpk, deviceId)
         val expectedResponse = RevocationController.RevocationResponse(true)
 
         mockMvc.post("/revoke/binding") {
@@ -94,7 +103,7 @@ class RevocationControllerTest {
 
     @Test
     fun pupilid_bpk_200() = runTest {
-        val request = RevocationController.RevocationRequest("bpk")
+        val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(true)
 
         mockMvc.post("/revoke/pupilid") {
@@ -108,7 +117,7 @@ class RevocationControllerTest {
 
     @Test
     fun pupilid_bpkAndDeviceId_400() = runTest {
-        val request = RevocationController.RevocationRequest("bpk", "deviceId")
+        val request = RevocationController.RevocationRequest(bpk, deviceId)
 
         mockMvc.post("/revoke/pupilid") {
             contentType = MediaType.APPLICATION_JSON
