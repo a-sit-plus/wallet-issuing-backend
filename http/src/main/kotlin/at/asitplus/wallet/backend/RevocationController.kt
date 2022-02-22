@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -25,6 +26,7 @@ class RevocationController(
         security = [SecurityRequirement(name = "apiKey")],
     )
     @PostMapping("/revoke/binding")
+    @PreAuthorize("hasAuthority(\"REVOCATION\")")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/binding called with {}", body)
         val success = pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(body.bpk, body.deviceId)
@@ -37,6 +39,7 @@ class RevocationController(
         security = [SecurityRequirement(name = "apiKey")],
     )
     @PostMapping("/revoke/pupilid")
+    @PreAuthorize("hasAuthority(\"REVOCATION\")")
     fun revokePupilId(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/pupilid called with {}", body)
         if (body.deviceId != null)
@@ -51,6 +54,7 @@ class RevocationController(
         security = [SecurityRequirement(name = "apiKey")],
     )
     @GetMapping("/revoke/devices")
+    @PreAuthorize("hasAuthority(\"REVOCATION\")")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
         log.info("/revoke/devices called for bpk '{}'", bpk)
         val list = bindingStorageService.lookupDevices(bpk)

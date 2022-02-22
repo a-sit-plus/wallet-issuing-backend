@@ -19,12 +19,24 @@ data class BackendConfigurationProperties(
     val randomPhotoLocation: URI = URI.create("classpath:photos"),
     val issuerKey: KeyConfiguration = KeyConfiguration(),
     val debug: DebugConfigurationProperties = DebugConfigurationProperties(),
+    val authn: AuthnConfigurationProperties = AuthnConfigurationProperties(),
 )
 
 @ConstructorBinding
 data class DebugConfigurationProperties(
     val enabled: Boolean = false,
     val qrCodeSize: Int = 400,
+)
+
+@ConstructorBinding
+data class AuthnConfigurationProperties(
+    val apiKeys: Collection<ApiKeyConfigurationProperties> = listOf()
+)
+
+@ConstructorBinding
+data class ApiKeyConfigurationProperties(
+    val name: String,
+    val key: String,
 )
 
 @ConstructorBinding

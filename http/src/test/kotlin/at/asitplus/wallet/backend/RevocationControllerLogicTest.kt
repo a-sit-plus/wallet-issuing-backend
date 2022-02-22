@@ -19,8 +19,8 @@ import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser
-class RevocationControllerTest {
+@WithMockUser(authorities = ["REVOCATION"])
+class RevocationControllerLogicTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

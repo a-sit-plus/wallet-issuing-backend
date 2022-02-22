@@ -1,8 +1,10 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
 import at.asitplus.wallet.backend.auth.DebugExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.NoopExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.SimpleApiKeyAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
@@ -51,6 +53,11 @@ class BackendConfiguration {
         } else {
             return NoopExtNonceAuthnService()
         }
+    }
+
+    @Bean
+    fun apiKeyAuthnService(): ApiKeyAuthnService {
+        return SimpleApiKeyAuthnService(configurationProperties.authn)
     }
 
     @Bean

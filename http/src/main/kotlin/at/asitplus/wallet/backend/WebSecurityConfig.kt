@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.ApiKeyAuthnFilter
+import at.asitplus.wallet.backend.auth.ApiKeyAuthnProvider
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnEntryPoint
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnProvider
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnFilter
@@ -25,6 +27,7 @@ class WebSecurityConfig(
     private val deviceBindingAuthnProvider: DeviceBindingAuthnProvider,
     private val extNonceAuthnProvider: ExtNonceAuthnProvider,
     private val deviceBindingAuthnChallengeService: ChallengeService,
+    private val apiKeyAuthnProvider: ApiKeyAuthnProvider,
 ) : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
@@ -32,6 +35,7 @@ class WebSecurityConfig(
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .addFilter(ExtNonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
+            .addFilter(ApiKeyAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .exceptionHandling()
             .authenticationEntryPoint(DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService)).and()
             .logout().invalidateHttpSession(true).clearAuthentication(true).and()
@@ -40,6 +44,7 @@ class WebSecurityConfig(
     override fun configure(auth: AuthenticationManagerBuilder) {
         auth.authenticationProvider(deviceBindingAuthnProvider)
             .authenticationProvider(extNonceAuthnProvider)
+            .authenticationProvider(apiKeyAuthnProvider)
     }
 
     @Bean

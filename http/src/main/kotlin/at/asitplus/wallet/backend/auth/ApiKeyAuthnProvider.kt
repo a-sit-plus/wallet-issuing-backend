@@ -8,12 +8,12 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component
 
 /**
- * Authenticates user by reading information from a [ExtNonceAuthnToken],
- * by passing information to [ExtNonceAuthnService.validate].
+ * Authenticates user by reading information from a [ApiKeyAuthnToken],
+ * by passing information to [ApiKeyAuthnService.validate].
  */
 @Component
-class ExtNonceAuthnProvider(
-    private val extNonceAuthnService: ExtNonceAuthnService
+class ApiKeyAuthnProvider(
+    private val apiKeyAuthnService: ApiKeyAuthnService
 ) : AuthenticationProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -22,15 +22,15 @@ class ExtNonceAuthnProvider(
         if (authentication !is PreAuthenticatedAuthenticationToken)
             throw BadCredentialsException("not supported")
         val principal = authentication.principal
-        if (principal !is ExtNonceAuthnToken)
+        if (principal !is ApiKeyAuthnToken)
             throw BadCredentialsException("not supported")
         val credentials = principal.credentials
         if (credentials !is String)
             throw BadCredentialsException("not supported")
-        val bpk = extNonceAuthnService.validate(credentials)
+        val username = apiKeyAuthnService.validate(credentials)
             ?: throw BadCredentialsException("Error")
-        log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)
-        return ExtNonceAuthnToken(credentials, bpk)
+        log.info("Exchanged apiKey '{}' for user '{}'", credentials, username)
+        return ApiKeyAuthnToken(credentials, username)
     }
 
     override fun supports(authentication: Class<*>): Boolean {
