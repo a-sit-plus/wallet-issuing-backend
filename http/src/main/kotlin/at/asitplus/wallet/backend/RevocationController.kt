@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,7 +21,8 @@ class RevocationController(
 
     @Operation(
         summary = "Revoke one or more device bindings for a pupil",
-        description = "Revoke one or more device bindings for a pupil, either specified by their `bpk` or specified by their `bpk` and `deviceId`."
+        description = "Revoke one or more device bindings for a pupil, either specified by their `bpk` or specified by their `bpk` and `deviceId`.",
+        security = [SecurityRequirement(name = "apiKey")],
     )
     @PostMapping("/revoke/binding")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
@@ -31,7 +33,8 @@ class RevocationController(
 
     @Operation(
         summary = "Revoke all PupilId instances for a pupil",
-        description = "Revoke all PupilId instances for one pupil, specified by their `bpk`."
+        description = "Revoke all PupilId instances for one pupil, specified by their `bpk`.",
+        security = [SecurityRequirement(name = "apiKey")],
     )
     @PostMapping("/revoke/pupilid")
     fun revokePupilId(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
@@ -44,7 +47,8 @@ class RevocationController(
 
     @Operation(
         summary = "Get a list of active devices for a pupil",
-        description = "Get a list of devices for one pupil, specified by their `bpk`."
+        description = "Get a list of devices for one pupil, specified by their `bpk`.",
+        security = [SecurityRequirement(name = "apiKey")],
     )
     @GetMapping("/revoke/devices")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
@@ -62,28 +66,29 @@ class RevocationController(
 
     @Schema(description = "List of registered mobile devices")
     data class DeviceListResponse(
+        @Schema(description = "List of registered mobile devices")
         val list: Collection<DeviceListResponseEntry>,
     )
 
     @Schema(description = "Single registered mobile device")
     data class DeviceListResponseEntry(
-        @Schema(example = "81113d6f-aa19-438a-96e7-abd1ee56d5ae")
+        @Schema(description = "`deviceId` of the device", example = "81113d6f-aa19-438a-96e7-abd1ee56d5ae")
         val id: String,
-        @Schema(example = "Pixel 3")
+        @Schema(description = "Name of the device", example = "Pixel 3")
         val name: String,
     )
 
     @Schema(description = "Request for revocation of device binding or PupilId")
     data class RevocationRequest(
-        @Schema(example = "BF:j/NxdRQhp+tNyE9WhHdBSYuy3hA=")
+        @Schema(description = "`bpk` of the pupil", example = "BF:j/NxdRQhp+tNyE9WhHdBSYuy3hA=")
         val bpk: String,
-        @Schema(example = "81113d6f-aa19-438a-96e7-abd1ee56d5ae")
+        @Schema(description = "`deviceId` of the device", example = "81113d6f-aa19-438a-96e7-abd1ee56d5ae")
         val deviceId: String? = null,
     )
 
     @Schema(description = "Response of a revocation call")
     data class RevocationResponse(
-        @Schema(example = "true")
+        @Schema(description = "Whether any credentials have been revoked", example = "true")
         val success: Boolean,
     )
 
