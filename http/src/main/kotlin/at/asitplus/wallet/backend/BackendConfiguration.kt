@@ -78,9 +78,9 @@ class BackendConfiguration {
     @Bean
     fun pupilIdRevocationService(
         credentialRepo: IssuedCredentialRepository,
-        deviceBindingRepo: DeviceBindingRepository,
+        deviceBindingStorageService: DeviceBindingStorageService,
     ): PupilIdRevocationService {
-        return DefaultPupilIdRevocationService(credentialRepo, deviceBindingRepo)
+        return DefaultPupilIdRevocationService(credentialRepo, deviceBindingStorageService)
     }
 
     @Bean

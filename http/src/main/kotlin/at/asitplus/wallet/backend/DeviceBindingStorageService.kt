@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import java.util.UUID
 
 interface DeviceBindingStorageService {
@@ -9,6 +10,8 @@ interface DeviceBindingStorageService {
     fun lookupBpk(decodedCert: ByteArray): String?
 
     fun lookupDevices(bpk: String): Collection<DeviceListEntry>?
+
+    fun getDeviceBindingForCurrentUser(): DeviceBinding?
 
 }
 
@@ -32,6 +35,10 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
     override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
         return list.filter { it.bpk == bpk }
             .map { DeviceListEntry(it.deviceName, it.deviceId) }
+    }
+
+    override fun getDeviceBindingForCurrentUser(): DeviceBinding? {
+        return null
     }
 
     data class Entry(

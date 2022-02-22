@@ -1,15 +1,10 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.lib.data.CredentialSubject
-import at.asitplus.wallet.lib.encodeBase64
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
-import org.springframework.security.core.context.SecurityContextHolder
 
 interface PupilIdRevocationService {
 
@@ -18,8 +13,6 @@ interface PupilIdRevocationService {
     fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Boolean
 
     fun revokeCredentialsByVcId(vcId: String): Boolean
-
-    fun getDeviceBindingForCurrentUser(): DeviceBinding?
 
     fun storeGetNextIndex(
         vcId: String,
@@ -47,7 +40,7 @@ data class RevocationListInfo(
 
 class DefaultPupilIdRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
-    private val deviceBindingRepo: DeviceBindingRepository,
+    private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : PupilIdRevocationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -66,7 +59,7 @@ class DefaultPupilIdRevocationService(
             return null.also {
                 log.error("Tried to store a new credential for existing vcId '$vcId'")
             }
-        val deviceBinding = getDeviceBindingForCurrentUser()
+        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
             ?: return null.also {
                 log.error("Got no authenticated user when trying to store vcId '$vcId'")
             }
@@ -112,17 +105,6 @@ class DefaultPupilIdRevocationService(
             .map { it.revocationListIndex.toInt() }
     }
 
-    override fun getDeviceBindingForCurrentUser(): DeviceBinding? {
-        val principal = SecurityContextHolder.getContext()?.authentication?.principal
-        if (principal !is AuthenticatedDeviceBindingUser)
-            return null.also {
-                log.error("Got no authenticated user when trying to store vc")
-            }
-        return deviceBindingRepo.findByCertificate(principal.certificate)
-            ?: return null.also {
-                log.error("Found no authenticated user for certificate '${principal.certificate.encodeBase64()}'")
-            }
-    }
 
     override fun getAllNonRevokedWithDetails(): List<RevocationListInfo> {
         return credentialRepo.findAllByRevokedFalse().map {
