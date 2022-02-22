@@ -37,6 +37,7 @@ import kotlin.test.assertIs
  */
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
+@WithMockUser(authorities = ["DEVICE_BINDING"])
 class PupilIdControllerLogicTest {
 
     @Autowired
@@ -75,7 +76,6 @@ class PupilIdControllerLogicTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun issue_ok() = runTest {
         val request = subjectMessenger.startDirect()
         if (request !is NextMessage.Send) throw Exception("Internal Error")
@@ -93,7 +93,6 @@ class PupilIdControllerLogicTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun issue_wrongMessage_badRequest() = runTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -106,7 +105,6 @@ class PupilIdControllerLogicTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun issue_problemReport_ok() = runTest {
         val problemReport = ProblemReporter().problemLastMessage("foo", "unknown")
         val message = messageWrapper.createSignedJwt(problemReport.message)
