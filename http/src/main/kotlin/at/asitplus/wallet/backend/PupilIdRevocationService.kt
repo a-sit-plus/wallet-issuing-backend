@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory
 
 interface PupilIdRevocationService {
 
-    fun revokeCredentialsByBpk(bpk: String): Boolean
+    fun revokeCredentialsByBpk(bpk: String): Int
 
-    fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Boolean
+    fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Int
 
-    fun revokeCredentialsByVcId(vcId: String): Boolean
+    fun revokeCredentialsByVcId(vcId: String): Int
 
     fun storeGetNextIndex(
         vcId: String,
@@ -60,26 +60,26 @@ class DefaultPupilIdRevocationService(
         return savedCredential.revocationListIndex.toInt()
     }
 
-    override fun revokeCredentialsByVcId(vcId: String): Boolean {
-        val credential = credentialRepo.findByVcId(vcId) ?: return false
+    override fun revokeCredentialsByVcId(vcId: String): Int {
+        val credential = credentialRepo.findByVcId(vcId) ?: return 0
         return revokeAllCredentials(listOf(credential))
     }
 
-    override fun revokeCredentialsByBpk(bpk: String): Boolean {
+    override fun revokeCredentialsByBpk(bpk: String): Int {
         val credentials = credentialRepo.findByRevokedFalseAndDeviceBinding_Bpk(bpk)
         return revokeAllCredentials(credentials)
     }
 
-    override fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Boolean {
+    override fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Int {
         if (deviceId == null)
             return revokeCredentialsByBpk(bpk)
         val credentials = credentialRepo.findByRevokedFalseAndDeviceBinding_BpkAndDeviceBinding_DeviceId(bpk, deviceId)
         return revokeAllCredentials(credentials)
     }
 
-    private fun revokeAllCredentials(credentials: Collection<IssuedCredential>): Boolean {
+    private fun revokeAllCredentials(credentials: Collection<IssuedCredential>): Int {
         if (credentials.isEmpty())
-            return false
+            return 0
         val toStore = mutableListOf<IssuedCredential>()
         credentials.forEach {
             it.revoked = true
@@ -88,7 +88,7 @@ class DefaultPupilIdRevocationService(
         toStore.forEach {
             credentialRepo.save(it)
         }
-        return true
+        return toStore.count()
     }
 
     override fun getRevokedStatusListIndexList(): Collection<Int> {

@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import org.junit.jupiter.api.BeforeEach
@@ -73,12 +72,12 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(true, pupilIdRevocationService.revokeCredentialsByBpk(bpk))
+        assertEquals(1, pupilIdRevocationService.revokeCredentialsByBpk(bpk))
     }
 
     @Test
     fun revokeNotExistingCredentialsByBpk() {
-        assertEquals(false, pupilIdRevocationService.revokeCredentialsByBpk(bpk))
+        assertEquals(0, pupilIdRevocationService.revokeCredentialsByBpk(bpk))
     }
 
     @Test
@@ -87,12 +86,12 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(true, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
+        assertEquals(1, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
     }
 
     @Test
     fun revokeNotExistingCredentialsByDeviceId() {
-        assertEquals(false, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
+        assertEquals(0, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
     }
 
     @Test
@@ -101,10 +100,7 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(
-            false,
-            pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString())
-        )
+        assertEquals(0, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()))
     }
 
     @Test
@@ -114,7 +110,7 @@ class PupilIdRevocationServiceTest {
         }
 
         assertEquals(
-            false,
+            0,
             pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId)
         )
     }

@@ -8,6 +8,6 @@ interface DeviceBindingRepository : JpaRepository<DeviceBinding, Long> {
 
     fun findByCertificate(certificate: ByteArray): DeviceBinding?
 
-    fun findAllByBpk(bpk: String): Collection<DeviceBinding>?
+    fun findAllByBpk(bpk: String): Collection<DeviceBinding>
 
 }

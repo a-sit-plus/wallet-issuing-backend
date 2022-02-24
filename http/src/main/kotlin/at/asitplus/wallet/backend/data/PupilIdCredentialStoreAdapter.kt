@@ -12,7 +12,7 @@ class PupilIdCredentialStoreAdapter(
 ) : IssuerCredentialStore {
 
     override fun revoke(vcId: String): Boolean {
-        return pupilIdRevocationService.revokeCredentialsByVcId(vcId)
+        return pupilIdRevocationService.revokeCredentialsByVcId(vcId) > 0
     }
 
     override fun storeGetNextIndex(

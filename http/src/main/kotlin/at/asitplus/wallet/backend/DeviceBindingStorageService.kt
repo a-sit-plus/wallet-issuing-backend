@@ -8,7 +8,7 @@ interface DeviceBindingStorageService {
 
     fun lookupBpk(decodedCert: ByteArray): String?
 
-    fun lookupDevices(bpk: String): Collection<DeviceListEntry>?
+    fun lookupDevices(bpk: String): Collection<DeviceListEntry>
 
     fun getDeviceBindingForCurrentUser(): DeviceBinding?
 

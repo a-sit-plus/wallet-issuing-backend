@@ -16,10 +16,8 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
@@ -67,7 +65,7 @@ class PupilIdRevocationServiceTest {
     @Test
     @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun `revocation of non-existing vcId should do nothing`() {
-        assertFalse(pupilIdRevocationService.revokeCredentialsByVcId(vcId))
+        assertEquals(0, pupilIdRevocationService.revokeCredentialsByVcId(vcId))
     }
 
     @Test
@@ -81,7 +79,7 @@ class PupilIdRevocationServiceTest {
     fun `simple positive add and revoke vcId should work`() {
         pupilIdRevocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
         assertEquals(false, pupilIdRevocationService.isRevoked(vcId))
-        assertTrue(pupilIdRevocationService.revokeCredentialsByVcId(vcId))
+        assertEquals(1, pupilIdRevocationService.revokeCredentialsByVcId(vcId))
         assertEquals(true, pupilIdRevocationService.isRevoked(vcId))
     }
 

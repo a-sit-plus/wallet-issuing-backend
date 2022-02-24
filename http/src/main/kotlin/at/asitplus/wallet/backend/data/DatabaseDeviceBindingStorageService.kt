@@ -29,9 +29,9 @@ class DatabaseDeviceBindingStorageService(
         return deviceBindingRepository.findByCertificate(decodedCert)?.bpk
     }
 
-    override fun lookupDevices(bpk: String): Collection<DeviceListEntry>? {
+    override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
         return deviceBindingRepository.findAllByBpk(bpk)
-            ?.map { DeviceListEntry(it.deviceName, it.deviceId) }
+            .map { DeviceListEntry(it.deviceName, it.deviceId) }
     }
 
     override fun getDeviceBindingForCurrentUser(): DeviceBinding? {

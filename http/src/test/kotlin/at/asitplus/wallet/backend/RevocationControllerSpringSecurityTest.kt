@@ -35,15 +35,24 @@ class RevocationControllerSpringSecurityTest {
     @MockBean
     private lateinit var apiKeyAuthnService: ApiKeyAuthnService
 
+    @MockBean
+    private lateinit var pupilIdRevocationService: PupilIdRevocationService
+
     private lateinit var apiKey: String
+    private lateinit var bpk: String
+    private lateinit var deviceId: String
     private lateinit var request: RevocationController.RevocationRequest
 
     @BeforeEach
     fun beforeEach() {
         apiKey = UUID.randomUUID().toString()
+        bpk = UUID.randomUUID().toString()
+        deviceId = UUID.randomUUID().toString()
         whenever(apiKeyAuthnService.validate(eq(apiKey)))
             .thenReturn("user")
-        request = RevocationController.RevocationRequest(UUID.randomUUID().toString())
+        whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
+            .thenReturn(1)
+        request = RevocationController.RevocationRequest(bpk = bpk, deviceId = deviceId)
     }
 
     @Test

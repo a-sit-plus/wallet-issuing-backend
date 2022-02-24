@@ -46,11 +46,11 @@ class RevocationControllerLogicTest {
         whenever(bindingStorageService.lookupDevices(eq(bpk)))
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
         whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
-            .thenReturn(true)
+            .thenReturn(1)
         whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(null)))
-            .thenReturn(true)
+            .thenReturn(1)
         whenever(pupilIdRevocationService.revokeCredentialsByBpk(eq(bpk)))
-            .thenReturn(true)
+            .thenReturn(1)
     }
 
     @Test
@@ -66,7 +66,7 @@ class RevocationControllerLogicTest {
     @Test
     fun binding_bpk_200() = runTest {
         val request = RevocationController.RevocationRequest(bpk)
-        val expectedResponse = RevocationController.RevocationResponse(true)
+        val expectedResponse = RevocationController.RevocationResponse(1)
 
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
@@ -80,7 +80,7 @@ class RevocationControllerLogicTest {
     @Test
     fun binding_bpkAndDeviceId_200() = runTest {
         val request = RevocationController.RevocationRequest(bpk, deviceId)
-        val expectedResponse = RevocationController.RevocationResponse(true)
+        val expectedResponse = RevocationController.RevocationResponse(1)
 
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
@@ -104,7 +104,7 @@ class RevocationControllerLogicTest {
     @Test
     fun pupilid_bpk_200() = runTest {
         val request = RevocationController.RevocationRequest(bpk)
-        val expectedResponse = RevocationController.RevocationResponse(true)
+        val expectedResponse = RevocationController.RevocationResponse(1)
 
         mockMvc.post("/revoke/pupilid") {
             contentType = MediaType.APPLICATION_JSON
