@@ -1,8 +1,10 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -25,6 +27,27 @@ class PupilIdController(
         summary = "Issue credentials",
         description = "Issues a fresh instance of a PupilId to the Wallet app.",
         security = [SecurityRequirement(name = "deviceBinding")],
+        requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "RequestCredential message of the IssueCredential protocol between Wallet and Issuer",
+            content = [Content(examples = [ExampleObject(value = "<DIDcomm signed message>")])]
+        ),
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "IssueCredential message of the IssueCredential protocol between Wallet and Issuer",
+                content = [Content(examples = [ExampleObject(value = "<DIDcomm signed message>")])]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Incorrect protocol state, i.e. this message was not expected on protocol level",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+        ]
     )
     @PostMapping("/pupilid/issue")
     @PreAuthorize("hasAuthority(\"DEVICE_BINDING\")")
@@ -36,34 +59,34 @@ class PupilIdController(
         log.info("/pupilid/issue called for {} with '{}'", authentication, body)
         when (val result = pupilIdService.parseMessage(body)) {
             is NextMessage.Result<*> -> {
-                log.info("/pupilid/issue returning empty body, has finished")
-                return ResponseEntity.status(HttpStatus.OK).build<String>()
-                    .also { request.logout() }
-            }
-            is NextMessage.Send -> {
-                log.info("/pupilid/issue returning ${result.message}")
-                return ResponseEntity.ok(result.message)
-                    .also { request.logout() }
-            }
-            is NextMessage.Error -> {
-                log.error("/pupilid/issue returning 400, incorrect protocol state")
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
-                    .also { request.logout() }
-            }
-            is NextMessage.SendProblemReport -> {
-                log.info("/pupilid/issue returning problem report ${result.message}")
-                return ResponseEntity.ok(result.message)
-                    .also { request.logout() }
-            }
-            is NextMessage.ReceivedProblemReport -> {
-                log.info("/pupilid/issue received a problem report ${result.message}")
                 return ResponseEntity.ok().build<String>()
                     .also { request.logout() }
+                    .also { log.info("/pupilid/issue returns HTTP 200: Finished") }
+            }
+            is NextMessage.Send -> {
+                return ResponseEntity.ok(result.message)
+                    .also { request.logout() }
+                    .also { log.info("/pupilid/issue returns HTTP 200: {}", result.message) }
+            }
+            is NextMessage.Error -> {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
+                    .also { request.logout() }
+                    .also { log.warn("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
+            }
+            is NextMessage.SendProblemReport -> {
+                return ResponseEntity.ok(result.message)
+                    .also { request.logout() }
+                    .also { log.info("/pupilid/issue returns HTTP 200: Problem Report {}", result.message) }
+            }
+            is NextMessage.ReceivedProblemReport -> {
+                return ResponseEntity.ok().build<String>()
+                    .also { request.logout() }
+                    .also { log.info("/pupilid/issue returns HTTP 200: Received Problem Report {}", result.message) }
             }
             else -> {
-                log.info("/pupilid/issue received something else: $result")
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
                     .also { request.logout() }
+                    .also { log.warn("/pupilid/issue returns HTTP 500: Internal error {}", result) }
             }
         }
     }

@@ -2,6 +2,9 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.Agent
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -18,7 +21,11 @@ class PublicController(
 
     @Operation(
         summary = "Get the revocation list",
-        description = "Get a list of revoked credentials in 'Revocation List 2020' format"
+        description = "Get a list of revoked credentials in 'Revocation List 2020' format",
+        responses = [ApiResponse(
+            description = "IssueCredential message of the IssueCredential protocol between Wallet and Issuer",
+            content = [Content(examples = [ExampleObject(value = "<JWS containing RevocationList2020 payload>")])]
+        )]
     )
     @GetMapping("/credentials/status/1")
     fun checkRevocation() = runBlocking {
