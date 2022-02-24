@@ -76,13 +76,13 @@ class DebugController(
     /**
      * Display help page if user scans QR code presented in Wallet App for verification
      */
-    @GetMapping("/invite/verify")
+    @GetMapping("/help/verify")
     fun inviteVerify(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
-        log.info("/invite/verify?oob=$oob called")
-        val content = "${configurationProperties.publicContext}/invite/verify?oob=${oob}"
+        log.info("/help/verify?oob=$oob called")
+        val content = "${configurationProperties.publicContext}/help/verify?oob=${oob}"
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
         model["qrcode"] = createQrCodeImage(content, configurationProperties.debug.qrCodeSize).encodeBase64()
-        return ModelAndView("invite_verify", model)
+        return ModelAndView("help_verify", model)
     }
 
     @GetMapping("/debug/credential/list")
@@ -108,7 +108,10 @@ class DebugController(
         val attributeValue = UUID.randomUUID().toString()
         val credentialSubject = AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
         val exp = java.time.Instant.now().plusSeconds(3600)
-        val deviceBinding = DeviceBinding("bpk", Random.Default.nextBytes(32), "deviceName", "deviceId").also {
+        val deviceName = "fake-" + UUID.randomUUID().toString()
+        val deviceId = UUID.randomUUID().toString()
+        val bpk = UUID.randomUUID().toString()
+        val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId).also {
             deviceBindingRepo.save(it)
         }
         IssuedCredential(UUID.randomUUID().toString(), credentialSubject.id, exp, deviceBinding, attributeName).also {
@@ -119,7 +122,13 @@ class DebugController(
 
     private fun buildCredentialList(model: ModelMap): ModelAndView {
         val vcList = pupilIdRevocationService.getAllNonRevokedWithDetails().map {
-            CredentialListDto(it.vcId, it.createdOn.toString(), it.attributeName, it.subjectId)
+            CredentialListDto(
+                it.vcId,
+                it.createdOn.toString(),
+                it.attributeName,
+                it.subjectId,
+                it.deviceBinding.deviceName
+            )
         }
         model["vcList"] = vcList
         model["createCredentialUrl"] = "${configurationProperties.publicContext}/debug/credential/create"
@@ -150,5 +159,6 @@ data class CredentialListDto(
     val vcId: String,
     val issuanceDate: String,
     val attributeName: String,
-    val subjectId: String
+    val subjectId: String,
+    val deviceName: String,
 )

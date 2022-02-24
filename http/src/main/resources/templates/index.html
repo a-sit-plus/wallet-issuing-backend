@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta charset="UTF-8">
-    <title>Wallet Demo</title>
+    <title>A-SIT Plus Wallet</title>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.1.3/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.1.3/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
@@ -19,112 +19,106 @@
 <div th:replace="fragments/navbar.html :: navbar"></div>
 <div class="container py-4">
     <div class="row align-items-start">
-        <h1 class="display-4 col">Wallet Backed</h1>
+        <h1 class="display-4 col">Wallet Backend</h1>
         <div class="col"></div>
         <p class="col-auto mt-auto tour_btn">
-            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInstructions"
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseInstructions"
                     aria-expanded="false" aria-controls="collapseInstructions">
                 Take a Tour <span th:replace="fragments/icons.html :: play_icon"></span>
             </button>
         </p>
     </div>
 
-    <p class="lead mt-4 mb-5">Welcome to A-SIT Plus's Wallet System. This is the Backend, which orchestrates the credential
-        issuing and
-        keeps track of the validity
-        of the credential. You can use the service through our mobile apps.</p>
+    <p class="lead mt-4 mb-5">
+        Welcome to the A-SIT Plus Wallet System. This is the Backend, which orchestrates issuing of credentials and
+        keeps track of the validity of issued credentials.
+    </p>
 
     <div class="my-4">
         <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
             <span th:replace="fragments/icons.html :: info_icon"></span>
-            Try out the mobile
-            apps:</p>
+            Download the mobile apps
+        </p>
         <ul class="list-group">
             <li class="list-group-item d-flex justify-content-between align-items-start">
                 <div class="ms-2 me-auto">
-                    <span class="fw-bold">The Wallet App for Android</span>
-                    <span class="badge bg-secondary">New</span>
+                    <span class="fw-bold">Wallet App for Android, built on 2022-03-xx</span>
                 </div>
-                <span><a th:href="@{/wallet.apk}" class="btn btn-primary">Download </a></span>
+                <span><a th:href="@{/apps/android/wallet.apk}" class="btn btn-primary">Download</a></span>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-start">
                 <div class="ms-2 me-auto">
-                    <span class="fw-bold">The Verifier App for Android</span>
-                    <span class="badge bg-secondary">New</span>
+                    <span class="fw-bold">Verifier App for Android, built on 2022-03-xx</span>
                 </div>
-                <span><a th:href="@{/verifier.apk}" class="btn btn-primary">Download</a></span>
+                <span><a th:href="@{/apps/android/verifier.apk}" class="btn btn-primary">Download</a></span>
             </li>
         </ul>
     </div>
 
-    <p class="lead mt-5 mb-3">We encourage you to take a
+    <p class="lead mt-5 mb-3">We encourage you to
         <a class="link-primary tour_btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInstructions"
-           aria-expanded="false" aria-controls="collapseInstructions">tour</a>
-        through the PupilID Demo!</p>
+           aria-expanded="false" aria-controls="collapseInstructions">take a tour</a>
+        through the PupilId Demo!
+    </p>
 
     <div class="collapse my-3" id="collapseInstructions">
         <div class="card card-body">
-
-            <p class="alert alert-light border my-3" style="border-left: 0.5rem solid #5bc0de !important;">
-                <span th:replace="fragments/icons.html :: info_icon"></span>
-                The following steps will guide you through the credential issuance procedure showcased in this demo:
-            </p>
-
             <ol class="list-group list-group-numbered">
                 <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div class="ms-2 me-auto">
-                        <div class="fw-bold">Prerequisite</div>
-                        Download the appropriate Wallet application according to your mobile operating system from above
-                        and install the application.<br>
-                        <em>Optionally: Also download and install the Verifier application on a second smartphone.
-                            So later you will be able to verify the PupilID held by the other smartphone.</em>
-                    </div>
-                </li>
-
-                <li class="list-group-item d-flex justify-content-between align-items-start">
-                    <div class="ms-2 me-auto">
-                        <div class="fw-bold">Demo PupilID</div>
-                        Goto the <a th:href="@{/debug/initialize}" target="_blank">Initialize</a> page of the website.
-                        We already generated the ID of a fictive pupil for you (note the QR-code in the center).
-                    </div>
-                </li>
-
-                <li class="list-group-item d-flex justify-content-between align-items-start">
-                    <div class="ms-2 me-auto">
-                        <div class="fw-bold">Scan QR-code</div>
-                        Open now the Wallet app and click on "QR-code scannen" or the plus sign. A QR-scanner will
-                        appear. Use it to scan the QR-code generated in the previous step.
+                        <div class="fw-bold">Install Apps</div>
+                        Download and install the Wallet App from above on your smartphone.<br>
+                        <em>Optionally: Download and install the Verifier App on a second smartphone.</em>
                     </div>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div class="ms-2 me-auto">
-                        <div class="fw-bold">Biometric lock</div>
-                        After scanning, your fingerprint is checked, to ensure cryptographic operations are executed
-                        with the permission of the smartphone owner.
+                        <div class="fw-bold">Create Device Binding</div>
+                        Go to the <a th:href="@{/debug/initialize}" target="_blank">Initialize</a> page of the website
+                        on your desktop device.<br/>
+                        Open the Wallet App on your smartphone and scan the QR code to create a device binding.
                     </div>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div class="ms-2 me-auto">
-                        <div class="fw-bold">Check the received ID</div>
-                        In the next step, the data of the pupil's ID is previewed. The user can now decide to add the ID
-                        to the Wallet app or to discard it. Press "hinzufügen" to add the ID to the Wallet in order
-                        to proceed.
+                        <div class="fw-bold">Biometric Authentication</div>
+                        During the creation of the device binding, you'll need to confirm the biometric authentication
+                        on your smartphone.
                     </div>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div class="ms-2 me-auto">
-                        <div class="fw-bold">View the ID</div>
-                        Back on the home screen of the Wallet application, the user can scroll through all the IDs he
-                        possesses. Clicking on one ID will show its details. Further, clicking on "verifiziern" will show
-                        a QR-Code that can be scanned by the Verifier application to verify the pupil's ID.
+                        <div class="fw-bold">Load Credentials</div>
+                        In your Wallet App, click on “Load Credentials” or the plus sign to load a PupilId into the
+                        Wallet.
                     </div>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-start">
                     <div class="ms-2 me-auto">
-                        <div class="fw-bold">Invalidate an ID</div>
-                        In case an invalidation of a pupil's ID is needed, a demo is shown on the
-                        <a th:href="@{/debug/credential/list}">Revoke</a> page. Use the list view to filter and search for the
-                        credential to be revoked. Use the "revoke" button to the right to finalize the revocation.
+                        <div class="fw-bold">Review Credentials</div>
+                        The Wallet App shows a preview of the credentials contained in the PupilId. Confirm the
+                        credentials to save them onto your smartphone.
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">Present Credentials</div>
+                        In your Wallet App, click on your PupilId to present the credentials for verification.
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">Validate Credentials</div>
+                        On your second smartphone, open the Verifier App and scan the QR code presented on the Wallet
+                        App.
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">Revoke Credentials</div>
+                        Go to the <a th:href="@{/debug/credential/list}">Revoke</a> page to revoke your credentials.
+                        Afterwards, a verification of the credentials from your Wallet App shall fail.
                     </div>
                 </li>
             </ol>

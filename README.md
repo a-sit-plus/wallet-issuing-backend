@@ -54,7 +54,7 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 
 `GET /help/wallet` displays a help page if the user scans a debug initialization QR Code with a standard camera app (instead of the Wallet App).
 
-`GET /invite/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
+`GET /help/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
 
 ### Device Binding
 
