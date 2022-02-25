@@ -12,7 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpHeaders.WWW_AUTHENTICATE
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
@@ -70,7 +70,8 @@ class BindingControllerSpringSecurityTest {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
+            header { doesNotExist(WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -97,7 +98,7 @@ class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_nonceNotKnown_unauthorized() = runTest {
+    fun start_nonceNotKnown_forbidden() = runTest {
         whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn(null)
 
         mockMvc.post("/binding/start") {
@@ -105,7 +106,8 @@ class BindingControllerSpringSecurityTest {
             content = mapper.writeValueAsString(startRequest)
             header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
+            header { doesNotExist(WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -149,7 +151,8 @@ class BindingControllerSpringSecurityTest {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
+            header { doesNotExist(WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -204,7 +207,8 @@ class BindingControllerSpringSecurityTest {
             content = mapper.writeValueAsString(csrRequest)
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
+            header { doesNotExist(WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
