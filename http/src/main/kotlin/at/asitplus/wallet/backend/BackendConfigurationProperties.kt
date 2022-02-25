@@ -30,7 +30,8 @@ data class DebugConfigurationProperties(
 
 @ConstructorBinding
 data class AuthnConfigurationProperties(
-    val apiKeys: Collection<ApiKeyConfigurationProperties> = listOf()
+    val challengeTimeoutSeconds: Int = 60,
+    val apiKeys: Collection<ApiKeyConfigurationProperties> = listOf(),
 )
 
 @ConstructorBinding

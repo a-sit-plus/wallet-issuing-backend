@@ -163,6 +163,7 @@ class PupilIdControllerSpringSecurityTest {
             header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
         }.andExpect {
             status { isUnauthorized() }
+            header { exists(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
     }
 

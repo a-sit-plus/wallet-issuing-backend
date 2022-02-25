@@ -18,7 +18,6 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.encodeBase64
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,7 +48,11 @@ class BackendConfiguration {
     @Bean
     fun extNonceAuthnService(): ExtNonceAuthnService {
         if (configurationProperties.debug.enabled) {
-            return DebugExtNonceAuthnService(SimpleChallengeService())
+            return DebugExtNonceAuthnService(
+                SimpleChallengeService(
+                    lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds
+                )
+            )
         } else {
             return NoopExtNonceAuthnService()
         }
@@ -67,7 +70,7 @@ class BackendConfiguration {
 
     @Bean
     fun challengeService(): ChallengeService {
-        return SimpleChallengeService()
+        return SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
     }
 
     @Bean

@@ -245,6 +245,7 @@ backend:
     enabled: true
     qr-code-size: 400
   authn:
+    challenge-timeout-seconds: 60
     api-keys:
       - name: Quarto Dev
         key: 8tgvj6tji38fnj75hzc4zuhd6dznnqkn
