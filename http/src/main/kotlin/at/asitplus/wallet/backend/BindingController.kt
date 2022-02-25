@@ -29,6 +29,17 @@ class BindingController(
         summary = "Initiate binding",
         description = "Get parameters to initiate a binding between a key on the mobile device and the authenticated user.",
         security = [SecurityRequirement(name = "extNonce")],
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Binding parameters have been created",
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Client is not authenticated, i.e. it needs to send ext. nonce in header `X-Auth-ExtNonce`",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+        ],
     )
     @PostMapping("/binding/start")
     @PreAuthorize("hasAuthority(\"PUPIL\")")
@@ -54,6 +65,11 @@ class BindingController(
             ApiResponse(
                 responseCode = "400",
                 description = "Value for `challenge` or `csr` is not valid",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
         ],

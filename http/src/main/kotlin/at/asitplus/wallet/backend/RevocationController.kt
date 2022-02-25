@@ -33,6 +33,11 @@ class RevocationController(
                 description = "Some device bindings have been revoked",
             ),
             ApiResponse(
+                responseCode = "403",
+                description = "Client is not authenticated, i.e. it needs to send API-Key in header `X-API-Key`",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
                 responseCode = "404",
                 description = "No device binding has been found for the input value",
                 content = [Content(examples = [ExampleObject(value = "")])]
@@ -71,6 +76,11 @@ class RevocationController(
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(
+                responseCode = "403",
+                description = "Client is not authenticated, i.e. it needs to send API-Key in header `X-API-Key`",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
                 responseCode = "404",
                 description = "No PupilId has been found for the input value",
                 content = [Content(examples = [ExampleObject(value = "")])]
@@ -104,6 +114,11 @@ class RevocationController(
             ApiResponse(
                 responseCode = "400",
                 description = "Value for `bpk` is not valid, should not be blank",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Client is not authenticated, i.e. it needs to send API-Key in header `X-API-Key`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(

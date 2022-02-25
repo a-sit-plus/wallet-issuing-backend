@@ -43,6 +43,11 @@ class PupilIdController(
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(
+                responseCode = "401",
+                description = "Client is not authenticated, i.e. needs to answer challenge from header `WWW-Authenticate` first",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
                 responseCode = "500",
                 description = "Internal server error",
                 content = [Content(examples = [ExampleObject(value = "")])]
