@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -126,7 +127,6 @@ class BindingControllerSpringSecurityTest {
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
         val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
-
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -136,7 +136,6 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val confirmRequest = BindingController.BindingConfirmRequest(true)
-
         mockMvc.post("/binding/confirm") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(confirmRequest)
@@ -144,6 +143,7 @@ class BindingControllerSpringSecurityTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
     }
 
     @Test
@@ -158,7 +158,6 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
-
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -181,7 +180,6 @@ class BindingControllerSpringSecurityTest {
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
         val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr, deviceName)
-
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -231,6 +229,7 @@ class BindingControllerSpringSecurityTest {
             status { isForbidden() }
             header { doesNotExist(WWW_AUTHENTICATE) }
         }.andReturn()
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
     }
 
     companion object {

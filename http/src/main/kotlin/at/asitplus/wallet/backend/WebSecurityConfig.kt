@@ -7,6 +7,7 @@ import at.asitplus.wallet.backend.auth.DeviceBindingAuthnFilter
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnProvider
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnFilter
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnProvider
+import at.asitplus.wallet.backend.auth.ExtNonceLogoutHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
@@ -30,6 +31,7 @@ class WebSecurityConfig(
     private val extNonceAuthnProvider: ExtNonceAuthnProvider,
     private val deviceBindingAuthnChallengeService: ChallengeService,
     private val apiKeyAuthnProvider: ApiKeyAuthnProvider,
+    private val extNonceLogoutHandler: ExtNonceLogoutHandler,
 ) : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
@@ -44,7 +46,8 @@ class WebSecurityConfig(
                 AntPathRequestMatcher("/pupilid/**")
             )
             .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
-            .and().logout().invalidateHttpSession(true).clearAuthentication(true).and()
+            .and().logout().invalidateHttpSession(true).clearAuthentication(true)
+            .addLogoutHandler(extNonceLogoutHandler)
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {

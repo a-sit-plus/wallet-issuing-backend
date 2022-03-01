@@ -125,7 +125,7 @@ class BindingController(
         log.info("/binding/confirm called for {} with {}", principal, body)
         if (!body.success) {
             return ResponseEntity.badRequest().build<BindingConfirmResponse>()
-                .also { log.info("/binding/create returns HTTP 400: Success not set") }
+                .also { log.info("/binding/confirm returns HTTP 400: Success not set") }
         }
         return ResponseEntity.ok(BindingConfirmResponse(true))
             .also { request.logout() }

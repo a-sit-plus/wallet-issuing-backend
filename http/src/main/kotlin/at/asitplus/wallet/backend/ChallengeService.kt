@@ -8,12 +8,24 @@ import kotlin.time.Duration.Companion.seconds
 
 interface ChallengeService {
 
+    /**
+     * Generate a new random `challenge`, stored for later verification.
+     */
     fun generate(): ByteArray
 
+    /**
+     * Verify that the `challenge` is still valid.
+     */
     fun verify(challenge: ByteArray): Boolean
 
+    /**
+     * Remove the `challenge` from the list of still-valid ones.
+     */
     fun remove(challenge: ByteArray): Boolean
 
+    /**
+     * Verify that the `challenge` is still valid, and remove it.
+     */
     fun verifyAndRemove(challenge: ByteArray): Boolean
 
 }
