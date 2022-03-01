@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 
 /**
  * Authenticates user by reading information from a [ExtNonceAuthnToken],
- * by passing information to [ExtNonceAuthnService.validate].
+ * by passing information to [ExtNonceAuthnService.exchangeNonceForBpk].
  */
 @Component
 class ExtNonceAuthnProvider(
@@ -27,7 +27,7 @@ class ExtNonceAuthnProvider(
         val credentials = principal.credentials
         if (credentials !is String)
             throw BadCredentialsException("not supported")
-        val bpk = extNonceAuthnService.validate(credentials)
+        val bpk = extNonceAuthnService.exchangeNonceForBpk(credentials)
             ?: throw BadCredentialsException("Error")
         log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)
         return ExtNonceAuthnToken(credentials, bpk)

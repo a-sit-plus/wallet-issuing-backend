@@ -43,6 +43,7 @@ class BindingControllerSpringSecurityTest {
     @MockBean
     private lateinit var challengeService: ChallengeService
 
+    private lateinit var bpk: String
     private lateinit var challenge: ByteArray
     private lateinit var nonce: String
     private lateinit var csr: ByteArray
@@ -52,11 +53,12 @@ class BindingControllerSpringSecurityTest {
 
     @BeforeEach
     fun beforeEach() {
+        bpk = UUID.randomUUID().toString()
         challenge = Random.nextBytes(32)
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         nonce = UUID.randomUUID().toString()
-        whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn("bpk")
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
@@ -99,7 +101,7 @@ class BindingControllerSpringSecurityTest {
 
     @Test
     fun start_nonceNotKnown_forbidden() = runTest {
-        whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn(null)
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(null)
 
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
@@ -112,7 +114,7 @@ class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_ok() = runTest {
+    fun start_create_confirm_ok() = runTest {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -128,6 +130,16 @@ class BindingControllerSpringSecurityTest {
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val confirmRequest = BindingController.BindingConfirmRequest(true)
+
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }
@@ -180,7 +192,7 @@ class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_create_sessionInvalid() = runTest {
+    fun start_create_create_confirm_sessionInvalid() = runTest {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -196,6 +208,15 @@ class BindingControllerSpringSecurityTest {
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val confirmRequest = BindingController.BindingConfirmRequest(true)
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }

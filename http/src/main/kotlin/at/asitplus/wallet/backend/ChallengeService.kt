@@ -10,6 +10,10 @@ interface ChallengeService {
 
     fun generate(): ByteArray
 
+    fun verify(challenge: ByteArray): Boolean
+
+    fun remove(challenge: ByteArray): Boolean
+
     fun verifyAndRemove(challenge: ByteArray): Boolean
 
 }
@@ -21,14 +25,29 @@ class SimpleChallengeService(
 
     private val list = mutableListOf<Entry>()
 
-    override fun generate() =
-        Entry(Random.nextBytes(challengeLength), Clock.System.now()).also { list += it }.challenge
+    override fun generate(): ByteArray {
+        removeExpiredChallenges()
+        return Entry(Random.nextBytes(challengeLength), Clock.System.now()).also { list += it }.challenge
+    }
+
+    override fun verify(challenge: ByteArray): Boolean {
+        removeExpiredChallenges()
+        return list.any { it.challenge.contentEquals(challenge) }
+    }
+
+    override fun remove(challenge: ByteArray): Boolean {
+        return list.removeIf { it.challenge.contentEquals(challenge) }
+    }
 
     override fun verifyAndRemove(challenge: ByteArray): Boolean {
+        removeExpiredChallenges()
+        return list.removeIf { it.challenge.contentEquals(challenge) }
+    }
+
+    private fun removeExpiredChallenges() {
         list.removeAll {
             it.creation < Clock.System.now() - lifetimeSeconds.seconds
         }
-        return list.removeIf { it.challenge.contentEquals(challenge) }
     }
 
     data class Entry(

@@ -37,7 +37,7 @@ class BindingControllerLogicTest {
 
     @Test
     @WithMockUser(authorities = ["PUPIL"])
-    fun start_create_ok() = runTest {
+    fun start_create_confirm_ok() = runTest {
         val startRequest = BindingController.BindingParamsRequest(UUID.randomUUID().toString())
         val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
@@ -65,6 +65,15 @@ class BindingControllerLogicTest {
             mapper.readValue<BindingController.BindingCsrResponse>(createResponse.response.contentAsString).certificate
         val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
         assertContentEquals(keyPair.public.encoded, certificate.publicKey.encoded)
+
+        val confirmRequest = BindingController.BindingConfirmRequest(true)
+
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
     }
 
     private fun generateCsr(keyPair: KeyPair): ByteArray {

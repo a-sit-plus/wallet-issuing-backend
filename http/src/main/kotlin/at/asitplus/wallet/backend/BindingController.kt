@@ -91,8 +91,45 @@ class BindingController(
                 .also { log.info("/binding/create returns HTTP 400: CSR invalid") }
         deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
         return ResponseEntity.ok(BindingCsrResponse(certificate))
-            .also { request.logout() }
             .also { log.info("/binding/create returns HTTP 200: {}", it) }
+    }
+
+    @Operation(
+        summary = "Confirm binding",
+        description = "Confirm the reception of the binding certificate.",
+        security = [SecurityRequirement(name = "xAuthToken")],
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Confirmation has been recorded",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Value for `success` is not valid, i.e. should be `true`",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+        ],
+    )
+    @PostMapping("/binding/confirm")
+    @PreAuthorize("hasAuthority(\"PUPIL\")")
+    fun confirmBinding(
+        @RequestBody body: BindingConfirmRequest,
+        principal: Principal,
+        request: HttpServletRequest,
+    ): ResponseEntity<BindingConfirmResponse> {
+        log.info("/binding/confirm called for {} with {}", principal, body)
+        if (!body.success) {
+            return ResponseEntity.badRequest().build<BindingConfirmResponse>()
+                .also { log.info("/binding/create returns HTTP 400: Success not set") }
+        }
+        return ResponseEntity.ok(BindingConfirmResponse(true))
+            .also { request.logout() }
+            .also { log.info("/binding/confirm returns HTTP 200: {}", it) }
     }
 
     @Schema(description = "Request to get parameters for a new binding")
@@ -129,7 +166,7 @@ class BindingController(
         val deviceName: String,
     )
 
-    @Schema(description = "Final response of the binding process")
+    @Schema(description = "Resonse to the CSR, containing the binding certificate")
     data class BindingCsrResponse(
         @Schema(
             description = "The signed binding certificate, to be stored on the mobile device",
@@ -137,6 +174,16 @@ class BindingController(
             nullable = false
         )
         val certificate: ByteArray,
+    )
+
+    @Schema(description = "Request to confirm the binding")
+    data class BindingConfirmRequest(
+        val success: Boolean
+    )
+
+    @Schema(description = "Response to confirmation")
+    data class BindingConfirmResponse(
+        val success: Boolean
     )
 
 }

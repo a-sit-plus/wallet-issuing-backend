@@ -62,7 +62,9 @@ The call to `/binding/start` requires authentication with a Nonce extracted from
 
 `POST /binding/start` initiates the device binding process in the App. User needs to scan a QR Code with a nonce first to be authorized to access this endpoint.
 
-`POST /binding/create` finishes the device binding process in the App. User is authenticated through the session established by the call to `/binding/start`.
+`POST /binding/create` returns the device binding to the App. User is authenticated through the session established by the call to `/binding/start`.
+
+`POST /binding/confirm` finishes the device binding process. User is authenticated through the session established by the call to `/binding/start`.
 
 Client needs to scan the QR Code from ECO first, to get a value for `X-Auth-ExtNonce`.
 
@@ -93,7 +95,7 @@ Client creates a new key pair and a PKCS#10 certification request for the key pa
 Request from client (newlines for display purposes only):
 
 ```
-POST http://localhost:8080/binding/start
+POST http://localhost:8080/binding/create
 X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
 
 {
@@ -107,11 +109,11 @@ X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
 }
 ```
 
-Response from server (newlines for display purposes only, the `X-Auth-Token` is empty):
+Response from server (newlines for display purposes only):
 
 ```
 HTTP/1.1 200
-X-Auth-Token: 
+X-Auth-Token: b297b9fb-9501-4352-af69-5856ad477a64
 
 {
   "certificate": "MIIBFzCBvaADAgECAgjWVAvsBy5UXDAKBggqhkjOPQQDAjASMRAwDgYDVQQDD
@@ -121,6 +123,28 @@ X-Auth-Token:
                   F7zzQbM/4pF1DfK+6jAKBggqhkjOPQQDAgNJADBGAiEAs9sOHPs3vuHP5zbaT
                   UTxC2j4a/afLfW1GlMJdHGwsToCIQCiAbOdx7Bth+T7MjQhv9hsYo0zDzuMBv
                   xYKF+pbNtJdg=="
+}
+```
+
+Client confirms the binding process:
+
+```
+POST http://localhost:8080/binding/confirm
+X-Auth-Token: b297b9fb-9501-4352-af69-5856ad477a64
+
+{
+  "success": true
+}
+```
+
+Response from server (header `X-Auth-Token` is empty):
+
+```
+HTTP/1.1 200
+X-Auth-Token: 
+
+{
+  "success": true
 }
 ```
 

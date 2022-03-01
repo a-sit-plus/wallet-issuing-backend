@@ -16,7 +16,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
@@ -51,7 +50,7 @@ class BindingControllerFullRunTest {
         nonce = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
-        whenever(extNonceAuthnService.validate(eq(nonce))).thenReturn(bpk)
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
     }
 
     @Test
@@ -85,6 +84,16 @@ class BindingControllerFullRunTest {
             mapper.readValue<BindingController.BindingCsrResponse>(createResponse.response.contentAsString).certificate
         val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
         assertContentEquals(keyPair.public.encoded, certificate.publicKey.encoded)
+
+        val confirmRequest = BindingController.BindingConfirmRequest(true)
+
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
     }
 
     private fun generateCsr(keyPair: KeyPair): ByteArray {
