@@ -71,7 +71,7 @@ class PupilIdController(
             is NextMessage.Send -> {
                 return ResponseEntity.ok(result.message)
                     .also { request.logout() }
-                    .also { log.info("/pupilid/issue returns HTTP 200: {}", result.message) }
+                    .also { log.info("/pupilid/issue returns HTTP 200: {}...", result.message.take(128)) }
             }
             is NextMessage.Error -> {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()

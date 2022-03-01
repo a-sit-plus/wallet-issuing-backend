@@ -17,10 +17,10 @@ spring:
 
 logging:
   level:
-    at.asitplus.wallet.lib: debug
-    org.springframework.security: debug
-    org.springframework.web: debug
-    org.springframework.test.web.servlet: debug
+    at.asitplus.wallet.lib: info
+    org.springframework.security: info
+    org.springframework.web: info
+    org.springframework.test.web.servlet: info
 
 backend:
   public-context: "http://localhost:8080"
@@ -34,6 +34,3 @@ backend:
 
 server:
   port: 8080
-
-debug: true
-
