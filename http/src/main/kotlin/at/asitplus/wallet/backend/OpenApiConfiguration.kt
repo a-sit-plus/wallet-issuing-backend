@@ -32,7 +32,7 @@ class OpenApiConfiguration {
                     "apiKey",
                     SecurityScheme()
                         .type(SecurityScheme.Type.APIKEY)
-                        .name("X-API—Key")
+                        .name("X-API-Key")
                         .`in`(SecurityScheme.In.HEADER)
                         .description("API Key to be used for calls to the revocation controller, contained in header `X-API-Key`.")
                 ).addSecuritySchemes(
@@ -44,6 +44,6 @@ class OpenApiConfiguration {
                         .description("Response to challenge sent in header `WWW—Authenticate`, shall contain JWT signed with device binding key.")
                 )
             )
-            .info(Info().title("PupilId API").description("PupilId Backend Service"))
+            .info(Info().title("PupilId API").description("PupilId Backend Service").version("1.0.0"))
     }
 }
