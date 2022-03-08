@@ -114,6 +114,25 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
+    fun start_getChallengeDirectlyResponse_ok() = runTest {
+        mockMvc.post("/authn/devicebinding/challenge") {
+            contentType = MediaType.APPLICATION_JSON
+        }.andExpect {
+            status { isOk() }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
+        }.andReturn()
+
+        mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = clientMessage
+            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+        }.andExpect {
+            status { isOk() }
+            header { exists(X_AUTH_TOKEN) }
+        }.andReturn()
+    }
+
+    @Test
     fun start_challengeResponse_sessionInvalid() = runTest {
         val firstResponse = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON

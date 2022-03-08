@@ -5,7 +5,6 @@ import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
-import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
@@ -16,9 +15,8 @@ import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.util.Base64
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -34,7 +32,7 @@ import java.util.UUID
 import kotlin.test.assertIs
 
 /**
- * Simulates a full run of a client for using the [PupilIdController].
+ * Simulates a full run of a client using the [PupilIdController].
  */
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
@@ -46,24 +44,28 @@ class PupilIdControllerFullRunTest {
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
-    private val subjectAgent = Agent()
-    private val subjectMessenger = IssueCredentialMessenger(
-        agent = subjectAgent,
-        messageWrapper = MessageWrapper(subjectAgent.cryptoService),
-        credentialScheme = ConstantIndex.PupilId
-    )
+    private lateinit var subjectAgent: Agent
+    private lateinit var subjectMessenger: IssueCredentialMessenger
+    private lateinit var request: NextMessage.Send
+    private lateinit var clientCert: ByteArray
+    private lateinit var clientPrivateKey: PrivateKey
+
+    @BeforeEach
+    fun beforeEach() {
+        subjectAgent = Agent()
+        subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
+        val clientCertificateService = ClientCertificateService()
+        val bpk = UUID.randomUUID().toString()
+        val deviceName = UUID.randomUUID().toString()
+        val deviceId = UUID.randomUUID().toString()
+        clientCert = clientCertificateService.cert.encoded
+        clientPrivateKey = clientCertificateService.keyPair.private
+        deviceBindingRepository.save(DeviceBinding(bpk, clientCert, deviceName, deviceId))
+    }
 
     @Test
     fun start_challengeResponse_ok() = runTest {
-        val request = subjectMessenger.startDirect()
-        if (request !is NextMessage.Send) throw Exception("Internal Error")
-        val clientCertificateService = ClientCertificateService()
-        val bpk = UUID.randomUUID().toString()
-        val clientCert = clientCertificateService.cert.encoded
-        val clientPrivateKey = clientCertificateService.keyPair.private
-        withContext(Dispatchers.IO) {
-            deviceBindingRepository.save(DeviceBinding(bpk, clientCert, "foo", "bar"))
-        }
+        request = subjectMessenger.startDirect() as NextMessage.Send
 
         val firstResponse = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -75,7 +77,7 @@ class PupilIdControllerFullRunTest {
 
         val headerValue = firstResponse.response.getHeaderValue(HttpHeaders.WWW_AUTHENTICATE)
         val challenge = headerValue.toString().removePrefix("Challenge ").decodeBase64ToArray()!!
-        val challengeResponse = calcChallengeResponse(challenge, clientCert, clientPrivateKey)
+        val challengeResponse = calcChallengeResponse(challenge)
 
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -89,12 +91,37 @@ class PupilIdControllerFullRunTest {
         assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
     }
 
-    private fun calcChallengeResponse(challenge: ByteArray, certificate: ByteArray, privateKey: PrivateKey): String {
+    @Test
+    fun start_challengeDirectlyResponse_ok() = runTest {
+        request = subjectMessenger.startDirect() as NextMessage.Send
+
+        val firstResponse = mockMvc.post("/authn/devicebinding/challenge") {
+        }.andExpect {
+            status { isOk() }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
+        }.andReturn()
+
+        val challenge = firstResponse.response.contentAsString.decodeBase64ToArray()!!
+        val challengeResponse = calcChallengeResponse(challenge)
+
+        val response = mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = request.message
+            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
+        assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
+    }
+
+    private fun calcChallengeResponse(challenge: ByteArray): String {
         return JWSObject(
-            JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(certificate))).build(),
+            JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(clientCert))).build(),
             Payload(mapOf("challenge" to challenge.encodeBase64()))
         ).also {
-            it.sign(ECDSASigner(privateKey as ECPrivateKey))
+            it.sign(ECDSASigner(clientPrivateKey as ECPrivateKey))
         }.serialize()
     }
 

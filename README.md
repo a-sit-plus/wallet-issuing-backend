@@ -154,6 +154,8 @@ X-Auth-Token:
 
 On the first call to `/pupilid/issue`, this service answers with HTTP Status 401 and a challenge in the header `WWW-Authenticate: Challenge OBU7Uz4vI2uRmeZtGzm5FbNmVNpwNnwWQ06P15fRpiI=`.
 
+Alternatively, the client may call `GET /authn/devicebinding/challenge` to receive a valid challenge (again, Base64-encoded) in the response body.
+
 The client needs to build a JWS with the `challenge` in the payload and its device binding certificate in the `x5c` header (newlines for display purposes only):
 
 ```
