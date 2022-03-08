@@ -55,6 +55,8 @@ dependencies {
     testImplementation(kotlin("test-junit"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
+    testImplementation("at.asitplus.wallet:pupilidlib-jvm:0.1.0-SNAPSHOT")
+    testImplementation("io.ktor:ktor-client-cio:2.0.0-beta-1")
 }
 
 tasks.withType<KotlinCompile> {
