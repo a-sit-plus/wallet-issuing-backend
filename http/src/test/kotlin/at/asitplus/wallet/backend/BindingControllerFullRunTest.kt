@@ -70,7 +70,7 @@ class BindingControllerFullRunTest {
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair), deviceName)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair), deviceName, listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON

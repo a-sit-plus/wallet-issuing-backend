@@ -90,7 +90,8 @@ class BindingController(
             ?: return ResponseEntity.badRequest().build<BindingCsrResponse>()
                 .also { log.info("/binding/create returns HTTP 400: CSR invalid") }
         deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
-        return ResponseEntity.ok(BindingCsrResponse(certificate))
+        val signedPublicKey = certificateService.verifyAttestation(body.attestationCerts)
+        return ResponseEntity.ok(BindingCsrResponse(certificate, signedPublicKey))
             .also { log.info("/binding/create returns HTTP 200: {}", it) }
     }
 
@@ -158,22 +159,59 @@ class BindingController(
         val challenge: ByteArray,
         @Schema(
             description = "Certification Signing Request in PKCS#10 format",
-            example = "MIHNMHQCAQAwEjEQMA4GA1UEAwwHU3ViamVjdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEgRPVMGMgkAilfugC/3mncR8mot9gsC4/bJmlW0ugpxRMiIgi3srUmIlCMgTN9hMPGEAXdPd0Hvize9o9vuezagADAKBggqhkjOPQQDAgNJADBGAiEA2l1XvS1c1j/f6SN0AwTdJZNvTwnZP3tRQyNpzQMZMnMCIQDepERQmECr3mqFGS4AQzSnWpwZZBjGtmU1NWiK/E92Ew==",
+            example = "MIHNMHQCAQAwEjEQMA4GA1UEAwwHU3ViamVjdDBZMBMGByqGSM49AgEGCCqGSM49" +
+                    "AwEHA0IABEgRPVMGMgkAilfugC/3mncR8mot9gsC4/bJmlW0ugpxRMiIgi3srUmI" +
+                    "lCMgTN9hMPGEAXdPd0Hvize9o9vuezagADAKBggqhkjOPQQDAgNJADBGAiEA2l1X" +
+                    "vS1c1j/f6SN0AwTdJZNvTwnZP3tRQyNpzQMZMnMCIQDepERQmECr3mqFGS4AQzSn" +
+                    "WpwZZBjGtmU1NWiK/E92Ew==",
             nullable = false,
         )
         val csr: ByteArray,
         @Schema(description = "Name of the mobile device", example = "Pixel 3", nullable = false)
         val deviceName: String,
+        @Schema(
+            description = "The Key Attestation (Android) or Device Attestation (iOS) structure of the client device",
+            example = "[MIICpjCCAkqgAwIBAgIBATAMBggqhkjOPQQDAgUAMD8xEjAQBgNVBAwMCVN0cm9u" +
+                    "Z0JveDEpMCcGA1UEBRMgMDY4NDJmODRiY2JhZGJkMTk2NDA1YmZkNmE2MzQ5ZWIw" +
+                    "HhcNNzAwMTAxMDAwMDAwWhcNNDgwMTAxMDAwMDAwWjAfMR0wGwYDVQQDExRBbmRy" +
+                    "b2lkIEtleXN0b3JlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD1auUFh" +
+                    "E6prEafZ90OHrq6CPZS6+hTJ3HLmeqOw2OCytf0NaCLLz6DMLe1GV3EWxCDGi1UH" +
+                    "e10UO5zwx/2OyFCjggFTMIIBTzAOBgNVHQ8BAf8EBAMCB4AwggE7BgorBgEEAdZ5" +
+                    "AgERBIIBKzCCAScCAWQKAQICAWQKAQIEJDQ1Y2ZiYWRhLWE5NTItNGVhNS05M2Jj" +
+                    "LWYyZWQzNjVlOGRiOAQAMEy/hUVIBEYwRDEeMBwEFmF0LmFzaXRwbHVzLmJpb21l" +
+                    "dHJpY3MCAgFAMSIEIEFfrT4RcXh0HaTOlPpeZXwPjA8Z06Nw7B6ZSBe/nLXrMIGi" +
+                    "oQUxAwIBAqIDAgEDowQCAgEApQUxAwIBBKoDAgEBv4N4AwIBAr+FPgMCAQC/hUBM" +
+                    "MEoEIA9udcgBg7XewHSwBU1CcemTievksTawgZ3h8VC6D/nXAQH/CgEABCBmOJbI" +
+                    "61T3+Ji7mfx/sIEdmd7/o4Vwizd3ttcqU2kaH7+FQQUCAwHUwL+FQgUCAwMVf7+F" +
+                    "TgYCBAE0ZaG/hU8GAgQBNGWcMAwGCCqGSM49BAMCBQADSAAwRQIgae9OOc3Nwhak" +
+                    "cZCAeA9IXRWyBauT47ADg9Dy9EtasnMCIQDH/fwrI3O45Oqo6OQdBpqNGI77Gprv" +
+                    "rXoKs6kqldIjmA==]",
+        )
+        val attestationCerts: List<ByteArray>,
     )
 
-    @Schema(description = "Resonse to the CSR, containing the binding certificate")
+    @Schema(description = "Response to the CSR, containing the binding certificate")
     data class BindingCsrResponse(
         @Schema(
             description = "The signed binding certificate, to be stored on the mobile device",
-            example = "MIIBFzCBvaADAgECAgjWVAvsBy5UXDAKBggqhkjOPQQDAjASMRAwDgYDVQQDDAdTdWJqZWN0MB4XDTIyMDIyMjE1MzM0NVoXDTIyMDIyMjE1MzQ0NVowETEPMA0GA1UEAwwGSXNzdWVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPnNczNYC/8QwBXZrKqBDdSwvzHQQKOi8UWpsy+33uW2zJorQXgAljj0qxCmVlgPs5FAoF7zzQbM/4pF1DfK+6jAKBggqhkjOPQQDAgNJADBGAiEAs9sOHPs3vuHP5zbaTUTxC2j4a/afLfW1GlMJdHGwsToCIQCiAbOdx7Bth+T7MjQhv9hsYo0zDzuMBvxYKF+pbNtJdg==",
-            nullable = false
+            example = "MIIBFzCBvaADAgECAgjWVAvsBy5UXDAKBggqhkjOPQQDAjASMRAwDgYDVQQDDAdT" +
+                    "dWJqZWN0MB4XDTIyMDIyMjE1MzM0NVoXDTIyMDIyMjE1MzQ0NVowETEPMA0GA1UE" +
+                    "AwwGSXNzdWVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPnNczNYC/8QwBXZr" +
+                    "KqBDdSwvzHQQKOi8UWpsy+33uW2zJorQXgAljj0qxCmVlgPs5FAoF7zzQbM/4pF1" +
+                    "DfK+6jAKBggqhkjOPQQDAgNJADBGAiEAs9sOHPs3vuHP5zbaTUTxC2j4a/afLfW1" +
+                    "GlMJdHGwsToCIQCiAbOdx7Bth+T7MjQhv9hsYo0zDzuMBvxYKF+pbNtJdg==",
+            nullable = false,
         )
         val certificate: ByteArray,
+        @Schema(
+            description = "The signed public key as an JWS, if the attestation from the client was correct, otherwise `null`",
+            example = "eyJhbGciOiJFUzI1NiJ9.eyJwayI6IkJFWHlSS3JVdWh6RHluV1N3YTJEcytUanN" +
+                    "zaEVQRDBOZEFGUDBHVVlha2krQUZoTUxxT0hYUnN3MUgreFFNM2JmYXRoTlhJY3h" +
+                    "icWg3N1dPaVJUMHFZTT0ifQ.OBdGISyFNba1YpPEMj8Su-wWgSKDEBuFNAUHAggu" +
+                    "gQ1bbT01cjuLxphmiGnHYuXXi86wSg_JkCOcgV-acUrysQ",
+            nullable = true,
+        )
+        val attestedPublicKey: String?,
     )
 
     @Schema(description = "Request to confirm the binding")

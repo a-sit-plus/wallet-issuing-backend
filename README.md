@@ -90,7 +90,7 @@ X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
 }
 ```
 
-Client creates a new key pair and a PKCS#10 certification request for the key pair.
+Client creates a new key pair and a PKCS#10 certification request for the key pair, and includes its attestation statements (either Android Key Attestation or Apple App Attestation).
 
 Request from client (newlines for display purposes only):
 
@@ -105,6 +105,23 @@ X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
           GEAXdPd0Hvize9o9vuezagADAKBggqhkjOPQQDAgNJADBGAiEA2l1XvS1c1j/f6SN0AwT
           dJZNvTwnZP3tRQyNpzQMZMnMCIQDepERQmECr3mqFGS4AQzSnWpwZZBjGtmU1NWiK/E92
           Ew==",
+  "attestationCerts": [
+    "MIICpjCCAkqgAwIBAgIBATAMBggqhkjOPQQDAgUAMD8xEjAQBgNVBAwMCVN0cm9u
+     Z0JveDEpMCcGA1UEBRMgMDY4NDJmODRiY2JhZGJkMTk2NDA1YmZkNmE2MzQ5ZWIw
+     HhcNNzAwMTAxMDAwMDAwWhcNNDgwMTAxMDAwMDAwWjAfMR0wGwYDVQQDExRBbmRy
+     b2lkIEtleXN0b3JlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD1auUFh
+     E6prEafZ90OHrq6CPZS6+hTJ3HLmeqOw2OCytf0NaCLLz6DMLe1GV3EWxCDGi1UH
+     e10UO5zwx/2OyFCjggFTMIIBTzAOBgNVHQ8BAf8EBAMCB4AwggE7BgorBgEEAdZ5
+     AgERBIIBKzCCAScCAWQKAQICAWQKAQIEJDQ1Y2ZiYWRhLWE5NTItNGVhNS05M2Jj
+     LWYyZWQzNjVlOGRiOAQAMEy/hUVIBEYwRDEeMBwEFmF0LmFzaXRwbHVzLmJpb21l
+     dHJpY3MCAgFAMSIEIEFfrT4RcXh0HaTOlPpeZXwPjA8Z06Nw7B6ZSBe/nLXrMIGi
+     oQUxAwIBAqIDAgEDowQCAgEApQUxAwIBBKoDAgEBv4N4AwIBAr+FPgMCAQC/hUBM
+     MEoEIA9udcgBg7XewHSwBU1CcemTievksTawgZ3h8VC6D/nXAQH/CgEABCBmOJbI
+     61T3+Ji7mfx/sIEdmd7/o4Vwizd3ttcqU2kaH7+FQQUCAwHUwL+FQgUCAwMVf7+F
+     TgYCBAE0ZaG/hU8GAgQBNGWcMAwGCCqGSM49BAMCBQADSAAwRQIgae9OOc3Nwhak
+     cZCAeA9IXRWyBauT47ADg9Dy9EtasnMCIQDH/fwrI3O45Oqo6OQdBpqNGI77Gprv
+     rXoKs6kqldIjmA="
+  ],
   "deviceName": "Pixel 3"
 }
 ```
@@ -122,7 +139,12 @@ X-Auth-Token: b297b9fb-9501-4352-af69-5856ad477a64
                   C/8QwBXZrKqBDdSwvzHQQKOi8UWpsy+33uW2zJorQXgAljj0qxCmVlgPs5FAo
                   F7zzQbM/4pF1DfK+6jAKBggqhkjOPQQDAgNJADBGAiEAs9sOHPs3vuHP5zbaT
                   UTxC2j4a/afLfW1GlMJdHGwsToCIQCiAbOdx7Bth+T7MjQhv9hsYo0zDzuMBv
-                  xYKF+pbNtJdg=="
+                  xYKF+pbNtJdg==",
+  "attestedPublicKey": "eyJhbGciOiJFUzI1NiJ9.eyJwayI6IkJFWHlSS3JVdWh6RHluV1N3YT
+                        JEcytUanNzaEVQRDBOZEFGUDBHVVlha2krQUZoTUxxT0hYUnN3MUgre
+                        FFNM2JmYXRoTlhJY3hicWg3N1dPaVJUMHFZTT0ifQ.OBdGISyFNba1Y
+                        pPEMj8Su-wWgSKDEBuFNAUHAggugQ1bbT01cjuLxphmiGnHYuXXi86w
+                        Sg_JkCOcgV-acUrysQ"
 }
 ```
 

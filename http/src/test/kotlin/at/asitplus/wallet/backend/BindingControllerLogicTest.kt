@@ -52,7 +52,7 @@ class BindingControllerLogicTest {
             mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString)
         val challenge = bindingParamsResponse.challenge
 
-        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair), "Unit Test")
+        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair), "Unit Test", listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON

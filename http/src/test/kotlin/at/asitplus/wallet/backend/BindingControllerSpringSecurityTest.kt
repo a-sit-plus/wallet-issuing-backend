@@ -126,7 +126,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName, listOf())
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -157,7 +157,7 @@ class BindingControllerSpringSecurityTest {
             header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName, listOf())
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -179,7 +179,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr, deviceName)
+        val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr, deviceName, listOf())
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -201,7 +201,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName)
+        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName, listOf())
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
