@@ -42,6 +42,7 @@ dependencies {
     implementation("org.webjars:datatables:1.11.4")
     implementation("de.codecentric:spring-boot-admin-starter-client:2.6.2")
     implementation("at.asitplus.wallet:shared-jvm:1.0.0")
+    implementation("at.asitplus.wallet:pupilidlib-jvm:0.1.0-SNAPSHOT")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
@@ -55,7 +56,6 @@ dependencies {
     testImplementation(kotlin("test-junit"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
-    testImplementation("at.asitplus.wallet:pupilidlib-jvm:0.1.0-SNAPSHOT")
     testImplementation("io.ktor:ktor-client-cio:2.0.0-beta-1")
 }
 

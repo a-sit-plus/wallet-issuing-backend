@@ -1,5 +1,8 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.BindingConfirmRequestJ
+import at.asitplus.wallet.BindingCsrRequestJ
+import at.asitplus.wallet.BindingParamsRequestJ
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
@@ -50,7 +53,7 @@ class BindingControllerSpringSecurityTest {
     private lateinit var csr: ByteArray
     private lateinit var deviceName: String
     private lateinit var certificate: ByteArray
-    private lateinit var startRequest: BindingController.BindingParamsRequest
+    private lateinit var startRequest: BindingParamsRequestJ
 
     @BeforeEach
     fun beforeEach() {
@@ -64,7 +67,7 @@ class BindingControllerSpringSecurityTest {
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         whenever(certificateService.verifyAndSign(eq(csr))).thenReturn(certificate)
-        startRequest = BindingController.BindingParamsRequest(UUID.randomUUID().toString())
+        startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
     }
 
     @Test
@@ -126,7 +129,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, csr, deviceName, listOf())
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -135,7 +138,7 @@ class BindingControllerSpringSecurityTest {
             status { isOk() }
         }.andReturn()
 
-        val confirmRequest = BindingController.BindingConfirmRequest(true)
+        val confirmRequest = BindingConfirmRequestJ(true)
         mockMvc.post("/binding/confirm") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(confirmRequest)
@@ -157,7 +160,7 @@ class BindingControllerSpringSecurityTest {
             header { exists(X_AUTH_TOKEN) }
         }.andReturn()
 
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, csr, deviceName, listOf())
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -179,7 +182,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(Random.nextBytes(32), csr, deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(Random.nextBytes(32), csr, deviceName, listOf())
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(csrRequest)
@@ -201,7 +204,7 @@ class BindingControllerSpringSecurityTest {
         }.andReturn()
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, csr, deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, csr, deviceName, listOf())
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -211,7 +214,7 @@ class BindingControllerSpringSecurityTest {
             status { isOk() }
         }.andReturn()
 
-        val confirmRequest = BindingController.BindingConfirmRequest(true)
+        val confirmRequest = BindingConfirmRequestJ(true)
         mockMvc.post("/binding/confirm") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(confirmRequest)

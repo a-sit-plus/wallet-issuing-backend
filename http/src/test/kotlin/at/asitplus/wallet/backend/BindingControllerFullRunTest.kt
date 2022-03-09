@@ -1,5 +1,10 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.BindingConfirmRequestJ
+import at.asitplus.wallet.BindingCsrRequestJ
+import at.asitplus.wallet.BindingCsrResponseJ
+import at.asitplus.wallet.BindingParamsRequestJ
+import at.asitplus.wallet.BindingParamsResponseJ
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -55,7 +60,7 @@ class BindingControllerFullRunTest {
 
     @Test
     fun start_create_ok() = runTest {
-        val startRequest = BindingController.BindingParamsRequest(UUID.randomUUID().toString())
+        val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
         val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
         val startResponse = mockMvc.post("/binding/start") {
@@ -67,10 +72,10 @@ class BindingControllerFullRunTest {
         }.andReturn()
 
         val challenge =
-            mapper.readValue<BindingController.BindingParamsResponse>(startResponse.response.contentAsString).challenge
+            mapper.readValue<BindingParamsResponseJ>(startResponse.response.contentAsString).challenge
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingController.BindingCsrRequest(challenge, generateCsr(keyPair), deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair), deviceName, listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -80,12 +85,11 @@ class BindingControllerFullRunTest {
             status { isOk() }
         }.andReturn()
 
-        val certBytes =
-            mapper.readValue<BindingController.BindingCsrResponse>(createResponse.response.contentAsString).certificate
+        val certBytes = mapper.readValue<BindingCsrResponseJ>(createResponse.response.contentAsString).certificate
         val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
         assertContentEquals(keyPair.public.encoded, certificate.publicKey.encoded)
 
-        val confirmRequest = BindingController.BindingConfirmRequest(true)
+        val confirmRequest = BindingConfirmRequestJ(true)
 
         mockMvc.post("/binding/confirm") {
             contentType = MediaType.APPLICATION_JSON
