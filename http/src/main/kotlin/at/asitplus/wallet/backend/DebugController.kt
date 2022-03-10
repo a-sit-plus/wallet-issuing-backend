@@ -127,7 +127,8 @@ class DebugController(
                 it.createdOn.toString(),
                 it.attributeName,
                 it.subjectId,
-                it.deviceBinding.deviceName
+                it.deviceBinding.deviceName,
+                it.deviceBinding.bpk
             )
         }
         model["vcList"] = vcList
@@ -161,4 +162,5 @@ data class CredentialListDto(
     val attributeName: String,
     val subjectId: String,
     val deviceName: String,
+    val bpk: String,
 )

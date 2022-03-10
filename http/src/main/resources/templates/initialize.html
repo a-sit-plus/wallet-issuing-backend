@@ -21,6 +21,13 @@
         <div class="d-flex justify-content-center my-3">
             <img th:width="${qrcodeWidth}" th:src="'data:image/png;base64,'+${qrcode}" alt="" src=""/>
         </div>
+        <p>
+            Note for applications: The QR Code contains a URL pointing to this service, as well as the <code>nonce</code>
+            (as a query parameter) that shall be used for authentication during the device binding process.
+        </p>
+        <p>
+            A valid <code>nonce</code> can also be fetched directly from <a th:href="@{/debug/nonce}">/debug/nonce</a>.
+        </p>
     </div>
     <div th:if="${error} != null">
         <p>Internal server error occurred, please retry later.</p>
