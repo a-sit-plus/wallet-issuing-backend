@@ -264,6 +264,10 @@ These endpoints are only enabled if `backend.debug.enabled=true` is set.
 
 ## Configuration
 
+There is no default configuration file included in this service, i.e. everything should be configured explicitly when running it, using an `application.yml` or `application.properties` file.
+
+An example configuration file (`application.yml`) would be the following:
+
 ```yaml
 spring:
   jpa:
@@ -283,7 +287,6 @@ server:
 backend:
   public-context: "http://localhost:8080"
   credential-lifetime: PT60M
-  random-photo-location: file:/path/to/photos-in-jpg/
   issuer-key:
     type: FILE
     file:
@@ -292,6 +295,7 @@ backend:
   debug:
     enabled: true
     qr-code-size: 400
+    random-photo-location: file:/path/to/photos-in-jpg/
   authn:
     challenge-timeout-seconds: 60
     api-keys:

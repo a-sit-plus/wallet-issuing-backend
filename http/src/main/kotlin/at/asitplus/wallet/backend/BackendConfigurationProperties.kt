@@ -11,12 +11,11 @@ data class BackendConfigurationProperties(
     /**
      * Public URL of this instance, used for several URLs in messages sent to the Wallet
      */
-    val publicContext: String,
+    val publicContext: String = "http://localhost:8080/",
     /**
      * Lifetime of the credentials issued, e.g. 60 minutes or 6 months
      */
     val credentialLifetime: Duration = Duration.ofMinutes(60),
-    val randomPhotoLocation: URI = URI.create("classpath:photos"),
     val issuerKey: KeyConfiguration = KeyConfiguration(),
     val debug: DebugConfigurationProperties = DebugConfigurationProperties(),
     val authn: AuthnConfigurationProperties = AuthnConfigurationProperties(),
@@ -26,6 +25,7 @@ data class BackendConfigurationProperties(
 data class DebugConfigurationProperties(
     val enabled: Boolean = false,
     val qrCodeSize: Int = 400,
+    val randomPhotoLocation: URI = URI.create("file:photos/"),
 )
 
 @ConstructorBinding
