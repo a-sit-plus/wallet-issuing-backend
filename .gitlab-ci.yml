@@ -42,13 +42,28 @@ assembleJdk11:
     reports:
       junit: "**/build/test-results/test/**/TEST-*.xml"
 
-publishToGitlab:
+publish:
   stage: package
   except:
     - tags
   only:
     - master
-    - develop
+    - development
+  script: |
+    export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
+    echo "Publishing version $VERSION for $LIB_NAME"
+    ./gradlew --continue clean assemble publishAllPublicationsToGitlabRepository
+    echo "VERSION=$VERSION" >> variables.env
+  artifacts:
+    when: always
+    reports:
+      dotenv: variables.env
+
+publishSnapshot:
+  stage: package
+  except:
+    - tags
+  when: manual
   script: |
     export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
     echo "Publishing version $VERSION for $LIB_NAME"
@@ -63,7 +78,7 @@ release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-    - job: publishToGitlab
+    - job: publish
       artifacts: true
   when: manual
   only:

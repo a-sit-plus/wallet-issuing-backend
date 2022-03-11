@@ -63,3 +63,14 @@ management:
       exposure:
         include: "*"
 ```
+
+To update the service running at <https://wallet.a-sit.at> perform the following steps:
+
+- Develop the changes on a local `feature/*` branch
+- Push that branch to GitLab
+- Run the CI step `publishSnapshot` manually for that pipeline, see [GitLab UI](https://gitlab.iaik.tugraz.at/wallet/backend/-/pipelines)
+- Once the code is merged to `development`, a `publish` job will run automatically
+- The outcome is a package in the [GitLab Package Registry](https://gitlab.iaik.tugraz.at/wallet/backend/-/packages)
+- Create a [personal access token](https://gitlab.iaik.tugraz.at/-/profile/personal_access_tokens) with scope `read_api`, needed for the deploy script
+- Locally (because we'll need a VPN connection) run `./deploy.sh 1.0.0-SNAPSHOT YOUR_PERSONAL_ACCESS_TOKEN`
+

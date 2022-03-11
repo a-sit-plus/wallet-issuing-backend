@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "at.asitplus.wallet"
-version = "0.1.0"
+version = "1.0.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 configurations {
@@ -111,6 +111,11 @@ repositories {
 
 
 publishing {
+	publications {
+		create<MavenPublication>("bootJava") {
+			artifact(tasks.getByName("bootJar"))
+		}
+	}
     repositories {
         mavenLocal()
         if (System.getenv("CI_JOB_TOKEN") != null) {

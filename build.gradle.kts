@@ -11,7 +11,7 @@ plugins {
 
 allprojects {
     group = "at.asitplus.wallet"
-    version = "0.1.0"
+    version = "1.0.0-SNAPSHOT"
 
     tasks.withType<JavaCompile> {
         sourceCompatibility = "1.8"
