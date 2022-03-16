@@ -14,7 +14,7 @@ server:
   port: 9400
   servlet:
     context-path: /
-  use-forward-headers: true
+  forward-headers-strategy: framework
 backend:
   public-context: "https://wallet.a-sit.at/"
   credential-lifetime: P1D
@@ -26,10 +26,10 @@ backend:
   debug:
     enabled: true
     random-photo-location: file:data/photos/
-    authn:
-      api-keys:
-      - name: Quarto Dev
-        key: 9tgvj6tji38fnj75hzc4zuhd6dznnqkm
+  authn:
+    api-keys:
+    - name: Quarto Dev
+      key: 9tgvj6tji38fnj75hzc4zuhd6dznnqkm
 spring:
   application:
     name: "Wallet Backend Master"
@@ -62,6 +62,52 @@ management:
     web:
       exposure:
         include: "*"
+```
+
+The Apache2 reverse proxy is configured in this way:
+
+```
+
+<Location "/">
+  ProxyPass "http://localhost:9400/"
+  ProxyPassReverse "http://localhost:9400/"
+  ProxyPreserveHost On
+  RequestHeader set X-Forwarded-Proto https
+  RequestHeader set X-Forwarded-Port 443
+</Location>
+
+<Location "/v3/api-docs">
+  <RequireAny>
+    Require ip 129.27.0.0/255.255.0.0
+    Require ip  10.27.0.0/255.255.0.0
+    Require ip 195.34.137.58/255.255.255.255
+    Require ip 195.34.137.59/255.255.255.255
+    Require ip 195.34.137.60/255.255.255.255
+    Require ip 195.34.137.61/255.255.255.255
+  </RequireAny>
+</Location>
+
+<Location "/swagger-ui">
+  <RequireAny>
+    Require ip 129.27.0.0/255.255.0.0
+    Require ip  10.27.0.0/255.255.0.0
+    Require ip 195.34.137.58/255.255.255.255
+    Require ip 195.34.137.59/255.255.255.255
+    Require ip 195.34.137.60/255.255.255.255
+    Require ip 195.34.137.61/255.255.255.255
+  </RequireAny>
+</Location>
+
+<Location "/revoke">
+  <RequireAny>
+    Require ip 129.27.0.0/255.255.0.0
+    Require ip  10.27.0.0/255.255.0.0
+    Require ip 195.34.137.58/255.255.255.255
+    Require ip 195.34.137.59/255.255.255.255
+    Require ip 195.34.137.60/255.255.255.255
+    Require ip 195.34.137.61/255.255.255.255
+  </RequireAny>
+</Location>
 ```
 
 To update the service running at <https://wallet.a-sit.at> perform the following steps:
