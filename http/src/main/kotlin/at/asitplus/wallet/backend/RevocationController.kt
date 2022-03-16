@@ -50,7 +50,7 @@ class RevocationController(
         log.info("/revoke/binding called with {}", body)
         val count = pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(body.bpk, body.deviceId)
         if (count == 0)
-            return ResponseEntity.badRequest().build<RevocationResponse>()
+            return ResponseEntity.notFound().build<RevocationResponse>()
                 .also { log.info("/revoke/binding returns HTTP 404") }
         return ResponseEntity.ok(RevocationResponse(count))
             .also { log.info("/revoke/binding returns HTTP 200: {}", it) }
