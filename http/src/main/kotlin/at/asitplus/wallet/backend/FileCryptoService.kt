@@ -1,39 +1,44 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.DefaultKeyIdService
+import at.asitplus.wallet.lib.JvmPublicKeyHolder
 import at.asitplus.wallet.lib.KeyIdService
-import at.asitplus.wallet.lib.PublicKeyHolderJvm
+import at.asitplus.wallet.lib.PublicKeyHolder
+import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
 import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.Digest
+import at.asitplus.wallet.lib.agent.EphemeralKeyHolder
+import at.asitplus.wallet.lib.agent.JvmEphemeralKeyHolder
+import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JweAlgorithm
-import at.asitplus.wallet.lib.jws.JweEncrypted
 import at.asitplus.wallet.lib.jws.JweEncryption
-import at.asitplus.wallet.lib.jws.JweHeader
-import at.asitplus.wallet.lib.jws.JweHeaderAndPayload
 import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
-import at.asitplus.wallet.lib.jws.JwsContentType
-import at.asitplus.wallet.lib.jws.JwsHeader
-import com.nimbusds.jose.JWEObject
-import com.nimbusds.jose.JWSHeader
-import com.nimbusds.jose.JWSObject
-import com.nimbusds.jose.Payload
-import com.nimbusds.jose.crypto.ECDHDecrypter
-import com.nimbusds.jose.crypto.ECDSASigner
-import com.nimbusds.jose.jwk.ECKey
+import at.asitplus.wallet.lib.jws.JwsExtensions.convertToAsn1Signature
+import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.jce.ECNamedCurveTable
+import org.bouncycastle.jce.provider.JCEECPublicKey
+import org.bouncycastle.jce.spec.ECPublicKeySpec
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
 import java.io.StringReader
+import java.math.BigInteger
 import java.nio.charset.Charset
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
-import java.security.interfaces.ECPrivateKey
+import java.security.Signature
 import java.security.interfaces.ECPublicKey
+import javax.crypto.Cipher
+import javax.crypto.KeyAgreement
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import kotlin.coroutines.suspendCoroutine
 
 class FileCryptoService(
@@ -46,6 +51,9 @@ class FileCryptoService(
 
     private val privateKey: PrivateKey
     private val publicKey: PublicKey
+    private val ecCurve: EcCurve
+    override val keyId: String
+    override val jwsAlgorithm: JwsAlgorithm
 
     init {
         val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
@@ -54,55 +62,152 @@ class FileCryptoService(
         val publicKeyString = loadResource(resourceLoader, config.publicKey.toString())
         val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
         publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
-        log.info("Loaded public key with keyId ${keyIdService.calcKeyId(PublicKeyHolderJvm(publicKey))}")
         require(publicKey != null)
+        ecCurve = EcCurve.SECP_256_R_1
+        jwsAlgorithm = JwsAlgorithm.ES256
+        keyId = keyIdService.calcKeyId(JvmPublicKeyHolder(publicKey, ecCurve))!!
+        log.info("Loaded public key with keyId $keyId")
     }
 
     private fun loadResource(resourceLoader: ResourceLoader, path: String) =
         StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
 
-
-    override val keyId = keyIdService.calcKeyId(PublicKeyHolderJvm(publicKey))!!
-
-    override fun buildJweHeader(type: JwsContentType, contentType: JwsContentType?): JweHeader {
-        return JweHeader(
-            JweAlgorithm.ECDH_ES_A256KW,
-            JweEncryption.A256GCM,
-            keyId,
-            contentType = contentType,
-            type = type
-        )
-    }
-
-    override fun buildJwsHeader(type: JwsContentType, contentType: JwsContentType?): JwsHeader {
-        return JwsHeader(JwsAlgorithm.ES256, keyId, contentType, type)
-    }
-
     override fun toJsonWebKey() = JsonWebKey(
         type = JwkType.EC,
-        curve = "P-256",
+        curve = ecCurve,
         keyId = keyId,
-        x = ECKey.encodeCoordinate(256, (publicKey as ECPublicKey).w.affineX).decode(),
-        y = ECKey.encodeCoordinate(256, publicKey.w.affineY).decode(),
+        x = (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
+        y = (publicKey as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
     )
 
-    override suspend fun signJwsObject(jwsHeader: JwsHeader, jwsPayload: ByteArray): String = suspendCoroutine {
+    override fun verify(
+        input: ByteArray,
+        signature: ByteArray,
+        algorithm: JwsAlgorithm,
+        publicKey: PublicKeyHolder
+    ): Boolean {
+        require(publicKey is JvmPublicKeyHolder) { "JVM Type expected" }
+        val asn1Signature = signature.convertToAsn1Signature(ecCurve.signatureLengthBytes)
+        return Signature.getInstance(algorithm.jcaName).apply {
+            initVerify(publicKey.publicKey)
+            update(input)
+        }.verify(asn1Signature)
+    }
+
+    override suspend fun sign(input: ByteArray): ByteArray = suspendCoroutine {
         try {
-            val jws = JWSObject(JWSHeader.parse(jwsHeader.serialize()), Payload(jwsPayload)).also {
-                it.sign(ECDSASigner(privateKey as ECPrivateKey))
-            }
-            it.resumeWith(Result.success(jws.serialize()))
+            val signed = Signature.getInstance(jwsAlgorithm.jcaName).apply {
+                initSign(privateKey)
+                update(input)
+            }.sign()
+            it.resumeWith(Result.success(signed))
         } catch (e: Throwable) {
             it.resumeWith(Result.failure(e))
         }
     }
 
-    override suspend fun decryptJweObject(jweObject: JweEncrypted, serialized: String): JweHeaderAndPayload {
-        val decrypter = ECDHDecrypter(privateKey as ECPrivateKey)
-        val jweObjectParsed = JWEObject.parse(serialized).also {
-            it.decrypt(decrypter)
-        }
-        return JweHeaderAndPayload(jweObject.header, jweObjectParsed.payload.toBytes())
+    override fun encrypt(
+        key: ByteArray,
+        iv: ByteArray,
+        aad: ByteArray,
+        input: ByteArray,
+        algorithm: JweEncryption
+    ): AuthenticatedCiphertext {
+        val jcaCiphertext = Cipher.getInstance(algorithm.jcaName).also {
+            it.init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(key, algorithm.jcaKeySpecName),
+                GCMParameterSpec(algorithm.ivLengthBits, iv)
+            )
+            it.updateAAD(aad)
+        }.doFinal(input)
+        val ciphertext = jcaCiphertext.dropLast(algorithm.ivLengthBits / 8).toByteArray()
+        val authtag = jcaCiphertext.takeLast(algorithm.ivLengthBits / 8).toByteArray()
+        return AuthenticatedCiphertext(ciphertext, authtag)
     }
 
+    override suspend fun decrypt(
+        key: ByteArray,
+        iv: ByteArray,
+        aad: ByteArray,
+        input: ByteArray,
+        authTag: ByteArray,
+        algorithm: JweEncryption
+    ): ByteArray? = suspendCoroutine {
+        try {
+            val plaintext = Cipher.getInstance(algorithm.jcaName).also {
+                it.init(
+                    Cipher.DECRYPT_MODE,
+                    SecretKeySpec(key, algorithm.jcaKeySpecName),
+                    GCMParameterSpec(algorithm.ivLengthBits, iv)
+                )
+                it.updateAAD(aad)
+            }.doFinal(input + authTag)
+            it.resumeWith(Result.success(plaintext))
+        } catch (e: Throwable) {
+            it.resumeWith(Result.failure(e))
+        }
+    }
+
+    override fun performKeyAgreement(
+        ephemeralKey: EphemeralKeyHolder,
+        recipientKey: PublicKeyHolder,
+        algorithm: JweAlgorithm
+    ): ByteArray {
+        require(ephemeralKey is JvmEphemeralKeyHolder) { "JVM Type expected" }
+        require(recipientKey is JvmPublicKeyHolder) { "JVM Type expected" }
+        return KeyAgreement.getInstance(algorithm.jcaName).also {
+            it.init(ephemeralKey.keyPair.private)
+            it.doPhase(recipientKey.publicKey, true)
+        }.generateSecret()
+    }
+
+    override fun performKeyAgreement(ephemeralKey: JsonWebKey, algorithm: JweAlgorithm): ByteArray {
+        val parameterSpec = ECNamedCurveTable.getParameterSpec(ephemeralKey.curve?.jcaName)
+        val ecPoint = parameterSpec.curve.validatePoint(BigInteger(1, ephemeralKey.x), BigInteger(1, ephemeralKey.y))
+        val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
+        val publicKey = JCEECPublicKey("EC", ecPublicKeySpec)
+        return KeyAgreement.getInstance(algorithm.jcaName).also {
+            it.init(privateKey)
+            it.doPhase(publicKey, true)
+        }.generateSecret()
+    }
+
+    override fun generateEphemeralKeyPair(ecCurve: EcCurve): EphemeralKeyHolder {
+        return JvmEphemeralKeyHolder(ecCurve)
+    }
+
+    override fun messageDigest(input: ByteArray, digest: Digest): ByteArray {
+        return MessageDigest.getInstance(digest.jcaName).digest(input)
+    }
+
+    private val JwsAlgorithm.jcaName
+        get() = when (this) {
+            JwsAlgorithm.ES256 -> "SHA256withECDSA"
+        }
+
+    private val Digest.jcaName
+        get() = when (this) {
+            Digest.SHA256 -> "SHA-256"
+        }
+
+    private val JweEncryption.jcaName
+        get() = when (this) {
+            JweEncryption.A256GCM -> "AES/GCM/NoPadding"
+        }
+
+    private val JweEncryption.jcaKeySpecName
+        get() = when (this) {
+            JweEncryption.A256GCM -> "AES"
+        }
+
+    private val JweAlgorithm.jcaName
+        get() = when (this) {
+            JweAlgorithm.ECDH_ES -> "ECDH"
+        }
+
+    private val EcCurve.jcaName
+        get() = when (this) {
+            EcCurve.SECP_256_R_1 -> "secp256r1"
+        }
 }
