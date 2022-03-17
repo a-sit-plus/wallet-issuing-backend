@@ -4,10 +4,12 @@ import at.asitplus.wallet.BindingConfirmRequestJ
 import at.asitplus.wallet.BindingCsrRequestJ
 import at.asitplus.wallet.BindingParamsRequestJ
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -66,7 +68,7 @@ class BindingControllerSpringSecurityTest {
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
-        whenever(certificateService.verifyAndSign(eq(csr))).thenReturn(certificate)
+        whenever(certificateService.verifyAndSign(eq(csr), any())).thenReturn(certificate)
         startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
     }
 

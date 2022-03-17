@@ -2,3 +2,7 @@
 	path = vclib
 	url = ../vc-library-kotlin.git
 	branch = development
+[submodule "pupilidlib"]
+	path = pupilidlib
+	url = git@gitlab.iaik.tugraz.at:wallet/pupilid-kmm-lib.git
+	branch = development

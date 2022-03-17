@@ -4,7 +4,7 @@ import at.asitplus.wallet.BindingConfirmRequestJ
 import at.asitplus.wallet.BindingCsrRequestJ
 import at.asitplus.wallet.BindingCsrResponseJ
 import at.asitplus.wallet.BindingParamsRequestJ
-import at.asitplus.wallet.BindingParamsResponseJ
+import at.asitplus.wallet.BindingParamsResponse
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -71,11 +71,12 @@ class BindingControllerFullRunTest {
             status { isOk() }
         }.andReturn()
 
-        val challenge =
-            mapper.readValue<BindingParamsResponseJ>(startResponse.response.contentAsString).challenge
+        val bindingParamsResponse = mapper.readValue<BindingParamsResponse>(startResponse.response.contentAsString)
+        val challenge = bindingParamsResponse.challenge
+        val subject = bindingParamsResponse.subject
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair), deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair, subject), deviceName, listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -100,8 +101,8 @@ class BindingControllerFullRunTest {
         }.andReturn()
     }
 
-    private fun generateCsr(keyPair: KeyPair): ByteArray {
-        return JcaPKCS10CertificationRequestBuilder(X500Name("CN=Subject"), keyPair.public).build(
+    private fun generateCsr(keyPair: KeyPair, subject: String): ByteArray {
+        return JcaPKCS10CertificationRequestBuilder(X500Name(subject), keyPair.public).build(
             JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
         ).encoded
     }

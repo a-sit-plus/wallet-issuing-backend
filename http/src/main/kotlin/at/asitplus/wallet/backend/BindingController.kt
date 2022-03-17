@@ -6,6 +6,7 @@ import at.asitplus.wallet.BindingCsrRequestJ
 import at.asitplus.wallet.BindingCsrResponseJ
 import at.asitplus.wallet.BindingParamsRequestJ
 import at.asitplus.wallet.BindingParamsResponseJ
+import at.asitplus.wallet.lib.encodeBase16
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -54,7 +55,8 @@ class BindingController(
     ): ResponseEntity<BindingParamsResponseJ> {
         log.info("/binding/start called for {} with {}", principal, body)
         val challenge = challengeService.generate()
-        return ResponseEntity.ok(BindingParamsResponseJ(challenge))
+        val subject = "CN=${challenge.encodeBase16()}"
+        return ResponseEntity.ok(BindingParamsResponseJ(challenge, subject, "EC"))
             .also { log.info("/binding/start returns ok: {}", it) }
     }
 
@@ -91,7 +93,7 @@ class BindingController(
             return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
                 .also { log.info("/binding/create returns challenge invalid: {}", it) }
         }
-        val certificate = certificateService.verifyAndSign(body.csr)
+        val certificate = certificateService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
             ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
                 .also { log.info("/binding/create returns CSR invalid: {}", it) }
         deviceBindingStorageService.store(principal.name, certificate, body.deviceName)

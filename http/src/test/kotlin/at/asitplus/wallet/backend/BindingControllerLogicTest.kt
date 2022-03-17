@@ -55,8 +55,9 @@ class BindingControllerLogicTest {
 
         val bindingParamsResponse = mapper.readValue<BindingParamsResponseJ>(startResponse.response.contentAsString)
         val challenge = bindingParamsResponse.challenge
+        val subject = bindingParamsResponse.subject
 
-        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair), "Unit Test", listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair, subject), "Unit Test", listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -79,8 +80,8 @@ class BindingControllerLogicTest {
         }.andReturn()
     }
 
-    private fun generateCsr(keyPair: KeyPair): ByteArray {
-        return JcaPKCS10CertificationRequestBuilder(X500Name("CN=Subject"), keyPair.public).build(
+    private fun generateCsr(keyPair: KeyPair, subject: String): ByteArray {
+        return JcaPKCS10CertificationRequestBuilder(X500Name(subject), keyPair.public).build(
             JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
         ).encoded
     }

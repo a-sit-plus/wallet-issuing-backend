@@ -1,12 +1,12 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.Asn1Service
 import at.asitplus.wallet.DeviceAdapter
 import at.asitplus.wallet.DeviceBindingService
+import at.asitplus.wallet.HashAlgorithm
+import at.asitplus.wallet.KeyAlgorithm
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import kotlinx.coroutines.test.runTest
-import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -16,11 +16,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.web.server.LocalServerPort
-import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.Signature
 import java.util.UUID
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
+
 
 /**
  * Simulates a full run of a client for using the [BindingController].
@@ -51,33 +51,51 @@ class BindingControllerKtorLibTest {
 
     @Test
     fun start_create_ok() = runTest {
-        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
-
         val deviceAdapter = object : DeviceAdapter {
-            override val deviceName = randomDeviceName
-
-            override suspend fun createKeyCsr(challenge: ByteArray): ByteArray {
-                return generateCsr(keyPair)
-            }
+            val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
             override fun loadAttestationCerts(): List<ByteArray> {
                 return listOf()
             }
 
             override fun storeCertificate(certificate: ByteArray) {
-                assertNotNull(certificate)
+
             }
+
+            override fun createKey(key: KeyAlgorithm, challenge: ByteArray) {
+
+            }
+
+            override fun getPublicKeyEncoded(): ByteArray {
+                return keyPair.public.encoded
+            }
+
+            override suspend fun sign(input: ByteArray, key: KeyAlgorithm, hash: HashAlgorithm): ByteArray {
+                return Signature.getInstance("${hash.jcaName}with${key.jcaName}").also {
+                    it.initSign(keyPair.private)
+                    it.update(input)
+                }.sign()
+            }
+
+            override val deviceName: String = randomDeviceName
         }
-        val service = DeviceBindingService(nonce, "http://localhost:$localServerPort", deviceAdapter)
+        val service =
+            DeviceBindingService(nonce, "http://localhost:$localServerPort", deviceAdapter, Asn1Service(deviceAdapter))
         val result = service.createDeviceBinding()
 
         assertIs<DeviceBindingService.Result.Success>(result)
     }
 
-    private fun generateCsr(keyPair: KeyPair): ByteArray {
-        return JcaPKCS10CertificationRequestBuilder(X500Name("CN=Subject"), keyPair.public).build(
-            JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
-        ).encoded
-    }
+    private val HashAlgorithm.jcaName: String
+        get() = when (this) {
+            HashAlgorithm.SHA1 -> "SHA1"
+            HashAlgorithm.SHA256 -> "SHA256"
+            HashAlgorithm.SHA512 -> "SHA512"
+        }
 
+    private val KeyAlgorithm.jcaName: String
+        get() = when (this) {
+            KeyAlgorithm.EC -> "ECDSA"
+            KeyAlgorithm.RSA -> "RSA"
+        }
 }

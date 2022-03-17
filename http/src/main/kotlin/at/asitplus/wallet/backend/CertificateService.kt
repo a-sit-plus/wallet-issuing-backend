@@ -28,7 +28,7 @@ interface CertificateService {
      * Verifies the Certification Request (PKCS#10) of the client,
      * and creates a signed certificate for that public key.
      */
-    fun verifyAndSign(csrEncoded: ByteArray): ByteArray?
+    fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray?
 
     /**
      * Verifies the Android Key Attestation or Apple App Attestation
@@ -53,12 +53,16 @@ class InMemoryCertificateService(
     private val issuer = X500Name("CN=Issuer")
     private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
 
-    override fun verifyAndSign(csrEncoded: ByteArray): ByteArray? {
+    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
         try {
             val csr = PKCS10CertificationRequest(csrEncoded)
             val publicKey = BouncyCastleProvider.getPublicKey(csr.subjectPublicKeyInfo)
             if (!csr.isSignatureValid(JcaContentVerifierProviderBuilder().build(publicKey))) {
                 log.warn("verifyAndSign: CSR signature invalid")
+                return null
+            }
+            if (csr.subject.toString() != expectedSubject) { // todo improve check, see E-ID pentest
+                log.warn("verifyAndSign: Subject not correct")
                 return null
             }
             val x500Name = issuer
