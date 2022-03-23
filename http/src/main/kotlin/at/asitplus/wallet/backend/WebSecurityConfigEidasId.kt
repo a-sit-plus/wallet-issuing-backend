@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.Http403ForbiddenEntryPoin
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.session.MapSessionRepository
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession
+import org.springframework.session.web.http.CookieHttpSessionIdResolver
 import org.springframework.session.web.http.HeaderHttpSessionIdResolver
 import org.springframework.session.web.http.HttpSessionIdResolver
 import java.util.concurrent.ConcurrentHashMap
@@ -66,7 +67,8 @@ class WebSecurityConfigEidasId(
 
     @Bean
     fun httpSessionIdResolver(): HttpSessionIdResolver {
-        return HeaderHttpSessionIdResolver.xAuthToken()
+        return DelegatingSessionIdResolver(CookieHttpSessionIdResolver(), HeaderHttpSessionIdResolver.xAuthToken())
     }
 
 }
+

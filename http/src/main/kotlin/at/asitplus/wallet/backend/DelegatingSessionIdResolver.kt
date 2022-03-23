@@ -1,0 +1,25 @@
+package at.asitplus.wallet.backend
+
+import org.springframework.session.web.http.HttpSessionIdResolver
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+
+class DelegatingSessionIdResolver(private vararg val resolvers: HttpSessionIdResolver) : HttpSessionIdResolver {
+
+    override fun resolveSessionIds(request: HttpServletRequest?): MutableList<String> {
+        return resolvers.map { it.resolveSessionIds(request) }.flatten().toMutableList()
+    }
+
+    override fun setSessionId(request: HttpServletRequest?, response: HttpServletResponse?, sessionId: String?) {
+        resolvers.forEach {
+            it.setSessionId(request, response, sessionId)
+        }
+    }
+
+    override fun expireSession(request: HttpServletRequest?, response: HttpServletResponse?) {
+        resolvers.forEach {
+            it.expireSession(request, response)
+        }
+    }
+
+}

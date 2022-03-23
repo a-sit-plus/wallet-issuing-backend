@@ -11,7 +11,7 @@ interface ExtNonceAuthnService {
      * Called in debug settings to generate a new `nonce`,
      * that clients can use to authenticate.
      */
-    fun generateNonce(): String?
+    fun generateNonce(): NonceBpk?
 
     /**
      * Called during authentication to verify the `nonce`
@@ -26,11 +26,16 @@ interface ExtNonceAuthnService {
      */
     fun invalidateNonce(nonce: String): Boolean
 
+    data class NonceBpk(
+        val nonce: String,
+        val bpk: String,
+    )
+
 }
 
 class NoopExtNonceAuthnService : ExtNonceAuthnService {
 
-    override fun generateNonce(): String? {
+    override fun generateNonce(): ExtNonceAuthnService.NonceBpk? {
         return null
     }
 
@@ -48,19 +53,25 @@ class DebugExtNonceAuthnService(
     private val challengeService: ChallengeService
 ) : ExtNonceAuthnService {
 
-    override fun generateNonce(): String {
-        return challengeService.generate().encodeBase16()
+    private val mapChallengeToBpk = mutableMapOf<String, String>()
+
+    override fun generateNonce(): ExtNonceAuthnService.NonceBpk {
+        val challenge = challengeService.generate().encodeBase16()
+        val bpk = UUID.randomUUID().toString()
+        mapChallengeToBpk[challenge] = bpk
+        return ExtNonceAuthnService.NonceBpk(challenge, bpk)
     }
 
     override fun exchangeNonceForBpk(nonce: String): String? {
         if (nonce.decodeBase16ToArray()?.let { challengeService.verify(it) } == true) {
-            return UUID.randomUUID().toString()
+            return mapChallengeToBpk.remove(nonce)
         }
         return null
     }
 
     override fun invalidateNonce(nonce: String): Boolean {
         return nonce.decodeBase16ToArray()?.let { challengeService.remove(it) } == true
+                && mapChallengeToBpk.remove(nonce) != null
     }
 
 }

@@ -16,6 +16,12 @@ class EidasCredentialDataProvider constructor(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
+    private val map = mutableMapOf<String, EidasClaim>()
+
+    fun storeClaims(bpk: String, eidasClaim: EidasClaim) {
+        map[bpk] = eidasClaim
+    }
+
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
             return null
@@ -24,10 +30,15 @@ class EidasCredentialDataProvider constructor(
             return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
             }
-        // TODO get eidas attributes for principal.bpk
+        val eidasClaim = map.remove(principal.bpk)
+            ?: return null.also {
+                log.error("Found no stored EIDAS claim for bpk '{}'", principal.bpk)
+            }
         return when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
-            "vorname" -> AtomicAttributeCredential(subjectId, attributeName, "eidas firstname")
-            "nachname" -> AtomicAttributeCredential(subjectId, attributeName, "eidas lastname")
+            "given-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.givenName)
+            "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
+            "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
+            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
             else -> null
         }
     }
@@ -39,5 +50,7 @@ class EidasCredentialDataProvider constructor(
     override fun getLifetime(): Duration {
         return lifetime
     }
+
+    data class EidasClaim(val subject: String, val birthdate: String, val givenName: String, val familyName: String)
 
 }
