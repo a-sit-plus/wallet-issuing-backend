@@ -14,7 +14,7 @@ import java.security.KeyStore
 
 
 class ClientTlsConfigurationService constructor(
-    configuration: AttributeSourceConfigurationProperties,
+    configuration: ExternalTlsConnection,
     restTemplateBuilder: RestTemplateBuilder,
 ) {
 
@@ -29,15 +29,15 @@ class ClientTlsConfigurationService constructor(
         restTemplate = restTemplateBuilder.requestFactory { requestFactory }.build()
     }
 
-    private fun buildHttpClientTls(configuration: AttributeSourceConfigurationProperties): CloseableHttpClient {
+    private fun buildHttpClientTls(configuration: ExternalTlsConnection): CloseableHttpClient {
         val sslContextBuilder = SSLContexts.custom()
         when (configuration.trust.type) {
             TrustType.KEYSTORE -> loadTrustStore(sslContextBuilder, configuration.trust.truststore!!)
             else -> {} // load nothing
         }
-        if (configuration.clientTls) {
-            when (configuration.key?.type) {
-                KeyType.KEYSTORE -> loadKeyStore(sslContextBuilder, configuration.key.keystore!!)
+        if (configuration.clientTls && configuration.key != null) {
+            when (configuration.key!!.type) {
+                KeyType.KEYSTORE -> loadKeyStore(sslContextBuilder, configuration.key!!.keystore!!)
                 else -> throw IllegalArgumentException("key not configured")
             }
         }

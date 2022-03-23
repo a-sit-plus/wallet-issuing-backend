@@ -45,25 +45,47 @@ data class DebugConfigurationProperties(
      * Size of QR Codes, displayed only on debug endpoints
      */
     val qrCodeSize: Int = 400,
-    /**
-     * Whether to use random data for issued credentials
-     */
-    val randomData: Boolean = false,
-    /**
-     * Location of random photos to be used for issued credentials
-     */
-    val randomPhotoLocation: URI = URI.create("file:photos/"),
 )
 
 @ConstructorBinding
 data class AttributeSourceConfigurationProperties(
+    val type: AttributeSourceType = AttributeSourceType.RANDOM,
+    val eco: ExternalAttributeSourceConfigurationProperties? = null,
+    val random: RandomAttributeSourceConfigurationProperties? = null,
+)
+
+enum class AttributeSourceType {
+    RANDOM,
+    ECO,
+    EIDAS
+}
+
+@ConstructorBinding
+data class ExternalAttributeSourceConfigurationProperties(
     val enabled: Boolean = false,
-    val url: URI? = null,
-    val clientTls: Boolean = false,
-    val serverTls: Boolean = true,
-    val key: KeyConfiguration? = null,
-    val trust: TrustConfiguration = TrustConfiguration(),
-    val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
+    override val url: URI? = null,
+    override val clientTls: Boolean = false,
+    override val serverTls: Boolean = true,
+    override val key: KeyConfiguration? = null,
+    override val trust: TrustConfiguration = TrustConfiguration(),
+    override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
+) : ExternalTlsConnection
+
+interface ExternalTlsConnection {
+    val url: URI?
+    val clientTls: Boolean
+    val serverTls: Boolean
+    val key: KeyConfiguration?
+    val trust: TrustConfiguration
+    val httpBasic: HttpBasicAuthnConfigurationProperties?
+}
+
+@ConstructorBinding
+data class RandomAttributeSourceConfigurationProperties(
+    /**
+     * Location of random photos to be used for issued credentials
+     */
+    val photoLocation: URI = URI.create("file:photos/"),
 )
 
 @ConstructorBinding

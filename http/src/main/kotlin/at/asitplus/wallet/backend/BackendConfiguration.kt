@@ -61,76 +61,74 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun apiKeyAuthnService(): ApiKeyAuthnService {
-        return SimpleApiKeyAuthnService(configurationProperties.authn)
-    }
+    fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
-    fun certificateService(): CertificateService {
-        return InMemoryCertificateService()
-    }
+    fun certificateService(): CertificateService = InMemoryCertificateService()
 
     @Bean
-    fun challengeService(): ChallengeService {
-        return SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
-    }
+    fun challengeService(): ChallengeService =
+        SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
 
     @Bean
-    fun deviceBindingStorageService(deviceBindingRepository: DeviceBindingRepository): DeviceBindingStorageService {
-        return DatabaseDeviceBindingStorageService(deviceBindingRepository)
-    }
+    fun deviceBindingStorageService(deviceBindingRepository: DeviceBindingRepository): DeviceBindingStorageService =
+        DatabaseDeviceBindingStorageService(deviceBindingRepository)
 
     @Bean
     fun pupilIdService(
         issueCredentialMessengerPupilId: IssueCredentialMessenger,
-    ): PupilIdService {
-        return DefaultPupilIdService(issueCredentialMessengerPupilId)
-    }
+    ): PupilIdService = DefaultPupilIdService(issueCredentialMessengerPupilId)
 
     @Bean
     fun pupilIdRevocationService(
         credentialRepo: IssuedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
-    ): PupilIdRevocationService {
-        return DefaultPupilIdRevocationService(credentialRepo, deviceBindingStorageService)
-    }
+    ): PupilIdRevocationService = DefaultPupilIdRevocationService(credentialRepo, deviceBindingStorageService)
 
     @Bean
     fun deviceBindingAuthnService(
         deviceBindingStorageService: DeviceBindingStorageService,
         deviceBindingAuthnChallengeService: ChallengeService,
-    ): DeviceBindingAuthnService {
-        return SimpleDeviceBindingAuthnService(deviceBindingStorageService, deviceBindingAuthnChallengeService)
-    }
+    ): DeviceBindingAuthnService =
+        SimpleDeviceBindingAuthnService(deviceBindingStorageService, deviceBindingAuthnChallengeService)
 
     @Bean
     fun issuerCredentialStore(
         pupilIdRevocationService: PupilIdRevocationService,
-    ): PupilIdCredentialStoreAdapter {
-        return PupilIdCredentialStoreAdapter(pupilIdRevocationService)
-    }
+    ): PupilIdCredentialStoreAdapter = PupilIdCredentialStoreAdapter(pupilIdRevocationService)
 
     @Bean
-    fun issuerCredentialDataProvider(): IssuerCredentialDataProvider {
-        if (configurationProperties.attributeSource.enabled) {
-            return ExternalCredentialDataProvider(
-                configurationProperties.credentialLifetime.toMinutes().minutes,
-                configurationProperties.attributeSource.url.toString(),
-                ClientTlsConfigurationService(configurationProperties.attributeSource, restTemplateBuilder).restTemplate,
-            )
-        } else {
-            val locationPattern = configurationProperties.debug.randomPhotoLocation.toString() + "/*.jpg"
-            val mapOfPhotos = resourcePatternResolver.getResources(locationPattern)
-                .filter { it.exists() }
-                .filter { it.filename != null }
-                .map { it.filename!! to it.inputStream }
-                .map { it.first to it.second.readAllBytes() }
-            return RandomCredentialDataProvider(
-                configurationProperties.credentialLifetime.toMinutes().minutes,
-                mapOfPhotos.toMap()
-            )
+    fun issuerCredentialDataProvider(): IssuerCredentialDataProvider =
+        when (configurationProperties.attributeSource.type) {
+            AttributeSourceType.RANDOM -> {
+                val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
+                val mapOfPhotos = resourcePatternResolver.getResources(locationPattern)
+                    .filter { it.exists() }
+                    .filter { it.filename != null }
+                    .map { it.filename!! to it.inputStream }
+                    .map { it.first to it.second.readAllBytes() }
+                RandomCredentialDataProvider(
+                    configurationProperties.credentialLifetime.toMinutes().minutes,
+                    mapOfPhotos.toMap()
+                )
+            }
+            AttributeSourceType.ECO -> {
+                val restTemplate = ClientTlsConfigurationService(
+                    configurationProperties.attributeSource.eco!!,
+                    restTemplateBuilder
+                ).restTemplate
+                EcoCredentialDataProvider(
+                    configurationProperties.credentialLifetime.toMinutes().minutes,
+                    configurationProperties.attributeSource.eco!!.url.toString(),
+                    restTemplate,
+                )
+            }
+            AttributeSourceType.EIDAS -> {
+                EidasCredentialDataProvider(
+                    configurationProperties.credentialLifetime.toMinutes().minutes
+                )
+            }
         }
-    }
 
     @Bean
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
@@ -150,32 +148,26 @@ class BackendConfiguration {
         issuerCredentialStore: IssuerCredentialStore,
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
         issuerCryptoService: CryptoService
-    ): Agent {
-        return Agent(
-            cryptoService = issuerCryptoService,
-            issuerCredentialStore = issuerCredentialStore,
-            dataProvider = issuerCredentialDataProvider,
-            revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
-        )
-    }
+    ): Agent = Agent(
+        cryptoService = issuerCryptoService,
+        issuerCredentialStore = issuerCredentialStore,
+        dataProvider = issuerCredentialDataProvider,
+        revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
+    )
 
     @Bean
-    fun issuerMessageWrapper(issuerAgent: Agent): MessageWrapper {
-        return MessageWrapper(issuerAgent.cryptoService)
-    }
+    fun issuerMessageWrapper(issuerAgent: Agent): MessageWrapper = MessageWrapper(issuerAgent.cryptoService)
 
     @Bean
     fun issueCredentialMessengerPupilId(
         issuerAgent: Agent,
         issuerMessageWrapper: MessageWrapper
-    ): IssueCredentialMessenger {
-        return IssueCredentialMessenger(
-            issuerAgent,
-            issuerMessageWrapper,
-            "${configurationProperties.publicContext}/issue",
-            true,
-            credentialScheme = ConstantIndex.PupilId,
-        )
-    }
+    ): IssueCredentialMessenger = IssueCredentialMessenger(
+        issuerAgent,
+        issuerMessageWrapper,
+        "${configurationProperties.publicContext}/issue",
+        true,
+        credentialScheme = ConstantIndex.PupilId,
+    )
 
 }
