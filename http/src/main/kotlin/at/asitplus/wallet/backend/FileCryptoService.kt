@@ -47,6 +47,7 @@ class FileCryptoService(
     private val publicKey: PublicKey = keyAdapter.publicKey
     private val ecCurve: EcCurve = keyAdapter.ecCurve
     private val provider: String = keyAdapter.provider
+    private val keyType: JwkType = keyAdapter.keyType
     override val keyId: String = keyIdService.calcKeyId(JvmPublicKeyHolder(publicKey, ecCurve))!!
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
 
@@ -58,11 +59,11 @@ class FileCryptoService(
         StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
 
     override fun toJsonWebKey() = JsonWebKey(
-        type = JwkType.EC,
+        type = keyType,
         curve = ecCurve,
         keyId = keyId,
         x = (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
-        y = (publicKey as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        y = publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
     )
 
     override fun verify(
@@ -151,7 +152,7 @@ class FileCryptoService(
         val parameterSpec = ECNamedCurveTable.getParameterSpec(ephemeralKey.curve?.jcaName)
         val ecPoint = parameterSpec.curve.validatePoint(BigInteger(1, ephemeralKey.x), BigInteger(1, ephemeralKey.y))
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-        val publicKey = JCEECPublicKey("EC", ecPublicKeySpec)
+        val publicKey = JCEECPublicKey(ephemeralKey.type?.jcaName, ecPublicKeySpec)
         return KeyAgreement.getInstance(algorithm.jcaName, provider).also {
             it.init(privateKey)
             it.doPhase(publicKey, true)
@@ -165,6 +166,12 @@ class FileCryptoService(
     override fun messageDigest(input: ByteArray, digest: Digest): ByteArray {
         return MessageDigest.getInstance(digest.jcaName, provider).digest(input)
     }
+
+    private val JwkType.jcaName
+        get() = when(this) {
+            JwkType.EC -> "EC"
+            JwkType.RSA -> "RSA"
+        }
 
     private val JwsAlgorithm.jcaName
         get() = when (this) {

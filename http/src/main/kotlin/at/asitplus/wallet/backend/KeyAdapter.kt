@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
+import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -17,6 +18,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 
 interface KeyAdapter {
+    val keyType: JwkType
     val privateKey: PrivateKey
     val publicKey: PublicKey
     val ecCurve: EcCurve
@@ -35,6 +37,7 @@ class KeyFileAdapter(
     override val publicKey: PublicKey
     override val ecCurve: EcCurve
     override val jwsAlgorithm: JwsAlgorithm
+    override val keyType: JwkType
     override val provider: String = "BC"
 
     init {
@@ -45,6 +48,7 @@ class KeyFileAdapter(
         val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
         publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
         require(publicKey != null)
+        keyType = JwkType.EC
         ecCurve = EcCurve.SECP_256_R_1  // TODO Should be read from public key
         jwsAlgorithm = JwsAlgorithm.ES256
         log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
@@ -66,6 +70,7 @@ class KeyStoreAdapter(
     override val publicKey: PublicKey
     override val ecCurve: EcCurve
     override val jwsAlgorithm: JwsAlgorithm
+    override val keyType: JwkType
     override val provider: String = config.provider ?: "BC"
 
     init {
@@ -74,6 +79,7 @@ class KeyStoreAdapter(
         privateKey = keyStore.getKey(config.alias, config.aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
         publicKey = keyStore.getCertificate(config.alias).publicKey
         require(publicKey != null)
+        keyType = JwkType.EC
         ecCurve = EcCurve.SECP_256_R_1 // TODO Should be read from public key
         jwsAlgorithm = JwsAlgorithm.ES256
         log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
