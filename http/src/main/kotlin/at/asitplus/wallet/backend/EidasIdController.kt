@@ -1,6 +1,12 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.encodeBase64
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -8,19 +14,32 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
+import org.springframework.core.env.Environment
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
+import org.springframework.ui.ModelMap
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.ModelAndView
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
+import java.util.Collections
+import javax.imageio.ImageIO
 import javax.servlet.http.HttpServletRequest
 
 @Profile("eidasid")
 @RestController
 class EidasIdController(
     private val issueCredentialAdapter: IssueCredentialAdapter,
+    private val extNonceAuthnService: ExtNonceAuthnService,
+    private val configurationProperties: BackendConfigurationProperties,
+    private val issuerCredentialDataProvider: IssuerCredentialDataProvider,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -96,6 +115,56 @@ class EidasIdController(
                     .also { log.warn("/eidasid/issue returns HTTP 500: Internal error {}", result) }
             }
         }
+    }
+
+    /**
+     * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
+     */
+    @GetMapping("/eidasid/initialize")
+    @PreAuthorize("isFullyAuthenticated()")
+    fun initialize(model: ModelMap): ModelAndView {
+        log.info("/eidasid/initialize called")
+        val nonceBpk = extNonceAuthnService.generateNonce()
+        if (nonceBpk == null) {
+            model["error"] = "Internal error: Could not generate nonce"
+            return ModelAndView("initialize", model)
+        }
+        if (issuerCredentialDataProvider !is EidasCredentialDataProvider) {
+            model["error"] = "Internal error: Configuration mismatch"
+            return ModelAndView("initialize", model)
+        }
+        val principal = SecurityContextHolder.getContext()?.authentication?.principal
+        if (principal !is OAuth2AuthenticatedPrincipal) {
+            model["error"] = "Please login first"
+            return ModelAndView("initialize", model)
+        }
+        val subject = principal.getAttribute<String>("sub")!! // "ZP:Bysw9ZBchD2iWuNu2taXqk3aK+I="
+        val birthdate = principal.getAttribute<String>("birthdate")!! // "1990-01-01"
+        val givenName = principal.getAttribute<String>("given_name")!! // "XXXGerda"
+        val familyName = principal.getAttribute<String>("family_name")!! // "XXXMusterfrau Erwachsen"
+        val eidasClaim = EidasCredentialDataProvider.EidasClaim(subject, birthdate, givenName, familyName)
+        log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
+        issuerCredentialDataProvider.storeClaims(nonceBpk.bpk, eidasClaim)
+
+        val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonceBpk.nonce}"
+        val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
+        model["qrcode"] = qrCodeImage.encodeBase64()
+        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
+        return ModelAndView("initialize", model)
+    }
+
+    private fun createQrCodeImage(content: String, size: Int): ByteArray {
+        val options = Collections.singletonMap(EncodeHintType.MARGIN, 0)
+        val bits = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, size, size, options)
+        val image = BufferedImage(bits.width, bits.height, BufferedImage.TYPE_INT_RGB)
+        for (y in 0 until bits.height) {
+            for (x in 0 until bits.width) {
+                image.setRGB(x, y, if (bits[x, y]) 0 else 0xffffff)
+            }
+        }
+        val outputStream = ByteArrayOutputStream()
+        ImageIO.write(image, "png", outputStream)
+        return outputStream.toByteArray()
     }
 
 }

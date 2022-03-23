@@ -4,7 +4,6 @@ import at.asitplus.wallet.BindingConfirmRequestJ
 import at.asitplus.wallet.BindingCsrRequestJ
 import at.asitplus.wallet.BindingParamsRequestJ
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.lib.encodeBase16
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -21,6 +20,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders.WWW_AUTHENTICATE
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.UUID
@@ -32,7 +32,7 @@ import kotlin.random.Random
  */
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
-class BindingControllerSpringSecurityTest {
+abstract class BindingControllerSpringSecurityTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -242,3 +242,10 @@ class BindingControllerSpringSecurityTest {
         private const val X_AUTH_EXT_NONCE = "X-Auth-ExtNonce"
     }
 }
+
+@ActiveProfiles("pupilid")
+class PupilIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}
+
+
+@ActiveProfiles("eidasid")
+class EidasIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}

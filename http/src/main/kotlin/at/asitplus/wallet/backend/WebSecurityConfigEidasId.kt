@@ -50,8 +50,8 @@ class WebSecurityConfigEidasId(
             )
             .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
             .and().logout().invalidateHttpSession(true).clearAuthentication(true)
-            .addLogoutHandler(extNonceLogoutHandler)
-            .and().oauth2Login()
+            .addLogoutHandler(extNonceLogoutHandler).logoutSuccessUrl("/")
+            .and().oauth2Login().defaultSuccessUrl("/eidasid/initialize")
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {

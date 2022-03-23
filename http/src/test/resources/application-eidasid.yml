@@ -1,0 +1,19 @@
+backend:
+  attribute-source:
+    type: EIDAS
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          eidea:
+            client-id: https://eid.a-sit.at/wallet
+            client-secret: MASKED
+            client-name: "EID EA"
+            scope: "openid, profile"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: https://eid.a-sit.at/wallet/login/oauth2/code/eidea
+        provider:
+          eidea:
+            issuer-uri: "https://eid.egiz.gv.at"

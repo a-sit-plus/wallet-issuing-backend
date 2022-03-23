@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
 <head th:fragment="headerfiles">
     <meta charset="UTF-8"/>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.1.3/css/bootstrap.min.css} "/>
@@ -14,10 +15,19 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarText">
             <ul class="navbar-nav ms-auto">
-                <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
+                <li sec:authorize="isAnonymous()"
+                    th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
                     <a th:href="@{/login}" class="nav-link">Login with ID Austria</a>
                 </li>
-                <li class="nav-item ms-2">
+                <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}"
+                    sec:authorize="isFullyAuthenticated()" class="nav-item ms-2">
+                    <a th:href="@{/eidasid/initialize}" class="nav-link">Initialize</a>
+                </li>
+                <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}"
+                    sec:authorize="isFullyAuthenticated()" class="nav-item ms-2">
+                    <a th:href="@{/logout}" class="nav-link">Logout</a>
+                </li>
+                <li th:unless="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
                     <a th:href="@{/debug/initialize}" class="nav-link">Initialize</a>
                 </li>
                 <li class="nav-item ms-2">

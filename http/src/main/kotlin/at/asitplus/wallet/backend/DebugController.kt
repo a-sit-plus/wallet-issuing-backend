@@ -5,18 +5,13 @@ import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import org.slf4j.LoggerFactory
-import org.springframework.core.env.Environment
-import org.springframework.core.env.Profiles
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
@@ -36,8 +31,6 @@ class DebugController(
     private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
-    private val environment: Environment,
-    private val issuerCredentialDataProvider: IssuerCredentialDataProvider,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -53,24 +46,6 @@ class DebugController(
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)
-        }
-        if (environment.acceptsProfiles(Profiles.of("eidasid"))) {
-            if (issuerCredentialDataProvider !is EidasCredentialDataProvider) {
-                model["error"] = "Internal error: Configuration mismatch"
-                return ModelAndView("initialize", model)
-            }
-            val principal = SecurityContextHolder.getContext()?.authentication?.principal
-            if (principal !is OAuth2AuthenticatedPrincipal) {
-                model["error"] = "Please login first"
-                return ModelAndView("initialize", model)
-            }
-            val subject = principal.getAttribute<String>("sub")!! // "ZP:Bysw9ZBchD2iWuNu2taXqk3aK+I="
-            val birthdate = principal.getAttribute<String>("birthdate")!! // "1990-01-01"
-            val givenName = principal.getAttribute<String>("given_name")!! // "XXXGerda"
-            val familyName = principal.getAttribute<String>("family_name")!! // "XXXMusterfrau Erwachsen"
-            val eidasClaim = EidasCredentialDataProvider.EidasClaim(subject, birthdate, givenName, familyName)
-            log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
-            issuerCredentialDataProvider.storeClaims(nonceBpk.bpk, eidasClaim)
         }
         val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonceBpk.nonce}"
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
