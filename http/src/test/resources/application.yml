@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    default: pupilid
   jpa:
     hibernate:
       ddl-auto: update

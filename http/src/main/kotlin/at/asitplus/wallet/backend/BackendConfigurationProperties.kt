@@ -51,7 +51,7 @@ data class DebugConfigurationProperties(
 data class AttributeSourceConfigurationProperties(
     val type: AttributeSourceType = AttributeSourceType.RANDOM,
     val eco: ExternalAttributeSourceConfigurationProperties? = null,
-    val random: RandomAttributeSourceConfigurationProperties? = null,
+    val random: RandomAttributeSourceConfigurationProperties? = RandomAttributeSourceConfigurationProperties()
 )
 
 enum class AttributeSourceType {

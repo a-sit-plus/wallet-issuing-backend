@@ -33,7 +33,7 @@ class PupilIdControllerSpringSecurityTest {
     private lateinit var mockMvc: MockMvc
 
     @MockBean
-    private lateinit var pupilIdService: PupilIdService
+    private lateinit var issueCredentialAdapter: IssueCredentialAdapter
 
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
@@ -60,7 +60,7 @@ class PupilIdControllerSpringSecurityTest {
         serverMessage = UUID.randomUUID().toString()
         challengeResponse = UUID.randomUUID().toString()
 
-        whenever(pupilIdService.parseMessage(eq(clientMessage)))
+        whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))

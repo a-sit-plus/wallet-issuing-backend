@@ -1,18 +1,18 @@
 package at.asitplus.wallet.backend.data
 
-import at.asitplus.wallet.backend.PupilIdRevocationService
+import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
 
 /**
- * Implements interface from VC Library to wrap calls to [PupilIdRevocationService]
+ * Implements interface from VC Library to wrap calls to [RevocationService]
  */
-class PupilIdCredentialStoreAdapter(
-    private val pupilIdRevocationService: PupilIdRevocationService,
+class IssuerCredentialStoreAdapter(
+    private val revocationService: RevocationService,
 ) : IssuerCredentialStore {
 
     override fun revoke(vcId: String): Boolean {
-        return pupilIdRevocationService.revokeCredentialsByVcId(vcId) > 0
+        return revocationService.revokeCredentialsByVcId(vcId) > 0
     }
 
     override fun storeGetNextIndex(
@@ -21,11 +21,11 @@ class PupilIdCredentialStoreAdapter(
         issuanceDate: kotlinx.datetime.Instant,
         expirationDate: kotlinx.datetime.Instant,
     ): Int? {
-        return pupilIdRevocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
+        return revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
     }
 
     override fun getRevokedStatusListIndexList(): Collection<Int> {
-        return pupilIdRevocationService.getRevokedStatusListIndexList()
+        return revocationService.getRevokedStatusListIndexList()
     }
 
 }

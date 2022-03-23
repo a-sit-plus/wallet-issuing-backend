@@ -32,7 +32,7 @@ class RevocationControllerLogicTest {
     private lateinit var bindingStorageService: DeviceBindingStorageService
 
     @MockBean
-    private lateinit var pupilIdRevocationService: PupilIdRevocationService
+    private lateinit var revocationService: RevocationService
 
     private lateinit var bpk: String
     private lateinit var deviceName: String
@@ -45,11 +45,11 @@ class RevocationControllerLogicTest {
         deviceId = UUID.randomUUID().toString()
         whenever(bindingStorageService.lookupDevices(eq(bpk)))
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
-        whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
+        whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
             .thenReturn(1)
-        whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(null)))
+        whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(null)))
             .thenReturn(1)
-        whenever(pupilIdRevocationService.revokeCredentialsByBpk(eq(bpk)))
+        whenever(revocationService.revokeCredentialsByBpk(eq(bpk)))
             .thenReturn(1)
     }
 

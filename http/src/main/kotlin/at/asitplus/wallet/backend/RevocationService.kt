@@ -6,7 +6,7 @@ import at.asitplus.wallet.lib.data.CredentialSubject
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 
-interface PupilIdRevocationService {
+interface RevocationService {
 
     fun revokeCredentialsByBpk(bpk: String): Int
 
@@ -28,10 +28,10 @@ interface PupilIdRevocationService {
     fun getRevokedStatusListIndexList(): Collection<Int>
 }
 
-class DefaultPupilIdRevocationService(
+class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
-) : PupilIdRevocationService {
+) : RevocationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 

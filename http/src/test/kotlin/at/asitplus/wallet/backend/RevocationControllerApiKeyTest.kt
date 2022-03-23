@@ -23,7 +23,7 @@ import java.util.UUID
  * i.e. it tests the filter, authentication provider, token and so on.
  */
 @SpringBootTest
-@ActiveProfiles("apikey")
+@ActiveProfiles(profiles = ["pupilid", "apikey"])
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
 class RevocationControllerApiKeyTest {
 
@@ -34,7 +34,7 @@ class RevocationControllerApiKeyTest {
     private lateinit var mapper: ObjectMapper
 
     @MockBean
-    private lateinit var pupilIdRevocationService: PupilIdRevocationService
+    private lateinit var revocationService: RevocationService
 
     // from application-apikey.yml
     private val apiKey: String = "2zo7fr3hft3f0zg758d5"
@@ -46,7 +46,7 @@ class RevocationControllerApiKeyTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
-        whenever(pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
+        whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
             .thenReturn(1)
         request = RevocationController.RevocationRequest(bpk = bpk, deviceId = deviceId)
     }

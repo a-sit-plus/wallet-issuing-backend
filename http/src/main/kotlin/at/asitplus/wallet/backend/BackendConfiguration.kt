@@ -8,7 +8,7 @@ import at.asitplus.wallet.backend.auth.SimpleApiKeyAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.PupilIdCredentialStoreAdapter
+import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import kotlin.time.Duration.Companion.minutes
@@ -75,15 +76,15 @@ class BackendConfiguration {
         DatabaseDeviceBindingStorageService(deviceBindingRepository)
 
     @Bean
-    fun pupilIdService(
-        issueCredentialMessengerPupilId: IssueCredentialMessenger,
-    ): PupilIdService = DefaultPupilIdService(issueCredentialMessengerPupilId)
+    fun issueCredentialAdapter(
+        issueCredentialMessenger: IssueCredentialMessenger,
+    ): IssueCredentialAdapter = DefaultIssueCredentialAdapter(issueCredentialMessenger)
 
     @Bean
-    fun pupilIdRevocationService(
+    fun revocationService(
         credentialRepo: IssuedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
-    ): PupilIdRevocationService = DefaultPupilIdRevocationService(credentialRepo, deviceBindingStorageService)
+    ): RevocationService = DefaultRevocationService(credentialRepo, deviceBindingStorageService)
 
     @Bean
     fun deviceBindingAuthnService(
@@ -93,9 +94,9 @@ class BackendConfiguration {
         SimpleDeviceBindingAuthnService(deviceBindingStorageService, deviceBindingAuthnChallengeService)
 
     @Bean
-    fun issuerCredentialStore(
-        pupilIdRevocationService: PupilIdRevocationService,
-    ): PupilIdCredentialStoreAdapter = PupilIdCredentialStoreAdapter(pupilIdRevocationService)
+    fun issuerCredentialStoreAdapter(
+        revocationService: RevocationService,
+    ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
     fun issuerCredentialDataProvider(): IssuerCredentialDataProvider =
@@ -158,6 +159,7 @@ class BackendConfiguration {
     @Bean
     fun issuerMessageWrapper(issuerAgent: Agent): MessageWrapper = MessageWrapper(issuerAgent.cryptoService)
 
+    @Profile("pupilid")
     @Bean
     fun issueCredentialMessengerPupilId(
         issuerAgent: Agent,
@@ -165,9 +167,22 @@ class BackendConfiguration {
     ): IssueCredentialMessenger = IssueCredentialMessenger(
         issuerAgent,
         issuerMessageWrapper,
-        "${configurationProperties.publicContext}/issue",
+        "${configurationProperties.publicContext}/pupilid/issue",
         true,
         credentialScheme = ConstantIndex.PupilId,
+    )
+
+    @Profile("eidasid")
+    @Bean
+    fun issueCredentialMessengerEidasId(
+        issuerAgent: Agent,
+        issuerMessageWrapper: MessageWrapper
+    ): IssueCredentialMessenger = IssueCredentialMessenger(
+        issuerAgent,
+        issuerMessageWrapper,
+        "${configurationProperties.publicContext}/eidasid/issue",
+        true,
+        credentialScheme = ConstantIndex.Generic,
     )
 
 }

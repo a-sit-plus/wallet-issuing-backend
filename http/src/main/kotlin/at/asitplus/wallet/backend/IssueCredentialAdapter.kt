@@ -4,19 +4,19 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.runBlocking
 
-interface PupilIdService {
+interface IssueCredentialAdapter {
 
     fun parseMessage(it: String): NextMessage?
 
 }
 
-class DefaultPupilIdService(
-    private val issueCredentialMessengerPupilId: IssueCredentialMessenger,
-) : PupilIdService {
+class DefaultIssueCredentialAdapter(
+    private val issueCredentialMessenger: IssueCredentialMessenger,
+) : IssueCredentialAdapter {
 
     override fun parseMessage(it: String) =
         runBlocking {
-            return@runBlocking issueCredentialMessengerPupilId.parseMessage(it)
+            return@runBlocking issueCredentialMessenger.parseMessage(it)
         }
 
 }

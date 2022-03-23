@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class RevocationController(
     private val bindingStorageService: DeviceBindingStorageService,
-    private val pupilIdRevocationService: PupilIdRevocationService,
+    private val revocationService: RevocationService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -48,7 +48,7 @@ class RevocationController(
     @PreAuthorize("hasAuthority(\"REVOCATION\")")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/binding called with {}", body)
-        val count = pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(body.bpk, body.deviceId)
+        val count = revocationService.revokeCredentialsByBpkAndDeviceId(body.bpk, body.deviceId)
         if (count == 0)
             return ResponseEntity.notFound().build<RevocationResponse>()
                 .also { log.info("/revoke/binding returns HTTP 404") }
@@ -94,7 +94,7 @@ class RevocationController(
         if (body.deviceId != null)
             return ResponseEntity.badRequest().build<RevocationResponse>()
                 .also { log.info("/revoke/pupilid returns HTTP 400, deviceId has been set") }
-        val count = pupilIdRevocationService.revokeCredentialsByBpk(body.bpk)
+        val count = revocationService.revokeCredentialsByBpk(body.bpk)
         if (count == 0)
             return ResponseEntity.badRequest().build<RevocationResponse>()
                 .also { log.info("/revoke/pupilid returns HTTP 404") }

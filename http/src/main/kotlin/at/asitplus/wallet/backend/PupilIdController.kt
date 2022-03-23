@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -16,9 +17,10 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 
+@Profile("pupilid")
 @RestController
 class PupilIdController(
-    private val pupilIdService: PupilIdService,
+    private val issueCredentialAdapter: IssueCredentialAdapter,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -62,7 +64,7 @@ class PupilIdController(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
         log.info("/pupilid/issue called for {} with '{}'", authentication, body)
-        when (val result = pupilIdService.parseMessage(body)) {
+        when (val result = issueCredentialAdapter.parseMessage(body)) {
             is NextMessage.Result<*> -> {
                 return ResponseEntity.ok().build<String>()
                     .also { request.logout() }

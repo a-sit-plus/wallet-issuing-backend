@@ -13,7 +13,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 
 @SpringBootTest
-class PupilIdRevocationServiceTest {
+class RevocationServiceTest {
 
     @Autowired
     private lateinit var credentialRepo: IssuedCredentialRepository
@@ -22,7 +22,7 @@ class PupilIdRevocationServiceTest {
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
     @Autowired
-    private lateinit var pupilIdRevocationService: PupilIdRevocationService
+    private lateinit var revocationService: RevocationService
 
     private lateinit var vcId: String
     private lateinit var bpk: String
@@ -53,7 +53,7 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(false, pupilIdRevocationService.isRevoked(vcId))
+        assertEquals(false, revocationService.isRevoked(vcId))
     }
 
     @Test
@@ -63,7 +63,7 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(true, pupilIdRevocationService.isRevoked(vcId))
+        assertEquals(true, revocationService.isRevoked(vcId))
     }
 
     @Test
@@ -72,12 +72,12 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(1, pupilIdRevocationService.revokeCredentialsByBpk(bpk))
+        assertEquals(1, revocationService.revokeCredentialsByBpk(bpk))
     }
 
     @Test
     fun revokeNotExistingCredentialsByBpk() {
-        assertEquals(0, pupilIdRevocationService.revokeCredentialsByBpk(bpk))
+        assertEquals(0, revocationService.revokeCredentialsByBpk(bpk))
     }
 
     @Test
@@ -86,12 +86,12 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(1, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
+        assertEquals(1, revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
     }
 
     @Test
     fun revokeNotExistingCredentialsByDeviceId() {
-        assertEquals(0, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
+        assertEquals(0, revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
     }
 
     @Test
@@ -100,7 +100,7 @@ class PupilIdRevocationServiceTest {
             credentialRepo.save(it)
         }
 
-        assertEquals(0, pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()))
+        assertEquals(0, revocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()))
     }
 
     @Test
@@ -111,7 +111,7 @@ class PupilIdRevocationServiceTest {
 
         assertEquals(
             0,
-            pupilIdRevocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId)
+            revocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId)
         )
     }
 

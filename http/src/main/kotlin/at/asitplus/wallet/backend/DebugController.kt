@@ -29,7 +29,7 @@ import kotlin.random.Random
 class DebugController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
-    private val pupilIdRevocationService: PupilIdRevocationService,
+    private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
 ) {
@@ -96,7 +96,7 @@ class DebugController(
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId=$vcId")
-        pupilIdRevocationService.revokeCredentialsByVcId(vcId)
+        revocationService.revokeCredentialsByVcId(vcId)
         return ModelAndView("redirect:/debug/credential/list")
     }
 
@@ -121,7 +121,7 @@ class DebugController(
     }
 
     private fun buildCredentialList(model: ModelMap): ModelAndView {
-        val vcList = pupilIdRevocationService.getAllNonRevokedWithDetails().map {
+        val vcList = revocationService.getAllNonRevokedWithDetails().map {
             CredentialListDto(
                 it.vcId,
                 it.createdOn.toString(),
