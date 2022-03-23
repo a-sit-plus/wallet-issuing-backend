@@ -29,6 +29,10 @@ data class BackendConfigurationProperties(
      * Configure authentication of external services at this service
      */
     val authn: AuthnConfigurationProperties = AuthnConfigurationProperties(),
+    /**
+     * Configure the source of attributes for the credentials
+     */
+    val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
 )
 
 @ConstructorBinding
@@ -49,6 +53,23 @@ data class DebugConfigurationProperties(
      * Location of random photos to be used for issued credentials
      */
     val randomPhotoLocation: URI = URI.create("file:photos/"),
+)
+
+@ConstructorBinding
+data class AttributeSourceConfigurationProperties(
+    val enabled: Boolean = false,
+    val url: URI? = null,
+    val clientTls: Boolean = false,
+    val serverTls: Boolean = true,
+    val key: KeyConfiguration? = null,
+    val trust: TrustConfiguration = TrustConfiguration(),
+    val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
+)
+
+@ConstructorBinding
+data class HttpBasicAuthnConfigurationProperties(
+    val username: String,
+    val password: String,
 )
 
 @ConstructorBinding
@@ -73,6 +94,7 @@ data class ApiKeyConfigurationProperties(
 data class KeyConfiguration(
     val type: KeyType = KeyType.MEMORY,
     val file: KeyFileConfiguration? = null,
+    val keystore: KeyStoreConfiguration? = null,
 )
 
 @ConstructorBinding
@@ -81,7 +103,37 @@ data class KeyFileConfiguration(
     val publicKey: URI,
 )
 
+@ConstructorBinding
+data class KeyStoreConfiguration(
+    val path: URI,
+    val type: String,
+    val provider: String? = null,
+    val password: String? = null,
+    val alias: String,
+    val aliasPassword: String? = null,
+)
+
+@ConstructorBinding
+data class TrustConfiguration(
+    val type: TrustType = TrustType.SYSTEM,
+    val truststore: TrustStoreConfiguration? = null,
+)
+
+@ConstructorBinding
+data class TrustStoreConfiguration(
+    val path: URI,
+    val type: String,
+    val password: String? = null,
+    val provider: String,
+)
+
 enum class KeyType {
     FILE,
-    MEMORY
+    MEMORY,
+    KEYSTORE,
+}
+
+enum class TrustType {
+    SYSTEM,
+    KEYSTORE,
 }

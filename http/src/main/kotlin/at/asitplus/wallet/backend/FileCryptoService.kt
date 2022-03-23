@@ -17,17 +17,12 @@ import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsExtensions.convertToAsn1Signature
 import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
-import java.io.StringReader
 import java.math.BigInteger
 import java.nio.charset.Charset
 import java.security.MessageDigest
@@ -42,30 +37,20 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.coroutines.suspendCoroutine
 
 class FileCryptoService(
-    config: KeyFileConfiguration,
-    resourceLoader: ResourceLoader,
+    keyAdapter: KeyAdapter,
     keyIdService: KeyIdService = DefaultKeyIdService()
 ) : CryptoService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val privateKey: PrivateKey
-    private val publicKey: PublicKey
-    private val ecCurve: EcCurve
-    override val keyId: String
-    override val jwsAlgorithm: JwsAlgorithm
+    private val privateKey: PrivateKey = keyAdapter.privateKey
+    private val publicKey: PublicKey = keyAdapter.publicKey
+    private val ecCurve: EcCurve = keyAdapter.ecCurve
+    private val provider: String = keyAdapter.provider
+    override val keyId: String = keyIdService.calcKeyId(JvmPublicKeyHolder(publicKey, ecCurve))!!
+    override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
 
     init {
-        val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
-        val privateKeyRead = PEMParser(StringReader(privateKeyString)).readObject()
-        privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
-        val publicKeyString = loadResource(resourceLoader, config.publicKey.toString())
-        val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
-        publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
-        require(publicKey != null)
-        ecCurve = EcCurve.SECP_256_R_1
-        jwsAlgorithm = JwsAlgorithm.ES256
-        keyId = keyIdService.calcKeyId(JvmPublicKeyHolder(publicKey, ecCurve))!!
         log.info("Loaded public key with keyId $keyId")
     }
 
@@ -88,7 +73,7 @@ class FileCryptoService(
     ): Boolean {
         require(publicKey is JvmPublicKeyHolder) { "JVM Type expected" }
         val asn1Signature = signature.convertToAsn1Signature(ecCurve.signatureLengthBytes)
-        return Signature.getInstance(algorithm.jcaName).apply {
+        return Signature.getInstance(algorithm.jcaName, provider).apply {
             initVerify(publicKey.publicKey)
             update(input)
         }.verify(asn1Signature)
@@ -96,7 +81,7 @@ class FileCryptoService(
 
     override suspend fun sign(input: ByteArray): ByteArray = suspendCoroutine {
         try {
-            val signed = Signature.getInstance(jwsAlgorithm.jcaName).apply {
+            val signed = Signature.getInstance(jwsAlgorithm.jcaName, provider).apply {
                 initSign(privateKey)
                 update(input)
             }.sign()
@@ -113,7 +98,7 @@ class FileCryptoService(
         input: ByteArray,
         algorithm: JweEncryption
     ): AuthenticatedCiphertext {
-        val jcaCiphertext = Cipher.getInstance(algorithm.jcaName).also {
+        val jcaCiphertext = Cipher.getInstance(algorithm.jcaName, provider).also {
             it.init(
                 Cipher.ENCRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpecName),
@@ -135,7 +120,7 @@ class FileCryptoService(
         algorithm: JweEncryption
     ): ByteArray? = suspendCoroutine {
         try {
-            val plaintext = Cipher.getInstance(algorithm.jcaName).also {
+            val plaintext = Cipher.getInstance(algorithm.jcaName, provider).also {
                 it.init(
                     Cipher.DECRYPT_MODE,
                     SecretKeySpec(key, algorithm.jcaKeySpecName),
@@ -156,7 +141,7 @@ class FileCryptoService(
     ): ByteArray {
         require(ephemeralKey is JvmEphemeralKeyHolder) { "JVM Type expected" }
         require(recipientKey is JvmPublicKeyHolder) { "JVM Type expected" }
-        return KeyAgreement.getInstance(algorithm.jcaName).also {
+        return KeyAgreement.getInstance(algorithm.jcaName, provider).also {
             it.init(ephemeralKey.keyPair.private)
             it.doPhase(recipientKey.publicKey, true)
         }.generateSecret()
@@ -167,7 +152,7 @@ class FileCryptoService(
         val ecPoint = parameterSpec.curve.validatePoint(BigInteger(1, ephemeralKey.x), BigInteger(1, ephemeralKey.y))
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
         val publicKey = JCEECPublicKey("EC", ecPublicKeySpec)
-        return KeyAgreement.getInstance(algorithm.jcaName).also {
+        return KeyAgreement.getInstance(algorithm.jcaName, provider).also {
             it.init(privateKey)
             it.doPhase(publicKey, true)
         }.generateSecret()
@@ -178,7 +163,7 @@ class FileCryptoService(
     }
 
     override fun messageDigest(input: ByteArray, digest: Digest): ByteArray {
-        return MessageDigest.getInstance(digest.jcaName).digest(input)
+        return MessageDigest.getInstance(digest.jcaName, provider).digest(input)
     }
 
     private val JwsAlgorithm.jcaName

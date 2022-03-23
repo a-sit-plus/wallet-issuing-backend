@@ -20,6 +20,7 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ResourceLoader
@@ -38,6 +39,9 @@ class BackendConfiguration {
 
     @Autowired
     private lateinit var resourcePatternResolver: ResourcePatternResolver
+
+    @Autowired
+    private lateinit var restTemplateBuilder: RestTemplateBuilder
 
     init {
         //Napier.base(DebugAntilog())
@@ -107,25 +111,36 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun issuerCredentialRandomDataProvider(): IssuerCredentialDataProvider {
-        val locationPattern = configurationProperties.debug.randomPhotoLocation.toString() + "/*.jpg"
-        val mapOfPhotos = resourcePatternResolver.getResources(locationPattern)
-            .filter { it.exists() }
-            .filter { it.filename != null }
-            .map { it.filename!! to it.inputStream }
-            .map { it.first to it.second.readAllBytes() }
-        return RandomCredentialDataProvider(
-            configurationProperties.credentialLifetime.toMinutes().minutes,
-            mapOfPhotos.toMap()
-        )
+    fun issuerCredentialDataProvider(): IssuerCredentialDataProvider {
+        if (configurationProperties.attributeSource.enabled) {
+            return ExternalCredentialDataProvider(
+                configurationProperties.credentialLifetime.toMinutes().minutes,
+                configurationProperties.attributeSource.url.toString(),
+                ClientTlsConfigurationService(configurationProperties.attributeSource, restTemplateBuilder).restTemplate,
+            )
+        } else {
+            val locationPattern = configurationProperties.debug.randomPhotoLocation.toString() + "/*.jpg"
+            val mapOfPhotos = resourcePatternResolver.getResources(locationPattern)
+                .filter { it.exists() }
+                .filter { it.filename != null }
+                .map { it.filename!! to it.inputStream }
+                .map { it.first to it.second.readAllBytes() }
+            return RandomCredentialDataProvider(
+                configurationProperties.credentialLifetime.toMinutes().minutes,
+                mapOfPhotos.toMap()
+            )
+        }
     }
 
     @Bean
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
         KeyType.FILE -> FileCryptoService(
-            configurationProperties.issuerKey.file!!,
-            resourceLoader,
+            KeyFileAdapter(configurationProperties.issuerKey.file!!, resourceLoader),
             DefaultKeyIdService()
+        )
+        KeyType.KEYSTORE -> FileCryptoService(
+            KeyStoreAdapter(configurationProperties.issuerKey.keystore!!),
+            DefaultKeyIdService(),
         )
         KeyType.MEMORY -> DefaultCryptoService()
     }
