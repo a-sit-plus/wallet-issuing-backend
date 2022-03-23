@@ -25,14 +25,19 @@ backend:
       public-key: file:data/issuer-key-public.pem
   debug:
     enabled: true
-    random-photo-location: file:data/photos/
+  attribute-source:
+    type: RANDOM
+    random:
+      photo-location: file:data/photos
   authn:
     api-keys:
     - name: Quarto Dev
       key: 9tgvj6tji38fnj75hzc4zuhd6dznnqkm
 spring:
   application:
-    name: "Wallet Backend Master"
+    name: "Wallet Backend PupilId"
+  profiles:
+    active: pupilid
   boot:
     admin:
       client:
@@ -120,3 +125,80 @@ To update the service running at <https://wallet.a-sit.at> perform the following
 - Create a [personal access token](https://gitlab.iaik.tugraz.at/-/profile/personal_access_tokens) with scope `read_api`, needed for the deploy script
 - Locally (because we'll need a VPN connection) run `./deploy.sh 1.0.0-SNAPSHOT YOUR_PERSONAL_ACCESS_TOKEN`
 
+## EidasId Backend Service
+
+This backend service for provisioning and revoking EidasIds runs at <https://eid.a-sit.at/wallet>.
+
+```yaml
+logging:
+  level:
+    at.asitplus: DEBUG
+  file:
+    name: service.log
+server:
+  port: 9400
+  servlet:
+    context-path: /wallet
+  forward-headers-strategy: framework
+backend:
+  public-context: "https://eid.a-sit.at/wallet/"
+  credential-lifetime: P1D
+  issuer-key:
+    type: FILE
+    file:
+      private-key: file:data/issuer-key-private.pem
+      public-key: file:data/issuer-key-public.pem
+  debug:
+    enabled: true
+  attribute-source:
+    type: EIDAS
+spring:
+  application:
+    name: "Wallet Backend EidasId"
+  profiles:
+    active: eidasid
+  boot:
+    admin:
+      client:
+        url: "http://localhost:9900"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: "jdbc:h2:file:~/data/h2.db"
+  web:
+    resources:
+      static-locations:
+      - "classpath:/resources"
+      - "classpath:/static"
+      - "classpath:/public"
+      - "file:apps"
+  security:
+    oauth2:
+      client:
+        registration:
+          eidea:
+            client-id: https://eid.a-sit.at/wallet
+            client-secret: MASKED
+            client-name: "EID EA"
+            scope: "openid, profile"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: https://eid.a-sit.at/wallet/login/oauth2/code/eidea
+        provider:
+          eidea:
+            issuer-uri: "https://eid.egiz.gv.at"
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+```

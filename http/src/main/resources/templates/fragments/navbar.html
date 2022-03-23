@@ -8,13 +8,21 @@
 <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" th:href="@{/}">Wallet Backend</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
+                aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarText">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item ms-2"><a th:href="@{/debug/initialize}" class="nav-link">Initialize</a></li>
-                <li class="nav-item ms-2"><a th:href="@{/debug/credential/list}" class="nav-link">Credentials</a></li>
+                <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
+                    <a th:href="@{/login}" class="nav-link">Login with ID Austria</a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a th:href="@{/debug/initialize}" class="nav-link">Initialize</a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a th:href="@{/debug/credential/list}" class="nav-link">Credentials</a>
+                </li>
             </ul>
         </div>
     </div>

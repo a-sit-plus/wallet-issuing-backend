@@ -10,9 +10,14 @@ import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Profile
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
@@ -32,6 +37,7 @@ class DebugController(
     private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
+    private val environment: Environment,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -43,19 +49,33 @@ class DebugController(
     fun initialize(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/initialize called")
-        runBlocking {
-            val nonce = extNonceAuthnService.generateNonce()
-            val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonce}"
-            val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
-            model["qrcode"] = qrCodeImage.encodeBase64()
-            model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
+        if (environment.acceptsProfiles(Profiles.of("eidasid"))) {
+            val principal = SecurityContextHolder.getContext()?.authentication?.principal
+            if (principal == null) {
+                model["error"] = "Please login first"
+                return ModelAndView("initialize", model)
+            }
+            // TODO Store the attributes of the authenticated user
+            println(principal)
+            println(principal as User)
+            println(principal as UserDetails)
         }
+        val nonce = extNonceAuthnService.generateNonce()
+        val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonce}"
+        val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
+        model["qrcode"] = qrCodeImage.encodeBase64()
+        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
         return ModelAndView("initialize", model)
     }
 
     @GetMapping("/debug/nonce")
     fun getNonce(): ResponseEntity<String> {
-        if (!configurationProperties.debug.enabled) return ResponseEntity.ok("")
+        if (!configurationProperties.debug.enabled) return ResponseEntity.notFound().build()
+        if (environment.acceptsProfiles(Profiles.of("eidasid")) &&
+            SecurityContextHolder.getContext()?.authentication?.principal == null
+        ) {
+            return ResponseEntity.notFound().build()
+        }
         log.info("/debug/nonce called")
         return ResponseEntity.ok(extNonceAuthnService.generateNonce())
     }

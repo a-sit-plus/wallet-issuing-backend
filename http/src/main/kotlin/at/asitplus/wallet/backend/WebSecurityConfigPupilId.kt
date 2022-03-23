@@ -10,6 +10,7 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnProvider
 import at.asitplus.wallet.backend.auth.ExtNonceLogoutHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -23,10 +24,11 @@ import org.springframework.session.web.http.HeaderHttpSessionIdResolver
 import org.springframework.session.web.http.HttpSessionIdResolver
 import java.util.concurrent.ConcurrentHashMap
 
+@Profile("pupilid")
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableSpringHttpSession
-class WebSecurityConfig(
+class WebSecurityConfigPupilId(
     private val deviceBindingAuthnProvider: DeviceBindingAuthnProvider,
     private val extNonceAuthnProvider: ExtNonceAuthnProvider,
     private val deviceBindingAuthnChallengeService: ChallengeService,
