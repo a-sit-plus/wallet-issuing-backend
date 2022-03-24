@@ -51,8 +51,8 @@ class ClientTlsConfigurationService constructor(
     private fun buildHttpClientTls(config: ExternalTlsConnection): CloseableHttpClient {
         val httpClientBuilder = HttpClients.custom()
         val sslContextBuilder = SSLContexts.custom()
-        when (config.trust.type) {
-            TrustType.KEYSTORE -> loadTrustStore(sslContextBuilder, config.trust.truststore!!, config.url)
+        when (config.trust?.type) {
+            TrustType.KEYSTORE -> loadTrustStore(sslContextBuilder, config.trust!!.truststore!!, config.url)
             else -> {} // load nothing
         }
         if (config.clientTls && config.key != null) {

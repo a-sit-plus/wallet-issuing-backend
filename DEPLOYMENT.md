@@ -37,7 +37,7 @@ backend:
       key: 9tgvj6tji38fnj75hzc4zuhd6dznnqkm
     device-binding:
       type: ECO
-      external:
+      eco:
         url: "https://edureg.quarto.at/edudigicardapi"
         server-tls: true
         api-key: MASKED

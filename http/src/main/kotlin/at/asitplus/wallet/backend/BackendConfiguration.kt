@@ -56,11 +56,11 @@ class BackendConfiguration {
             )
             DeviceBindingNonceType.ECO -> {
                 val restTemplate = ClientTlsConfigurationService(
-                    configurationProperties.authn.deviceBinding.external,
+                    configurationProperties.authn.deviceBinding.eco,
                     restTemplateBuilder
                 ).restTemplate
                 EcoExtNonceAuthnService(
-                    configurationProperties.authn.deviceBinding.external.url!!,
+                    configurationProperties.authn.deviceBinding.eco.url!!,
                     restTemplate
                 )
             }

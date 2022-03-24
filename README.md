@@ -58,7 +58,7 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 
 ### Device Binding
 
-The call to `/binding/start` requires authentication with a Nonce extracted from a QR Code displayed by ECO, to be sent in the header `X-Auth-ExtNonce`. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token` (which in turn has been set by the service in the first response).
+The call to `/binding/start` requires authentication with a Nonce extracted from a QR Code displayed by ECO (or this service, in the EIDAS deployment), to be sent in the header `X-Auth-ExtNonce`. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token` (which in turn has been set by the service in the first response).
 
 `POST /binding/start` initiates the device binding process in the App. User needs to scan a QR Code with a nonce first to be authorized to access this endpoint.
 
@@ -86,11 +86,13 @@ HTTP/1.1 200
 X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
 
 {
-  "challenge": "6j2a9M7P1J9bOUuGe5Tpto7Ylz+2DtbH54jdHh2YO/Y="
+  "challenge": "6j2a9M7P1J9bOUuGe5Tpto7Ylz+2DtbH54jdHh2YO/Y=",
+  "subject": "CN=Binding-random-value,O=Wallet",
+  "keyType": "EC"
 }
 ```
 
-Client creates a new key pair and a PKCS#10 certification request for the key pair, and includes its attestation statements (either Android Key Attestation or Apple App Attestation).
+Client creates a new key pair and a PKCS#10 certification request for the key pair (with the given `subject`), and includes its attestation statements (either Android Key Attestation or Apple App Attestation).
 
 Request from client (newlines for display purposes only):
 
@@ -215,6 +217,12 @@ Authorization: Response eyJ4NWMiOlsiTUlJQkZqQ0J2S0FEQWdFQ0FnZ3ZuYTlMeWNzbnh6QUt
                mcLHYnU9lZS7miOw
 ```
 
+#### EIDAS
+
+For EIDAS deployments, the endpoint `POST /eidasid/issue` is available instead, with the same semantics as above.
+
+In addition, the endpoint `GET /eidasid/initialize` is available, where the web browser displays a QR code that can be scanned by the Wallet App to load EIDAS credentials. This endpoint is available after the user has been logged in with OAuth2 (link on `/login`).
+
 ### Revocation
 
 Clients are external services, and authenticated with an API key. The API key shall be sent in the header `X-API-Key`.
@@ -266,7 +274,156 @@ These endpoints are only enabled if `backend.debug.enabled=true` is set.
 
 There is no default configuration file included in this service, i.e. everything should be configured explicitly when running it, using an `application.yml` or `application.properties` file.
 
-An example configuration file (`application.yml`) would be the following:
+There are two profiles implemented in this service: `pupilid` (the default) and `eidasid` for EIDAS deployments.
+
+When the profile `eidasid` is active (e.g. set with `spring.profiles.active=eidasid`, this service expects the user to log in on a desktop device with their E-ID. Then it displays a QR Code, that can be scanned with the Wallet App. The attributes issued as verifiable credentials match the attributes from the E-ID login.
+
+There are several custom configuration properties, all under the key `backend`:
+
+```yaml
+backend:
+  public-context: "http://localhost:8080"
+  credential-lifetime: PT60M
+  issuer-key: {{ KEY_CONFIG }}
+    type: FILE
+    file:
+      private-key: file:issuer-key-private.pem
+      public-key: file:issuer-key-public.pem
+  debug:
+    enabled: true
+    qr-code-size: 400
+  authn:
+    challenge-timeout-seconds: 60
+    api-keys:
+      - name: External Caller
+        key: asdfasdf
+    device-binding:
+      type: INTERNAL
+  attribute-source:
+    type: RANDOM
+```
+
+Alternative configuration for the device binding authentication (validation of the ext. nonce provided by the Wallet App):
+
+```yaml
+backend:
+  authn:
+    device-binding:
+      type: INTERNAL
+```
+
+```yaml
+backend:
+  authn:
+    device-binding:
+      type: ECO
+      eco: {{ SERVICE_CONFIG }}
+```
+
+Alternative configuration of the attribute source (which attributes to issue for the Wallet App):
+
+```yaml
+backend:
+  attribute-source:
+    type: RANDOM
+    random:
+      photo-location: file:photos/
+```
+
+```yaml
+backend:
+  attribute-source:
+    type: EIDAS
+```
+
+```yaml
+backend:
+  attribute-source:
+    type: ECO
+    eco: {{ SERVICE_CONFIG }}
+```
+
+Configuration of external services, depicted as `{{ SERVICE_CONFIG }}` above:
+
+```yaml
+url: https://example.com/
+client-tls: false
+server-tls: true
+key: {{ KEY_CONFIG }}      # may be null
+trust: {{ TRUST_CONFIG }}  # may be null
+http-basic:                # may be null
+  username: bar
+  password: foo
+api-key: asdfasdf          # may be null
+```
+
+Alternative configuration for all cryptographic keys (e.g. for signing verifiable credentials or in Client TLS connections), depicted as `{{ KEY_CONFIG }}` above:
+
+```yaml
+type: MEMORY
+```
+
+```yaml
+type: FILE
+file:
+  private-key: file:issuer-key-private.pem
+  public-key: file:issuer-key-public.pem
+```
+
+```yaml
+type: KEYSTORE
+keystore:
+  path: file:/some/path/keystore.p12
+  type: PKCS12
+  provider: BC                     # may be null
+  password: changeit               # may be null
+  alias: key1
+  alias-password: changeit         # may be null
+```
+
+Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above (if nothing is configured, the system-default truststore will be used):
+
+```yaml
+type: SYSTEM
+```
+
+```yaml
+type: KEYSTORE
+truststore:
+  path: file:/some/path/keystore.p12
+  type: PKCS12
+  provider: BC                     # may be null
+  password: changeit               # may be null
+```
+
+### Server
+
+This service starts an internal Tomcat server, that can be configured in this way:
+
+```yaml
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  forward-headers-strategy: framework
+```
+
+### Logging
+
+This Spring Boot service can be configured to log to a file:
+
+
+```yaml
+logging:
+  level:
+    at.asitplus: DEBUG
+  file:
+    name: service.log
+```
+
+### Database
+
+Configuration to use a in-memory H2 database for deployments in debug environments:
 
 ```yaml
 spring:
@@ -280,28 +437,8 @@ spring:
             non_contextual_creation: true
   datasource:
     url: "jdbc:h2:mem:userstore"
-
-server:
-  port: 8080
-
-backend:
-  public-context: "http://localhost:8080"
-  credential-lifetime: PT60M
-  issuer-key:
-    type: FILE
-    file:
-      private-key: file:issuer-key-private.pem
-      public-key: file:issuer-key-public.pem
-  debug:
-    enabled: true
-    qr-code-size: 400
-    random-photo-location: file:/path/to/photos-in-jpg/
-  authn:
-    challenge-timeout-seconds: 60
-    api-keys:
-      - name: Quarto Dev
-        key: 8tgvj6tji38fnj75hzc4zuhd6dznnqkn
 ```
+
 
 ### Spring Boot Admin Client
 

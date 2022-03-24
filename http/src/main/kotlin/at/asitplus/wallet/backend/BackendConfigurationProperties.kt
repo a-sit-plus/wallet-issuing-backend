@@ -66,7 +66,7 @@ data class ExternalAttributeSourceConfigurationProperties(
     override val clientTls: Boolean = false,
     override val serverTls: Boolean = true,
     override val key: KeyConfiguration? = null,
-    override val trust: TrustConfiguration = TrustConfiguration(),
+    override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
     override val apiKey: String? = null
 ) : ExternalTlsConnection
@@ -76,7 +76,7 @@ interface ExternalTlsConnection {
     val clientTls: Boolean
     val serverTls: Boolean
     val key: KeyConfiguration?
-    val trust: TrustConfiguration
+    val trust: TrustConfiguration?
     val httpBasic: HttpBasicAuthnConfigurationProperties?
     val apiKey: String?
 }
@@ -114,7 +114,7 @@ data class AuthnConfigurationProperties(
 @ConstructorBinding
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
-    val external: ExternalDeviceBindingConfigurationProperties = ExternalDeviceBindingConfigurationProperties()
+    val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties()
 )
 
 enum class DeviceBindingNonceType {
@@ -123,12 +123,12 @@ enum class DeviceBindingNonceType {
 }
 
 @ConstructorBinding
-data class ExternalDeviceBindingConfigurationProperties(
+data class EcoDeviceBindingConfigurationProperties(
     override val url: URI? = null,
     override val clientTls: Boolean = false,
     override val serverTls: Boolean = true,
     override val key: KeyConfiguration? = null,
-    override val trust: TrustConfiguration = TrustConfiguration(),
+    override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
     override val apiKey: String? = null
 ) : ExternalTlsConnection
@@ -172,8 +172,8 @@ data class TrustConfiguration(
 data class TrustStoreConfiguration(
     val path: URI,
     val type: String,
+    val provider: String? = null,
     val password: String? = null,
-    val provider: String,
 )
 
 enum class KeyType {
