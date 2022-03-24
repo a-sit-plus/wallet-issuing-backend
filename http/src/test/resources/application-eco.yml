@@ -1,0 +1,17 @@
+backend:
+  attribute-source:
+    type: ECO
+    eco:
+      url: "https://edureg.quarto.at/edudigicardapi"
+      server-tls: true
+      api-key: MASKED
+  authn:
+    device-binding:
+      type: ECO
+      external:
+        url: "https://edureg.quarto.at/edudigicardapi"
+        server-tls: true
+        api-key: MASKED
+logging:
+  level:
+    at.asitplus: debug

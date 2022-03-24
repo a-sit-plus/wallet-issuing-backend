@@ -29,15 +29,17 @@ class EcoCredentialDataProvider constructor(
             return null
 
         val principal = SecurityContextHolder.getContext()?.authentication?.principal
-        if (principal !is AuthenticatedDeviceBindingUser)
-            return null.also {
+        val bpk = (principal as? AuthenticatedDeviceBindingUser)?.bpk
+            ?: return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
             }
-        val studentData = restTemplate.getForEntity<EcoStudentData>(
+        val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
-            mapOf("bpk" to principal.bpk)
+            uriVariables = mapOf("bpk" to bpk)
         )
-        return studentData.body?.let {
+        log.debug("getCredential for '{}' got {}", bpk, entity)
+
+        return entity.body?.let {
             PupilIdCredential(
                 id = subjectId,
                 schoolName = "unknown",

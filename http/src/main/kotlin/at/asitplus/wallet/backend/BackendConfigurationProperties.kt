@@ -62,13 +62,13 @@ enum class AttributeSourceType {
 
 @ConstructorBinding
 data class ExternalAttributeSourceConfigurationProperties(
-    val enabled: Boolean = false,
     override val url: URI? = null,
     override val clientTls: Boolean = false,
     override val serverTls: Boolean = true,
     override val key: KeyConfiguration? = null,
     override val trust: TrustConfiguration = TrustConfiguration(),
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
+    override val apiKey: String? = null
 ) : ExternalTlsConnection
 
 interface ExternalTlsConnection {
@@ -78,6 +78,7 @@ interface ExternalTlsConnection {
     val key: KeyConfiguration?
     val trust: TrustConfiguration
     val httpBasic: HttpBasicAuthnConfigurationProperties?
+    val apiKey: String?
 }
 
 @ConstructorBinding
@@ -104,7 +105,33 @@ data class AuthnConfigurationProperties(
      * Valid API keys for revocation endpoints
      */
     val apiKeys: Collection<ApiKeyConfigurationProperties> = listOf(),
+    /**
+     * Configuration for nonces used during device binding
+     */
+    val deviceBinding: DeviceBindingConfigurationProperties = DeviceBindingConfigurationProperties(),
 )
+
+@ConstructorBinding
+data class DeviceBindingConfigurationProperties(
+    val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
+    val external: ExternalDeviceBindingConfigurationProperties = ExternalDeviceBindingConfigurationProperties()
+)
+
+enum class DeviceBindingNonceType {
+    INTERNAL,
+    ECO
+}
+
+@ConstructorBinding
+data class ExternalDeviceBindingConfigurationProperties(
+    override val url: URI? = null,
+    override val clientTls: Boolean = false,
+    override val serverTls: Boolean = true,
+    override val key: KeyConfiguration? = null,
+    override val trust: TrustConfiguration = TrustConfiguration(),
+    override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
+    override val apiKey: String? = null
+) : ExternalTlsConnection
 
 @ConstructorBinding
 data class ApiKeyConfigurationProperties(

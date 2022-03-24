@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
-import at.asitplus.wallet.backend.auth.DebugExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.EcoExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.backend.auth.NoopExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.InternalExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.SimpleApiKeyAuthnService
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -50,14 +50,20 @@ class BackendConfiguration {
 
     @Bean
     fun extNonceAuthnService(): ExtNonceAuthnService {
-        if (configurationProperties.debug.enabled) {
-            return DebugExtNonceAuthnService(
-                SimpleChallengeService(
-                    lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds
-                )
+        return when (configurationProperties.authn.deviceBinding.type) {
+            DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
+                SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
             )
-        } else {
-            return NoopExtNonceAuthnService()
+            DeviceBindingNonceType.ECO -> {
+                val restTemplate = ClientTlsConfigurationService(
+                    configurationProperties.authn.deviceBinding.external,
+                    restTemplateBuilder
+                ).restTemplate
+                EcoExtNonceAuthnService(
+                    configurationProperties.authn.deviceBinding.external.url!!,
+                    restTemplate
+                )
+            }
         }
     }
 

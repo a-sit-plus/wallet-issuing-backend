@@ -26,13 +26,21 @@ backend:
   debug:
     enabled: true
   attribute-source:
-    type: RANDOM
-    random:
-      photo-location: file:data/photos
+    type: ECO
+    eco:
+      url: "https://edureg.quarto.at/edudigicardapi"
+      server-tls: true
+      api-key: MASKED
   authn:
     api-keys:
     - name: Quarto Dev
       key: 9tgvj6tji38fnj75hzc4zuhd6dznnqkm
+    device-binding:
+      type: ECO
+      external:
+        url: "https://edureg.quarto.at/edudigicardapi"
+        server-tls: true
+        api-key: MASKED
 spring:
   application:
     name: "Wallet Backend PupilId"
@@ -152,6 +160,9 @@ backend:
     enabled: true
   attribute-source:
     type: EIDAS
+  authn:
+    device-binding:
+      type: INTERNAL
 spring:
   application:
     name: "Wallet Backend EidasId"
