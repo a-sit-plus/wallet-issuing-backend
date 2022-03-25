@@ -6,6 +6,9 @@ import at.asitplus.wallet.BindingCsrRequestJ
 import at.asitplus.wallet.BindingCsrResponseJ
 import at.asitplus.wallet.BindingParamsRequestJ
 import at.asitplus.wallet.BindingParamsResponseJ
+import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
 import at.asitplus.wallet.lib.encodeBase16
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -15,6 +18,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
@@ -27,6 +31,7 @@ class BindingController(
     private val challengeService: ChallengeService,
     private val certificateService: CertificateService,
     private val deviceBindingStorageService: DeviceBindingStorageService,
+    private val extNonceAuthnService: ExtNonceAuthnService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -135,8 +140,15 @@ class BindingController(
             return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
                 .also { log.info("/binding/confirm returns success not set: {}", it) }
         }
+        // We want the client to not need to authenticate again when using the PupilIdController
+        // so we'll set the expected authentication token into the current security context
+        // and do not logout the client (previously, "request.logout()" has been called here)
+        if (principal is ExtNonceAuthnToken) {
+            extNonceAuthnService.invalidateNonce(principal.credentials.toString())
+            SecurityContextHolder.getContext().authentication =
+                DeviceBindingAuthnToken("", principal.principal.toString(), byteArrayOf())
+        }
         return ResponseEntity.ok(BindingConfirmResponseJ(true))
-            .also { request.logout() }
             .also { log.info("/binding/confirm returns ok: {}", it) }
     }
 

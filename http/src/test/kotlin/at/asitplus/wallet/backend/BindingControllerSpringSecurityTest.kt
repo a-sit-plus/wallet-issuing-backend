@@ -195,7 +195,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_create_confirm_sessionInvalid() = runTest {
+    fun start_create_confirm_create_sessionInvalid() = runTest {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -223,8 +223,9 @@ abstract class BindingControllerSpringSecurityTest {
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }
-            header { string(X_AUTH_TOKEN, "") }
+            header { doesNotExist(X_AUTH_TOKEN) }
         }.andReturn()
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -234,7 +235,49 @@ abstract class BindingControllerSpringSecurityTest {
             status { isForbidden() }
             header { doesNotExist(WWW_AUTHENTICATE) }
         }.andReturn()
+    }
+
+    @Test
+    fun start_create_confirm_confirm_sessionInvalid() = runTest {
+        val startResponse = mockMvc.post("/binding/start") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(startRequest)
+            header(X_AUTH_EXT_NONCE, nonce)
+        }.andExpect {
+            status { isOk() }
+            header { exists(X_AUTH_TOKEN) }
+        }.andReturn()
+
+        val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
+        val csrRequest = BindingCsrRequestJ(challenge, csr, deviceName, listOf())
+
+        mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(csrRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val confirmRequest = BindingConfirmRequestJ(true)
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+            header { doesNotExist(X_AUTH_TOKEN) }
+        }.andReturn()
         verify(extNonceAuthnService).invalidateNonce(eq(nonce))
+
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isForbidden() }
+            header { doesNotExist(WWW_AUTHENTICATE) }
+        }.andReturn()
     }
 
     companion object {
