@@ -47,6 +47,8 @@ class PupilIdControllerSpringSecurityTest {
     private lateinit var clientMessage: String
     private lateinit var serverMessage: String
     private lateinit var certificate: ByteArray
+    private lateinit var deviceName: String
+    private lateinit var deviceId: String
     private lateinit var bpk: String
     private lateinit var challengeResponse: String
 
@@ -54,8 +56,8 @@ class PupilIdControllerSpringSecurityTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
-        val deviceName = UUID.randomUUID().toString()
-        val deviceId = UUID.randomUUID().toString()
+        deviceName = UUID.randomUUID().toString()
+        deviceId = UUID.randomUUID().toString()
         clientMessage = UUID.randomUUID().toString()
         serverMessage = UUID.randomUUID().toString()
         challengeResponse = UUID.randomUUID().toString()
@@ -73,10 +75,10 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_noAuthn_forbidden() = runTest {
+    fun issue_noAuthn_forbidden() = runTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
-            content = "does not matter"
+            content = clientMessage
         }.andExpect {
             status { isUnauthorized() }
         }.andReturn()
@@ -84,7 +86,7 @@ class PupilIdControllerSpringSecurityTest {
 
     @Test
     @WithMockUser(authorities = ["DEVICE_BINDING"])
-    fun start_withMockUser_ok() = runTest {
+    fun issue_withMockUser_ok() = runTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -94,7 +96,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_challengeResponse_ok() = runTest {
+    fun issue_challengeResponse_ok() = runTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -114,7 +116,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_getChallengeDirectlyResponse_ok() = runTest {
+    fun issue_getChallengeDirectlyResponse_ok() = runTest {
         mockMvc.post("/authn/devicebinding/challenge") {
             contentType = MediaType.APPLICATION_JSON
         }.andExpect {
@@ -133,7 +135,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_challengeResponse_sessionInvalid() = runTest {
+    fun issue_challengeResponse_sessionInvalid() = runTest {
         val firstResponse = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -164,7 +166,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_challengeResponse_invalid() = runTest {
+    fun issue_challengeResponse_invalid() = runTest {
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(null)
 
