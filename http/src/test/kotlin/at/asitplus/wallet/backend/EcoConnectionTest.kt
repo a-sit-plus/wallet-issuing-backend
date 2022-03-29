@@ -61,12 +61,12 @@ class EcoConnectionTest {
 
     @Test
     fun extNonceService() {
-        val nonce = extNonceAuthnService.generateNonce()?.nonce
-        nonce.shouldNotBeNull()
-        nonce shouldHaveMinLength 8
+        // Get valid nonce manually from https://educard.quarto.at/educard.user/
+        val nonce = "8372e921-0400-467a-90bc-ad2625f6f5fb"
 
         val bpk = extNonceAuthnService.exchangeNonceForBpk(nonce)
         bpk shouldHaveMinLength 8
+        println(bpk)
 
         val success = extNonceAuthnService.invalidateNonce(nonce)
         success shouldBe true
