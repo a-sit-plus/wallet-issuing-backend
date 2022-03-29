@@ -180,6 +180,8 @@ On the first call to `/pupilid/issue`, this service answers with HTTP Status 401
 
 Alternatively, the client may call `GET /authn/devicebinding/challenge` to receive a valid challenge (again, Base64-encoded) in the response body.
 
+Note that clients can call this endpoint without additional authentication when including the `X-Auth-Token` from a (successfully completed) device binding process.
+
 The client needs to build a JWS with the `challenge` in the payload and its device binding certificate in the `x5c` header (newlines for display purposes only):
 
 ```

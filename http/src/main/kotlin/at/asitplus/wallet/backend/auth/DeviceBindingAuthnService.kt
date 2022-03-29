@@ -34,7 +34,7 @@ class SimpleDeviceBindingAuthnService(
             log.warn("JWS not parsed", e)
             throw BadCredentialsException("jws not parsed", e)
         }
-        val decodedCert = jwsObject.header.x509CertChain.firstOrNull()?.decode()
+        val decodedCert = jwsObject.header.x509CertChain?.firstOrNull()?.decode()
             ?: throw BadCredentialsException("no x5c")
                 .also { log.warn("No x5c in JWS header") }
         val publicKey = try {

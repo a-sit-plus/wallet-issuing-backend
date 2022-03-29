@@ -17,24 +17,34 @@ import java.util.Date
 import kotlin.random.Random
 
 @Service
-class ClientCertificateService(
-    private val lifetimeSeconds: Long = 60
-) {
+class ClientCertificateService {
 
-    init {
+    final lateinit var keyPair: KeyPair
+
+    constructor(keyPair: KeyPair) {
         Security.addProvider(BouncyCastleProvider())
+        this.keyPair = keyPair
     }
 
-    final val keyPair: KeyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
+    constructor() {
+        Security.addProvider(BouncyCastleProvider())
+        this.keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
+    }
+
+
+    private val lifetimeSeconds: Long = 60
     private val issuer = X500Name("CN=Issuer")
-    private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
-    final val cert: X509CertificateHolder = X509v3CertificateBuilder(
-        issuer,
-        BigInteger.valueOf(Random.nextLong()),
-        Date(),
-        Date.from(Instant.now().plusSeconds(lifetimeSeconds)),
-        issuer,
-        SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
-    ).build(contentSigner)!!
+    private val contentSigner by lazy { JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private) }
+    final val cert: X509CertificateHolder by lazy {
+        X509v3CertificateBuilder(
+            issuer,
+            BigInteger.valueOf(Random.nextLong()),
+            Date(),
+            Date.from(Instant.now().plusSeconds(lifetimeSeconds)),
+            issuer,
+            SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
+        ).build(contentSigner)!!
+    }
+
 
 }
