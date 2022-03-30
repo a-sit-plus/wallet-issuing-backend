@@ -50,6 +50,7 @@ class WebSecurityConfigPupilId(
             .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
             .and().logout().invalidateHttpSession(true).clearAuthentication(true)
             .addLogoutHandler(extNonceLogoutHandler)
+            .and().headers().frameOptions().sameOrigin()
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {

@@ -52,6 +52,7 @@ class WebSecurityConfigEidasId(
             .and().logout().invalidateHttpSession(true).clearAuthentication(true)
             .addLogoutHandler(extNonceLogoutHandler).logoutSuccessUrl("/")
             .and().oauth2Login().defaultSuccessUrl("/eidasid/initialize")
+            .and().headers().frameOptions().sameOrigin()
     }
 
     override fun configure(auth: AuthenticationManagerBuilder) {
