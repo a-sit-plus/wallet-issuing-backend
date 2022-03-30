@@ -55,7 +55,6 @@ class PupilIdControllerKtorLibTest {
         val deviceId = UUID.randomUUID().toString()
         clientCert = clientCertificateService.cert.encoded
         deviceBindingRepository.save(DeviceBinding(bpk, clientCert, deviceName, deviceId))
-        Napier.base(DebugAntilog())
     }
 
     @Test
