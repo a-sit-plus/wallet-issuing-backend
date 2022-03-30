@@ -10,8 +10,9 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+val artifactVersion: String by extra
 group = "at.asitplus.wallet"
-version = "1.0.0-SNAPSHOT"
+version = "$artifactVersion"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 configurations {
@@ -44,8 +45,8 @@ dependencies {
     implementation("org.webjars:jquery:3.6.0")
     implementation("org.webjars:datatables:1.11.4")
     implementation("de.codecentric:spring-boot-admin-starter-client:2.6.2")
-    implementation("at.asitplus.wallet:vclib-jvm:1.0.0-SNAPSHOT")
-    implementation("at.asitplus.wallet:pupilidlib-jvm:0.1.0-SNAPSHOT")
+    implementation("at.asitplus.wallet:vclib-jvm:1.1.0-SNAPSHOT")
+    implementation("at.asitplus.wallet:pupilidlib-jvm:1.1.0-SNAPSHOT")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.6")
