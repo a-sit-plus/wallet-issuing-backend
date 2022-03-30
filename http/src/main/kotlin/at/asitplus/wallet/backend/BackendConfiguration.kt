@@ -18,6 +18,8 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -45,7 +47,7 @@ class BackendConfiguration {
     private lateinit var restTemplateBuilder: RestTemplateBuilder
 
     init {
-        //Napier.base(DebugAntilog())
+        Napier.base(DebugAntilog())
     }
 
     @Bean

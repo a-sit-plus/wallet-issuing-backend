@@ -5,8 +5,9 @@ import at.asitplus.wallet.DeviceAdapter
 import at.asitplus.wallet.DeviceBindingService
 import at.asitplus.wallet.HashAlgorithm
 import at.asitplus.wallet.KeyAlgorithm
-import at.asitplus.wallet.KmmResult
+import at.asitplus.wallet.ServiceResult
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.lib.KmmResult
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,22 +55,13 @@ class BindingControllerKtorLibTest {
     fun start_create_ok() = runTest {
         val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
         val deviceAdapter = object : DeviceAdapter {
-            override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray): KmmResult<Boolean> {
-                return KmmResult.success(true)
-            }
+            override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray): KmmResult<Boolean> =
+                KmmResult.success(true)
 
-            override suspend fun loadAttestationCerts(): KmmResult<List<ByteArray>> {
-                return KmmResult.success(listOf())
-            }
-
-            override fun storeCertificate(certificate: ByteArray): KmmResult<Boolean> {
-                return KmmResult.success(true)
-            }
-
-            override fun getPublicKeyEncoded(): KmmResult<ByteArray> {
-                return KmmResult.success(keyPair.public.encoded)
-            }
-
+            override suspend fun loadAttestationCerts(): KmmResult<List<ByteArray>> = KmmResult.success(listOf())
+            override fun storeCertificate(certificate: ByteArray): KmmResult<Boolean> = KmmResult.success(true)
+            override fun getPublicKeyEncoded(): KmmResult<ByteArray> = KmmResult.success(keyPair.public.encoded)
+            override fun getIssuingMessage(): String? = null
             override val deviceName: String = randomDeviceName
         }
         val asn1Adapter = object : Asn1Service.CryptoAdapter {
@@ -87,7 +79,7 @@ class BindingControllerKtorLibTest {
             DeviceBindingService(nonce, "http://localhost:$localServerPort", deviceAdapter, Asn1Service(asn1Adapter))
         val result = service.createDeviceBinding()
 
-        assertIs<DeviceBindingService.Result.Success>(result)
+        assertIs<ServiceResult.Success>(result)
     }
 
     private val HashAlgorithm.jcaName: String

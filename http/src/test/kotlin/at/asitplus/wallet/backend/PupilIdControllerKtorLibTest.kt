@@ -1,9 +1,10 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.KmmResult
 import at.asitplus.wallet.PupilIdIssuingService
+import at.asitplus.wallet.ServiceResult
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
+import at.asitplus.wallet.lib.KmmResult
 import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
@@ -61,16 +62,14 @@ class PupilIdControllerKtorLibTest {
     fun start_challengeResponse_ok() = runTest {
         request = subjectMessenger.startDirect() as NextMessage.Send
         val cryptoAdapter = object : PupilIdIssuingService.CryptoAdapter {
-            override fun getCertificateChain(): KmmResult<Array<ByteArray>> {
-                return KmmResult.success(arrayOf(clientCert))
-            }
+            override fun getCertificateChain(): KmmResult<Array<ByteArray>> = KmmResult.success(arrayOf(clientCert))
         }
 
         val service =
             PupilIdIssuingService("http://localhost:$localServerPort", subjectAgent.cryptoService, cryptoAdapter)
         val result = service.issueCredentials(request.message)
 
-        assertIs<PupilIdIssuingService.Result.Success>(result)
+        assertIs<ServiceResult.Success>(result)
     }
 
 }
