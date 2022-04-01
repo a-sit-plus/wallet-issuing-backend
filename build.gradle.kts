@@ -1,20 +1,12 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-plugins {
-    id("org.springframework.boot") apply false
-    id("io.spring.dependency-management") apply false
-    kotlin("jvm") apply false
-    kotlin("plugin.spring") apply false
-    kotlin("plugin.jpa") apply false
-    kotlin("plugin.serialization") apply false
+buildscript {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
 }
 
-allprojects {
-    group = "at.asitplus.wallet"
-    version = "1.0.0-SNAPSHOT"
 
-    tasks.withType<JavaCompile> {
-        sourceCompatibility = "1.8"
-        targetCompatibility = "1.8"
-    }
+tasks.register("clean", Delete::class) {
+    delete(rootProject.buildDir)
 }

@@ -1,18 +1,17 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
+    id("org.springframework.boot") version "2.6.5"
+    id("io.spring.dependency-management") version "1.0.11.RELEASE"
     id("maven-publish")
-    kotlin("jvm")
-    kotlin("plugin.spring")
-    kotlin("plugin.jpa")
-    kotlin("plugin.serialization")
+    kotlin("jvm") version "1.6.10"
+    kotlin("plugin.spring") version "1.6.10"
+    kotlin("plugin.jpa") version "1.6.10"
+    kotlin("plugin.serialization") version "1.6.10"
 }
-
 val artifactVersion: String by extra
 group = "at.asitplus.wallet"
-version = "$artifactVersion"
+version = artifactVersion
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 configurations {
