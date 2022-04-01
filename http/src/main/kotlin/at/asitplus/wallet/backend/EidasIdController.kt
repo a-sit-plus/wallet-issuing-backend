@@ -121,7 +121,7 @@ class EidasIdController(
      * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
      */
     @GetMapping("/eidasid/initialize")
-    @PreAuthorize("isFullyAuthenticated()")
+    @PreAuthorize("hasAuthority(\"EIDASID\")")
     fun initialize(model: ModelMap): ModelAndView {
         log.info("/eidasid/initialize called")
         val nonceBpk = extNonceAuthnService.generateNonce()

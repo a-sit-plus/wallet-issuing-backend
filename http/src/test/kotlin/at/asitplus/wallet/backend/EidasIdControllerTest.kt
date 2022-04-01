@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -42,7 +43,7 @@ class EidasIdControllerTest {
                     .claim("birthdate", "2020-01-01")
                     .claim("given_name", "Susanne")
                     .claim("family_name", "Meier")
-            })
+            }.authorities(SimpleGrantedAuthority("EIDASID")))
         }.andExpect { status { isOk() } }
             .andReturn()
 

@@ -20,11 +20,11 @@
                     <a th:href="@{/login}" class="nav-link">Login with ID Austria</a>
                 </li>
                 <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}"
-                    sec:authorize="isFullyAuthenticated()" class="nav-item ms-2">
+                    sec:authorize="hasAuthority('EIDASID')" class="nav-item ms-2">
                     <a th:href="@{/eidasid/initialize}" class="nav-link">Initialize</a>
                 </li>
                 <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}"
-                    sec:authorize="isFullyAuthenticated()" class="nav-item ms-2">
+                    sec:authorize="hasAuthority('EIDASID')" class="nav-item ms-2">
                     <a th:href="@{/logout}" class="nav-link">Logout</a>
                 </li>
                 <li th:unless="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
