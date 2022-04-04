@@ -10,8 +10,6 @@ import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
-import io.github.aakira.napier.DebugAntilog
-import io.github.aakira.napier.Napier
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +18,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.web.server.LocalServerPort
-import java.security.KeyPairGenerator
 import java.util.UUID
 import kotlin.test.assertIs
 
@@ -46,14 +43,13 @@ class PupilIdControllerKtorLibTest {
 
     @BeforeEach
     fun beforeEach() {
-        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
-        subjectAgent = Agent(cryptoService = DefaultCryptoService(keyPair))
+        val client = Client()
+        subjectAgent = Agent(cryptoService = DefaultCryptoService(client.keyPair))
         subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
-        val clientCertificateService = ClientCertificateService(keyPair)
         val bpk = UUID.randomUUID().toString()
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
-        clientCert = clientCertificateService.cert.encoded
+        clientCert = client.selfSignedCert.encoded
         deviceBindingRepository.save(DeviceBinding(bpk, clientCert, deviceName, deviceId))
     }
 

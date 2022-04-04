@@ -43,8 +43,8 @@ class BindingControllerLogicTest {
     @Test
     @WithMockUser(authorities = ["PUPIL"])
     fun start_create_confirm_ok() = runTest {
+        val client = Client()
         val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
-        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
@@ -57,7 +57,7 @@ class BindingControllerLogicTest {
         val challenge = bindingParamsResponse.challenge
         val subject = bindingParamsResponse.subject
 
-        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair, subject), "Unit Test", listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, client.generateCsr(subject), "Unit Test", listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -68,7 +68,7 @@ class BindingControllerLogicTest {
 
         val certBytes = mapper.readValue<BindingCsrResponseJ>(createResponse.response.contentAsString).certificate
         val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
-        assertContentEquals(keyPair.public.encoded, certificate.publicKey.encoded)
+        assertContentEquals(client.keyPair.public.encoded, certificate.publicKey.encoded)
 
         val confirmRequest = BindingConfirmRequestJ(true)
 
@@ -80,9 +80,4 @@ class BindingControllerLogicTest {
         }.andReturn()
     }
 
-    private fun generateCsr(keyPair: KeyPair, subject: String): ByteArray {
-        return JcaPKCS10CertificationRequestBuilder(X500Name(subject), keyPair.public).build(
-            JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
-        ).encoded
-    }
 }

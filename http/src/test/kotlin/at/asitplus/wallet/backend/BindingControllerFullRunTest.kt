@@ -9,9 +9,6 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
-import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -24,8 +21,6 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.security.cert.CertificateFactory
 import java.util.UUID
 import kotlin.test.assertContentEquals
@@ -49,6 +44,7 @@ class BindingControllerFullRunTest {
     private lateinit var nonce: String
     private lateinit var bpk: String
     private lateinit var deviceName: String
+    private lateinit var client: Client
 
     @BeforeEach
     fun beforeEach() {
@@ -56,12 +52,12 @@ class BindingControllerFullRunTest {
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
         whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+        client = Client()
     }
 
     @Test
     fun start_create_ok() = runTest {
         val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
-        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
 
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
@@ -76,7 +72,7 @@ class BindingControllerFullRunTest {
         val subject = bindingParamsResponse.subject
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingCsrRequestJ(challenge, generateCsr(keyPair, subject), deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(challenge, client.generateCsr(subject), deviceName, listOf())
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -88,7 +84,7 @@ class BindingControllerFullRunTest {
 
         val certBytes = mapper.readValue<BindingCsrResponseJ>(createResponse.response.contentAsString).certificate
         val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
-        assertContentEquals(keyPair.public.encoded, certificate.publicKey.encoded)
+        assertContentEquals(client.keyPair.public.encoded, certificate.publicKey.encoded)
 
         val confirmRequest = BindingConfirmRequestJ(true)
 
@@ -99,12 +95,6 @@ class BindingControllerFullRunTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-    }
-
-    private fun generateCsr(keyPair: KeyPair, subject: String): ByteArray {
-        return JcaPKCS10CertificationRequestBuilder(X500Name(subject), keyPair.public).build(
-            JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
-        ).encoded
     }
 
     companion object {

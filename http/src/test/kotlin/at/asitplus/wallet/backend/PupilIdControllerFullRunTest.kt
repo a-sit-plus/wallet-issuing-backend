@@ -8,13 +8,6 @@ import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase64
-import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.JWSHeader
-import com.nimbusds.jose.JWSObject
-import com.nimbusds.jose.Payload
-import com.nimbusds.jose.crypto.ECDSASigner
-import com.nimbusds.jose.util.Base64
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,8 +19,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.security.PrivateKey
-import java.security.interfaces.ECPrivateKey
 import java.util.UUID
 import kotlin.test.assertIs
 
@@ -47,20 +38,17 @@ class PupilIdControllerFullRunTest {
     private lateinit var subjectAgent: Agent
     private lateinit var subjectMessenger: IssueCredentialMessenger
     private lateinit var request: NextMessage.Send
-    private lateinit var clientCert: ByteArray
-    private lateinit var clientPrivateKey: PrivateKey
+    private lateinit var client: Client
 
     @BeforeEach
     fun beforeEach() {
         subjectAgent = Agent()
         subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
-        val clientCertificateService = ClientCertificateService()
+        client = Client()
         val bpk = UUID.randomUUID().toString()
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
-        clientCert = clientCertificateService.cert.encoded
-        clientPrivateKey = clientCertificateService.keyPair.private
-        deviceBindingRepository.save(DeviceBinding(bpk, clientCert, deviceName, deviceId))
+        deviceBindingRepository.save(DeviceBinding(bpk, client.selfSignedCert.encoded, deviceName, deviceId))
     }
 
     @Test
@@ -77,7 +65,7 @@ class PupilIdControllerFullRunTest {
 
         val headerValue = firstResponse.response.getHeaderValue(HttpHeaders.WWW_AUTHENTICATE)
         val challenge = headerValue.toString().removePrefix("Challenge ").decodeBase64ToArray()!!
-        val challengeResponse = calcChallengeResponse(challenge)
+        val challengeResponse = client.answerBindingChallenge(challenge)
 
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -102,7 +90,7 @@ class PupilIdControllerFullRunTest {
         }.andReturn()
 
         val challenge = firstResponse.response.contentAsString.decodeBase64ToArray()!!
-        val challengeResponse = calcChallengeResponse(challenge)
+        val challengeResponse = client.answerBindingChallenge(challenge)
 
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -114,15 +102,6 @@ class PupilIdControllerFullRunTest {
 
         val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
-    }
-
-    private fun calcChallengeResponse(challenge: ByteArray): String {
-        return JWSObject(
-            JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(clientCert))).build(),
-            Payload(mapOf("challenge" to challenge.encodeBase64()))
-        ).also {
-            it.sign(ECDSASigner(clientPrivateKey as ECPrivateKey))
-        }.serialize()
     }
 
 }
