@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.net.URLEncoder
+import java.nio.charset.Charset
 import java.util.Collections
 import java.util.UUID
 import javax.imageio.ImageIO
@@ -47,7 +49,8 @@ class DebugController(
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)
         }
-        val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonceBpk.nonce}"
+        val content = "${configurationProperties.publicContext}/help/wallet#nonce=${nonceBpk.nonce}" +
+                "&server=${URLEncoder.encode(configurationProperties.publicContext, Charset.defaultCharset())}"
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
@@ -66,12 +69,8 @@ class DebugController(
      * Display help page if user scans QR code from [initialize]
      */
     @GetMapping("/help/wallet")
-    fun helpWallet(model: ModelMap, @RequestParam(name = "nonce", required = false) nonce: String): ModelAndView {
-        log.info("/help/wallet?nonce=$nonce called")
-        val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonce}"
-        val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
-        model["qrcode"] = qrCodeImage.encodeBase64()
-        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
+    fun helpWallet(model: ModelMap): ModelAndView {
+        log.info("/help/wallet called")
         return ModelAndView("help_wallet", model)
     }
 
@@ -79,11 +78,8 @@ class DebugController(
      * Display help page if user scans QR code presented in Wallet App for verification
      */
     @GetMapping("/help/verify")
-    fun inviteVerify(model: ModelMap, @RequestParam(name = "oob", required = false) oob: String): ModelAndView {
-        log.info("/help/verify?oob=$oob called")
-        val content = "${configurationProperties.publicContext}/help/verify?oob=${oob}"
-        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["qrcode"] = createQrCodeImage(content, configurationProperties.debug.qrCodeSize).encodeBase64()
+    fun inviteVerify(model: ModelMap): ModelAndView {
+        log.info("/help/verify called")
         return ModelAndView("help_verify", model)
     }
 

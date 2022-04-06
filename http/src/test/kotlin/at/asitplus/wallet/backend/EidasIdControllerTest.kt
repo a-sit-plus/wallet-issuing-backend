@@ -48,7 +48,7 @@ class EidasIdControllerTest {
             .andReturn()
 
         val nonceUrl = parseResponse(result, "qrcode")
-        assertContains(nonceUrl, "?nonce=")
+        assertContains(nonceUrl, "#nonce=")
     }
 
     private fun parseResponse(result: MvcResult, attributeName: String): String {

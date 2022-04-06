@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
-import org.springframework.core.env.Environment
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -29,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.net.URLEncoder
+import java.nio.charset.Charset
 import java.util.Collections
 import javax.imageio.ImageIO
 import javax.servlet.http.HttpServletRequest
@@ -146,7 +147,8 @@ class EidasIdController(
         log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
         issuerCredentialDataProvider.storeClaims(nonceBpk.bpk, eidasClaim)
 
-        val content = "${configurationProperties.publicContext}/help/wallet?nonce=${nonceBpk.nonce}"
+        val content = "${configurationProperties.publicContext}/help/wallet#nonce=${nonceBpk.nonce}" +
+                "&server=${URLEncoder.encode(configurationProperties.publicContext, Charset.defaultCharset())}"
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
