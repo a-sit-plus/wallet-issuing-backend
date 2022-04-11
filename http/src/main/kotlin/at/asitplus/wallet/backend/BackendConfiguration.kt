@@ -126,11 +126,24 @@ class BackendConfiguration {
                     configurationProperties.attributeSource.eco!!,
                     restTemplateBuilder
                 ).restTemplate
+                // TODO Remove once ECO provides pictures
+                val listOfPhotos = if (configurationProperties.attributeSource.random != null) {
+                    val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
+                    resourcePatternResolver.getResources(locationPattern)
+                        .filter { it.exists() }
+                        .filter { it.filename != null }
+                        .map { it.inputStream }
+                        .map { it.readAllBytes() }
+                        .toList()
+                } else {
+                    listOf(byteArrayOf())
+                }
                 EcoCredentialDataProvider(
                     configurationProperties.credentialLifetime.toMinutes().minutes,
                     configurationProperties.attributeSource.eco!!.url.toString(),
                     restTemplate,
                     deviceBindingStorageService,
+                    listOfPhotos,
                 )
             }
             AttributeSourceType.EIDAS -> {

@@ -15,11 +15,12 @@ import kotlin.time.Duration
  * the connection to the external webservice at ECO,
  * i.e. it looks up data with the `bpk` from a remote service
  */
-class EcoCredentialDataProvider constructor(
+class EcoCredentialDataProvider(
     private val lifetime: Duration,
     private val url: String,
     private val restTemplate: RestTemplate,
     private val deviceBindingStorageService: DeviceBindingStorageService,
+    private val listOfRandomPhotos: List<ByteArray>,
 ) : IssuerCredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -64,7 +65,7 @@ class EcoCredentialDataProvider constructor(
                 validUntil = "2023-09-01",
                 postCity = "Musterstadt",
                 postCode = "1010",
-                picture = byteArrayOf(),
+                picture = listOfRandomPhotos.random(),
             )
         }
     }
