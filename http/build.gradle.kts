@@ -52,6 +52,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-kotlin:1.6.6")
     implementation("org.springdoc:springdoc-openapi-security:1.6.6")
     implementation("io.github.aakira:napier:2.4.0")
+    implementation("com.google.iot.cbor:cbor:0.01.02")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
