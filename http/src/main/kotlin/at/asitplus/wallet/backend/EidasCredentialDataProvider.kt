@@ -35,6 +35,14 @@ class EidasCredentialDataProvider constructor(
                 log.error("Got no authenticated user when trying to issue credentials")
             }
 
+        if (deviceBinding.keyId != subjectId)
+            return null.also {
+                log.error(
+                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
+                    deviceBinding.keyId, subjectId
+                )
+            }
+
         val eidasClaim = map.remove(deviceBinding.bpk)
             ?: return null.also {
                 log.error("Found no stored EIDAS claim for bpk '{}'", deviceBinding.bpk)

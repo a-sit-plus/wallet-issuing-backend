@@ -36,6 +36,15 @@ class EcoCredentialDataProvider constructor(
             ?: return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
             }
+
+        if (deviceBinding.keyId != subjectId)
+            return null.also {
+                log.error(
+                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
+                    deviceBinding.keyId, subjectId
+                )
+            }
+
         val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
             uriVariables = mapOf("bpk" to deviceBinding.bpk)

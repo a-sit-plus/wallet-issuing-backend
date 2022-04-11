@@ -3,6 +3,8 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.Agent
+import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
 import at.asitplus.wallet.lib.agent.NextMessage
@@ -35,6 +37,7 @@ class PupilIdControllerFullRunTest {
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
+    private lateinit var cryptoService: CryptoService
     private lateinit var subjectAgent: Agent
     private lateinit var subjectMessenger: IssueCredentialMessenger
     private lateinit var request: NextMessage.Send
@@ -42,9 +45,10 @@ class PupilIdControllerFullRunTest {
 
     @BeforeEach
     fun beforeEach() {
-        subjectAgent = Agent()
-        subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
         client = Client()
+        cryptoService = DefaultCryptoService(keyPair = client.keyPair)
+        subjectAgent = Agent(cryptoService = cryptoService)
+        subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
         val bpk = UUID.randomUUID().toString()
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()

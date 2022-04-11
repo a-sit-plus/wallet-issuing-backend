@@ -8,6 +8,7 @@ import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
+import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
@@ -19,8 +20,11 @@ import kotlin.time.Duration
  */
 class RandomCredentialDataProvider constructor(
     private val lifetime: Duration,
-    private val listOfPhotos: Map<String, ByteArray>
+    private val listOfPhotos: Map<String, ByteArray>,
+    private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : IssuerCredentialDataProvider {
+
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
 
@@ -65,6 +69,18 @@ class RandomCredentialDataProvider constructor(
     }
 
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
+        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+            ?: return null.also {
+                log.error("Got no authenticated user when trying to issue credentials")
+            }
+        if (deviceBinding.keyId != subjectId)
+            return null.also {
+                log.error(
+                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
+                    deviceBinding.keyId, subjectId
+                )
+            }
+
         val it = randomAttributeCache[subjectId]
             ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
         return when {
@@ -100,8 +116,22 @@ class RandomCredentialDataProvider constructor(
     }
 
     override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
+        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+            ?: return null.also {
+                log.error("Got no authenticated user when trying to issue credentials")
+            }
+
+        if (deviceBinding.keyId != subjectId)
+            return null.also {
+                log.error(
+                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
+                    deviceBinding.keyId, subjectId
+                )
+            }
+
         val it = randomAttributeCache[subjectId]
             ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
+
         return when (attributeType) {
             ConstantIndex.PupilId.vcType -> {
                 PupilIdCredential(

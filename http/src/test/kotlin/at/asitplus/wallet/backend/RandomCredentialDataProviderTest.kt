@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.auth.InMemoryDeviceBindingStorageService
+import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
 import java.util.UUID
@@ -18,13 +20,17 @@ class RandomCredentialDataProviderTest {
     private lateinit var subjectId1: String
     private lateinit var subjectId2: String
     private lateinit var dataProvider: RandomCredentialDataProvider
+    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
     @BeforeTest
     fun setup() {
         val listOfPhotos = (1..10).associate { UUID.randomUUID().toString() to Random.Default.nextBytes(32) }
         subjectId1 = UUID.randomUUID().toString() // each subject has own attribute set
         subjectId2 = UUID.randomUUID().toString()
-        dataProvider = RandomCredentialDataProvider(1.seconds, listOfPhotos)
+        deviceBindingStorageService = InMemoryDeviceBindingStorageService().also {
+            it.setDeviceBindingForCurrentUser(DeviceBinding("bpk", byteArrayOf(), "", ""))
+        }
+        dataProvider = RandomCredentialDataProvider(1.seconds, listOfPhotos, deviceBindingStorageService)
     }
 
     @Test

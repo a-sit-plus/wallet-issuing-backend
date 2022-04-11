@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.DefaultKeyIdService
 import at.asitplus.wallet.lib.JvmPublicKeyHolder
 import at.asitplus.wallet.lib.KeyIdService
@@ -30,6 +31,7 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
+import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
@@ -223,4 +225,17 @@ class FileCryptoService(
         get() = when (this) {
             EcCurve.SECP_256_R_1 -> "secp256r1"
         }
+
 }
+
+// TODO Replace with functionality from vclib
+val DeviceBinding.keyId: String?
+    get() = kotlin.runCatching {
+        DefaultKeyIdService().calcKeyId(
+            JvmPublicKeyHolder(
+                CertificateFactory.getInstance("X.509")
+                    .generateCertificate(certificate.inputStream()).publicKey,
+                EcCurve.SECP_256_R_1
+            )
+        )
+    }.getOrNull()

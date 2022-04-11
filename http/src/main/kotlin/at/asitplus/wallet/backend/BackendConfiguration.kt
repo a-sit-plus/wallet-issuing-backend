@@ -117,7 +117,8 @@ class BackendConfiguration {
                     .map { it.first to it.second.readAllBytes() }
                 RandomCredentialDataProvider(
                     configurationProperties.credentialLifetime.toMinutes().minutes,
-                    mapOfPhotos.toMap()
+                    mapOfPhotos.toMap(),
+                    deviceBindingStorageService,
                 )
             }
             AttributeSourceType.ECO -> {

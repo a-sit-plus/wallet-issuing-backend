@@ -1,11 +1,8 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.DeviceListEntry
 import at.asitplus.wallet.backend.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
-import at.asitplus.wallet.backend.data.DeviceBinding
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -69,29 +66,6 @@ internal class SimpleDeviceBindingAuthnServiceTest {
         val result = service.validate(challengeResponse)
 
         result.shouldBeNull()
-    }
-
-    class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
-        private val list = mutableListOf<DeviceBinding>()
-
-        override fun store(bpk: String, certificate: ByteArray, deviceName: String): DeviceBinding {
-            return DeviceBinding(bpk, certificate, deviceName, UUID.randomUUID().toString()).also {
-                list += it
-            }
-        }
-
-        override fun lookupBpk(decodedCert: ByteArray): String? {
-            return list.firstOrNull { it.certificate.contentEquals(decodedCert) }?.bpk
-        }
-
-        override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
-            return list.filter { it.bpk == bpk }.map { DeviceListEntry(it.deviceName, it.deviceId) }
-        }
-
-        override fun getDeviceBindingForCurrentUser(): DeviceBinding? {
-            return null
-        }
-
     }
 
 }

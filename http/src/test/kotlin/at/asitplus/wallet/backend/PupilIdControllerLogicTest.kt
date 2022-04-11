@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.Agent
+import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
@@ -28,7 +29,6 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.UUID
-import kotlin.random.Random
 import kotlin.test.assertIs
 
 /**
@@ -53,7 +53,10 @@ class PupilIdControllerLogicTest {
     private lateinit var certificate: ByteArray
 
     private val subjectCredentialStore = mock<SubjectCredentialStore>()
-    private val subjectAgent = Agent(subjectCredentialStore = subjectCredentialStore)
+    private val client = Client()
+    private val subjectCryptoService = DefaultCryptoService(keyPair = client.keyPair)
+    private val subjectAgent =
+        Agent(subjectCredentialStore = subjectCredentialStore, cryptoService = subjectCryptoService)
     private val messageWrapper = MessageWrapper(subjectAgent.cryptoService)
     private val subjectMessenger = IssueCredentialMessenger(
         agent = subjectAgent,
@@ -64,10 +67,8 @@ class PupilIdControllerLogicTest {
     @BeforeEach
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
-        certificate = Random.nextBytes(32)
-        val deviceName = UUID.randomUUID().toString()
-        val deviceId = UUID.randomUUID().toString()
-        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
+        certificate = client.selfSignedCert.encoded
+        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
         if (deviceBindingRepository.findByCertificate(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
@@ -90,6 +91,30 @@ class PupilIdControllerLogicTest {
         val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.Result<*>>(parsedMessage)
         verify(subjectCredentialStore, times(1)).storeCredential(any(), any())
+    }
+
+    @Test
+    fun issue_wrongSubject_error() = runTest {
+        certificate = Client().selfSignedCert.encoded
+        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+            deviceBinding = deviceBindingRepository.save(deviceBinding)
+        }
+        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
+            .thenReturn(deviceBinding)
+        val request = subjectMessenger.startDirect()
+        if (request !is NextMessage.Send) throw Exception("Internal Error")
+
+        val response = mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = request.message
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
+        assertIs<NextMessage.ReceivedProblemReport>(parsedMessage)
+        verify(subjectCredentialStore, never()).storeCredential(any(), any())
     }
 
     @Test

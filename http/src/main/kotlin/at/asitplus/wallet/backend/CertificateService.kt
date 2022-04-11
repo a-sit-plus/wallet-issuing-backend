@@ -7,6 +7,7 @@ import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDSASigner
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
@@ -65,20 +66,22 @@ class InMemoryCertificateService(
                 log.warn("verifyAndSign: Subject not correct")
                 return null
             }
-            val x500Name = issuer
-            return X509v3CertificateBuilder(
-                csr.subject,
-                BigInteger.valueOf(Random.nextLong()),
-                Date(),
-                Date.from(Instant.now().plusSeconds(lifetimeSeconds)),
-                x500Name,
-                csr.subjectPublicKeyInfo
-            ).build(contentSigner).encoded
+            return signCertificate(csr.subject, csr.subjectPublicKeyInfo)
         } catch (e: Throwable) {
             log.warn("verifyAndSign: error", e)
             return null
         }
     }
+
+    fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): ByteArray =
+        X509v3CertificateBuilder(
+            subject,
+            BigInteger.valueOf(Random.nextLong()),
+            Date(),
+            Date.from(Instant.now().plusSeconds(lifetimeSeconds)),
+            issuer,
+            subjectPublicKeyInfo
+        ).build(contentSigner).encoded
 
     override fun verifyAttestation(attestationCerts: List<ByteArray>): String? {
         try {
