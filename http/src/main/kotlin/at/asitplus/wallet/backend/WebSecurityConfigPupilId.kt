@@ -24,6 +24,13 @@ import org.springframework.session.web.http.HeaderHttpSessionIdResolver
 import org.springframework.session.web.http.HttpSessionIdResolver
 import java.util.concurrent.ConcurrentHashMap
 
+
+/**
+ * Web security configuration for the PupilId deployment:
+ * - Ext. Nonce authentication from the App
+ * - Device Binding authentication from the App
+ * - API-Key authentication for revocation calls from ext. services
+ */
 @Profile("pupilid")
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)

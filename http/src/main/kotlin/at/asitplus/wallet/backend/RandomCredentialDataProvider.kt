@@ -14,6 +14,9 @@ import java.util.Random
 import kotlin.time.Duration
 
 
+/**
+ * Provides random credential data for the currently logged-in user
+ */
 class RandomCredentialDataProvider constructor(
     private val lifetime: Duration,
     private val listOfPhotos: Map<String, ByteArray>

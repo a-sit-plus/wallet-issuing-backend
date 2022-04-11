@@ -8,7 +8,7 @@ import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher
 import javax.servlet.http.HttpServletRequest
 
 /**
- * Reads the response from the HTTP header, creates a [DeviceBindingAuthnToken].
+ * Reads the response from the HTTP header `Authorization`, creates a [DeviceBindingAuthnToken].
  * Forwards via [AuthenticationManager] to [DeviceBindingAuthnProvider].
  */
 class DeviceBindingAuthnFilter : RequestHeaderAuthenticationFilter() {

@@ -4,6 +4,10 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.NextMessage
 import kotlinx.coroutines.runBlocking
 
+/**
+ * Provides a wrapper around [IssueCredentialMessenger] from the vclib,
+ * essentially to wrap the suspending function [IssueCredentialMessenger.parseMessage]
+ */
 interface IssueCredentialAdapter {
 
     fun parseMessage(it: String): NextMessage?

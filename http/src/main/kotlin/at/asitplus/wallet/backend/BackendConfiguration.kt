@@ -106,7 +106,7 @@ class BackendConfiguration {
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
-    fun issuerCredentialDataProvider(): IssuerCredentialDataProvider =
+    fun issuerCredentialDataProvider(deviceBindingStorageService: DeviceBindingStorageService): IssuerCredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
             AttributeSourceType.RANDOM -> {
                 val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
@@ -129,11 +129,13 @@ class BackendConfiguration {
                     configurationProperties.credentialLifetime.toMinutes().minutes,
                     configurationProperties.attributeSource.eco!!.url.toString(),
                     restTemplate,
+                    deviceBindingStorageService,
                 )
             }
             AttributeSourceType.EIDAS -> {
                 EidasCredentialDataProvider(
-                    configurationProperties.credentialLifetime.toMinutes().minutes
+                    configurationProperties.credentialLifetime.toMinutes().minutes,
+                    deviceBindingStorageService,
                 )
             }
         }

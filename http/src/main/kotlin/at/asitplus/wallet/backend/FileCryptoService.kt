@@ -36,6 +36,9 @@ import javax.crypto.KeyAgreement
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
+/**
+ * Implements [CryptoService] from vclib by using a [KeyAdapter]
+ */
 class FileCryptoService(
     keyAdapter: KeyAdapter,
     keyIdService: KeyIdService = DefaultKeyIdService()

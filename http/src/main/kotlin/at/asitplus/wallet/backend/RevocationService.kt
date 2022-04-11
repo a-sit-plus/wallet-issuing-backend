@@ -6,6 +6,7 @@ import at.asitplus.wallet.lib.data.CredentialSubject
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 
+
 interface RevocationService {
 
     fun revokeCredentialsByBpk(bpk: String): Int

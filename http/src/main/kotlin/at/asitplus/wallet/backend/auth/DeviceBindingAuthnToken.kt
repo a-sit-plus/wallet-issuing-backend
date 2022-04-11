@@ -4,6 +4,11 @@ import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
+/**
+ * Authentication response from the Wallet App, containing
+ * the `response` (should be a JWS object), and possibly the `certificate` and `bpk`,
+ * if the user has been successfully authenticated.
+ */
 class DeviceBindingAuthnToken : AbstractAuthenticationToken {
 
     val response: String

@@ -8,7 +8,7 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component
 
 /**
- * Authenticates user by reading information from a [ApiKeyAuthnToken],
+ * Authenticates user by reading API Key from an [ApiKeyAuthnToken],
  * by passing information to [ApiKeyAuthnService.validate].
  */
 @Component

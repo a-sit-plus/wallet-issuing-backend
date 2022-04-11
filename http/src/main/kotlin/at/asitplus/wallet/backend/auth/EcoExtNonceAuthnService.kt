@@ -8,6 +8,12 @@ import org.springframework.web.client.exchange
 import org.springframework.web.client.getForEntity
 import java.net.URI
 
+/**
+ * Validates the ext. nonce provided by a Wallet App ([ExtNonceAuthnToken]),
+ * by calling the external webservice defined in the configuration.
+ * Assumption is, that the user has scanned a QR code containing a nonce
+ * from the external service, that will be provided here by the Wallet App.
+ */
 class EcoExtNonceAuthnService(
     private val url: URI,
     private val restTemplate: RestTemplate

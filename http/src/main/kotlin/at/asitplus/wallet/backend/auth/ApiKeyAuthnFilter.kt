@@ -8,7 +8,7 @@ import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher
 import javax.servlet.http.HttpServletRequest
 
 /**
- * Reads the nonce from the HTTP header, creates a [ApiKeyAuthnToken].
+ * Reads an API Key from the HTTP header `X-API-Key`, creates a [ApiKeyAuthnToken].
  * Forwards via [AuthenticationManager] to [ApiKeyAuthnProvider].
  */
 class ApiKeyAuthnFilter : RequestHeaderAuthenticationFilter() {

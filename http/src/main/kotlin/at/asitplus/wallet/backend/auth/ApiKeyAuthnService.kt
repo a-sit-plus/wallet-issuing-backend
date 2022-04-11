@@ -2,6 +2,9 @@ package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.AuthnConfigurationProperties
 
+/**
+ * Service to validate an API key from a client's request
+ */
 interface ApiKeyAuthnService {
 
     fun validate(apiKey: String): String?

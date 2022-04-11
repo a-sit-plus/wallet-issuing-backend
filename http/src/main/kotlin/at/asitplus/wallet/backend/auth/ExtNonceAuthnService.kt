@@ -1,5 +1,8 @@
 package at.asitplus.wallet.backend.auth
 
+/**
+ * Service to validate an ext. nonce provided from Wallet App in [ExtNonceAuthnToken].
+ */
 interface ExtNonceAuthnService {
 
     /**

@@ -8,6 +8,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.BadCredentialsException
 import java.security.cert.CertificateFactory
 
+/**
+ * Service to validate the device binding authn response from
+ * the Wallet App.
+ */
 interface DeviceBindingAuthnService {
 
     fun validate(response: String): DeviceBindingAuthnResult?

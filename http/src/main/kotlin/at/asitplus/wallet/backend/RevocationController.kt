@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+
+/**
+ * Implements the revocation endpoints, called from other backend services:
+ * - Revoke a device binding
+ * - Revoke one or more credentials
+ */
 @RestController
 class RevocationController(
     private val bindingStorageService: DeviceBindingStorageService,

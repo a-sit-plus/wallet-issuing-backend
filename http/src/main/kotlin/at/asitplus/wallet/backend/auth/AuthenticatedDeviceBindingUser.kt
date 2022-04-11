@@ -4,6 +4,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
 /**
+ * Represents a successful device binding authentication from the Wallet App.
  * Is created by [DeviceBindingAuthnProvider], which validates response to challenge from [DeviceBindingAuthnToken].
  */
 class AuthenticatedDeviceBindingUser(val bpk: String, val certificate: ByteArray) :

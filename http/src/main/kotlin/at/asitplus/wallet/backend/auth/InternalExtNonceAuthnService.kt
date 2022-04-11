@@ -5,6 +5,11 @@ import at.asitplus.wallet.lib.decodeBase16ToArray
 import at.asitplus.wallet.lib.encodeBase16
 import java.util.UUID
 
+/**
+ * Validates ext. nonce from [ExtNonceAuthnToken] internally,
+ * i.e. the user needs to login on the Desktop browser (i.e. Debug deployments),
+ * and scan a QR code from there to get a valid ext. nonce.
+ */
 class InternalExtNonceAuthnService(
     private val challengeService: ChallengeService
 ) : ExtNonceAuthnService {

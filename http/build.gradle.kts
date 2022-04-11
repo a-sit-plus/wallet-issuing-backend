@@ -84,6 +84,10 @@ tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar
     launchScript()
 }
 
+springBoot {
+    buildInfo()
+}
+
 val gitLabPrivateToken: String? by extra
 val gitLabProjectId: String by extra
 val gitLabGroupId: String by extra

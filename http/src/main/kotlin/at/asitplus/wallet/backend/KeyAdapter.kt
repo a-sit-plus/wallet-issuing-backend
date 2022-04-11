@@ -17,6 +17,9 @@ import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.PublicKey
 
+/**
+ * Interface to use different sources of cryptographic keys in the [FileCryptoService].
+ */
 interface KeyAdapter {
     val keyType: JwkType
     val privateKey: PrivateKey
@@ -84,8 +87,5 @@ class KeyStoreAdapter(
         jwsAlgorithm = JwsAlgorithm.ES256
         log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
     }
-
-    private fun loadResource(resourceLoader: ResourceLoader, path: String) =
-        StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
 
 }

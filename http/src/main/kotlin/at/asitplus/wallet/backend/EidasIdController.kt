@@ -34,6 +34,11 @@ import java.util.Collections
 import javax.imageio.ImageIO
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * Provides endpoints in the EIDAS deployment:
+ * - REST for Wallet App to get credentials (with a device binding)
+ * - MVC for Browser to display QR Code to initialize Wallet App
+ */
 @Profile("eidasid")
 @RestController
 class EidasIdController(

@@ -34,6 +34,14 @@ import org.springframework.session.web.http.HttpSessionIdResolver
 import org.springframework.util.StringUtils
 import java.util.concurrent.ConcurrentHashMap
 
+
+/**
+ * Web security configuration for the EIDAS deployment:
+ * - OIDC authn to login in the mobile browser
+ * - Ext. Nonce authentication from the App
+ * - Device Binding authentication from the App
+ * - API-Key authentication for revocation calls from ext. services
+ */
 @Profile("eidasid")
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -66,7 +74,7 @@ class WebSecurityConfigEidasId(
     }
 
     /**
-     * Adapted from Spring's [OidcUserService] to set the authority "EIDASID"
+     * Adapted from Spring's [OidcUserService] to set the authority `EIDASID`
      */
     fun oidcUserService(): OidcUserService = object : OidcUserService() {
         override fun loadUser(userRequest: OidcUserRequest?): OidcUser {

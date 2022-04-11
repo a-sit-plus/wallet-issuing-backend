@@ -1,17 +1,21 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.SchemaIndex
 import org.slf4j.LoggerFactory
-import org.springframework.security.core.context.SecurityContextHolder
 import kotlin.time.Duration
 
 
+/**
+ * Gets credentials for the currently authenticated user from
+ * the previously stored attributes (from an OIDC login),
+ * i.e. it looks up data with the `bpk` from its internal map
+ */
 class EidasCredentialDataProvider constructor(
     private val lifetime: Duration,
+    private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : IssuerCredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -25,15 +29,17 @@ class EidasCredentialDataProvider constructor(
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
             return null
-        val principal = SecurityContextHolder.getContext()?.authentication?.principal
-        if (principal !is AuthenticatedDeviceBindingUser)
-            return null.also {
+
+        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+            ?: return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
             }
-        val eidasClaim = map.remove(principal.bpk)
+
+        val eidasClaim = map.remove(deviceBinding.bpk)
             ?: return null.also {
-                log.error("Found no stored EIDAS claim for bpk '{}'", principal.bpk)
+                log.error("Found no stored EIDAS claim for bpk '{}'", deviceBinding.bpk)
             }
+
         return when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
             "given-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.givenName)
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
