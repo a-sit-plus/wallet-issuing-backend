@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
+import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -70,11 +71,11 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     fun otherCredentialsForSameDeviceBindingGetRevoked() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2).also {
             credentialRepo.save(it)
             deviceBinding.issuedCredentialList += it
         }
-        IssuedCredential(vcId.reversed(), subjectId.reversed(), validUntil, deviceBinding, attributeName).also {
+        IssuedCredential(vcId.reversed(), subjectId.reversed(), validUntil, deviceBinding, attributeName, 1).also {
             credentialRepo.save(it)
             deviceBinding.issuedCredentialList += it
         }
@@ -85,6 +86,7 @@ class RevocationServiceStatusListIndexTest {
         val storeGetNextIndex =
             revocationService.storeGetNextIndex(vcId.drop(2), credentialSubject, Clock.System.now(), Clock.System.now())
         storeGetNextIndex.shouldNotBeNull()
+        storeGetNextIndex shouldBe 3
 
         revocationService.getAllNonRevokedWithDetails().count() shouldBe 1
     }

@@ -112,7 +112,9 @@ class DebugController(
         val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId).also {
             deviceBindingRepo.save(it)
         }
-        IssuedCredential(UUID.randomUUID().toString(), credentialSubject.id, exp, deviceBinding, attributeName).also {
+        val vcId = UUID.randomUUID().toString()
+        val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
+        IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, attributeName, revocationListIndex).also {
             credentialRepo.save(it)
         }
         return ModelAndView("redirect:/debug/credential/list")

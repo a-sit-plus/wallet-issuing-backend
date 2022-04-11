@@ -61,8 +61,10 @@ class DefaultRevocationService(
                 log.info("Revoked $revokedCreds already existing credentials for bpk '${deviceBinding.bpk}'")
         }
         val exp = java.time.Instant.ofEpochMilli(expirationDate.toEpochMilliseconds())
+        val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
+        val attributeName = credentialSubject.javaClass.simpleName
         val issuedCredential =
-            IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, credentialSubject.javaClass.simpleName)
+            IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, attributeName, revocationListIndex)
         val savedCredential = credentialRepo.save(issuedCredential)
         return savedCredential.revocationListIndex.toInt()
     }
