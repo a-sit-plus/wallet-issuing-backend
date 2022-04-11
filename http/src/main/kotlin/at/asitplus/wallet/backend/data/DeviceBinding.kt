@@ -4,6 +4,7 @@ import org.hibernate.annotations.CreationTimestamp
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
+import javax.persistence.FetchType
 import javax.persistence.GeneratedValue
 import javax.persistence.Id
 import javax.persistence.Lob
@@ -40,7 +41,7 @@ class DeviceBinding() {
     @Column
     lateinit var deviceId: String
 
-    @OneToMany
-    lateinit var issuedCredentialList: Collection<IssuedCredential>
+    @OneToMany(mappedBy = "deviceBinding")
+    val issuedCredentialList: MutableList<IssuedCredential> = mutableListOf()
 
 }

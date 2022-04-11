@@ -91,7 +91,7 @@ class BackendConfiguration {
     fun revocationService(
         credentialRepo: IssuedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
-    ): RevocationService = DefaultRevocationService(credentialRepo, deviceBindingStorageService)
+    ): RevocationService = DefaultRevocationService(credentialRepo, deviceBindingStorageService, configurationProperties.credentials.oneCredentialPerDeviceBinding)
 
     @Bean
     fun deviceBindingAuthnService(
@@ -155,7 +155,7 @@ class BackendConfiguration {
         deviceBindingStorageService: DeviceBindingStorageService
     ): IssuerCredentialDataProvider =
         IssuerCredentialDataProviderAdapter(
-            lifetime = configurationProperties.credentialLifetime.toMinutes().minutes,
+            lifetime = configurationProperties.credentials.lifetime.toMinutes().minutes,
             credentialDataProvider = credentialDataProvider,
             deviceBindingStorageService = deviceBindingStorageService
         )

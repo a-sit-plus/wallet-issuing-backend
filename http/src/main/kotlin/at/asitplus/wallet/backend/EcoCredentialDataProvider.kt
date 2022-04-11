@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
@@ -28,7 +29,6 @@ class EcoCredentialDataProvider(
     override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
         if (attributeType != ConstantIndex.PupilId.vcType)
             return null
-
         val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
             uriVariables = mapOf("bpk" to bpk)

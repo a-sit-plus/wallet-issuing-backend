@@ -35,6 +35,7 @@ class RevocationServiceTest {
 
     private lateinit var vcId: String
     private lateinit var attributeName: String
+    private lateinit var attributeValue: String
     private lateinit var subjectId: String
     private lateinit var credentialSubject: CredentialSubject
     private lateinit var bpk: String
@@ -46,8 +47,9 @@ class RevocationServiceTest {
     fun beforeEach() {
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
+        attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
-        credentialSubject = AtomicAttributeCredential(subjectId, attributeName, "foo")
+        credentialSubject = AtomicAttributeCredential(subjectId, attributeName, attributeValue)
         issuanceDate = kotlinx.datetime.Clock.System.now()
         expirationDate = issuanceDate + 60.seconds
         bpk = UUID.randomUUID().toString()

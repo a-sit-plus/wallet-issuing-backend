@@ -285,7 +285,9 @@ There are several custom configuration properties, all under the key `backend`:
 ```yaml
 backend:
   public-context: "http://localhost:8080"
-  credential-lifetime: PT60M
+  credentials:
+    lifetime: PT60M
+    one-credential-per-device-binding: true
   issuer-key: {{ KEY_CONFIG }}
     type: FILE
     file:
@@ -304,6 +306,8 @@ backend:
   attribute-source:
     type: RANDOM
 ```
+
+Set `backend.credentials.one-credential-per-device-binding=true` if existing credentials for the same device binding should be revoked when a new credential is issued (e.g. as it is the case for PupilIds).
 
 Alternative configuration for the device binding authentication (validation of the ext. nonce provided by the Wallet App):
 

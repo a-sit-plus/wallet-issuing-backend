@@ -13,9 +13,9 @@ data class BackendConfigurationProperties(
      */
     val publicContext: String = "http://localhost:8080/",
     /**
-     * Lifetime of the credentials issued, e.g. 60 minutes or 6 months
+     * Configuration for issued credentials
      */
-    val credentialLifetime: Duration = Duration.ofMinutes(60),
+    val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
     /**
      * Key used for signing issued credentials
      * TODO Connection to HSM Facade and AERA
@@ -45,6 +45,18 @@ data class DebugConfigurationProperties(
      * Size of QR Codes, displayed only on debug endpoints
      */
     val qrCodeSize: Int = 400,
+)
+
+@ConstructorBinding
+data class CredentialConfigurationProperties(
+    /**
+     * Lifetime of the credentials issued, e.g. 60 minutes (`PT6M`) or 180 days (`P180D`)
+     */
+    val lifetime: Duration = Duration.ofMinutes(60),
+    /**
+     * Whether to revoke all existing credentials when a new credential is issued for the same device binding
+     */
+    val oneCredentialPerDeviceBinding: Boolean = true,
 )
 
 @ConstructorBinding

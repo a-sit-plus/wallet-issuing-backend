@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.CredentialSubject
 import org.slf4j.LoggerFactory
@@ -18,23 +19,16 @@ class IssuerCredentialDataProviderAdapter(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
-        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-            ?: return null.also {
-                log.error("Got no authenticated user when trying to issue credentials")
-            }
-
-        if (deviceBinding.keyId != subjectId)
-            return null.also {
-                log.error(
-                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
-                    deviceBinding.keyId, subjectId
-                )
-            }
-
+        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
         return credentialDataProvider.getClaim(subjectId, attributeName, deviceBinding.bpk)
     }
 
     override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
+        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
+        return credentialDataProvider.getCredential(subjectId, attributeType, deviceBinding.bpk)
+    }
+
+    private fun getVerifiedDeviceBinding(subjectId: String): DeviceBinding? {
         val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
             ?: return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
@@ -47,8 +41,7 @@ class IssuerCredentialDataProviderAdapter(
                     deviceBinding.keyId, subjectId
                 )
             }
-
-        return credentialDataProvider.getCredential(subjectId, attributeType, deviceBinding.bpk)
+        return deviceBinding
     }
 
     override fun getLifetime(): Duration {

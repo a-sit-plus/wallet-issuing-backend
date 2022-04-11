@@ -32,6 +32,7 @@ interface RevocationService {
 class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
+    private val oneCredentialPerDeviceBinding: Boolean,
 ) : RevocationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -54,6 +55,11 @@ class DefaultRevocationService(
             ?: return null.also {
                 log.error("Got no authenticated user when trying to store vcId '$vcId'")
             }
+        if (oneCredentialPerDeviceBinding) {
+            val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
+            if (revokedCreds > 0)
+                log.info("Revoked $revokedCreds already existing credentials for bpk '${deviceBinding.bpk}'")
+        }
         val exp = java.time.Instant.ofEpochMilli(expirationDate.toEpochMilliseconds())
         val issuedCredential =
             IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, credentialSubject.javaClass.simpleName)
