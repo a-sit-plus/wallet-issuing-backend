@@ -1,11 +1,9 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.SchemaIndex
 import org.slf4j.LoggerFactory
-import kotlin.time.Duration
 
 
 /**
@@ -13,39 +11,23 @@ import kotlin.time.Duration
  * the previously stored attributes (from an OIDC login),
  * i.e. it looks up data with the `bpk` from its internal map
  */
-class EidasCredentialDataProvider constructor(
-    private val lifetime: Duration,
-    private val deviceBindingStorageService: DeviceBindingStorageService,
-) : IssuerCredentialDataProvider {
+class EidasCredentialDataProvider : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val map = mutableMapOf<String, EidasClaim>()
 
-    fun storeClaims(bpk: String, eidasClaim: EidasClaim) {
+    fun storeClaims(eidasClaim: EidasClaim, bpk: String) {
         map[bpk] = eidasClaim
     }
 
-    override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
+    override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
             return null
 
-        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+        val eidasClaim = map.remove(bpk)
             ?: return null.also {
-                log.error("Got no authenticated user when trying to issue credentials")
-            }
-
-        if (deviceBinding.keyId != subjectId)
-            return null.also {
-                log.error(
-                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
-                    deviceBinding.keyId, subjectId
-                )
-            }
-
-        val eidasClaim = map.remove(deviceBinding.bpk)
-            ?: return null.also {
-                log.error("Found no stored EIDAS claim for bpk '{}'", deviceBinding.bpk)
+                log.error("Found no stored EIDAS claim for bpk '{}'", bpk)
             }
 
         return when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
@@ -57,12 +39,8 @@ class EidasCredentialDataProvider constructor(
         }
     }
 
-    override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
+    override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
         return null // not supported for EIDAS
-    }
-
-    override fun getLifetime(): Duration {
-        return lifetime
     }
 
     data class EidasClaim(val subject: String, val birthdate: String, val givenName: String, val familyName: String)

@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
@@ -45,7 +44,7 @@ class EidasIdController(
     private val issueCredentialAdapter: IssueCredentialAdapter,
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
-    private val issuerCredentialDataProvider: IssuerCredentialDataProvider,
+    private val credentialDataProvider: CredentialDataProvider,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -135,7 +134,7 @@ class EidasIdController(
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)
         }
-        if (issuerCredentialDataProvider !is EidasCredentialDataProvider) {
+        if (credentialDataProvider !is EidasCredentialDataProvider) {
             model["error"] = "Internal error: Configuration mismatch"
             return ModelAndView("initialize", model)
         }
@@ -150,7 +149,7 @@ class EidasIdController(
         val familyName = principal.getAttribute<String>("family_name")!! // "XXXMusterfrau Erwachsen"
         val eidasClaim = EidasCredentialDataProvider.EidasClaim(subject, birthdate, givenName, familyName)
         log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
-        issuerCredentialDataProvider.storeClaims(nonceBpk.bpk, eidasClaim)
+        credentialDataProvider.storeClaims(eidasClaim, nonceBpk.bpk)
 
         val content = "${configurationProperties.publicContext}/help/wallet#nonce=${nonceBpk.nonce}" +
                 "&server=${URLEncoder.encode(configurationProperties.publicContext, Charset.defaultCharset())}"

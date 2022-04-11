@@ -106,7 +106,7 @@ class BackendConfiguration {
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
-    fun issuerCredentialDataProvider(deviceBindingStorageService: DeviceBindingStorageService): IssuerCredentialDataProvider =
+    fun dataProvider(deviceBindingStorageService: DeviceBindingStorageService): CredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
             AttributeSourceType.RANDOM -> {
                 val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
@@ -116,7 +116,6 @@ class BackendConfiguration {
                     .map { it.filename!! to it.inputStream }
                     .map { it.first to it.second.readAllBytes() }
                 RandomCredentialDataProvider(
-                    configurationProperties.credentialLifetime.toMinutes().minutes,
                     mapOfPhotos.toMap(),
                     deviceBindingStorageService,
                 )
@@ -139,20 +138,28 @@ class BackendConfiguration {
                     listOf(byteArrayOf())
                 }
                 EcoCredentialDataProvider(
-                    configurationProperties.credentialLifetime.toMinutes().minutes,
                     configurationProperties.attributeSource.eco!!.url.toString(),
                     restTemplate,
-                    deviceBindingStorageService,
                     listOfPhotos,
                 )
             }
             AttributeSourceType.EIDAS -> {
                 EidasCredentialDataProvider(
-                    configurationProperties.credentialLifetime.toMinutes().minutes,
-                    deviceBindingStorageService,
                 )
             }
         }
+
+    @Bean
+    fun issuerCredentialDataProvider(
+        credentialDataProvider: CredentialDataProvider,
+        deviceBindingStorageService: DeviceBindingStorageService
+    ): IssuerCredentialDataProvider =
+        IssuerCredentialDataProviderAdapter(
+            lifetime = configurationProperties.credentialLifetime.toMinutes().minutes,
+            credentialDataProvider = credentialDataProvider,
+            deviceBindingStorageService = deviceBindingStorageService
+        )
+
 
     @Bean
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {

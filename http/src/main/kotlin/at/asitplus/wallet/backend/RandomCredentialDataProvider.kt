@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.CredentialSubject
@@ -12,17 +11,15 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
-import kotlin.time.Duration
 
 
 /**
  * Provides random credential data for the currently logged-in user
  */
 class RandomCredentialDataProvider constructor(
-    private val lifetime: Duration,
     private val listOfPhotos: Map<String, ByteArray>,
     private val deviceBindingStorageService: DeviceBindingStorageService,
-) : IssuerCredentialDataProvider {
+) : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -68,21 +65,9 @@ class RandomCredentialDataProvider constructor(
             .ifEmpty { listOf(fallbackPhoto.decodeBase64ToArray()!!) }.random()
     }
 
-    override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
-        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-            ?: return null.also {
-                log.error("Got no authenticated user when trying to issue credentials")
-            }
-        if (deviceBinding.keyId != subjectId)
-            return null.also {
-                log.error(
-                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
-                    deviceBinding.keyId, subjectId
-                )
-            }
-
-        val it = randomAttributeCache[subjectId]
-            ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
+    override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
+        val it = randomAttributeCache[bpk]
+            ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
         return when {
             attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX) -> {
                 when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
@@ -115,22 +100,9 @@ class RandomCredentialDataProvider constructor(
         }
     }
 
-    override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
-        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-            ?: return null.also {
-                log.error("Got no authenticated user when trying to issue credentials")
-            }
-
-        if (deviceBinding.keyId != subjectId)
-            return null.also {
-                log.error(
-                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
-                    deviceBinding.keyId, subjectId
-                )
-            }
-
-        val it = randomAttributeCache[subjectId]
-            ?: RandomAttributeSet().also { randomAttributeCache[subjectId] = it }
+    override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
+        val it = randomAttributeCache[bpk]
+            ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
 
         return when (attributeType) {
             ConstantIndex.PupilId.vcType -> {
@@ -153,10 +125,6 @@ class RandomCredentialDataProvider constructor(
                 null
             }
         }
-    }
-
-    override fun getLifetime(): Duration {
-        return lifetime
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

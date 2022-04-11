@@ -1,13 +1,11 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
-import kotlin.time.Duration
 
 
 /**
@@ -16,41 +14,26 @@ import kotlin.time.Duration
  * i.e. it looks up data with the `bpk` from a remote service
  */
 class EcoCredentialDataProvider(
-    private val lifetime: Duration,
     private val url: String,
     private val restTemplate: RestTemplate,
-    private val deviceBindingStorageService: DeviceBindingStorageService,
     private val listOfRandomPhotos: List<ByteArray>,
-) : IssuerCredentialDataProvider {
+) : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
+    override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
         return null // not supported for ECO
     }
 
-    override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
+    override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
         if (attributeType != ConstantIndex.PupilId.vcType)
             return null
 
-        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-            ?: return null.also {
-                log.error("Got no authenticated user when trying to issue credentials")
-            }
-
-        if (deviceBinding.keyId != subjectId)
-            return null.also {
-                log.error(
-                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
-                    deviceBinding.keyId, subjectId
-                )
-            }
-
         val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
-            uriVariables = mapOf("bpk" to deviceBinding.bpk)
+            uriVariables = mapOf("bpk" to bpk)
         )
-        log.debug("getCredential for '{}' got {}", deviceBinding.bpk, entity)
+        log.debug("getCredential for '{}' got {}", bpk, entity)
 
         return entity.body?.let {
             PupilIdCredential(
@@ -68,10 +51,6 @@ class EcoCredentialDataProvider(
                 picture = listOfRandomPhotos.random(),
             )
         }
-    }
-
-    override fun getLifetime(): Duration {
-        return lifetime
     }
 
     data class EcoStudentData(
