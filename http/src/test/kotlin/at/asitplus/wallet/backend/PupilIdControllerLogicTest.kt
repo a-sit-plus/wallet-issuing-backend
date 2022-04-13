@@ -2,8 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
+import at.asitplus.wallet.lib.agent.HolderAgent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
@@ -54,14 +54,17 @@ class PupilIdControllerLogicTest {
 
     private val subjectCredentialStore = mock<SubjectCredentialStore>()
     private val client = Client()
-    private val subjectCryptoService = DefaultCryptoService(keyPair = client.keyPair)
-    private val subjectAgent =
-        Agent(subjectCredentialStore = subjectCredentialStore, cryptoService = subjectCryptoService)
-    private val messageWrapper = MessageWrapper(subjectAgent.cryptoService)
-    private val subjectMessenger = IssueCredentialMessenger(
-        agent = subjectAgent,
+    private val holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
+    private val holderAgent = HolderAgent.newDefaultInstance(
+        subjectCredentialStore = subjectCredentialStore,
+        cryptoService = holderCryptoService
+    )
+    private val messageWrapper = MessageWrapper(holderCryptoService)
+    private val holderMessenger = IssueCredentialMessenger.newHolderInstance(
+        holder = holderAgent,
         messageWrapper = messageWrapper,
-        credentialScheme = ConstantIndex.PupilId
+        credentialScheme = ConstantIndex.PupilId,
+        keyId = holderCryptoService.keyId
     )
 
     @BeforeEach
@@ -78,7 +81,7 @@ class PupilIdControllerLogicTest {
 
     @Test
     fun issue_ok() = runTest {
-        val request = subjectMessenger.startDirect()
+        val request = holderMessenger.startDirect()
         if (request !is NextMessage.Send) throw Exception("Internal Error")
 
         val response = mockMvc.post("/pupilid/issue") {
@@ -88,7 +91,7 @@ class PupilIdControllerLogicTest {
             status { isOk() }
         }.andReturn()
 
-        val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
+        val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.Result<*>>(parsedMessage)
         verify(subjectCredentialStore, times(1)).storeCredential(any(), any())
     }
@@ -102,7 +105,7 @@ class PupilIdControllerLogicTest {
         }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
-        val request = subjectMessenger.startDirect()
+        val request = holderMessenger.startDirect()
         if (request !is NextMessage.Send) throw Exception("Internal Error")
 
         val response = mockMvc.post("/pupilid/issue") {
@@ -112,7 +115,7 @@ class PupilIdControllerLogicTest {
             status { isOk() }
         }.andReturn()
 
-        val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
+        val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.ReceivedProblemReport>(parsedMessage)
         verify(subjectCredentialStore, never()).storeCredential(any(), any())
     }

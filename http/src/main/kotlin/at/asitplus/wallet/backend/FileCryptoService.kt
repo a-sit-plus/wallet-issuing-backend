@@ -1,35 +1,27 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.lib.DefaultKeyIdService
-import at.asitplus.wallet.lib.JvmPublicKeyHolder
-import at.asitplus.wallet.lib.KeyIdService
 import at.asitplus.wallet.lib.KmmResult
-import at.asitplus.wallet.lib.PublicKeyHolder
 import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.Digest
 import at.asitplus.wallet.lib.agent.EphemeralKeyHolder
 import at.asitplus.wallet.lib.agent.JvmEphemeralKeyHolder
+import at.asitplus.wallet.lib.agent.getPublicKey
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JweAlgorithm
 import at.asitplus.wallet.lib.jws.JweEncryption
 import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
-import at.asitplus.wallet.lib.jws.JwsExtensions.convertToAsn1Signature
 import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.ResourceLoader
-import org.springframework.util.StreamUtils
 import java.math.BigInteger
-import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.security.PrivateKey
-import java.security.PublicKey
 import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
@@ -43,52 +35,21 @@ import javax.crypto.spec.SecretKeySpec
  */
 class FileCryptoService(
     keyAdapter: KeyAdapter,
-    keyIdService: KeyIdService = DefaultKeyIdService()
 ) : CryptoService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val privateKey: PrivateKey = keyAdapter.privateKey
-    private val publicKey: PublicKey = keyAdapter.publicKey
-    private val ecCurve: EcCurve = keyAdapter.ecCurve
     private val provider: String = keyAdapter.provider
-    private val keyType: JwkType = keyAdapter.keyType
-    override val keyId: String = keyIdService.calcKeyId(JvmPublicKeyHolder(publicKey, ecCurve))!!
+    private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
+    override val keyId: String = jsonWebKey.keyId!!
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
 
     init {
         log.info("Loaded public key with keyId $keyId")
     }
 
-    private fun loadResource(resourceLoader: ResourceLoader, path: String) =
-        StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
-
-    override fun toJsonWebKey() = JsonWebKey(
-        type = keyType,
-        curve = ecCurve,
-        keyId = keyId,
-        x = (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
-        y = publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-    )
-
-    override fun verify(
-        input: ByteArray,
-        signature: ByteArray,
-        algorithm: JwsAlgorithm,
-        publicKey: PublicKeyHolder
-    ): KmmResult<Boolean> {
-        require(publicKey is JvmPublicKeyHolder) { "JVM Type expected" }
-        val asn1Signature = signature.convertToAsn1Signature(ecCurve.signatureLengthBytes)
-        return try {
-            val verified = Signature.getInstance(algorithm.jcaName, provider).apply {
-                initVerify(publicKey.publicKey)
-                update(input)
-            }.verify(asn1Signature)
-            KmmResult.success(verified)
-        } catch (e: Throwable) {
-            KmmResult.failure(e)
-        }
-    }
+    override fun toJsonWebKey() = jsonWebKey
 
     override suspend fun sign(input: ByteArray): KmmResult<ByteArray> = try {
         val signed = Signature.getInstance(jwsAlgorithm.jcaName, provider).apply {
@@ -145,15 +106,14 @@ class FileCryptoService(
 
     override fun performKeyAgreement(
         ephemeralKey: EphemeralKeyHolder,
-        recipientKey: PublicKeyHolder,
+        recipientKey: JsonWebKey,
         algorithm: JweAlgorithm
     ): KmmResult<ByteArray> {
         require(ephemeralKey is JvmEphemeralKeyHolder) { "JVM Type expected" }
-        require(recipientKey is JvmPublicKeyHolder) { "JVM Type expected" }
         return try {
             val secret = KeyAgreement.getInstance(algorithm.jcaName, provider).also {
                 it.init(ephemeralKey.keyPair.private)
-                it.doPhase(recipientKey.publicKey, true)
+                it.doPhase(recipientKey.getPublicKey(), true)
             }.generateSecret()
             KmmResult.success(secret)
         } catch (e: Throwable) {
@@ -183,8 +143,7 @@ class FileCryptoService(
 
     override fun messageDigest(input: ByteArray, digest: Digest): KmmResult<ByteArray> {
         return try {
-            val digest = MessageDigest.getInstance(digest.jcaName, provider).digest(input)
-            KmmResult.success(digest)
+            KmmResult.success(MessageDigest.getInstance(digest.jcaName, provider).digest(input))
         } catch (e: Throwable) {
             KmmResult.failure(e)
         }
@@ -231,11 +190,10 @@ class FileCryptoService(
 // TODO Replace with functionality from vclib
 val DeviceBinding.keyId: String?
     get() = kotlin.runCatching {
-        DefaultKeyIdService().calcKeyId(
-            JvmPublicKeyHolder(
-                CertificateFactory.getInstance("X.509")
-                    .generateCertificate(certificate.inputStream()).publicKey,
-                EcCurve.SECP_256_R_1
-            )
-        )
+        val publicKey = CertificateFactory.getInstance("X.509")
+            .generateCertificate(certificate.inputStream()).publicKey
+        val ecCurve = EcCurve.SECP_256_R_1
+        val x = (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val y = publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        return JsonWebKey.fromCoordinates(JwkType.EC, ecCurve, x, y)!!.keyId!!
     }.getOrNull()

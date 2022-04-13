@@ -5,9 +5,11 @@ import at.asitplus.wallet.ServiceResult
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.KmmResult
-import at.asitplus.wallet.lib.agent.Agent
+import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
+import at.asitplus.wallet.lib.agent.HolderAgent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import kotlinx.coroutines.test.runTest
@@ -36,16 +38,23 @@ class PupilIdControllerKtorLibTest {
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
-    private lateinit var subjectAgent: Agent
-    private lateinit var subjectMessenger: IssueCredentialMessenger
+    private lateinit var holderCryptoService: CryptoService
+    private lateinit var holderAgent: HolderAgent
+    private lateinit var holderMessenger: IssueCredentialMessenger
     private lateinit var request: NextMessage.Send
     private lateinit var clientCert: ByteArray
 
     @BeforeEach
     fun beforeEach() {
         val client = Client()
-        subjectAgent = Agent(cryptoService = DefaultCryptoService(client.keyPair))
-        subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
+        holderCryptoService = DefaultCryptoService(client.keyPair)
+        holderAgent = HolderAgent.newDefaultInstance(cryptoService = holderCryptoService)
+        holderMessenger = IssueCredentialMessenger.newHolderInstance(
+            holder = holderAgent,
+            credentialScheme = ConstantIndex.PupilId,
+            keyId = holderCryptoService.keyId,
+            messageWrapper = MessageWrapper(holderCryptoService)
+        )
         val bpk = UUID.randomUUID().toString()
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
@@ -55,13 +64,13 @@ class PupilIdControllerKtorLibTest {
 
     @Test
     fun start_challengeResponse_ok() = runTest {
-        request = subjectMessenger.startDirect() as NextMessage.Send
+        request = holderMessenger.startDirect() as NextMessage.Send
         val cryptoAdapter = object : PupilIdIssuingService.CryptoAdapter {
             override fun getCertificateChain(): KmmResult<Array<ByteArray>> = KmmResult.success(arrayOf(clientCert))
         }
 
         val service =
-            PupilIdIssuingService("http://localhost:$localServerPort", subjectAgent.cryptoService, cryptoAdapter)
+            PupilIdIssuingService("http://localhost:$localServerPort", holderCryptoService, cryptoAdapter)
         val result = service.issueCredentials(request.message)
 
         assertIs<ServiceResult.Success>(result)

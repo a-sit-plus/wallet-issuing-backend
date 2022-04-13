@@ -9,15 +9,15 @@ import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
-import at.asitplus.wallet.lib.DefaultKeyIdService
-import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.IssuerAgent
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -91,7 +91,11 @@ class BackendConfiguration {
     fun revocationService(
         credentialRepo: IssuedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
-    ): RevocationService = DefaultRevocationService(credentialRepo, deviceBindingStorageService, configurationProperties.credentials.oneCredentialPerDeviceBinding)
+    ): RevocationService = DefaultRevocationService(
+        credentialRepo,
+        deviceBindingStorageService,
+        configurationProperties.credentials.oneCredentialPerDeviceBinding
+    )
 
     @Bean
     fun deviceBindingAuthnService(
@@ -165,11 +169,9 @@ class BackendConfiguration {
     fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
         KeyType.FILE -> FileCryptoService(
             KeyFileAdapter(configurationProperties.issuerKey.file!!, resourceLoader),
-            DefaultKeyIdService()
         )
         KeyType.KEYSTORE -> FileCryptoService(
             KeyStoreAdapter(configurationProperties.issuerKey.keystore!!),
-            DefaultKeyIdService(),
         )
         KeyType.MEMORY -> DefaultCryptoService()
     }
@@ -179,39 +181,45 @@ class BackendConfiguration {
         issuerCredentialStore: IssuerCredentialStore,
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
         issuerCryptoService: CryptoService
-    ): Agent = Agent(
-        cryptoService = issuerCryptoService,
+    ): IssuerAgent = IssuerAgent(
+        keyId = issuerCryptoService.keyId,
+        jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
         revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
     )
 
     @Bean
-    fun issuerMessageWrapper(issuerAgent: Agent): MessageWrapper = MessageWrapper(issuerAgent.cryptoService)
+    fun issuerMessageWrapper(issuerCryptoService: CryptoService): MessageWrapper = MessageWrapper(
+        cryptoService = issuerCryptoService,
+        jwsService = DefaultJwsService(issuerCryptoService)
+    )
 
     @Profile("pupilid")
     @Bean
     fun issueCredentialMessengerPupilId(
-        issuerAgent: Agent,
+        issuerAgent: IssuerAgent,
+        issuerCryptoService: CryptoService,
         issuerMessageWrapper: MessageWrapper
-    ): IssueCredentialMessenger = IssueCredentialMessenger(
-        issuerAgent,
-        issuerMessageWrapper,
-        "${configurationProperties.publicContext}/pupilid/issue",
-        true,
+    ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
+        issuer = issuerAgent,
+        messageWrapper = issuerMessageWrapper,
+        keyId = issuerCryptoService.keyId,
+        serviceEndpoint = "${configurationProperties.publicContext}/pupilid/issue",
         credentialScheme = ConstantIndex.PupilId,
     )
 
     @Profile("eidasid")
     @Bean
     fun issueCredentialMessengerEidasId(
-        issuerAgent: Agent,
+        issuerAgent: IssuerAgent,
+        issuerCryptoService: CryptoService,
         issuerMessageWrapper: MessageWrapper
-    ): IssueCredentialMessenger = IssueCredentialMessenger(
-        issuerAgent,
-        issuerMessageWrapper,
-        "${configurationProperties.publicContext}/eidasid/issue",
-        true,
+    ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
+        issuer = issuerAgent,
+        messageWrapper = issuerMessageWrapper,
+        keyId = issuerCryptoService.keyId,
+        serviceEndpoint = "${configurationProperties.publicContext}/eidasid/issue",
         credentialScheme = ConstantIndex.Generic,
     )
 

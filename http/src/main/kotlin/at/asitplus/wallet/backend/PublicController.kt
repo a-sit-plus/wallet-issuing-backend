@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.Agent
+import at.asitplus.wallet.lib.agent.IssuerAgent
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class PublicController(
-    private val issuerAgent: Agent,
+    private val issuerAgent: IssuerAgent,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

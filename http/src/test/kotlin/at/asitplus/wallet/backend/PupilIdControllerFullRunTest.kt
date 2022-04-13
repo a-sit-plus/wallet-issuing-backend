@@ -2,11 +2,12 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.lib.agent.Agent
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
+import at.asitplus.wallet.lib.agent.HolderAgent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
+import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
@@ -38,18 +39,23 @@ class PupilIdControllerFullRunTest {
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
-    private lateinit var cryptoService: CryptoService
-    private lateinit var subjectAgent: Agent
-    private lateinit var subjectMessenger: IssueCredentialMessenger
+    private lateinit var holderCryptoService: CryptoService
+    private lateinit var holderAgent: HolderAgent
+    private lateinit var holderMessenger: IssueCredentialMessenger
     private lateinit var request: NextMessage.Send
     private lateinit var client: Client
 
     @BeforeEach
     fun beforeEach() {
         client = Client()
-        cryptoService = DefaultCryptoService(keyPair = client.keyPair)
-        subjectAgent = Agent(cryptoService = cryptoService)
-        subjectMessenger = IssueCredentialMessenger(agent = subjectAgent, credentialScheme = ConstantIndex.PupilId)
+        holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
+        holderAgent = HolderAgent.newDefaultInstance(cryptoService = holderCryptoService)
+        holderMessenger = IssueCredentialMessenger.newHolderInstance(
+            holder = holderAgent,
+            credentialScheme = ConstantIndex.PupilId,
+            keyId = holderCryptoService.keyId,
+            messageWrapper = MessageWrapper(holderCryptoService)
+        )
         val bpk = UUID.randomUUID().toString()
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
@@ -58,7 +64,7 @@ class PupilIdControllerFullRunTest {
 
     @Test
     fun start_challengeResponse_ok() = runTest {
-        request = subjectMessenger.startDirect() as NextMessage.Send
+        request = holderMessenger.startDirect() as NextMessage.Send
 
         val firstResponse = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -80,13 +86,13 @@ class PupilIdControllerFullRunTest {
             status { isOk() }
         }.andReturn()
 
-        val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
+        val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
     }
 
     @Test
     fun start_challengeDirectlyResponse_ok() = runTest {
-        request = subjectMessenger.startDirect() as NextMessage.Send
+        request = holderMessenger.startDirect() as NextMessage.Send
 
         val firstResponse = mockMvc.get("/authn/devicebinding/challenge")
             .andExpect {
@@ -105,7 +111,7 @@ class PupilIdControllerFullRunTest {
             status { isOk() }
         }.andReturn()
 
-        val parsedMessage = subjectMessenger.parseMessage(response.response.contentAsString)
+        val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
         assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
     }
 
