@@ -51,10 +51,10 @@ class SimpleDeviceBindingAuthnService(
             throw BadCredentialsException("signature not valid")
                 .also { log.warn("Signature on JWS not valid") }
         val payloadJsonObject = jwsObject.payload.toJSONObject()
-        if (!payloadJsonObject.containsKey("challenge"))
+        if (payloadJsonObject?.containsKey("challenge") != true)
             throw BadCredentialsException("challenge not found")
                 .also { log.warn("No challenge in JWS payload") }
-        val decodedChallenge = payloadJsonObject["challenge"].toString().decodeBase64ToArray()
+        val decodedChallenge = payloadJsonObject["challenge"]?.toString()?.decodeBase64ToArray()
         if (decodedChallenge == null || !deviceBindingAuthnChallengeService.verifyAndRemove(decodedChallenge))
             throw BadCredentialsException("challenge not valid")
                 .also { log.warn("Challenge in JWS payload not valid") }

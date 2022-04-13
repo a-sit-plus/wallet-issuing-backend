@@ -3,6 +3,12 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
+import at.asitplus.wallet.lib.encodeBase64
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.JWSObject
+import com.nimbusds.jose.Payload
+import com.nimbusds.jose.util.Base64
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -44,6 +50,36 @@ internal class SimpleDeviceBindingAuthnServiceTest {
         result.shouldNotBeNull()
         result.bpk shouldBe bpk
         result.certificate shouldBe client.selfSignedCert.encoded
+    }
+
+    @Test
+    fun `wrong payload`() {
+        val jws = JWSObject(
+            JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(client.selfSignedCert.encoded)))
+                .build(),
+            Payload(challenge.encodeBase64())
+        )
+        val challengeResponse = client.signBindingChallenge(jws)
+        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+
+        shouldThrow<BadCredentialsException> {
+            service.validate(challengeResponse)
+        }
+    }
+
+    @Test
+    fun `wrong payload with wrong key`() {
+        val jws = JWSObject(
+            JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(client.selfSignedCert.encoded)))
+                .build(),
+            Payload(mapOf("challange" to challenge.encodeBase64()))
+        )
+        val challengeResponse = client.signBindingChallenge(jws)
+        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+
+        shouldThrow<BadCredentialsException> {
+            service.validate(challengeResponse)
+        }
     }
 
     @Test
