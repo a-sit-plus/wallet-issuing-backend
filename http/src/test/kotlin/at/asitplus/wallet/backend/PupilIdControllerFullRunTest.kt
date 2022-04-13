@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.util.UUID
 import kotlin.test.assertIs
@@ -87,11 +88,11 @@ class PupilIdControllerFullRunTest {
     fun start_challengeDirectlyResponse_ok() = runTest {
         request = subjectMessenger.startDirect() as NextMessage.Send
 
-        val firstResponse = mockMvc.post("/authn/devicebinding/challenge") {
-        }.andExpect {
-            status { isOk() }
-            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
-        }.andReturn()
+        val firstResponse = mockMvc.get("/authn/devicebinding/challenge")
+            .andExpect {
+                status { isOk() }
+                header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
+            }.andReturn()
 
         val challenge = firstResponse.response.contentAsString.decodeBase64ToArray()!!
         val challengeResponse = client.answerBindingChallenge(challenge)

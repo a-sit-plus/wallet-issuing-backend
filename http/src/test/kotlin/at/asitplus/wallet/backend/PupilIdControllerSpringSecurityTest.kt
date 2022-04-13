@@ -17,6 +17,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.util.UUID
 import kotlin.random.Random
@@ -117,12 +118,11 @@ class PupilIdControllerSpringSecurityTest {
 
     @Test
     fun issue_getChallengeDirectlyResponse_ok() = runTest {
-        mockMvc.post("/authn/devicebinding/challenge") {
-            contentType = MediaType.APPLICATION_JSON
-        }.andExpect {
-            status { isOk() }
-            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
-        }.andReturn()
+        mockMvc.get("/authn/devicebinding/challenge")
+            .andExpect {
+                status { isOk() }
+                header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
+            }.andReturn()
 
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
