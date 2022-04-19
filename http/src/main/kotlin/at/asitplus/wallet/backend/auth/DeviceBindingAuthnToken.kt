@@ -45,4 +45,8 @@ class DeviceBindingAuthnToken : AbstractAuthenticationToken {
         return principal
     }
 
+    override fun toString(): String {
+        return "DeviceBindingAuthnToken(principal='$principal', response='$response')"
+    }
+
 }

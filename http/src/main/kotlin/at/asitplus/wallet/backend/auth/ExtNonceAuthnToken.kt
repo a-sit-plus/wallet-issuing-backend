@@ -35,4 +35,8 @@ class ExtNonceAuthnToken : AbstractAuthenticationToken {
         return principal
     }
 
+    override fun toString(): String {
+        return "ExtNonceAuthnToken(principal='$principal', credentials='$credentials')"
+    }
+
 }

@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.lib.encodeBase64
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -35,6 +36,10 @@ class AuthenticatedDeviceBindingUser(val bpk: String, val certificate: ByteArray
 
     override fun isEnabled(): Boolean {
         return true
+    }
+
+    override fun toString(): String {
+        return "AuthenticatedDeviceBindingUser(bpk='$bpk', certificate=${certificate.encodeBase64()})"
     }
 
 }

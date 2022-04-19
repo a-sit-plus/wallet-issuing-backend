@@ -38,4 +38,9 @@ class ApiKeyAuthnToken : AbstractAuthenticationToken {
         return principal
     }
 
+    override fun toString(): String {
+        return "ApiKeyAuthnToken(principal='$principal', credentials='$credentials')"
+    }
+
+
 }
