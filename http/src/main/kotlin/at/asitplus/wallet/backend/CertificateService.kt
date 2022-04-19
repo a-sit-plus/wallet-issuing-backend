@@ -68,7 +68,7 @@ class InMemoryCertificateService(
                 log.warn("verifyAndSign: CSR signature invalid")
                 return null
             }
-            if (csr.subject.toString() != expectedSubject) { // todo improve check, see E-ID pentest
+            if (X500Name(expectedSubject) != csr.subject) {
                 log.warn("verifyAndSign: Subject not correct")
                 return null
             }
