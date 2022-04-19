@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
+import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.net.URLEncoder
@@ -151,8 +152,10 @@ class EidasIdController(
         log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
         credentialDataProvider.storeClaims(eidasClaim, nonceBpk.bpk)
 
-        val content = "${configurationProperties.publicContext}/help/wallet#nonce=${nonceBpk.nonce}" +
-                "&server=${URLEncoder.encode(configurationProperties.publicContext, Charset.defaultCharset())}"
+        val content = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("help", "wallet")
+            .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
+            .toUriString()
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize

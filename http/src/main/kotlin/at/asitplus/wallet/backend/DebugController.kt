@@ -17,10 +17,9 @@ import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
+import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.net.URLEncoder
-import java.nio.charset.Charset
 import java.util.Collections
 import java.util.UUID
 import javax.imageio.ImageIO
@@ -49,8 +48,10 @@ class DebugController(
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)
         }
-        val content = "${configurationProperties.publicContext}/help/wallet#nonce=${nonceBpk.nonce}" +
-                "&server=${URLEncoder.encode(configurationProperties.publicContext, Charset.defaultCharset())}"
+        val content = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("help", "wallet")
+            .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
+            .toUriString()
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
@@ -132,8 +133,12 @@ class DebugController(
             )
         }
         model["vcList"] = vcList
-        model["createCredentialUrl"] = "${configurationProperties.publicContext}/debug/credential/create"
-        model["revokeActionUrl"] = "${configurationProperties.publicContext}/debug/credential/revoke"
+        model["createCredentialUrl"] = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("debug", "credential", "create")
+            .toUriString()
+        model["revokeActionUrl"] = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("debug", "credential", "revoke")
+            .toUriString()
         return ModelAndView("credential_list", model)
     }
 

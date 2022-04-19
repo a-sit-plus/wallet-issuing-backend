@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
+import org.springframework.web.util.UriComponentsBuilder
 import kotlin.time.Duration.Companion.minutes
 
 @Configuration
@@ -186,7 +187,7 @@ class BackendConfiguration {
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
-        revocationListUrl = "${configurationProperties.publicContext}/credentials/status/1",
+        revocationListUrl = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext).pathSegment("credential", "status", "1").toUriString()
     )
 
     @Bean
@@ -205,7 +206,7 @@ class BackendConfiguration {
         issuer = issuerAgent,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
-        serviceEndpoint = "${configurationProperties.publicContext}/pupilid/issue",
+        serviceEndpoint = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext).pathSegment("pupilid", "issue").toUriString(),
         credentialScheme = ConstantIndex.PupilId,
     )
 
@@ -219,7 +220,7 @@ class BackendConfiguration {
         issuer = issuerAgent,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
-        serviceEndpoint = "${configurationProperties.publicContext}/eidasid/issue",
+        serviceEndpoint = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext).pathSegment("eidasid", "issue").toUriString(),
         credentialScheme = ConstantIndex.Generic,
     )
 
