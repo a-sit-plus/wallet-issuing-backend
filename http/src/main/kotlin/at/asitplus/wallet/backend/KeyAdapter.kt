@@ -8,6 +8,7 @@ import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.slf4j.LoggerFactory
@@ -48,15 +49,10 @@ class KeyFileAdapter(
         val publicKeyString = loadResource(resourceLoader, config.publicKey.toString())
         val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
         val publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
-        require(publicKey != null)
-        val ecCurve = EcCurve.SECP_256_R_1  // TODO Should be read from public key
+        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
+        val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromCoordinates(
-            JwkType.EC,
-            ecCurve,
-            (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
-            publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        )!!
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
         log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
     }
 
@@ -82,15 +78,10 @@ class KeyStoreAdapter(
         keyStore.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
         privateKey = keyStore.getKey(config.alias, config.aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
         val publicKey = keyStore.getCertificate(config.alias).publicKey
-        require(publicKey != null)
-        val ecCurve = EcCurve.SECP_256_R_1 // TODO Should be read from public key
+        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
+        val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromCoordinates(
-            JwkType.EC,
-            ecCurve,
-            (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
-            publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        )!!
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
         log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
     }
 

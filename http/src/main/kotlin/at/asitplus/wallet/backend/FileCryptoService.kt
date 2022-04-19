@@ -187,13 +187,17 @@ class FileCryptoService(
 
 }
 
-// TODO Replace with functionality from vclib
 val DeviceBinding.keyId: String?
     get() = kotlin.runCatching {
         val publicKey = CertificateFactory.getInstance("X.509")
             .generateCertificate(certificate.inputStream()).publicKey
-        val ecCurve = EcCurve.SECP_256_R_1
-        val x = (publicKey as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val y = publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        return JsonWebKey.fromCoordinates(JwkType.EC, ecCurve, x, y)!!.keyId!!
+        return JsonWebKey.fromJcaKey(publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId
     }.getOrNull()
+
+fun JsonWebKey.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: EcCurve) =
+    fromCoordinates(
+        JwkType.EC,
+        ecCurve,
+        publicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
+        publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+    )
