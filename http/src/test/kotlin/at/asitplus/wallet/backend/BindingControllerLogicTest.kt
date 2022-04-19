@@ -1,16 +1,13 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.BindingConfirmRequestJ
-import at.asitplus.wallet.BindingCsrRequestJ
-import at.asitplus.wallet.BindingCsrResponseJ
-import at.asitplus.wallet.BindingParamsRequestJ
-import at.asitplus.wallet.BindingParamsResponseJ
+import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrResponseJ
+import at.asitplus.wallet.pupilid.BindingParamsRequestJ
+import at.asitplus.wallet.pupilid.BindingParamsResponseJ
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
-import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -20,8 +17,6 @@ import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.security.cert.CertificateFactory
 import java.util.UUID
 import kotlin.test.assertContentEquals

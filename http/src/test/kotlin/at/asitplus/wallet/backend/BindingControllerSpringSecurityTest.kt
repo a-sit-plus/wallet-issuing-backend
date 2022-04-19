@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.BindingConfirmRequestJ
-import at.asitplus.wallet.BindingCsrRequestJ
-import at.asitplus.wallet.BindingParamsRequestJ
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrRequestJ
+import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach

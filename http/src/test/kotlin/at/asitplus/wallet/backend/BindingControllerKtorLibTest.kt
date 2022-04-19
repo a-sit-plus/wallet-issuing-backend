@@ -1,13 +1,13 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.Asn1Service
-import at.asitplus.wallet.DeviceAdapter
-import at.asitplus.wallet.DeviceBindingService
-import at.asitplus.wallet.HashAlgorithm
-import at.asitplus.wallet.KeyAlgorithm
-import at.asitplus.wallet.ServiceResult
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.lib.KmmResult
+import at.asitplus.wallet.pupilid.Asn1Service
+import at.asitplus.wallet.pupilid.DeviceAdapter
+import at.asitplus.wallet.pupilid.DeviceBindingService
+import at.asitplus.wallet.pupilid.HashAlgorithm
+import at.asitplus.wallet.pupilid.KeyAlgorithm
+import at.asitplus.wallet.pupilid.KmmResult
+import at.asitplus.wallet.pupilid.ServiceResult
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.web.server.LocalServerPort
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
@@ -54,32 +55,51 @@ class BindingControllerKtorLibTest {
     @Test
     fun start_create_ok() = runTest {
         val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
-        val deviceAdapter = object : DeviceAdapter {
-            override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray): KmmResult<Boolean> =
-                KmmResult.success(true)
+        val service = createService(keyPair)
 
-            override suspend fun loadAttestationCerts(): KmmResult<List<ByteArray>> = KmmResult.success(listOf())
-            override fun storeCertificate(certificate: ByteArray): KmmResult<Boolean> = KmmResult.success(true)
-            override fun getPublicKeyEncoded(): KmmResult<ByteArray> = KmmResult.success(keyPair.public.encoded)
-            override fun getIssuingMessage(): String? = null
-            override val deviceName: String = randomDeviceName
-        }
-        val asn1Adapter = object : Asn1Service.CryptoAdapter {
-            override suspend fun sign(input: ByteArray, key: KeyAlgorithm, hash: HashAlgorithm): KmmResult<ByteArray> {
-                return KmmResult.success(
-                    Signature.getInstance("${hash.jcaName}with${key.jcaName}").also {
-                        it.initSign(keyPair.private)
-                        it.update(input)
-                    }.sign()
-                )
-            }
-        }
-
-        val service =
-            DeviceBindingService(nonce, "http://localhost:$localServerPort", deviceAdapter, Asn1Service(asn1Adapter))
         val result = service.createDeviceBinding()
 
         assertIs<ServiceResult.Success>(result)
+    }
+
+    @Test
+    fun start_invalidNonce() = runTest {
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(null)
+        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
+        val service = createService(keyPair)
+
+        val result = service.createDeviceBinding()
+
+        assertIs<ServiceResult.ErrorFromNetwork>(result)
+    }
+
+    private fun createService(keyPair: KeyPair): DeviceBindingService {
+        val deviceAdapter = object : DeviceAdapter {
+            override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) = KmmResult.success(true)
+            override suspend fun loadAttestationCerts() = KmmResult.success(listOf<ByteArray>())
+            override fun storeCertificate(certificate: ByteArray) = KmmResult.success(true)
+            override fun getPublicKeyEncoded() = KmmResult.success(keyPair.public.encoded)
+            override val deviceName: String = randomDeviceName
+        }
+        val asn1Adapter = object : Asn1Service.CryptoAdapter {
+            override suspend fun sign(
+                input: ByteArray,
+                key: KeyAlgorithm,
+                hash: HashAlgorithm
+            ) = KmmResult.success(
+                Signature.getInstance("${hash.jcaName}with${key.jcaName}").also {
+                    it.initSign(keyPair.private)
+                    it.update(input)
+                }.sign()
+            )
+        }
+
+        return DeviceBindingService(
+            serverAddress = "http://localhost:$localServerPort",
+            extAuthNonce = nonce,
+            deviceAdapter = deviceAdapter,
+            cryptoAdapter = asn1Adapter
+        )
     }
 
     private val HashAlgorithm.jcaName: String

@@ -1,15 +1,15 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.BindingConfirmRequestJ
-import at.asitplus.wallet.BindingConfirmResponseJ
-import at.asitplus.wallet.BindingCsrRequestJ
-import at.asitplus.wallet.BindingCsrResponseJ
-import at.asitplus.wallet.BindingParamsRequestJ
-import at.asitplus.wallet.BindingParamsResponseJ
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
 import at.asitplus.wallet.lib.encodeBase16
+import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
+import at.asitplus.wallet.pupilid.BindingConfirmResponseJ
+import at.asitplus.wallet.pupilid.BindingCsrRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrResponseJ
+import at.asitplus.wallet.pupilid.BindingParamsRequestJ
+import at.asitplus.wallet.pupilid.BindingParamsResponseJ
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject

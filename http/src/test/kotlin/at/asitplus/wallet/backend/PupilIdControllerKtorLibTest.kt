@@ -1,10 +1,7 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.PupilIdIssuingService
-import at.asitplus.wallet.ServiceResult
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.lib.KmmResult
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.HolderAgent
@@ -12,6 +9,12 @@ import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.jws.DefaultJwsService
+import at.asitplus.wallet.lib.jws.JwsHeader
+import at.asitplus.wallet.pupilid.KmmResult
+import at.asitplus.wallet.pupilid.KmmResult.Companion
+import at.asitplus.wallet.pupilid.PupilIdIssuingService
+import at.asitplus.wallet.pupilid.ServiceResult
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,7 +44,6 @@ class PupilIdControllerKtorLibTest {
     private lateinit var holderCryptoService: CryptoService
     private lateinit var holderAgent: HolderAgent
     private lateinit var holderMessenger: IssueCredentialMessenger
-    private lateinit var request: NextMessage.Send
     private lateinit var clientCert: ByteArray
 
     @BeforeEach
@@ -64,13 +66,23 @@ class PupilIdControllerKtorLibTest {
 
     @Test
     fun start_challengeResponse_ok() = runTest {
-        request = holderMessenger.startDirect() as NextMessage.Send
-        val cryptoAdapter = object : PupilIdIssuingService.CryptoAdapter {
-            override fun getCertificateChain(): KmmResult<Array<ByteArray>> = KmmResult.success(arrayOf(clientCert))
+        val request = holderMessenger.startDirect() as NextMessage.Send
+        val cryptoAdapter = object : PupilIdIssuingService.JwsAdapter {
+            override suspend fun createSignedJwsCallback(payload: String) =
+                KmmResult.success(
+                    DefaultJwsService(holderCryptoService).createSignedJws(
+                        JwsHeader(
+                            holderCryptoService.jwsAlgorithm,
+                            holderCryptoService.keyId,
+                            certificateChain = arrayOf(clientCert)
+                        ),
+                        payload.encodeToByteArray()
+                    )!!
+                )
         }
 
         val service =
-            PupilIdIssuingService("http://localhost:$localServerPort", holderCryptoService, cryptoAdapter)
+            PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
         val result = service.issueCredentials(request.message)
 
         assertIs<ServiceResult.Success>(result)

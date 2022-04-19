@@ -1,11 +1,11 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.BindingConfirmRequestJ
-import at.asitplus.wallet.BindingCsrRequestJ
-import at.asitplus.wallet.BindingCsrResponseJ
-import at.asitplus.wallet.BindingParamsRequestJ
-import at.asitplus.wallet.BindingParamsResponse
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrResponseJ
+import at.asitplus.wallet.pupilid.BindingParamsRequestJ
+import at.asitplus.wallet.pupilid.BindingParamsResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.test.runTest
