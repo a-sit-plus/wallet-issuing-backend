@@ -1,18 +1,19 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.6.5"
+    id("org.springframework.boot") version "2.6.6"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     id("maven-publish")
-    kotlin("jvm") version "1.6.10"
-    kotlin("plugin.spring") version "1.6.10"
-    kotlin("plugin.jpa") version "1.6.10"
-    kotlin("plugin.serialization") version "1.6.10"
+    kotlin("jvm") version "1.6.20"
+    kotlin("plugin.spring") version "1.6.20"
+    kotlin("plugin.jpa") version "1.6.20"
+    kotlin("plugin.serialization") version "1.6.20"
 }
+
 val artifactVersion: String by extra
 group = "at.asitplus.wallet"
 version = artifactVersion
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.sourceCompatibility = JavaVersion.VERSION_11
 
 configurations {
     compileOnly {
@@ -44,7 +45,7 @@ dependencies {
     implementation("org.webjars:jquery:3.6.0")
     implementation("org.webjars:datatables:1.11.4")
     implementation("de.codecentric:spring-boot-admin-starter-client:2.6.2")
-    implementation("at.asitplus.wallet:vclib-jvm:1.2.2-SNAPSHOT")
+    implementation("at.asitplus.wallet:vclib-jvm:1.2.4-SNAPSHOT")
     implementation("at.asitplus.wallet:pupilidlib-jvm:1.2.1-SNAPSHOT")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
@@ -67,7 +68,7 @@ dependencies {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict", "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi", "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 }
 
