@@ -89,15 +89,10 @@ class DefaultRevocationService(
     private fun revokeAllCredentials(credentials: Collection<IssuedCredential>): Int {
         if (credentials.isEmpty())
             return 0
-        val toStore = mutableListOf<IssuedCredential>()
-        credentials.forEach {
-            it.revoked = true
-            toStore.add(it)
-        }
-        toStore.forEach {
-            credentialRepo.save(it)
-        }
-        return toStore.count()
+        val toRevoke = credentials.filter { !it.revoked }
+        toRevoke.forEach { it.revoked = true }
+        credentialRepo.saveAllAndFlush(toRevoke)
+        return toRevoke.count()
     }
 
     override fun getRevokedStatusListIndexList(): Collection<Int> {
