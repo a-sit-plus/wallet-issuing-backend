@@ -4,6 +4,7 @@ import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.SchemaIndex
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 
 /**
@@ -11,21 +12,26 @@ import org.slf4j.LoggerFactory
  * the previously stored attributes (from an OIDC login),
  * i.e. it looks up data with the `bpk` from its internal map
  */
-class EidasCredentialDataProvider : CredentialDataProvider {
+class EidasCredentialDataProvider(private val timeoutSeconds: Long) : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val map = mutableMapOf<String, EidasClaim>()
+    private val list = mutableListOf<EidasClaimHolder>()
 
     fun storeClaims(eidasClaim: EidasClaim, bpk: String) {
-        map[bpk] = eidasClaim
+        list += EidasClaimHolder(
+            expiration = Instant.now().plusSeconds(timeoutSeconds),
+            bpk = bpk,
+            claim = eidasClaim,
+        )
+        list.removeAll { it.expiration.isAfter(Instant.now()) }
     }
 
     override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
-            return null
+            return null // other attribute names are not supported
 
-        val eidasClaim = map.remove(bpk)
+        val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
             ?: return null.also {
                 log.error("Found no stored EIDAS claim for bpk '{}'", bpk)
             }
@@ -35,7 +41,9 @@ class EidasCredentialDataProvider : CredentialDataProvider {
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
-            else -> null
+            else -> null.also {
+                log.warn("Requested attribute '$attributeName' could not be issued")
+            }
         }
     }
 
@@ -44,5 +52,7 @@ class EidasCredentialDataProvider : CredentialDataProvider {
     }
 
     data class EidasClaim(val subject: String, val birthdate: String, val givenName: String, val familyName: String)
+
+    data class EidasClaimHolder(val expiration: Instant, val bpk: String, val claim: EidasClaim)
 
 }

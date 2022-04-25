@@ -150,6 +150,7 @@ class BackendConfiguration {
             }
             AttributeSourceType.EIDAS -> {
                 EidasCredentialDataProvider(
+                    600
                 )
             }
         }
