@@ -33,6 +33,7 @@ import javax.servlet.http.HttpSession
 class BindingController(
     private val challengeService: ChallengeService,
     private val certificateService: CertificateService,
+    private val attestationService: AttestationService,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val extNonceAuthnService: ExtNonceAuthnService,
 ) {
@@ -119,11 +120,11 @@ class BindingController(
                     .also { log.info("/binding/create returns challenge invalid: {}", it) }
             }
             val certificate = certificateService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
-                ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                    .also { log.info("/binding/create returns CSR invalid: {}", it) }
+            ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+                .also { log.info("/binding/create returns CSR invalid: {}", it) }
             deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
             session.setAttribute("certificate", certificate.encodeBase64())
-            val signedPublicKey = certificateService.verifyAttestation(body.attestationCerts)
+            val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts)
             return ResponseEntity.ok(BindingCsrResponseJ(certificate, signedPublicKey))
                 .also { log.info("/binding/create returns ok: {}", it) }
         } catch (e: Throwable) {

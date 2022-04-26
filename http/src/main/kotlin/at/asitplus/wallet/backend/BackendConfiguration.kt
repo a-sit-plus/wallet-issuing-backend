@@ -76,6 +76,10 @@ class BackendConfiguration {
     fun certificateService(): CertificateService = InMemoryCertificateService()
 
     @Bean
+    fun attestationService(certificateService: CertificateService): AttestationService =
+        DefaultAttestationService(certificateService)
+
+    @Bean
     fun challengeService(): ChallengeService =
         SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
 
