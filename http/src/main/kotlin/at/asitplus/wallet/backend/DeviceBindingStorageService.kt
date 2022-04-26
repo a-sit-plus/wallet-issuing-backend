@@ -16,6 +16,8 @@ interface DeviceBindingStorageService {
 
     fun getDeviceBindingForCurrentUser(): DeviceBinding?
 
+    fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding>
+
 }
 
 data class DeviceListEntry(

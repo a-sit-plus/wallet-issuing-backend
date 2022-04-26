@@ -10,4 +10,6 @@ interface DeviceBindingRepository : JpaRepository<DeviceBinding, Long> {
 
     fun findAllByBpk(bpk: String): Collection<DeviceBinding>
 
+    fun findAllByBpkAndDeviceId(bpk: String, deviceId: String): Collection<DeviceBinding>
+
 }

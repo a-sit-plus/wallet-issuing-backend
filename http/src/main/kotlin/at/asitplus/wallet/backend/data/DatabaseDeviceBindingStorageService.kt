@@ -46,4 +46,13 @@ class DatabaseDeviceBindingStorageService(
             }
     }
 
+    override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
+        val list = if (deviceId != null)
+            deviceBindingRepository.findAllByBpkAndDeviceId(bpk, deviceId)
+        else
+            deviceBindingRepository.findAllByBpk(bpk)
+        val toRevoke = list.filter { !it.revoked }
+        toRevoke.forEach { it.revoked = true }
+        return deviceBindingRepository.saveAll(toRevoke)
+    }
 }

@@ -35,6 +35,9 @@ class DeviceBinding() {
     lateinit var certificate: ByteArray
 
     @Column
+    var revoked: Boolean = false
+
+    @Column
     lateinit var deviceName: String
 
     @Column

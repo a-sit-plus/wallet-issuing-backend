@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -34,18 +35,27 @@ class RevocationControllerApiKeyTest {
     private lateinit var mapper: ObjectMapper
 
     @MockBean
+    private lateinit var bindingStorageService: DeviceBindingStorageService
+
+    @MockBean
     private lateinit var revocationService: RevocationService
 
     // from application-apikey.yml
     private val apiKey: String = "2zo7fr3hft3f0zg758d5"
     private lateinit var bpk: String
+    private lateinit var deviceName: String
     private lateinit var deviceId: String
+    private lateinit var certificate: ByteArray
     private lateinit var request: RevocationController.RevocationRequest
 
     @BeforeEach
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
+        deviceName = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
+        certificate = Client().selfSignedCert.encoded
+        whenever(bindingStorageService.revoke(eq(bpk), eq(deviceId)))
+            .thenReturn(listOf(DeviceBinding(bpk, certificate, deviceName, deviceId)))
         whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
             .thenReturn(1)
         request = RevocationController.RevocationRequest(bpk = bpk, deviceId = deviceId)

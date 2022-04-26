@@ -1,10 +1,12 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -16,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.util.UUID
+import kotlin.random.Random
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,17 +37,26 @@ class RevocationControllerLogicTest {
     @MockBean
     private lateinit var revocationService: RevocationService
 
+    @MockBean
+    private lateinit var certificateService: CertificateService
+
     private lateinit var bpk: String
     private lateinit var deviceName: String
     private lateinit var deviceId: String
+    private lateinit var certificate: ByteArray
 
     @BeforeEach
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
+        certificate = Client().selfSignedCert.encoded
         whenever(bindingStorageService.lookupDevices(eq(bpk)))
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
+        whenever(bindingStorageService.revoke(eq(bpk), eq(deviceId)))
+            .thenReturn(listOf(DeviceBinding(bpk, certificate, deviceName, deviceId)))
+        whenever(bindingStorageService.revoke(eq(bpk), eq(null)))
+            .thenReturn(listOf(DeviceBinding(bpk, certificate, deviceName, deviceId)))
         whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
             .thenReturn(1)
         whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(null)))
@@ -75,6 +87,8 @@ class RevocationControllerLogicTest {
             status { isOk() }
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
+
+        verify(certificateService).revokeCertificate(eq(certificate))
     }
 
     @Test
@@ -89,6 +103,8 @@ class RevocationControllerLogicTest {
             status { isOk() }
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
+
+        verify(certificateService).revokeCertificate(eq(certificate))
     }
 
     @Test
