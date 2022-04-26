@@ -3,8 +3,11 @@ package at.asitplus.wallet.backend
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSASigner
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
@@ -17,6 +20,7 @@ import java.security.Security
 import java.security.interfaces.ECPrivateKey
 import java.time.Instant
 import java.util.Date
+import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
 
 interface CertificateService {
@@ -26,6 +30,16 @@ interface CertificateService {
      * and creates a signed certificate for that public key.
      */
     fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray?
+
+    /**
+     * Builds an X.509 Certificate Revocation List
+     */
+    fun buildCrl(): ByteArray
+
+    /**
+     * Marks the certificate as revoked, i.e. it will be added to [buildCrl]
+     */
+    fun revokeCertificate(certificate: ByteArray)
 
     fun signJws(it: JWSObject)
 
@@ -45,8 +59,7 @@ class InMemoryCertificateService(
     private val keyPair: KeyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
     private val issuer = X500Name("CN=Issuer")
     private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
-
-    // TODO provide CRL
+    private val crlEntryList = mutableListOf<CrlEntry>()
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
         try {
@@ -67,7 +80,7 @@ class InMemoryCertificateService(
         }
     }
 
-    fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): ByteArray =
+    private fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): ByteArray =
         X509v3CertificateBuilder(
             subject,
             BigInteger.valueOf(Random.nextLong()),
@@ -81,4 +94,17 @@ class InMemoryCertificateService(
         it.sign(ECDSASigner(keyPair.private as ECPrivateKey))
     }
 
+    override fun buildCrl(): ByteArray {
+        val crlBuilder = JcaX509v2CRLBuilder(X500Principal("CN=Issuer"), Date())
+        crlEntryList.forEach {
+            crlBuilder.addCRLEntry(it.serialNumber, it.date, CRLReason.unspecified)
+        }
+        return crlBuilder.build(contentSigner).encoded
+    }
+
+    override fun revokeCertificate(certificate: ByteArray) {
+        crlEntryList += CrlEntry(X509CertificateHolder(certificate).serialNumber, Date())
+    }
+
+    data class CrlEntry(val serialNumber: BigInteger, val date: Date)
 }
