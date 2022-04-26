@@ -73,7 +73,26 @@ class BackendConfiguration {
     fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
-    fun certificateService(): PkiService = InMemoryPkiService()
+    fun certificateService(): PkiService {
+        return when (configurationProperties.pki.type) {
+            PkiType.INTERNAL -> InMemoryPkiService(
+                configurationProperties.pki.certValidityDays,
+                configurationProperties.pki.internal.issuerName,
+                configurationProperties.pki.internal.key
+            )
+            PkiType.AERA -> {
+                val restTemplate = ClientTlsConfigurationService(
+                    configurationProperties.pki.aera,
+                    restTemplateBuilder
+                ).restTemplate
+                AeraPkiService(
+                    configurationProperties.pki.certValidityDays,
+                    configurationProperties.pki.aera.url!!.toString(),
+                    restTemplate
+                )
+            }
+        }
+    }
 
     @Bean
     fun attestationService(pkiService: PkiService): AttestationService =

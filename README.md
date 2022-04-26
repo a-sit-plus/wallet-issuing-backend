@@ -305,6 +305,12 @@ backend:
       type: INTERNAL
   attribute-source:
     type: RANDOM
+  pki:
+    type: INTERNAL
+    cert-validity-days: 182
+    internal:
+      issuer-name: "CN=Issuer"
+      key: {{ KEY_CONFIG }}
 ```
 
 Set `backend.credentials.one-credential-per-device-binding=true` if existing credentials for the same device binding should be revoked when a new credential is issued (e.g. as it is the case for PupilIds).
@@ -347,6 +353,16 @@ backend:
   attribute-source:
     type: ECO
     eco: {{ SERVICE_CONFIG }}
+```
+
+Alternative configuration for the PKI service to use (to sign device binding certificates):
+
+```yaml
+backend:
+  pki:
+    type: AERA
+    cert-validity-days: 182
+    aera: {{ SERVICE_CONFIG }}
 ```
 
 Configuration of external services, depicted as `{{ SERVICE_CONFIG }}` above:
@@ -429,7 +445,7 @@ logging:
 
 ### Database
 
-Configuration to use a in-memory H2 database for deployments in debug environments:
+Configuration to use ar in-memory H2 database for deployments in debug environments:
 
 ```yaml
 spring:

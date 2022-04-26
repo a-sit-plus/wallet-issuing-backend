@@ -30,6 +30,10 @@ data class BackendConfigurationProperties(
      */
     val authn: AuthnConfigurationProperties = AuthnConfigurationProperties(),
     /**
+     * Configure PKI service for signing and revoking Device Bindings
+     */
+    val pki: PkiConfigurationProperties = PkiConfigurationProperties(),
+    /**
      * Configure the source of attributes for the credentials
      */
     val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
@@ -124,9 +128,39 @@ data class AuthnConfigurationProperties(
 )
 
 @ConstructorBinding
+data class PkiConfigurationProperties(
+    val type: PkiType = PkiType.INTERNAL,
+    val internal: InternalPkiConfigurationProperties = InternalPkiConfigurationProperties(),
+    val aera: AeraPkiConfigurationProperties = AeraPkiConfigurationProperties(),
+    val certValidityDays: Int = 182,
+)
+
+enum class PkiType {
+    INTERNAL,
+    AERA
+}
+
+@ConstructorBinding
+data class InternalPkiConfigurationProperties(
+    val issuerName: String = "CN=WalletBackend",
+    val key: KeyConfiguration = KeyConfiguration(),
+)
+
+@ConstructorBinding
+data class AeraPkiConfigurationProperties(
+    override val url: URI? = null,
+    override val clientTls: Boolean = false,
+    override val serverTls: Boolean = true,
+    override val key: KeyConfiguration? = null,
+    override val trust: TrustConfiguration? = null,
+    override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
+    override val apiKey: String? = null
+) : ExternalTlsConnection
+
+@ConstructorBinding
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
-    val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties()
+    val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties(),
 )
 
 enum class DeviceBindingNonceType {

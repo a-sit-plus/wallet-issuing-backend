@@ -9,7 +9,7 @@ import java.util.Date
 
 class DefaultAttestationServiceTest {
 
-    private val service = DefaultAttestationService(InMemoryPkiService())
+    private val service = DefaultAttestationService(InMemoryPkiService(1, "CN=Issuer", KeyConfiguration()))
 
     @Test
     fun `android attestation`() {
