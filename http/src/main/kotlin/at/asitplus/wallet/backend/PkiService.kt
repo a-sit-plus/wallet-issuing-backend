@@ -23,7 +23,7 @@ import java.util.Date
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
 
-interface CertificateService {
+interface PkiService {
 
     /**
      * Verifies the Certification Request (PKCS#10) of the client,
@@ -41,14 +41,14 @@ interface CertificateService {
      */
     fun revokeCertificate(certificate: ByteArray)
 
-    fun signJws(it: JWSObject)
+    fun signAttestedPublicKey(it: JWSObject)
 
 }
 
-class InMemoryCertificateService(
+class InMemoryPkiService(
     // TODO Longer per default!
     private val lifetimeSeconds: Long = 60
-) : CertificateService {
+) : PkiService {
 
     init {
         Security.addProvider(BouncyCastleProvider())
@@ -90,7 +90,7 @@ class InMemoryCertificateService(
             subjectPublicKeyInfo
         ).build(contentSigner).encoded
 
-    override fun signJws(it: JWSObject) {
+    override fun signAttestedPublicKey(it: JWSObject) {
         it.sign(ECDSASigner(keyPair.private as ECPrivateKey))
     }
 

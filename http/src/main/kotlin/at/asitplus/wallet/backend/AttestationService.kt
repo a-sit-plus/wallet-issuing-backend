@@ -25,7 +25,7 @@ interface AttestationService {
 
 }
 
-class DefaultAttestationService(private val certificateService: CertificateService) : AttestationService {
+class DefaultAttestationService(private val pkiService: PkiService) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -40,7 +40,7 @@ class DefaultAttestationService(private val certificateService: CertificateServi
                 JWSHeader(JWSAlgorithm.ES256),
                 Payload(mapOf("pk" to publicKey.encodeBase64()))
             ).also {
-                certificateService.signJws(it)
+                pkiService.signAttestedPublicKey(it)
             }.serialize()
         } catch (e: Throwable) {
             log.warn("verifyAttestation: error", e)

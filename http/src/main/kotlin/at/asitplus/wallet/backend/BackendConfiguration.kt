@@ -73,11 +73,11 @@ class BackendConfiguration {
     fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
-    fun certificateService(): CertificateService = InMemoryCertificateService()
+    fun certificateService(): PkiService = InMemoryPkiService()
 
     @Bean
-    fun attestationService(certificateService: CertificateService): AttestationService =
-        DefaultAttestationService(certificateService)
+    fun attestationService(pkiService: PkiService): AttestationService =
+        DefaultAttestationService(pkiService)
 
     @Bean
     fun challengeService(): ChallengeService =

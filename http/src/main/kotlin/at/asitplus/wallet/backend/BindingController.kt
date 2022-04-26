@@ -32,7 +32,7 @@ import javax.servlet.http.HttpSession
 @RestController
 class BindingController(
     private val challengeService: ChallengeService,
-    private val certificateService: CertificateService,
+    private val pkiService: PkiService,
     private val attestationService: AttestationService,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val extNonceAuthnService: ExtNonceAuthnService,
@@ -119,9 +119,9 @@ class BindingController(
                 return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
                     .also { log.info("/binding/create returns challenge invalid: {}", it) }
             }
-            val certificate = certificateService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
-            ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                .also { log.info("/binding/create returns CSR invalid: {}", it) }
+            val certificate = pkiService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
+                ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+                    .also { log.info("/binding/create returns CSR invalid: {}", it) }
             deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
             session.setAttribute("certificate", certificate.encodeBase64())
             val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts)

@@ -7,9 +7,9 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
-class InMemoryCertificateServiceTest {
+class InMemoryPkiServiceTest {
 
-    private val service = InMemoryCertificateService()
+    private val service = InMemoryPkiService()
 
     @Test
     fun `sign correct CSR`() {

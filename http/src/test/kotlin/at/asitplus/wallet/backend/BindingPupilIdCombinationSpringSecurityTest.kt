@@ -44,7 +44,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
     private lateinit var extNonceAuthnService: ExtNonceAuthnService
 
     @MockBean
-    private lateinit var certificateService: CertificateService
+    private lateinit var pkiService: PkiService
 
     @MockBean
     private lateinit var challengeService: ChallengeService
@@ -90,7 +90,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
-        whenever(certificateService.verifyAndSign(eq(csr), any())).thenReturn(certificate)
+        whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(certificate)
         whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))

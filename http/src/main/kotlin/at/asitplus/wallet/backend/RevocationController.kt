@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController
 class RevocationController(
     private val bindingStorageService: DeviceBindingStorageService,
     private val revocationService: RevocationService,
-    private val certificateService: CertificateService,
+    private val pkiService: PkiService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -60,7 +60,7 @@ class RevocationController(
             return ResponseEntity.notFound().build<RevocationResponse>()
                 .also { log.info("/revoke/binding returns HTTP 404") }
         }
-        deviceBindings.forEach { certificateService.revokeCertificate(it.certificate) }
+        deviceBindings.forEach { pkiService.revokeCertificate(it.certificate) }
         val count = revocationService.revokeCredentialsByBpkAndDeviceId(body.bpk, body.deviceId)
         if (count == 0)
             return ResponseEntity.notFound().build<RevocationResponse>()

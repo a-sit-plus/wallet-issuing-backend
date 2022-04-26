@@ -18,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.util.UUID
-import kotlin.random.Random
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -38,7 +37,7 @@ class RevocationControllerLogicTest {
     private lateinit var revocationService: RevocationService
 
     @MockBean
-    private lateinit var certificateService: CertificateService
+    private lateinit var pkiService: PkiService
 
     private lateinit var bpk: String
     private lateinit var deviceName: String
@@ -88,7 +87,7 @@ class RevocationControllerLogicTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        verify(certificateService).revokeCertificate(eq(certificate))
+        verify(pkiService).revokeCertificate(eq(certificate))
     }
 
     @Test
@@ -104,7 +103,7 @@ class RevocationControllerLogicTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        verify(certificateService).revokeCertificate(eq(certificate))
+        verify(pkiService).revokeCertificate(eq(certificate))
     }
 
     @Test

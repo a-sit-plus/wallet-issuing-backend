@@ -44,7 +44,7 @@ abstract class BindingControllerSpringSecurityTest {
     private lateinit var extNonceAuthnService: ExtNonceAuthnService
 
     @MockBean
-    private lateinit var certificateService: CertificateService
+    private lateinit var pkiService: PkiService
 
     @MockBean
     private lateinit var challengeService: ChallengeService
@@ -68,7 +68,7 @@ abstract class BindingControllerSpringSecurityTest {
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
-        whenever(certificateService.verifyAndSign(eq(csr), any())).thenReturn(certificate)
+        whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(certificate)
         startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
     }
 
