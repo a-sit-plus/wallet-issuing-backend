@@ -130,22 +130,9 @@ class BackendConfiguration {
                     configurationProperties.attributeSource.eco!!,
                     restTemplateBuilder
                 ).restTemplate
-                // TODO Remove once ECO provides pictures
-                val listOfPhotos = if (configurationProperties.attributeSource.random != null) {
-                    val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
-                    resourcePatternResolver.getResources(locationPattern)
-                        .filter { it.exists() }
-                        .filter { it.filename != null }
-                        .map { it.inputStream }
-                        .map { it.readAllBytes() }
-                        .toList()
-                } else {
-                    listOf(byteArrayOf())
-                }
                 EcoCredentialDataProvider(
                     configurationProperties.attributeSource.eco!!.url.toString(),
                     restTemplate,
-                    listOfPhotos,
                 )
             }
             AttributeSourceType.EIDAS -> {
@@ -188,7 +175,8 @@ class BackendConfiguration {
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
-        revocationListUrl = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext).pathSegment("credential", "status", "1").toUriString()
+        revocationListUrl = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("credentials", "status", "1").toUriString()
     )
 
     @Bean
@@ -207,7 +195,8 @@ class BackendConfiguration {
         issuer = issuerAgent,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
-        serviceEndpoint = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext).pathSegment("pupilid", "issue").toUriString(),
+        serviceEndpoint = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("pupilid", "issue").toUriString(),
         credentialScheme = ConstantIndex.PupilId,
     )
 
@@ -221,7 +210,8 @@ class BackendConfiguration {
         issuer = issuerAgent,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
-        serviceEndpoint = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext).pathSegment("eidasid", "issue").toUriString(),
+        serviceEndpoint = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("eidasid", "issue").toUriString(),
         credentialScheme = ConstantIndex.Generic,
     )
 

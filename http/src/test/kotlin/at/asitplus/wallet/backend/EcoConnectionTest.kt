@@ -1,29 +1,26 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.EcoConnectionTest.UserDetailsServiceInt.certificate
-import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UserDetailsService
-import org.springframework.security.test.context.support.WithUserDetails
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
-import kotlin.random.Random
 
 @Disabled("Would need a valid API-Key in 'application-eco.yml'")
 @ActiveProfiles(profiles = ["eco", "pupilid"])
-@SpringBootTest(classes = [EcoConnectionTest.TestConfig::class])
+@SpringBootTest
 class EcoConnectionTest {
 
     @Autowired
@@ -32,37 +29,34 @@ class EcoConnectionTest {
     @Autowired
     private lateinit var issuerCredentialDataProvider: IssuerCredentialDataProvider
 
+    @Autowired
+    private lateinit var deviceBindingRepository: DeviceBindingRepository
 
-    /**
-     * Workaround to be able to read the random [certificate] (for other mock beans),
-     * that will be used in the user details of the authenticated user.
-     */
-    private object UserDetailsServiceInt : UserDetailsService {
+    @MockBean
+    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
-        val bpk = UUID.randomUUID().toString()
-        val certificate: ByteArray = Random.nextBytes(32)
+    private lateinit var bpk: String
+    private lateinit var certificate: ByteArray
+    private lateinit var client: Client
 
-        override fun loadUserByUsername(username: String): UserDetails {
-            return AuthenticatedDeviceBindingUser(bpk, certificate)
+    @BeforeEach
+    fun beforeEach() {
+        client = Client()
+        // use bpk printed from extNonceService()
+        bpk = "/GtkB4FteZ2IaRf1O8BA9nwNQng=" // or "0bvbtZTc2lzjWwwLD9eYm6DtBts="
+        certificate = client.selfSignedCert.encoded
+        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+            deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
-    }
-
-    /**
-     * Class needed to define a bean called [userDetailsServiceInt] that
-     * can be picked up by the [WithUserDetails] annotation in a test case
-     */
-    @TestConfiguration
-    internal class TestConfig {
-        @Bean
-        fun userDetailsServiceInt(): UserDetailsService {
-            return UserDetailsServiceInt
-        }
+        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
+            .thenReturn(deviceBinding)
     }
 
     @Test
     fun extNonceService() {
         // Get valid nonce manually from https://educard.quarto.at/educard.user/
-        val nonce = "8372e921-0400-467a-90bc-ad2625f6f5fb"
+        val nonce = "72007150-1dba-466d-9cfa-fe6ee6cc7bd4"
 
         val bpk = extNonceAuthnService.exchangeNonceForBpk(nonce)
         bpk shouldHaveMinLength 8
@@ -73,12 +67,12 @@ class EcoConnectionTest {
     }
 
     @Test
-    @WithUserDetails(userDetailsServiceBeanName = "userDetailsServiceInt")
     fun credentialDataProvider() {
-        val subjectId = UUID.randomUUID().toString()
+        val subjectId = client.keyId
         val credential = issuerCredentialDataProvider.getCredential(subjectId, ConstantIndex.PupilId.vcType)
 
         credential.shouldNotBeNull()
+        println(credential)
     }
 
 }

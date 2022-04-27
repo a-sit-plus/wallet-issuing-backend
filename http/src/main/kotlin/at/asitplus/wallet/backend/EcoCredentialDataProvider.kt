@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
+import at.asitplus.wallet.lib.decodeBase64ToArray
 import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
@@ -17,7 +17,6 @@ import org.springframework.web.client.getForEntity
 class EcoCredentialDataProvider(
     private val url: String,
     private val restTemplate: RestTemplate,
-    private val listOfRandomPhotos: List<ByteArray>,
 ) : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -29,33 +28,53 @@ class EcoCredentialDataProvider(
     override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
         if (attributeType != ConstantIndex.PupilId.vcType)
             return null
-        val entity = restTemplate.getForEntity<EcoStudentData>(
-            "$url/Student/{bpk}",
-            uriVariables = mapOf("bpk" to bpk)
-        )
-        log.debug("getCredential for '{}' got {}", bpk, entity)
-
-        return entity.body?.let {
-            PupilIdCredential(
-                id = subjectId,
-                schoolName = "Musterschule",
-                schoolAddress = "Musterstraße 1",
-                schoolNumber = (1..6).map { "01".random() }.joinToString(""),
-                pupilNumber = (1..2).joinToString("/") { (1..8).map { "0123456789".random() }.joinToString("") },
-                firstName = it.firstname,
-                lastName = it.lastname,
-                dateOfBirth = "2001-02-28",
-                validUntil = "2023-09-01",
-                postCity = "Musterstadt",
-                postCode = "1010",
-                picture = listOfRandomPhotos.random(),
+        try {
+            val entity = restTemplate.getForEntity<EcoStudentData>(
+                "$url/Student/{bpk}",
+                uriVariables = mapOf("bpk" to bpk)
             )
+            log.debug("getCredential for '{}' got {}", bpk, entity)
+            val body = entity.body
+            if (!entity.statusCode.is2xxSuccessful || body == null)
+                return null
+                    .also { log.info("getCredential for '{}' returns null", bpk) }
+            return PupilIdCredential(
+                id = subjectId,
+                schoolName = body.schoolName ?: "",
+                schoolAddress = "${body.schoolZip} ${body.schoolCity}, ${body.schoolStreet}",
+                schoolNumber = body.schoolId ?: "",
+                pupilNumber = body.studentId ?: "",
+                firstName = body.firstname ?: "",
+                lastName = body.lastname ?: "",
+                dateOfBirth = body.dateOfBirth ?: "",
+                validUntil = "2023-09-01",
+                postCity = body.studentCity ?: "",
+                postCode = body.studentZip ?: "",
+                // TODO studentStreet
+                picture = body.photo?.decodeBase64ToArray() ?: byteArrayOf(),
+            ).also {
+                log.info("getCredential for '{}' returns {}", bpk, it)
+            }
+        } catch (e: Throwable) {
+            log.error("getCredential for '{}' got error", bpk, e)
+            return null
         }
     }
 
     data class EcoStudentData(
-        val firstname: String,
-        val lastname: String
+        val firstname: String?,
+        val lastname: String?,
+        val dateOfBirth: String?,
+        val schoolName: String?,
+        val schoolCity: String?,
+        val schoolZip: String?,
+        val schoolStreet: String?,
+        val schoolId: String?,
+        val studentCity: String?,
+        val studentZip: String?,
+        val studentStreet: String?,
+        val studentId: String?,
+        val photo: String?,
     )
 
 }

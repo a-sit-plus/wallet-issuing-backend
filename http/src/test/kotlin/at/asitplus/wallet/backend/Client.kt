@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.encodeBase64
+import at.asitplus.wallet.lib.jws.EcCurve
+import at.asitplus.wallet.lib.jws.JsonWebKey
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -21,6 +23,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Security
 import java.security.interfaces.ECPrivateKey
+import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.util.Date
 import kotlin.random.Random
@@ -29,15 +32,18 @@ import kotlin.random.Random
 class Client {
 
     final lateinit var keyPair: KeyPair
+    final lateinit var keyId: String
 
     constructor(keyPair: KeyPair) {
         Security.addProvider(BouncyCastleProvider())
         this.keyPair = keyPair
+        this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
     }
 
     constructor() {
         Security.addProvider(BouncyCastleProvider())
         this.keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
+        this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
     }
 
     private val lifetimeSeconds: Long = 60

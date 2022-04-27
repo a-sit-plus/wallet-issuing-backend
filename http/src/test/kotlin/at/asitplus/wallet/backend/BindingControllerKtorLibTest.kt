@@ -44,13 +44,6 @@ class BindingControllerKtorLibTest {
     private lateinit var bpk: String
     private lateinit var randomDeviceName: String
 
-    @BeforeEach
-    fun beforeEach() {
-        nonce = UUID.randomUUID().toString()
-        bpk = UUID.randomUUID().toString()
-        randomDeviceName = UUID.randomUUID().toString()
-        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
-    }
 
     @Test
     fun start_create_ok() = runTest {
