@@ -9,7 +9,7 @@ import java.util.UUID
 
 class InMemoryPkiServiceTest {
 
-    private val service = InMemoryPkiService(1, "CN=Issuer", KeyConfiguration())
+    private val service = InMemoryPkiService()
 
     @Test
     fun `sign correct CSR`() {

@@ -14,8 +14,6 @@ import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.security.Security
 import java.security.interfaces.ECPrivateKey
 import java.time.Instant
@@ -24,20 +22,17 @@ import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
 
 class InMemoryPkiService(
-    private val certValidityDays: Int,
-    private val issuerName: String,
-    key: KeyConfiguration // TODO use Key
+    private val certValidityDays: Int = 1,
+    private val issuerName: String = "CN=Issuer",
+    private val keyAdapter: KeyAdapter = RandomKeyAdapter(),
 ) : PkiService {
-
-    init {
-        Security.addProvider(BouncyCastleProvider())
-    }
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val keyPair: KeyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
     private val issuer = X500Name(issuerName)
-    private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
+    private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA")
+        .setProvider(keyAdapter.provider)
+        .build(keyAdapter.privateKey)
     private val crlEntryList = mutableListOf<CrlEntry>()
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
@@ -70,7 +65,9 @@ class InMemoryPkiService(
         ).build(contentSigner).encoded
 
     override fun signAttestedPublicKey(it: JWSObject) {
-        it.sign(ECDSASigner(keyPair.private as ECPrivateKey))
+        it.sign(ECDSASigner(keyAdapter.privateKey as ECPrivateKey).also {
+            it.jcaContext.provider = Security.getProvider(keyAdapter.provider)
+        })
     }
 
     override fun buildCrl(): ByteArray {

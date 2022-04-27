@@ -3,12 +3,9 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
-import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
-import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.slf4j.LoggerFactory
@@ -16,6 +13,7 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
 import java.io.StringReader
 import java.nio.charset.Charset
+import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
@@ -83,6 +81,26 @@ class KeyStoreAdapter(
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
         log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
+    }
+
+}
+
+class RandomKeyAdapter : KeyAdapter {
+
+    private val log = LoggerFactory.getLogger(this.javaClass)
+
+    override val privateKey: PrivateKey
+    override val jwsAlgorithm: JwsAlgorithm
+    override val provider: String = "BC"
+    override val jsonWebKey: JsonWebKey
+
+    init {
+        val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.generateKeyPair()
+        privateKey = keyPair.private
+        val ecCurve = EcCurve.SECP_256_R_1
+        jwsAlgorithm = JwsAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve)!!
+        log.info("Generated new key pair with public key: ${keyPair.public.encoded.encodeBase64()}")
     }
 
 }

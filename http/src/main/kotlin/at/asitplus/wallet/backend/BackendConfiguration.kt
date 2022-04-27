@@ -75,11 +75,18 @@ class BackendConfiguration {
     @Bean
     fun certificateService(): PkiService {
         return when (configurationProperties.pki.type) {
-            PkiType.INTERNAL -> InMemoryPkiService(
-                configurationProperties.pki.certValidityDays,
-                configurationProperties.pki.internal.issuerName,
-                configurationProperties.pki.internal.key
-            )
+            PkiType.INTERNAL -> {
+                val keyAdapter = when(configurationProperties.pki.internal.key.type) {
+                    KeyType.FILE -> KeyFileAdapter(configurationProperties.pki.internal.key.file!!, resourceLoader)
+                    KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.pki.internal.key.keystore!!)
+                    KeyType.MEMORY -> RandomKeyAdapter()
+                }
+                InMemoryPkiService(
+                    configurationProperties.pki.certValidityDays,
+                    configurationProperties.pki.internal.issuerName,
+                    keyAdapter
+                )
+            }
             PkiType.AERA -> {
                 val restTemplate = ClientTlsConfigurationService(
                     configurationProperties.pki.aera,
