@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.IssuerAgent
+import at.asitplus.wallet.lib.encodeBase64
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -15,30 +16,59 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Public endpoints, available without authentication:
  * - Revocation list for Verifiable Credentials
+ * - Revocation list for Binding Certificates
  */
 @RestController
 class PublicController(
     private val issuerAgent: IssuerAgent,
+    private val pkiService: PkiService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
-        summary = "Get the revocation list",
+        summary = "Get the VC revocation list",
         description = "Get a list of revoked credentials in 'Revocation List 2020' format",
         responses = [ApiResponse(
-            description = "IssueCredential message of the IssueCredential protocol between Wallet and Issuer",
+            description = "A verifiable credential in 'Revocation List 2020' format",
             content = [Content(examples = [ExampleObject(value = "<JWS containing RevocationList2020 payload>")])]
         )]
     )
     @GetMapping("/credentials/status/1")
-    fun checkRevocation() = runBlocking {
+    fun getVcRevocationList() = runBlocking {
         log.info("/credentials/status/1 called")
         try {
-            ResponseEntity.ok(issuerAgent.issueRevocationListCredential())
+            val rl = issuerAgent.issueRevocationListCredential()
+            log.info("/credentials/status/1 returns {}", rl)
+            ResponseEntity.ok(rl)
         } catch (e: Throwable) {
             log.error("/credentials/status/1 returning 500, server error", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
+    @Operation(
+        summary = "Get the X.509 revocation list",
+        description = "Get a list of revoked certificates in X.509 CRL format, if the internal PKI is used",
+        responses = [ApiResponse(
+            description = "Binary encoded X.509 CRL object",
+            content = [Content(examples = [ExampleObject(value = "<Binary encoded X.509 CRL object>")])]
+        )]
+    )
+    @GetMapping("/crl/1")
+    fun getCertificateRevocationList(): ResponseEntity<ByteArray> {
+        log.info("/crl/1 called")
+        try {
+            val crl = pkiService.getCrl()
+            if (crl != null) {
+                log.info("/crl/1 returns {}", crl.encodeBase64())
+                return ResponseEntity.ok(crl)
+            }
+            log.info("/crl/1 returns 404, not found")
+            return ResponseEntity.notFound().build()
+        } catch (e: Throwable) {
+            log.error("/crl/1 returning 500, server error", e)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 

@@ -49,7 +49,7 @@ class InMemoryPkiService(
             subjectPublicKeyInfo
         ).build(contentSigner).encoded
 
-    override fun buildCrl(): ByteArray {
+    override fun getCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())
         crlEntryList.forEach {
             crlBuilder.addCRLEntry(it.serialNumber, it.date, CRLReason.unspecified)

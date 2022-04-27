@@ -17,6 +17,8 @@ with it's `kid` of `did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=`.
 
 The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagger UI at <http://localhost:8080/swagger-ui/index.html>.
 
+`GET /crl/1` returns the X.509 Certificate Revocation List, if the PKI implementation supports this (see below for configuration), i.e. only for the internal PKI. When AERA is used to sign device binding certificates, the CRL is available at an external URL.
+
 `GET /credentials/status/1` returns the revocation list in a VC-compatible format, i.e. [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/).
 
 Sample revocation list (transported as a JWS in compact representation, exploded here for readability):
@@ -355,7 +357,7 @@ backend:
     eco: {{ SERVICE_CONFIG }}
 ```
 
-Alternative configuration for the PKI service to use (to sign device binding certificates):
+Alternative configuration for the PKI service to use a remote instance of the AERA service to sign device binding certificates:
 
 ```yaml
 backend:

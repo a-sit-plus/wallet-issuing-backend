@@ -39,9 +39,11 @@ class AeraPkiService(
         }
     }
 
-    override fun buildCrl(): ByteArray {
-        // TODO get CRL from AERA?
-        return byteArrayOf()
+    /**
+     * CRL from AERA is hosted at an external URL
+     */
+    override fun getCrl(): ByteArray? {
+        return null
     }
 
     override fun revokeCertificate(certificate: ByteArray) {

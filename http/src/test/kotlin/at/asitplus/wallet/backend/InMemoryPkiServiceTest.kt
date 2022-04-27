@@ -40,7 +40,7 @@ class InMemoryPkiServiceTest {
         val serialNumber = X509CertificateHolder(certificate).serialNumber
 
         service.revokeCertificate(certificate)
-        val crl = service.buildCrl()
+        val crl = service.getCrl()
 
         val revokedCert = X509CRLHolder(crl).getRevokedCertificate(serialNumber)
         revokedCert.shouldNotBeNull()
@@ -54,7 +54,7 @@ class InMemoryPkiServiceTest {
         certificate.shouldNotBeNull()
         val serialNumber = X509CertificateHolder(certificate).serialNumber
 
-        val crl = service.buildCrl()
+        val crl = service.getCrl()
 
         val revokedCert = X509CRLHolder(crl).getRevokedCertificate(serialNumber)
         revokedCert.shouldBeNull()

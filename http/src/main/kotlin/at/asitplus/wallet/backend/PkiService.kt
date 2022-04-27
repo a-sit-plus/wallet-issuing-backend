@@ -16,12 +16,12 @@ interface PkiService {
     fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray?
 
     /**
-     * Builds an X.509 Certificate Revocation List
+     * Builds (or loads remotely) an X.509 Certificate Revocation List
      */
-    fun buildCrl(): ByteArray
+    fun getCrl(): ByteArray?
 
     /**
-     * Marks the certificate as revoked, i.e. it will be added to [buildCrl]
+     * Marks the certificate as revoked, i.e. it will be added to [getCrl]
      */
     fun revokeCertificate(certificate: ByteArray)
 

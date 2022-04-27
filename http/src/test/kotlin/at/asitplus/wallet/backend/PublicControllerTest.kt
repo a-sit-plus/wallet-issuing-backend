@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import org.hamcrest.Matchers.emptyString
+import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -15,11 +17,19 @@ class PublicControllerTest {
     private lateinit var mockMvc: MockMvc
 
     @Test
-    fun check_revocation() {
+    fun `GET VC status list`() {
         mockMvc.get("/credentials/status/1") {
         }.andExpect {
             status { isOk() }
-            content {  }
+            content { string(not(emptyString())) }
+        }.andReturn()
+    }
+
+    @Test
+    fun `GET PKI CRL`() {
+        mockMvc.get("/crl/1") {
+        }.andExpect {
+            status { isOk() }
         }.andReturn()
     }
 
