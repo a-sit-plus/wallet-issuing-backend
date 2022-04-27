@@ -1,18 +1,14 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.PkiUtils.appendPath
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import com.nimbusds.jose.JWSObject
-import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.web.client.RestTemplate
-import org.springframework.web.util.UriComponentsBuilder
 import java.time.Instant
 import java.util.UUID
 
@@ -26,20 +22,9 @@ class AeraPkiService(
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
         try {
-            // TODO Move verify into separate class
-            val csr = PKCS10CertificationRequest(csrEncoded)
-            val publicKey = BouncyCastleProvider.getPublicKey(csr.subjectPublicKeyInfo)
-            if (!csr.isSignatureValid(JcaContentVerifierProviderBuilder().build(publicKey))) {
-                log.warn("verifyAndSign: CSR signature invalid")
-                return null
-            }
-            if (X500Name(expectedSubject) != csr.subject) {
-                log.warn("verifyAndSign: Subject not correct")
-                return null
-            }
-
+            val csr = PkiUtils.verifyCsr(csrEncoded, expectedSubject) ?: return null
             val requestDto = SignRequestDto(
-                csr = csrEncoded.encodeBase64(),
+                csr = csr.encoded.encodeBase64(),
                 expirationTimestamp = Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L).epochSecond,
             )
             val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
@@ -54,10 +39,6 @@ class AeraPkiService(
             return null
         }
     }
-
-    // TODO move to utils class
-    private fun appendPath(url: String, vararg path: String) =
-        UriComponentsBuilder.fromHttpUrl(url).pathSegment(*path).toUriString()
 
     override fun signAttestedPublicKey(it: JWSObject) {
         // TODO sign, but with which key? HSMF?

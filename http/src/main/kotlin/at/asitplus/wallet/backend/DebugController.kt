@@ -133,12 +133,14 @@ class DebugController(
             )
         }
         model["vcList"] = vcList
-        model["createCredentialUrl"] = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
-            .pathSegment("debug", "credential", "create")
-            .toUriString()
-        model["revokeActionUrl"] = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
-            .pathSegment("debug", "credential", "revoke")
-            .toUriString()
+        model["createCredentialUrl"] = PkiUtils.appendPath(
+            configurationProperties.publicContext,
+            "debug", "credential", "create"
+        )
+        model["revokeActionUrl"] = PkiUtils.appendPath(
+            configurationProperties.publicContext,
+            "debug", "credential", "revoke"
+        )
         return ModelAndView("credential_list", model)
     }
 

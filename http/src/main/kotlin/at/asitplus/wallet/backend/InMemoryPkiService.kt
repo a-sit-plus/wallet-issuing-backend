@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.PkiUtils.verifyCsr
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSASigner
 import org.bouncycastle.asn1.x500.X500Name
@@ -8,10 +9,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.Security
@@ -37,16 +35,7 @@ class InMemoryPkiService(
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
         try {
-            val csr = PKCS10CertificationRequest(csrEncoded)
-            val publicKey = BouncyCastleProvider.getPublicKey(csr.subjectPublicKeyInfo)
-            if (!csr.isSignatureValid(JcaContentVerifierProviderBuilder().build(publicKey))) {
-                log.warn("verifyAndSign: CSR signature invalid")
-                return null
-            }
-            if (X500Name(expectedSubject) != csr.subject) {
-                log.warn("verifyAndSign: Subject not correct")
-                return null
-            }
+            val csr = verifyCsr(csrEncoded, expectedSubject) ?: return null
             return signCertificate(csr.subject, csr.subjectPublicKeyInfo)
         } catch (e: Throwable) {
             log.warn("verifyAndSign: error", e)
