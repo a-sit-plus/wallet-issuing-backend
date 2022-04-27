@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.PkiUtils.appendPath
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
-import com.nimbusds.jose.JWSObject
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -38,10 +37,6 @@ class AeraPkiService(
             log.warn("verifyAndSign: error", e)
             return null
         }
-    }
-
-    override fun signAttestedPublicKey(it: JWSObject) {
-        // TODO sign, but with which key? HSMF?
     }
 
     override fun buildCrl(): ByteArray {

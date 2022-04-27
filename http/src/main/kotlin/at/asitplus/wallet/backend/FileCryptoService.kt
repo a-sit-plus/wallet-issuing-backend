@@ -15,6 +15,7 @@ import at.asitplus.wallet.lib.jws.JweEncryption
 import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
+import com.nimbusds.jose.crypto.ECDSASigner
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
@@ -22,8 +23,10 @@ import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.PrivateKey
+import java.security.Security
 import java.security.Signature
 import java.security.cert.CertificateFactory
+import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
@@ -147,6 +150,10 @@ class FileCryptoService(
         } catch (e: Throwable) {
             KmmResult.failure(e)
         }
+    }
+
+    fun getContentSigner() = ECDSASigner(privateKey as ECPrivateKey).also {
+        it.jcaContext.provider = Security.getProvider(provider)
     }
 
     private val JwkType.jcaName

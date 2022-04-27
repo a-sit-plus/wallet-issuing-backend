@@ -1,8 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
-import com.nimbusds.jose.JWSObject
-import com.nimbusds.jose.crypto.ECDSASigner
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -12,8 +10,6 @@ import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
-import java.security.Security
-import java.security.interfaces.ECPrivateKey
 import java.time.Instant
 import java.util.Date
 import javax.security.auth.x500.X500Principal
@@ -52,12 +48,6 @@ class InMemoryPkiService(
             issuer,
             subjectPublicKeyInfo
         ).build(contentSigner).encoded
-
-    override fun signAttestedPublicKey(it: JWSObject) {
-        it.sign(ECDSASigner(keyAdapter.privateKey as ECPrivateKey).also {
-            it.jcaContext.provider = Security.getProvider(keyAdapter.provider)
-        })
-    }
 
     override fun buildCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())

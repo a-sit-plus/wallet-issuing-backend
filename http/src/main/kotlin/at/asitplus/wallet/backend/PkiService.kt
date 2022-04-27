@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import com.nimbusds.jose.JWSObject
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
@@ -25,8 +24,6 @@ interface PkiService {
      * Marks the certificate as revoked, i.e. it will be added to [buildCrl]
      */
     fun revokeCertificate(certificate: ByteArray)
-
-    fun signAttestedPublicKey(it: JWSObject)
 
 }
 

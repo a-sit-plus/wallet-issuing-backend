@@ -95,7 +95,7 @@ class RandomKeyAdapter : KeyAdapter {
     override val jsonWebKey: JsonWebKey
 
     init {
-        val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.generateKeyPair()
+        val keyPair = KeyPairGenerator.getInstance("EC", "BC").also { it.initialize(256) }.generateKeyPair()
         privateKey = keyPair.private
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256

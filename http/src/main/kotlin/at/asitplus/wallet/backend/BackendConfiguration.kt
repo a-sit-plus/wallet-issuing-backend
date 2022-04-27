@@ -10,7 +10,6 @@ import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.IssuerAgent
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
@@ -72,10 +71,10 @@ class BackendConfiguration {
     fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
-    fun certificateService(): PkiService {
+    fun pkiService(): PkiService {
         return when (configurationProperties.pki.type) {
             PkiType.INTERNAL -> {
-                val keyAdapter = when(configurationProperties.pki.internal.key.type) {
+                val keyAdapter = when (configurationProperties.pki.internal.key.type) {
                     KeyType.FILE -> KeyFileAdapter(configurationProperties.pki.internal.key.file!!, resourceLoader)
                     KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.pki.internal.key.keystore!!)
                     KeyType.MEMORY -> RandomKeyAdapter()
@@ -101,8 +100,8 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun attestationService(pkiService: PkiService): AttestationService =
-        DefaultAttestationService(pkiService)
+    fun attestationService(issuerCryptoService: FileCryptoService): AttestationService =
+        DefaultAttestationService(issuerCryptoService)
 
     @Bean
     fun challengeService(): ChallengeService =
@@ -191,7 +190,9 @@ class BackendConfiguration {
         KeyType.KEYSTORE -> FileCryptoService(
             KeyStoreAdapter(configurationProperties.issuerKey.keystore!!),
         )
-        KeyType.MEMORY -> DefaultCryptoService()
+        KeyType.MEMORY -> FileCryptoService(
+            RandomKeyAdapter()
+        )
     }
 
     @Bean
