@@ -3,7 +3,9 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
+import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase16
+import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingConfirmResponseJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.security.Principal
 import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpSession
 
 
 @RestController
@@ -50,6 +53,11 @@ class BindingController(
                 description = "Client is not authenticated, i.e. it needs to send ext. nonce in header `X-Auth-ExtNonce`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error during processing",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
         ],
     )
     @PostMapping("/binding/start")
@@ -59,10 +67,15 @@ class BindingController(
         principal: Principal
     ): ResponseEntity<BindingParamsResponseJ> {
         log.info("/binding/start called for {} with {}", principal, body)
-        val challenge = challengeService.generate()
-        val subject = "CN=${challenge.encodeBase16()}"
-        return ResponseEntity.ok(BindingParamsResponseJ(challenge, subject, "EC"))
-            .also { log.info("/binding/start returns ok: {}", it) }
+        try {
+            val challenge = challengeService.generate()
+            val subject = "CN=${challenge.encodeBase16()}"
+            return ResponseEntity.ok(BindingParamsResponseJ(challenge, subject, "EC"))
+                .also { log.info("/binding/start returns ok: {}", it) }
+        } catch (e: Throwable) {
+            return ResponseEntity.internalServerError().build<BindingParamsResponseJ>()
+                .also { log.error("/binding/start got error", e) }
+        }
     }
 
     @Operation(
@@ -84,6 +97,11 @@ class BindingController(
                 description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error during processing",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
         ],
     )
     @PostMapping("/binding/create")
@@ -91,20 +109,27 @@ class BindingController(
     fun postBindingCsr(
         @RequestBody body: BindingCsrRequestJ,
         principal: Principal,
+        session: HttpSession,
         request: HttpServletRequest,
     ): ResponseEntity<BindingCsrResponseJ> {
         log.info("/binding/create called for {} with {}", principal, body)
-        if (!challengeService.verifyAndRemove(body.challenge)) {
-            return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                .also { log.info("/binding/create returns challenge invalid: {}", it) }
+        try {
+            if (!challengeService.verifyAndRemove(body.challenge)) {
+                return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+                    .also { log.info("/binding/create returns challenge invalid: {}", it) }
+            }
+            val certificate = certificateService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
+                ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+                    .also { log.info("/binding/create returns CSR invalid: {}", it) }
+            deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
+            session.setAttribute("certificate", certificate.encodeBase64())
+            val signedPublicKey = certificateService.verifyAttestation(body.attestationCerts)
+            return ResponseEntity.ok(BindingCsrResponseJ(certificate, signedPublicKey))
+                .also { log.info("/binding/create returns ok: {}", it) }
+        } catch (e: Throwable) {
+            return ResponseEntity.internalServerError().build<BindingCsrResponseJ>()
+                .also { log.error("/binding/create got error", e) }
         }
-        val certificate = certificateService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
-            ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                .also { log.info("/binding/create returns CSR invalid: {}", it) }
-        deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
-        val signedPublicKey = certificateService.verifyAttestation(body.attestationCerts)
-        return ResponseEntity.ok(BindingCsrResponseJ(certificate, signedPublicKey))
-            .also { log.info("/binding/create returns ok: {}", it) }
     }
 
     @Operation(
@@ -126,6 +151,11 @@ class BindingController(
                 description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error during processing",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
         ],
     )
     @PostMapping("/binding/confirm")
@@ -133,23 +163,30 @@ class BindingController(
     fun confirmBinding(
         @RequestBody body: BindingConfirmRequestJ,
         principal: Principal,
+        session: HttpSession,
         request: HttpServletRequest,
     ): ResponseEntity<BindingConfirmResponseJ> {
         log.info("/binding/confirm called for {} with {}", principal, body)
-        if (!body.success) {
-            return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
-                .also { log.info("/binding/confirm returns success not set: {}", it) }
+        try {
+            if (!body.success) {
+                return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
+                    .also { log.info("/binding/confirm returns success not set: {}", it) }
+            }
+            // We want the client to not need to authenticate again when using the PupilIdController,
+            // so we'll set the expected authentication token into the current security context
+            // and do not log out the client (previously, "request.logout()" has been called here)
+            if (principal is ExtNonceAuthnToken) {
+                val certificate = session.getAttribute("certificate").toString().decodeBase64ToArray()!!
+                extNonceAuthnService.invalidateNonce(principal.credentials.toString())
+                SecurityContextHolder.getContext().authentication =
+                    DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
+            }
+            return ResponseEntity.ok(BindingConfirmResponseJ(true))
+                .also { log.info("/binding/confirm returns ok: {}", it) }
+        } catch (e: Throwable) {
+            return ResponseEntity.internalServerError().build<BindingConfirmResponseJ>()
+                .also { log.error("/binding/confirm got error", e) }
         }
-        // We want the client to not need to authenticate again when using the PupilIdController
-        // so we'll set the expected authentication token into the current security context
-        // and do not logout the client (previously, "request.logout()" has been called here)
-        if (principal is ExtNonceAuthnToken) {
-            extNonceAuthnService.invalidateNonce(principal.credentials.toString())
-            SecurityContextHolder.getContext().authentication =
-                DeviceBindingAuthnToken("", principal.principal.toString(), byteArrayOf())
-        }
-        return ResponseEntity.ok(BindingConfirmResponseJ(true))
-            .also { log.info("/binding/confirm returns ok: {}", it) }
     }
 
 }

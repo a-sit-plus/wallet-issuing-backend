@@ -1,19 +1,24 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.HolderAgent
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
 import at.asitplus.wallet.lib.agent.MessageWrapper
+import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.pupilid.Asn1Service
 import at.asitplus.wallet.pupilid.DeviceAdapter
-import at.asitplus.wallet.pupilid.DeviceBindingService
+import at.asitplus.wallet.pupilid.DeviceBindingPupilIdIssuingService
 import at.asitplus.wallet.pupilid.HashAlgorithm
 import at.asitplus.wallet.pupilid.KeyAlgorithm
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.ServiceResult
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.ktor.client.engine.java.Java
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,13 +37,13 @@ import kotlin.test.assertIs
 
 
 /**
- * Simulates a full run of a client for using the [BindingController].
+ * Simulates a full run of a client for using the [BindingController] and [PupilIdController].
  *
  * Uses the KMM library with ktor to simulate the client.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
-class BindingControllerKtorLibTest {
+class BindingPupilIdCombinationKtorLibTest {
 
     @LocalServerPort
     private var localServerPort: Int = 0
@@ -46,12 +51,25 @@ class BindingControllerKtorLibTest {
     @MockBean
     private lateinit var extNonceAuthnService: ExtNonceAuthnService
 
-    private lateinit var nonce: String
+    private lateinit var client: Client
+    private lateinit var holderCryptoService: CryptoService
+    private lateinit var holderAgent: HolderAgent
+    private lateinit var holderMessenger: IssueCredentialMessenger
     private lateinit var bpk: String
+    private lateinit var nonce: String
     private lateinit var randomDeviceName: String
 
     @BeforeEach
     fun beforeEach() {
+        client = Client()
+        holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
+        holderAgent = HolderAgent.newDefaultInstance(cryptoService = holderCryptoService)
+        holderMessenger = IssueCredentialMessenger.newHolderInstance(
+            holder = holderAgent,
+            credentialScheme = ConstantIndex.PupilId,
+            keyId = holderCryptoService.keyId,
+            messageWrapper = MessageWrapper(holderCryptoService)
+        )
         bpk = UUID.randomUUID().toString()
         nonce = UUID.randomUUID().toString()
         randomDeviceName = UUID.randomUUID().toString()
@@ -61,26 +79,16 @@ class BindingControllerKtorLibTest {
 
     @Test
     fun start_create_ok() = runTest {
-        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
-        val service = createService(keyPair)
+        val service = createService(client.keyPair)
 
-        val result = service.createDeviceBinding()
+        val result = service.createDeviceBindingAndIssueCredentials()
 
         assertIs<ServiceResult.Success>(result)
+        holderMessenger.parseMessage(result.message)
+        holderAgent.getCredentials().shouldNotBeEmpty()
     }
 
-    @Test
-    fun start_invalidNonce() = runTest {
-        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(null)
-        val keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
-        val service = createService(keyPair)
-
-        val result = service.createDeviceBinding()
-
-        assertIs<ServiceResult.ErrorFromNetwork>(result)
-    }
-
-    private fun createService(keyPair: KeyPair): DeviceBindingService {
+    private fun createService(keyPair: KeyPair): DeviceBindingPupilIdIssuingService {
         val deviceAdapter = object : DeviceAdapter {
             override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) = KmmResult.success(true)
             override suspend fun loadAttestationCerts() = KmmResult.success(listOf<ByteArray>())
@@ -100,12 +108,14 @@ class BindingControllerKtorLibTest {
                 }.sign()
             )
         }
-
-        return DeviceBindingService(
+        return DeviceBindingPupilIdIssuingService(
             serverAddress = "http://localhost:$localServerPort",
             extAuthNonce = nonce,
             deviceAdapter = deviceAdapter,
-            cryptoAdapter = asn1Adapter
+            cryptoAdapter = asn1Adapter,
+            callback = { KmmResult.success((holderMessenger.startDirect() as NextMessage.Send).message) },
+            serverIssuePath = listOf("pupilid", "issue"),
+            engine = Java.create()
         )
     }
 
