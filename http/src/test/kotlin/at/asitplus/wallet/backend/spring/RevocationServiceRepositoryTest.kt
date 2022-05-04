@@ -1,14 +1,10 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import at.asitplus.wallet.lib.data.CredentialSubject
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
-import kotlinx.datetime.Clock
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,7 +15,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 
 @SpringBootTest
-class RevocationServiceTest {
+class RevocationServiceRepositoryTest {
 
     @Autowired
     private lateinit var credentialRepo: IssuedCredentialRepository

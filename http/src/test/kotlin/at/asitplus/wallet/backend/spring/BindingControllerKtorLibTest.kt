@@ -1,11 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.lib.agent.DefaultCryptoService
-import at.asitplus.wallet.lib.agent.HolderAgent
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.MessageWrapper
-import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.pupilid.Asn1Service
 import at.asitplus.wallet.pupilid.DeviceAdapter
 import at.asitplus.wallet.pupilid.DeviceBindingService
@@ -13,7 +8,6 @@ import at.asitplus.wallet.pupilid.HashAlgorithm
 import at.asitplus.wallet.pupilid.KeyAlgorithm
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.ServiceResult
-import io.kotest.matchers.collections.shouldNotBeEmpty
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

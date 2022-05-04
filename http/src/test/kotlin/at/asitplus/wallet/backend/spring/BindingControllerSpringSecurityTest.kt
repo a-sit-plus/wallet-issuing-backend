@@ -1,5 +1,7 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.ChallengeService
+import at.asitplus.wallet.backend.PkiService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
@@ -17,7 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.http.HttpHeaders.WWW_AUTHENTICATE
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -79,7 +81,7 @@ abstract class BindingControllerSpringSecurityTest {
             content = mapper.writeValueAsString(startRequest)
         }.andExpect {
             status { isForbidden() }
-            header { doesNotExist(WWW_AUTHENTICATE) }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -115,7 +117,7 @@ abstract class BindingControllerSpringSecurityTest {
             header(X_AUTH_EXT_NONCE, nonce)
         }.andExpect {
             status { isForbidden() }
-            header { doesNotExist(WWW_AUTHENTICATE) }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -168,7 +170,7 @@ abstract class BindingControllerSpringSecurityTest {
             content = mapper.writeValueAsString(csrRequest)
         }.andExpect {
             status { isForbidden() }
-            header { doesNotExist(WWW_AUTHENTICATE) }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -233,7 +235,7 @@ abstract class BindingControllerSpringSecurityTest {
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isForbidden() }
-            header { doesNotExist(WWW_AUTHENTICATE) }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -276,7 +278,7 @@ abstract class BindingControllerSpringSecurityTest {
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isForbidden() }
-            header { doesNotExist(WWW_AUTHENTICATE) }
+            header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
     }
 
@@ -285,6 +287,7 @@ abstract class BindingControllerSpringSecurityTest {
         private const val X_AUTH_EXT_NONCE = "X-Auth-ExtNonce"
     }
 }
+
 
 @ActiveProfiles("pupilid")
 class PupilIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}

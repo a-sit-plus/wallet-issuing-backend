@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.CryptoService
@@ -12,7 +13,6 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.jws.JwsHeader
 import at.asitplus.wallet.pupilid.KmmResult
-import at.asitplus.wallet.pupilid.KmmResult.Companion
 import at.asitplus.wallet.pupilid.PupilIdIssuingService
 import at.asitplus.wallet.pupilid.ServiceResult
 import kotlinx.coroutines.test.runTest

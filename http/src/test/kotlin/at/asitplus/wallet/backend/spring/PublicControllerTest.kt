@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
 import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not

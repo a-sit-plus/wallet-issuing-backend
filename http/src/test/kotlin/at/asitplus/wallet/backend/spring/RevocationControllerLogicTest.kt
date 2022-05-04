@@ -1,5 +1,11 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.DeviceListEntry
+import at.asitplus.wallet.backend.PkiService
+import at.asitplus.wallet.backend.RevocationController
+import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.test.runTest

@@ -1,5 +1,9 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.RevocationController
+import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper

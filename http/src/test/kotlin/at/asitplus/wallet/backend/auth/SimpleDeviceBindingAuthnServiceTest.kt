@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.security.authentication.BadCredentialsException
 import java.util.UUID
 
-internal class SimpleDeviceBindingAuthnServiceTest {
+class SimpleDeviceBindingAuthnServiceTest {
 
     private val challengeService = SimpleChallengeService()
     private val deviceBindingStorageService = InMemoryDeviceBindingStorageService()

@@ -1,7 +1,9 @@
-package at.asitplus.wallet.backend.data
+package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
 import org.junit.jupiter.api.BeforeEach
@@ -11,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.security.test.context.support.WithMockUser
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertContentEquals
@@ -65,19 +66,16 @@ class RevocationServiceTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun `revocation of non-existing vcId should do nothing`() {
         assertEquals(0, revocationService.revokeCredentialsByVcId(vcId))
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun `check on non-existing vcId should return null`() {
         assertNull(revocationService.isRevoked(vcId))
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun `simple positive add and revoke vcId should work`() {
         revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
         assertEquals(false, revocationService.isRevoked(vcId))
@@ -86,14 +84,12 @@ class RevocationServiceTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun `double adding vcId should return null`() {
         assertNotNull(revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate))
         assertNull(revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate))
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
     fun `revocation list should match revocation calls`() {
         val expectedRevocationList = revokeRandomCredentials()
 

@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
@@ -15,8 +16,6 @@ import at.asitplus.wallet.pupilid.HashAlgorithm
 import at.asitplus.wallet.pupilid.KeyAlgorithm
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.ServiceResult
-import io.github.aakira.napier.DebugAntilog
-import io.github.aakira.napier.Napier
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.ktor.client.engine.java.Java
 import kotlinx.coroutines.test.runTest
@@ -30,7 +29,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.web.server.LocalServerPort
 import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
 import kotlin.test.assertIs

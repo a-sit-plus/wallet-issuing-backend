@@ -1,5 +1,9 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.DeviceBindingAuthnResult
+import at.asitplus.wallet.backend.DeviceBindingAuthnService
+import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.IssueCredentialAdapter
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.NextMessage
