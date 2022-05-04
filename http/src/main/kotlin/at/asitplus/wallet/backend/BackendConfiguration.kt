@@ -177,7 +177,6 @@ class BackendConfiguration {
                     .map { it.first to it.second.readAllBytes() }
                 RandomCredentialDataProvider(
                     mapOfPhotos.toMap(),
-                    deviceBindingStorageService,
                 )
             }
             AttributeSourceType.ECO -> {

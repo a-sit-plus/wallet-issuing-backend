@@ -28,11 +28,6 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
         return deviceBindingForCurrentUser
     }
 
-    fun setDeviceBindingForCurrentUser(deviceBinding: DeviceBinding) {
-        list += deviceBinding
-        this.deviceBindingForCurrentUser = deviceBinding
-    }
-
     override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
         val toRevoke = list.filter { it.bpk == bpk }
             .filter { if (deviceId != null) it.deviceId == deviceId else true }

@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.auth.InMemoryDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
@@ -11,6 +10,8 @@ import io.kotest.matchers.string.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.UUID
 import kotlin.random.Random
 
@@ -21,7 +22,7 @@ class RandomCredentialDataProviderTest {
     private lateinit var bpk1: String
     private lateinit var bpk2: String
     private lateinit var dataProvider: RandomCredentialDataProvider
-    private lateinit var deviceBindingStorageService: InMemoryDeviceBindingStorageService
+    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
     @BeforeEach
     fun setup() {
@@ -30,10 +31,10 @@ class RandomCredentialDataProviderTest {
         bpk2 = UUID.randomUUID().toString()
         subjectId1 = UUID.randomUUID().toString() // each subject has own attribute set
         subjectId2 = UUID.randomUUID().toString()
-        deviceBindingStorageService = InMemoryDeviceBindingStorageService().also {
-            it.setDeviceBindingForCurrentUser(DeviceBinding(bpk1, byteArrayOf(), "", ""))
-        }
-        dataProvider = RandomCredentialDataProvider(listOfPhotos, deviceBindingStorageService)
+        deviceBindingStorageService = mock()
+        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
+            .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", ""))
+        dataProvider = RandomCredentialDataProvider(listOfPhotos)
     }
 
     @Test
@@ -41,13 +42,15 @@ class RandomCredentialDataProviderTest {
         val firstSetOfValues = mutableListOf<String>()
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
-            deviceBindingStorageService.setDeviceBindingForCurrentUser(DeviceBinding(bpk1, byteArrayOf(), "", ""))
+            whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
+                .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", ""))
             dataProvider.getClaim(subjectId1, attribute, bpk1).let {
                 it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 firstSetOfValues += it.value
             }
-            deviceBindingStorageService.setDeviceBindingForCurrentUser(DeviceBinding(bpk2, byteArrayOf(), "", ""))
+            whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
+                .thenReturn(DeviceBinding(bpk2, byteArrayOf(), "", ""))
             dataProvider.getClaim(subjectId2, attribute, bpk2).let {
                 it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)

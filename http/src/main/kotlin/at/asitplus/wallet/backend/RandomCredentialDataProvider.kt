@@ -6,7 +6,6 @@ import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase64
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -18,7 +17,6 @@ import java.util.Random
  */
 class RandomCredentialDataProvider constructor(
     private val listOfPhotos: Map<String, ByteArray>,
-    private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -71,28 +69,10 @@ class RandomCredentialDataProvider constructor(
         return when {
             attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX) -> {
                 when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
-                    "vorname" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
-                    "nachname" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
-                    else -> null
-                }
-            }
-            attributeName.startsWith(SchemaIndex.ATTR_GREEN_PASS_PREFIX) -> {
-                when (attributeName.removePrefix(SchemaIndex.ATTR_GREEN_PASS_PREFIX + "/")) {
-                    "name" -> AtomicAttributeCredential(subjectId, attributeName, "${it.firstName} ${it.lastName}")
+                    "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
+                    "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
                     "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
-                    "photo" -> AtomicAttributeCredential(
-                        subjectId,
-                        attributeName,
-                        it.encodedPhoto.encodeBase64(),
-                        "image/jpeg"
-                    )
-                    "vaccination" -> AtomicAttributeCredential(
-                        subjectId,
-                        attributeName,
-                        "Moderna 2/2, on 2021-08-10, Vienna"
-                    )
-                    "test" -> AtomicAttributeCredential(subjectId, attributeName, "Negative RAT, on 2021-09-10, Graz")
-                    "recovery" -> AtomicAttributeCredential(subjectId, attributeName, "Recovered, on 2021-02-10")
+                    "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilNumber)
                     else -> null
                 }
             }
