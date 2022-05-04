@@ -1,13 +1,13 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
+import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.time.Instant
@@ -18,15 +18,12 @@ import kotlin.random.Random
 class InMemoryPkiService(
     private val certValidityDays: Int = 1,
     private val issuerName: String = "CN=Issuer",
-    private val keyAdapter: KeyAdapter = RandomKeyAdapter(),
+    private val cryptoService: FileCryptoService = FileCryptoService(RandomKeyAdapter()),
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val issuer = X500Name(issuerName)
-    private val contentSigner = JcaContentSignerBuilder("SHA256withECDSA")
-        .setProvider(keyAdapter.provider)
-        .build(keyAdapter.privateKey)
     private val crlEntryList = mutableListOf<CrlEntry>()
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
@@ -47,14 +44,14 @@ class InMemoryPkiService(
             Date.from(Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L)),
             issuer,
             subjectPublicKeyInfo
-        ).build(contentSigner).encoded
+        ).build(cryptoService.getJcaContentSigner(JwsAlgorithm.ES256)).encoded
 
     override fun getCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())
         crlEntryList.forEach {
             crlBuilder.addCRLEntry(it.serialNumber, it.date, CRLReason.unspecified)
         }
-        return crlBuilder.build(contentSigner).encoded
+        return crlBuilder.build(cryptoService.getJcaContentSigner(JwsAlgorithm.ES256)).encoded
     }
 
     override fun revokeCertificate(certificate: ByteArray) {

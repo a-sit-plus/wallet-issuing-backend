@@ -5,7 +5,6 @@ import at.asitplus.wallet.lib.encodeBase64
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborMap
-import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
@@ -37,10 +36,10 @@ class DefaultAttestationService(private val cryptoService: FileCryptoService) : 
                 }
 
             return JWSObject(
-                JWSHeader(JWSAlgorithm.ES256),
+                JWSHeader(cryptoService.jwsAlgorithm.joseType),
                 Payload(mapOf("pk" to publicKey.encodeBase64()))
             ).also {
-                it.sign(cryptoService.getContentSigner())
+                it.sign(cryptoService.getJwsContentSigner())
             }.serialize()
         } catch (e: Throwable) {
             log.warn("verifyAttestation: error", e)

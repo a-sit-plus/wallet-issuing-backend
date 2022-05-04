@@ -15,10 +15,14 @@ import at.asitplus.wallet.lib.jws.JweEncryption
 import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSSigner
 import com.nimbusds.jose.crypto.ECDSASigner
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
+import org.bouncycastle.operator.ContentSigner
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -152,9 +156,13 @@ class FileCryptoService(
         }
     }
 
-    fun getContentSigner() = ECDSASigner(privateKey as ECPrivateKey).also {
+    fun getJwsContentSigner(): JWSSigner = ECDSASigner(privateKey as ECPrivateKey).also {
         it.jcaContext.provider = Security.getProvider(provider)
     }
+
+    fun getJcaContentSigner(algorithm: JwsAlgorithm): ContentSigner = JcaContentSignerBuilder(algorithm.jcaName)
+        .setProvider(provider)
+        .build(privateKey)
 
     private val JwkType.jcaName
         get() = when (this) {
@@ -193,6 +201,11 @@ class FileCryptoService(
         }
 
 }
+
+val JwsAlgorithm.joseType: JWSAlgorithm
+    get() = when (this) {
+        JwsAlgorithm.ES256 -> JWSAlgorithm.ES256
+    }
 
 val DeviceBinding.keyId: String?
     get() = kotlin.runCatching {

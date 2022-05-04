@@ -90,7 +90,7 @@ class BackendConfiguration {
                 InMemoryPkiService(
                     configurationProperties.pki.certValidityDays,
                     configurationProperties.pki.internal.issuerName,
-                    keyAdapter
+                    FileCryptoService(keyAdapter),
                 )
             }
             PkiType.AERA -> {
