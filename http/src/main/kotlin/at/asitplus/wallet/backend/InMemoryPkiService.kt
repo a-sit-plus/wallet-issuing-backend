@@ -24,6 +24,7 @@ class InMemoryPkiService(
 
     private val issuer = X500Name(issuerName)
     private val crlEntryList = mutableListOf<CrlEntry>()
+    private val caCertificate = signCertificate(issuer, cryptoService.subjectPublicKeyInfo)
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
         try {
@@ -44,6 +45,10 @@ class InMemoryPkiService(
             issuer,
             subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner).encoded
+
+    override fun getCaCertificate(): ByteArray {
+        return caCertificate
+    }
 
     override fun getCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())

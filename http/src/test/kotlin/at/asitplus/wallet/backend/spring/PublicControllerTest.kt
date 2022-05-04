@@ -33,4 +33,12 @@ class PublicControllerTest {
         }.andReturn()
     }
 
+    @Test
+    fun `GET PKI CA`() {
+        mockMvc.get("/ca/1") {
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+    }
+
 }

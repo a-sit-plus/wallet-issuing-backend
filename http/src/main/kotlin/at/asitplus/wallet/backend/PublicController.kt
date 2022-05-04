@@ -29,10 +29,17 @@ class PublicController(
     @Operation(
         summary = "Get the VC revocation list",
         description = "Get a list of revoked credentials in 'Revocation List 2020' format",
-        responses = [ApiResponse(
-            description = "A verifiable credential in 'Revocation List 2020' format",
-            content = [Content(examples = [ExampleObject(value = "<JWS containing RevocationList2020 payload>")])]
-        )]
+        responses = [
+            ApiResponse(
+                description = "A verifiable credential in 'Revocation List 2020' format",
+                content = [Content(examples = [ExampleObject(value = "<JWS containing RevocationList2020 payload>")])]
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+        ]
     )
     @GetMapping("/credentials/status/1")
     fun getVcRevocationList() = runBlocking {
@@ -50,10 +57,22 @@ class PublicController(
     @Operation(
         summary = "Get the X.509 revocation list",
         description = "Get a list of revoked certificates in X.509 CRL format, if the internal PKI is used",
-        responses = [ApiResponse(
-            description = "Binary encoded X.509 CRL object",
-            content = [Content(examples = [ExampleObject(value = "<Binary encoded X.509 CRL object>")])]
-        )]
+        responses = [
+            ApiResponse(
+                description = "Binary encoded X.509 CRL object",
+                content = [Content(examples = [ExampleObject(value = "<Binary encoded X.509 CRL object>")])]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "CRL not found, e.g. it is hosted at an external URL",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+        ]
     )
     @GetMapping("/crl/1")
     fun getCertificateRevocationList(): ResponseEntity<ByteArray> {
@@ -68,6 +87,43 @@ class PublicController(
             return ResponseEntity.notFound().build()
         } catch (e: Throwable) {
             log.error("/crl/1 returning 500, server error", e)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
+    @Operation(
+        summary = "Get the CA certificate",
+        description = "Get the certificate for the key pair that signs device binding certificates",
+        responses = [
+            ApiResponse(
+                description = "Binary encoded X.509 Certificate object",
+                content = [Content(examples = [ExampleObject(value = "<Binary encoded X.509 Certificate object>")])]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "CA certificate not found, e.g. it is hosted at an external URL",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error",
+                content = [Content(examples = [ExampleObject(value = "")])]
+            ),
+        ]
+    )
+    @GetMapping("/ca/1")
+    fun getCaCertificate(): ResponseEntity<ByteArray> {
+        log.info("/ca/1 called")
+        try {
+            val caCertificate = pkiService.getCaCertificate()
+            if (caCertificate != null) {
+                log.info("/ca/1 returns {}", caCertificate.encodeBase64())
+                return ResponseEntity.ok(caCertificate)
+            }
+            log.info("/ca/1 returns 404, not found")
+            return ResponseEntity.notFound().build()
+        } catch (e: Throwable) {
+            log.error("/ca/1 returning 500, server error", e)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }

@@ -2,9 +2,12 @@ package at.asitplus.wallet.backend
 
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import org.bouncycastle.cert.X509CRLHolder
 import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.junit.jupiter.api.Test
+import java.util.Date
 import java.util.UUID
 
 class InMemoryPkiServiceTest {
@@ -32,6 +35,19 @@ class InMemoryPkiServiceTest {
     }
 
     @Test
+    fun `device binding certificates are valid`() {
+        val subject = "CN=${UUID.randomUUID()}"
+        val csr = Client().generateCsr(subject)
+        val certificate = service.verifyAndSign(csr, subject)
+
+        val verifierProvider =
+            JcaContentVerifierProviderBuilder().build(X509CertificateHolder(service.getCaCertificate()))
+        val holder = X509CertificateHolder(certificate)
+        holder.isSignatureValid(verifierProvider) shouldBe true
+        holder.isValidOn(Date()) shouldBe true
+    }
+
+    @Test
     fun `add revoked certificate to CRL`() {
         val subject = "CN=${UUID.randomUUID()}"
         val csr = Client().generateCsr(subject)
@@ -42,7 +58,11 @@ class InMemoryPkiServiceTest {
         service.revokeCertificate(certificate)
         val crl = service.getCrl()
 
-        val revokedCert = X509CRLHolder(crl).getRevokedCertificate(serialNumber)
+        val verifierProvider =
+            JcaContentVerifierProviderBuilder().build(X509CertificateHolder(service.getCaCertificate()))
+        val crlHolder = X509CRLHolder(crl)
+        crlHolder.isSignatureValid(verifierProvider) shouldBe true
+        val revokedCert = crlHolder.getRevokedCertificate(serialNumber)
         revokedCert.shouldNotBeNull()
     }
 

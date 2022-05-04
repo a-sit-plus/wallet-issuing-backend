@@ -17,6 +17,8 @@ with it's `kid` of `did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BR
 
 The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagger UI at <http://localhost:8080/swagger-ui/index.html>. Note that access to these resources should be restricted in public deployments.
 
+`GET /ca/1` returns the X.509 Certificate for the key pair, that signs device binding certificates, if the PKI implementation supports this, i.e. only for the internal PKI (see below for configuration). When the external AERA service is used to sign device binding certificates, the CA certificate is available at an external URL.
+
 `GET /crl/1` returns the X.509 Certificate Revocation List, if the PKI implementation supports this, i.e. only for the internal PKI (see below for configuration). When the external AERA service is used to sign device binding certificates, the CRL is available at an external URL (specified in the issued certificates).
 
 `GET /credentials/status/1` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/).

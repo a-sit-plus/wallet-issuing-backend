@@ -46,6 +46,13 @@ class AeraPkiService(
         return null
     }
 
+    /**
+     * CA from AERA is available externally
+     */
+    override fun getCaCertificate(): ByteArray? {
+        return null
+    }
+
     override fun revokeCertificate(certificate: ByteArray) {
         val requestDto = RevokeRequestDto(certificate = certificate.encodeBase64())
         val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }

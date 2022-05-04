@@ -18,6 +18,8 @@ import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSSigner
 import com.nimbusds.jose.crypto.ECDSASigner
+import org.bouncycastle.asn1.ASN1Sequence
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.PrivateKey
+import java.security.PublicKey
 import java.security.Security
 import java.security.Signature
 import java.security.cert.CertificateFactory
@@ -41,6 +44,7 @@ import javax.crypto.spec.SecretKeySpec
  * Extends [CryptoService] from vclib by methods needed for Java libraries
  */
 interface CryptoServiceAdapter : CryptoService {
+    val subjectPublicKeyInfo: SubjectPublicKeyInfo
     val jwsContentSigner: JWSSigner
     val jcaContentSigner: ContentSigner
 }
@@ -52,6 +56,7 @@ class DefaultCryptoServiceAdapter(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val privateKey: PrivateKey = keyAdapter.privateKey
+    private val publicKey: PublicKey = keyAdapter.publicKey
     private val provider: String = keyAdapter.provider
     private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
     override val keyId: String = jsonWebKey.keyId!!
@@ -170,6 +175,9 @@ class DefaultCryptoServiceAdapter(
         get() = JcaContentSignerBuilder(jwsAlgorithm.jcaName)
             .setProvider(provider)
             .build(privateKey)
+
+    override val subjectPublicKeyInfo: SubjectPublicKeyInfo
+        get() = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.encoded))
 
     private val JwkType.jcaName
         get() = when (this) {

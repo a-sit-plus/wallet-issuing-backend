@@ -21,6 +21,11 @@ interface PkiService {
     fun getCrl(): ByteArray?
 
     /**
+     * Gets the X.509 Certificate for the key pair that signs device binding certificates
+     */
+    fun getCaCertificate(): ByteArray?
+
+    /**
      * Marks the certificate as revoked, i.e. it will be added to [getCrl]
      */
     fun revokeCertificate(certificate: ByteArray)
