@@ -1,8 +1,8 @@
 # PupilId Backend Service
 
-This is the backend service for provisioning and revoking PupilIds.
+This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing PupilIds oder EidasIds.
 
-Default public key for issuing credentials is:
+The default public key that signs the credentials is:
 
 ```
 -----BEGIN PUBLIC KEY-----
@@ -11,21 +11,21 @@ ys0go5xhPtbXj0X2jNAUUOddCh8eYoB9dO/ARUyBbccxKmNxO01kd8+/Tg==
 -----END PUBLIC KEY-----
 ```
 
-with it's `kid` of `did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=`.
+with it's `kid` of `did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O`.
 
-## Endpoints
+## REST API
 
-The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagger UI at <http://localhost:8080/swagger-ui/index.html>.
+The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagger UI at <http://localhost:8080/swagger-ui/index.html>. Note that access to these resources should be restricted in public deployments.
 
-`GET /crl/1` returns the X.509 Certificate Revocation List, if the PKI implementation supports this (see below for configuration), i.e. only for the internal PKI. When AERA is used to sign device binding certificates, the CRL is available at an external URL.
+`GET /crl/1` returns the X.509 Certificate Revocation List, if the PKI implementation supports this, i.e. only for the internal PKI (see below for configuration). When the external AERA service is used to sign device binding certificates, the CRL is available at an external URL (specified in the issued certificates).
 
-`GET /credentials/status/1` returns the revocation list in a VC-compatible format, i.e. [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/).
+`GET /credentials/status/1` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/).
 
 Sample revocation list (transported as a JWS in compact representation, exploded here for readability):
 
 ```
 {
-  "kid": "did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=",
+  "kid": "did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O",
   "typ": "JWT",
   "alg": "ES256"
 }
@@ -37,7 +37,7 @@ Sample revocation list (transported as a JWS in compact representation, exploded
       "VerifiableCredential",
       "RevocationList2020"
     ],
-    "issuer": "did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=",
+    "issuer": "did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O",
     "issuanceDate": "2022-02-23T14:46:10.969279Z",
     "expirationDate": "2022-02-26T02:46:10.969281Z",
     "credentialSubject": {
@@ -48,19 +48,15 @@ Sample revocation list (transported as a JWS in compact representation, exploded
   },
   "sub": "http://localhost:8080/credentials/status/1#list",
   "nbf": 1645627570,
-  "iss": "did:key:mEgACaCUPdgNqCIFLVXE8yn5lZGaYjbyCys0go5xhPtbXj0U=",
+  "iss": "did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O",
   "exp": 1645843570,
   "jti": "http://localhost:8080/credentials/status/1"
 }
 ```
 
-`GET /help/wallet` displays a help page if the user scans a debug initialization QR Code with a standard camera app (instead of the Wallet App).
-
-`GET /help/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
-
 ### Device Binding
 
-The call to `/binding/start` requires authentication with a Nonce extracted from a QR Code displayed by ECO (or this service, in the EIDAS deployment), to be sent in the header `X-Auth-ExtNonce`. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token` (which in turn has been set by the service in the first response).
+The call to `/binding/start` requires authentication with an external Nonce extracted from a QR Code displayed by ECO (or this service, in the EIDAS deployment), to be sent in the header `X-Auth-ExtNonce`. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token` (which in turn has been set by this service in the first response).
 
 `POST /binding/start` initiates the device binding process in the App. User needs to scan a QR Code with a nonce first to be authorized to access this endpoint.
 
@@ -94,7 +90,7 @@ X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
 }
 ```
 
-Client creates a new key pair and a PKCS#10 certification request for the key pair (with the given `subject`), and includes its attestation statements (either Android Key Attestation or Apple App Attestation).
+Client creates a new key pair and a PKCS#10 certification request for the key pair (with the given `subject`), and includes its attestation statements (either [Android Key Attestation](https://developer.android.com/training/articles/security-key-attestation) or [Apple App Attestation](https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server)).
 
 Request from client (newlines for display purposes only):
 
@@ -130,11 +126,12 @@ X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
 }
 ```
 
+The server verifies the CSR and sends it to the configured PKI service to get a signed certificate. The server also validates the attestation statement, and signs the public key of the client into the structure `attestedPublicKey`.
+
 Response from server (newlines for display purposes only):
 
 ```
 HTTP/1.1 200
-X-Auth-Token: b297b9fb-9501-4352-af69-5856ad477a64
 
 {
   "certificate": "MIIBFzCBvaADAgECAgjWVAvsBy5UXDAKBggqhkjOPQQDAjASMRAwDgYDVQQDD
@@ -163,16 +160,19 @@ X-Auth-Token: b297b9fb-9501-4352-af69-5856ad477a64
 }
 ```
 
-Response from server (header `X-Auth-Token` is empty):
+Response from server:
 
 ```
 HTTP/1.1 200
-X-Auth-Token: 
 
 {
   "success": true
 }
 ```
+
+Note that the server does not set the header `X-Auth-Token` if the client has sent one in the request.
+
+The `X-Auth-Token` from this device binding process can be used by clients to start the issuing process without any additional authentication.
 
 ### Issuing
 
@@ -180,7 +180,7 @@ X-Auth-Token:
 
 On the first call to `/pupilid/issue`, this service answers with HTTP Status 401 and a challenge in the header `WWW-Authenticate: Challenge OBU7Uz4vI2uRmeZtGzm5FbNmVNpwNnwWQ06P15fRpiI=`.
 
-Alternatively, the client may call `GET /authn/devicebinding/challenge` to receive a valid challenge (again, Base64-encoded) in the response body.
+Alternatively, the client may call `GET /authn/devicebinding/challenge` to receive a valid challenge in the response body.
 
 Note that clients can call this endpoint without additional authentication when including the `X-Auth-Token` from a (successfully completed) device binding process.
 
@@ -225,8 +225,6 @@ Authorization: Response eyJ4NWMiOlsiTUlJQkZqQ0J2S0FEQWdFQ0FnZ3ZuYTlMeWNzbnh6QUt
 
 For EIDAS deployments, the endpoint `POST /eidasid/issue` is available instead, with the same semantics as above.
 
-In addition, the endpoint `GET /eidasid/initialize` is available, where the web browser displays a QR code that can be scanned by the Wallet App to load EIDAS credentials. This endpoint is available after the user has been logged in with OAuth2 (link on `/login`).
-
 ### Revocation
 
 Clients are external services, and authenticated with an API key. The API key shall be sent in the header `X-API-Key`.
@@ -263,20 +261,37 @@ HTTP/1.1 200
 
 These endpoints are only enabled if `backend.debug.enabled=true` is set.
 
-`GET /debug/initialize` shows a QR code that can be used by the Wallet App to get a nonce to use as the authentication token during the device binding process.
-
 `GET /debug/nonce` returns a nonce that is valid to use for `X-Auth-ExtNonce` during the binding creation process.
-
-`GET /debug/credential/list` displays a web page with a list of issued credentials.
 
 `GET /debug/credential/revoke?vcId={foo}` revokes a credential.
 
 `GET /debug/credential/create` creates a new credential.
 
+## Web API
+
+`GET /` displays a general information page for new users.
+
+`GET /help/wallet` displays a help page if the user scans a debug initialization QR Code with a standard camera app (instead of the Wallet App).
+
+`GET /help/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
+
+#### EIDAS
+
+For EIDAS deployments, the web page `GET /eidasid/initialize` is available, where the web browser displays a QR code that can be scanned by the Wallet App to load EIDAS credentials. This endpoint is available after the user has been logged in with OAuth2 (link on `/login`).
+
+### Debug
+
+These web pages are only enabled if `backend.debug.enabled=true` is set.
+
+`GET /debug/initialize` shows a QR code that can be used by the Wallet App to get a nonce to use as the authentication token during the device binding process.
+
+`GET /debug/credential/list` displays a web page with a list of issued credentials.
 
 ## Configuration
 
-There is no default configuration file included in this service, i.e. everything should be configured explicitly when running it, using an `application.yml` or `application.properties` file.
+The default configuration file included in this service is minimal, i.e. it sets the default profile `pupilid` and disables cloud configuration.
+
+This means that for every deployment, the configuration file (`application.yml` or `application.properties`) should be explicit in setting all needed options.
 
 There are two profiles implemented in this service: `pupilid` (the default) and `eidasid` for EIDAS deployments.
 
@@ -291,10 +306,8 @@ backend:
     lifetime: PT60M
     one-credential-per-device-binding: true
   issuer-key: {{ KEY_CONFIG }}
-    type: FILE
-    file:
-      private-key: file:issuer-key-private.pem
-      public-key: file:issuer-key-public.pem
+  hsm-facade:
+    enabled: false
   debug:
     enabled: true
     qr-code-size: 400
@@ -311,13 +324,13 @@ backend:
     type: INTERNAL
     cert-validity-days: 182
     internal:
-      issuer-name: "CN=Issuer"
+      issuer-name: "CN=WalletBackend"
       key: {{ KEY_CONFIG }}
 ```
 
 Set `backend.credentials.one-credential-per-device-binding=true` if existing credentials for the same device binding should be revoked when a new credential is issued (e.g. as it is the case for PupilIds).
 
-Alternative configuration for the device binding authentication (validation of the ext. nonce provided by the Wallet App):
+Alternative configuration for the device binding authentication (i.e. the validation of the ext. nonce provided by the Wallet App):
 
 ```yaml
 backend:
@@ -412,7 +425,8 @@ hsmfacade:
   key-store-alias: key1
 ```
 
-Using keys from a remote HsmFacade service also requires setting the general connection information:
+Using keys from a remote HsmFacade service also requires setting the general connection properties:
+
 ```yaml
 backend:
   hsmfacade:
@@ -425,7 +439,7 @@ backend:
     timeout: 30
 ```
 
-Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above (if nothing is configured, the system-default truststore will be used):
+Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above:
 
 ```yaml
 type: SYSTEM
@@ -467,7 +481,7 @@ logging:
 
 ### Database
 
-Configuration to use ar in-memory H2 database for deployments in debug environments:
+Configuration to use an in-memory H2 database for deployments in debug environments:
 
 ```yaml
 spring:
@@ -486,6 +500,8 @@ spring:
 
 ### Spring Boot Admin Client
 
+Configuration to connect to a [Spring Boot Admin Server](https://github.com/codecentric/spring-boot-admin):
+
 ```yaml
 spring:
   application:
@@ -503,3 +519,21 @@ management:
       exposure:
         include: "*"
 ```
+
+### Cloud Configuration
+
+Configuration to pull the configuration from a [Spring Cloud Config Server](https://cloud.spring.io/spring-cloud-config/reference/html/):
+
+```yaml
+spring:
+  profiles:
+    active: pupilid
+  application:
+    name: wallet
+  config:
+    import: optional:configserver:http://localhost:9910/
+  cloud:
+    config:
+      enabled: true
+```
+
