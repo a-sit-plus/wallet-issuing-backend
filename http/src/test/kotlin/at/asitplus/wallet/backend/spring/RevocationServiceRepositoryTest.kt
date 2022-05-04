@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,7 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
-import kotlin.test.assertEquals
 
 @SpringBootTest
 class RevocationServiceRepositoryTest {
@@ -51,71 +51,68 @@ class RevocationServiceRepositoryTest {
     }
 
     @Test
-    fun existingCredentialNotRevoked() {
+    fun `issued credential should not be revoked`() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
             credentialRepo.save(it)
         }
 
-        assertEquals(false, revocationService.isRevoked(vcId))
+        revocationService.isRevoked(vcId) shouldBe false
     }
 
     @Test
-    fun existingCredentialRevoked() {
+    fun `issued credential marked as revoked should be revoked`() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
             it.revoked = true
             credentialRepo.save(it)
         }
 
-        assertEquals(true, revocationService.isRevoked(vcId))
+        revocationService.isRevoked(vcId) shouldBe true
     }
 
     @Test
-    fun revokeExistingCredentialsByBpk() {
+    fun `revoke credentials by BPK`() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
             credentialRepo.save(it)
         }
 
-        assertEquals(1, revocationService.revokeCredentialsByBpk(bpk))
+        revocationService.revokeCredentialsByBpk(bpk) shouldBe 1
     }
 
     @Test
-    fun revokeNotExistingCredentialsByBpk() {
-        assertEquals(0, revocationService.revokeCredentialsByBpk(bpk))
+    fun `revoke non-existing credentials by bpk`() {
+        revocationService.revokeCredentialsByBpk(bpk) shouldBe 0
     }
 
     @Test
-    fun revokeExistingCredentialsByDeviceId() {
+    fun `revoke credentials by deviceId`() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
             credentialRepo.save(it)
         }
 
-        assertEquals(1, revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
+        revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId) shouldBe 1
     }
 
     @Test
-    fun revokeNotExistingCredentialsByDeviceId() {
-        assertEquals(0, revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId))
+    fun `revoke non-existing credentials by deviceId`() {
+        revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId) shouldBe 0
     }
 
     @Test
-    fun revokeExistingCredentialsByWrongDeviceId() {
+    fun `revoke existing credentials by wrong deviceId`() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
             credentialRepo.save(it)
         }
 
-        assertEquals(0, revocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()))
+        revocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()) shouldBe 0
     }
 
     @Test
-    fun revokeExistingCredentialsByWrongBpk() {
+    fun `revoke existing credentials by wrong bpk`() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
             credentialRepo.save(it)
         }
 
-        assertEquals(
-            0,
-            revocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId)
-        )
+        revocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId) shouldBe 0
     }
 
 }

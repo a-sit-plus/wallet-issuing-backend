@@ -8,6 +8,7 @@ import at.asitplus.wallet.pupilid.HashAlgorithm
 import at.asitplus.wallet.pupilid.KeyAlgorithm
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.ServiceResult
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,7 +23,6 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
-import kotlin.test.assertIs
 
 
 /**
@@ -60,7 +60,7 @@ class BindingControllerKtorLibTest {
 
         val result = service.createDeviceBinding()
 
-        assertIs<ServiceResult.Success>(result)
+        result.shouldBeInstanceOf<ServiceResult.Success>()
     }
 
     @Test
@@ -71,7 +71,7 @@ class BindingControllerKtorLibTest {
 
         val result = service.createDeviceBinding()
 
-        assertIs<ServiceResult.ErrorFromNetwork>(result)
+        result.shouldBeInstanceOf<ServiceResult.ErrorFromNetwork>()
     }
 
     private fun createService(keyPair: KeyPair): DeviceBindingService {

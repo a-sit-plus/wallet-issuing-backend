@@ -12,6 +12,7 @@ import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.agent.ProblemReporter
 import at.asitplus.wallet.lib.agent.SubjectCredentialStore
 import at.asitplus.wallet.lib.data.ConstantIndex
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,7 +32,6 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.UUID
-import kotlin.test.assertIs
 
 /**
  * Tests the logic (the process) part of the [PupilIdController],
@@ -94,7 +94,7 @@ class PupilIdControllerLogicTest {
         }.andReturn()
 
         val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
-        assertIs<NextMessage.Result<*>>(parsedMessage)
+        parsedMessage.shouldBeInstanceOf<NextMessage.Result<*>>()
         verify(subjectCredentialStore, times(1)).storeCredential(any(), any())
     }
 
@@ -118,7 +118,7 @@ class PupilIdControllerLogicTest {
         }.andReturn()
 
         val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
-        assertIs<NextMessage.ReceivedProblemReport>(parsedMessage)
+        parsedMessage.shouldBeInstanceOf<NextMessage.ReceivedProblemReport>()
         verify(subjectCredentialStore, never()).storeCredential(any(), any())
     }
 

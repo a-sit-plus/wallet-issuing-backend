@@ -15,6 +15,7 @@ import at.asitplus.wallet.lib.jws.JwsHeader
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.PupilIdIssuingService
 import at.asitplus.wallet.pupilid.ServiceResult
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +25,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.web.server.LocalServerPort
 import java.util.UUID
-import kotlin.test.assertIs
 
 /**
  * Simulates a full run of a client using the [PupilIdController].
@@ -85,7 +85,7 @@ class PupilIdControllerKtorLibTest {
             PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
         val result = service.issueCredentials(request.message)
 
-        assertIs<ServiceResult.Success>(result)
+        result.shouldBeInstanceOf<ServiceResult.Success>()
     }
 
 }

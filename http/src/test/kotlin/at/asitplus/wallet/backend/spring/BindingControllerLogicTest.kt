@@ -8,6 +8,7 @@ import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsResponseJ
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.security.cert.CertificateFactory
 import java.util.UUID
-import kotlin.test.assertContentEquals
 
 /**
  * Tests the logic (the process) part of the [BindingController],
@@ -64,7 +64,7 @@ class BindingControllerLogicTest {
 
         val certBytes = mapper.readValue<BindingCsrResponseJ>(createResponse.response.contentAsString).certificate
         val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
-        assertContentEquals(client.keyPair.public.encoded, certificate.publicKey.encoded)
+        client.keyPair.public.encoded shouldBe certificate.publicKey.encoded
 
         val confirmRequest = BindingConfirmRequestJ(true)
 

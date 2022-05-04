@@ -4,15 +4,15 @@ import at.asitplus.wallet.backend.auth.InMemoryDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldNotBeEmpty
+import io.kotest.matchers.types.shouldBeInstanceOf
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import java.util.UUID
 import kotlin.random.Random
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class RandomCredentialDataProviderTest {
 
@@ -23,7 +23,7 @@ class RandomCredentialDataProviderTest {
     private lateinit var dataProvider: RandomCredentialDataProvider
     private lateinit var deviceBindingStorageService: InMemoryDeviceBindingStorageService
 
-    @BeforeTest
+    @BeforeEach
     fun setup() {
         val listOfPhotos = (1..10).associate { UUID.randomUUID().toString() to Random.Default.nextBytes(32) }
         bpk1 = UUID.randomUUID().toString()
@@ -43,18 +43,18 @@ class RandomCredentialDataProviderTest {
         for (attribute in AttributeIndex.genericAttributes) {
             deviceBindingStorageService.setDeviceBindingForCurrentUser(DeviceBinding(bpk1, byteArrayOf(), "", ""))
             dataProvider.getClaim(subjectId1, attribute, bpk1).let {
-                assertIs<AtomicAttributeCredential>(it)
+                it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 firstSetOfValues += it.value
             }
             deviceBindingStorageService.setDeviceBindingForCurrentUser(DeviceBinding(bpk2, byteArrayOf(), "", ""))
             dataProvider.getClaim(subjectId2, attribute, bpk2).let {
-                assertIs<AtomicAttributeCredential>(it)
+                it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 secondSetOfValues += it.value
             }
         }
-        assertNotEquals(firstSetOfValues, secondSetOfValues)
+        firstSetOfValues shouldNotBe secondSetOfValues
     }
 
     @Test
@@ -63,23 +63,23 @@ class RandomCredentialDataProviderTest {
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
             dataProvider.getClaim(subjectId1, attribute, bpk1).let {
-                assertIs<AtomicAttributeCredential>(it)
+                it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 firstSetOfValues += it.value
             }
             dataProvider.getClaim(subjectId2, attribute, bpk1).let {
-                assertIs<AtomicAttributeCredential>(it)
+                it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 secondSetOfValues += it.value
             }
         }
-        assertEquals(firstSetOfValues, secondSetOfValues)
+        firstSetOfValues shouldBe secondSetOfValues
     }
 
     private fun assertClaim(firstClaim: AtomicAttributeCredential?, attribute: String) {
-        assertNotNull(firstClaim)
-        assertEquals(attribute, firstClaim.name)
-        assertTrue(firstClaim.value.isNotEmpty())
+        firstClaim.shouldNotBeNull()
+        firstClaim.name shouldBe attribute
+        firstClaim.value.shouldNotBeEmpty()
     }
 
 }

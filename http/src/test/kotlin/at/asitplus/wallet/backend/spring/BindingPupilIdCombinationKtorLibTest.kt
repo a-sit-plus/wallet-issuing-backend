@@ -17,6 +17,7 @@ import at.asitplus.wallet.pupilid.KeyAlgorithm
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.ServiceResult
 import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.engine.java.Java
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -31,7 +32,6 @@ import org.springframework.boot.web.server.LocalServerPort
 import java.security.KeyPair
 import java.security.Signature
 import java.util.UUID
-import kotlin.test.assertIs
 
 
 /**
@@ -81,7 +81,7 @@ class BindingPupilIdCombinationKtorLibTest {
 
         val result = service.createDeviceBindingAndIssueCredentials()
 
-        assertIs<ServiceResult.Success>(result)
+        result.shouldBeInstanceOf<ServiceResult.Success>()
         holderMessenger.parseMessage(result.message)
         holderAgent.getCredentials().shouldNotBeEmpty()
     }

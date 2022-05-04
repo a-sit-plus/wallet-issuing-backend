@@ -12,6 +12,7 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,7 +26,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.util.UUID
-import kotlin.test.assertIs
 
 /**
  * Simulates a full run of a client using the [PupilIdController].
@@ -88,7 +88,7 @@ class PupilIdControllerFullRunTest {
         }.andReturn()
 
         val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
-        assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
+        parsedMessage.shouldBeInstanceOf<NextMessage.Result<IssueCredentialProtocolResult>>()
     }
 
     @Test
@@ -113,7 +113,7 @@ class PupilIdControllerFullRunTest {
         }.andReturn()
 
         val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
-        assertIs<NextMessage.Result<IssueCredentialProtocolResult>>(parsedMessage)
+        parsedMessage.shouldBeInstanceOf<NextMessage.Result<IssueCredentialProtocolResult>>()
     }
 
 }

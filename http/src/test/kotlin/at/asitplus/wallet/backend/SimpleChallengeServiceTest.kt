@@ -1,8 +1,7 @@
 package at.asitplus.wallet.backend
 
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class SimpleChallengeServiceTest {
 
@@ -14,14 +13,14 @@ class SimpleChallengeServiceTest {
         val challenge = service.generate()
         Thread.sleep((timeoutSeconds + 1) * 1000L)
 
-        assertFalse(service.verifyAndRemove(challenge))
+        service.verifyAndRemove(challenge) shouldBe false
     }
 
     @Test
     fun noTimeout() {
         val challenge = service.generate()
 
-        assertTrue(service.verifyAndRemove(challenge))
+        service.verifyAndRemove(challenge) shouldBe true
     }
 
 }
