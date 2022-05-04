@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.hsmfacade.provider.HsmFacadeProvider
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
 import at.asitplus.wallet.backend.auth.EcoExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
@@ -26,6 +27,9 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
+import java.security.Security
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import kotlin.time.Duration.Companion.minutes
 
 @Configuration
@@ -77,6 +81,10 @@ class BackendConfiguration {
                 val keyAdapter = when (configurationProperties.pki.internal.key.type) {
                     KeyType.FILE -> KeyFileAdapter(configurationProperties.pki.internal.key.file!!, resourceLoader)
                     KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.pki.internal.key.keystore!!)
+                    KeyType.HSMFACADE -> {
+                        initHsmFacadeConnection()
+                        HsmFacadeAdapter(configurationProperties.pki.internal.key.hsmfacade!!)
+                    }
                     KeyType.MEMORY -> RandomKeyAdapter()
                 }
                 InMemoryPkiService(
@@ -96,6 +104,25 @@ class BackendConfiguration {
                     restTemplate
                 )
             }
+        }
+    }
+
+    private fun initHsmFacadeConnection() {
+        if (configurationProperties.hsmfacade.enabled) {
+            val config = configurationProperties.hsmfacade
+            if (HsmFacadeProvider.instance.isInitialized) return
+            val rootCert = CertificateFactory.getInstance("X.509")
+                .generateCertificate(resourceLoader.getResource(config.rootCertificate!!.toString()).inputStream)
+                    as X509Certificate
+            HsmFacadeProvider.instance.init(
+                rootCert,
+                config.username!!,
+                config.password!!,
+                config.hostname!!,
+                config.port!!,
+                config.timeout
+            )
+            Security.addProvider(HsmFacadeProvider.instance)
         }
     }
 
@@ -190,6 +217,12 @@ class BackendConfiguration {
         KeyType.KEYSTORE -> FileCryptoService(
             KeyStoreAdapter(configurationProperties.issuerKey.keystore!!),
         )
+        KeyType.HSMFACADE -> {
+            initHsmFacadeConnection()
+            FileCryptoService(
+                HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!),
+            )
+        }
         KeyType.MEMORY -> FileCryptoService(
             RandomKeyAdapter()
         )

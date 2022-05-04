@@ -1,0 +1,14 @@
+backend:
+  hsmfacade:
+    enabled: true
+    root-certificate: classpath:hsm-facade-tls-root.pem
+    hostname: eid.a-sit.at
+    port: 9050
+    username: provider-junit
+    password: supersecret123
+    timeout: 5
+  issuer-key:
+    type: HSMFACADE
+    hsmfacade:
+      key-store-name: ec-keystore
+      key-store-alias: ec-key-1

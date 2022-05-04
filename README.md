@@ -405,6 +405,26 @@ keystore:
   alias-password: changeit         # may be null
 ```
 
+```yaml
+type: HSMFACADE
+hsmfacade:
+  key-store-name: keystore-at-hsmfacade
+  key-store-alias: key1
+```
+
+Using keys from a remote HsmFacade service also requires setting the general connection information:
+```yaml
+backend:
+  hsmfacade:
+    enabled: true
+    root-certificate: file:/data/hsm-facade-root.pem
+    hostname: hsmf.example.com
+    port: 8686
+    username: user
+    password: password
+    timeout: 30
+```
+
 Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above (if nothing is configured, the system-default truststore will be used):
 
 ```yaml

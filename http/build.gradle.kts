@@ -54,6 +54,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-security:1.6.6")
     implementation("io.github.aakira:napier:2.4.0")
     implementation("com.google.iot.cbor:cbor:0.01.02")
+    implementation("at.asitplus.hsmfacade:provider:0.8.3")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -100,6 +101,27 @@ repositories {
         maven {
             name = "gitlab"
             url = uri("https://gitlab.iaik.tugraz.at/api/v4/groups/$gitLabGroupId/-/packages/maven")
+            if (gitLabPrivateToken != null) {
+                credentials(HttpHeaderCredentials::class) {
+                    name = "Private-Token"
+                    value = gitLabPrivateToken
+                }
+            } else if (System.getenv("CI_JOB_TOKEN") != null) {
+                credentials(HttpHeaderCredentials::class) {
+                    name = "Job-Token"
+                    value = System.getenv("CI_JOB_TOKEN")
+                }
+            }
+            authentication {
+                create<HttpHeaderAuthentication>("header")
+            }
+        }
+    }
+
+    if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
+        maven {
+            name = "gitlabhsm"
+            url = uri("https://gitlab.iaik.tugraz.at/api/v4/groups/119/-/packages/maven")
             if (gitLabPrivateToken != null) {
                 credentials(HttpHeaderCredentials::class) {
                     name = "Private-Token"

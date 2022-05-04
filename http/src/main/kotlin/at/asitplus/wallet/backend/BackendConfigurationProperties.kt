@@ -18,9 +18,12 @@ data class BackendConfigurationProperties(
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
     /**
      * Key used for signing issued credentials
-     * TODO Connection to HSM Facade and AERA
      */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
+    /**
+     * General connection information to HSM Facade
+     */
+    val hsmfacade: HsmFacadeConfiguration = HsmFacadeConfiguration(),
     /**
      * Configure debug endpoints
      */
@@ -61,6 +64,17 @@ data class CredentialConfigurationProperties(
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
+)
+
+@ConstructorBinding
+data class HsmFacadeConfiguration(
+    val enabled: Boolean = false,
+    val rootCertificate: URI? = null,
+    val hostname: String? = null,
+    val port: Int? = null,
+    val username: String? = null,
+    val password: String? = null,
+    val timeout: Long = 30,
 )
 
 @ConstructorBinding
@@ -190,6 +204,7 @@ data class KeyConfiguration(
     val type: KeyType = KeyType.MEMORY,
     val file: KeyFileConfiguration? = null,
     val keystore: KeyStoreConfiguration? = null,
+    val hsmfacade: KeyHsmFacadeConfiguration? = null,
 )
 
 @ConstructorBinding
@@ -206,6 +221,12 @@ data class KeyStoreConfiguration(
     val password: String? = null,
     val alias: String,
     val aliasPassword: String? = null,
+)
+
+@ConstructorBinding
+data class KeyHsmFacadeConfiguration(
+    val keyStoreName: String? = null,
+    val keyStoreAlias: String? = null,
 )
 
 @ConstructorBinding
@@ -226,6 +247,7 @@ enum class KeyType {
     FILE,
     MEMORY,
     KEYSTORE,
+    HSMFACADE,
 }
 
 enum class TrustType {

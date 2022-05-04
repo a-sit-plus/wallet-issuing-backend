@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.hsmfacade.provider.HsmFacadeProvider
+import at.asitplus.hsmfacade.provider.RemoteKeyStoreLoadParameter
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
@@ -76,6 +78,32 @@ class KeyStoreAdapter(
         keyStore.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
         privateKey = keyStore.getKey(config.alias, config.aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
         val publicKey = keyStore.getCertificate(config.alias).publicKey
+        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
+        val ecCurve = EcCurve.SECP_256_R_1
+        jwsAlgorithm = JwsAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
+        log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
+    }
+
+}
+
+class HsmFacadeAdapter(
+    config: KeyHsmFacadeConfiguration,
+) : KeyAdapter {
+
+    private val log = LoggerFactory.getLogger(this.javaClass)
+
+    override val privateKey: PrivateKey
+    override val jwsAlgorithm: JwsAlgorithm
+    override val provider: String = "HsmFacade"
+    override val jsonWebKey: JsonWebKey
+
+    init {
+        val providerInstance = HsmFacadeProvider.instance
+        val keyStore = KeyStore.getInstance("RemoteKeyStore", providerInstance)
+        keyStore.load(RemoteKeyStoreLoadParameter(config.keyStoreName!!))
+        privateKey = keyStore.getKey(config.keyStoreAlias!!, null) as PrivateKey
+        val publicKey = keyStore.getCertificate(config.keyStoreAlias).publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
