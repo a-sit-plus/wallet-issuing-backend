@@ -38,11 +38,16 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Implements [CryptoService] from vclib by using a [KeyAdapter]
+ * Extends [CryptoService] from vclib by methods needed for Java libraries
  */
-class FileCryptoService(
+interface CryptoServiceAdapter : CryptoService {
+    val jwsContentSigner: JWSSigner
+    val jcaContentSigner: ContentSigner
+}
+
+class DefaultCryptoServiceAdapter(
     keyAdapter: KeyAdapter,
-) : CryptoService {
+) : CryptoServiceAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -156,13 +161,15 @@ class FileCryptoService(
         }
     }
 
-    fun getJwsContentSigner(): JWSSigner = ECDSASigner(privateKey as ECPrivateKey).also {
-        it.jcaContext.provider = Security.getProvider(provider)
-    }
+    override val jwsContentSigner: JWSSigner
+        get() = ECDSASigner(privateKey as ECPrivateKey).also {
+            it.jcaContext.provider = Security.getProvider(provider)
+        }
 
-    fun getJcaContentSigner(algorithm: JwsAlgorithm): ContentSigner = JcaContentSignerBuilder(algorithm.jcaName)
-        .setProvider(provider)
-        .build(privateKey)
+    override val jcaContentSigner: ContentSigner
+        get() = JcaContentSignerBuilder(jwsAlgorithm.jcaName)
+            .setProvider(provider)
+            .build(privateKey)
 
     private val JwkType.jcaName
         get() = when (this) {

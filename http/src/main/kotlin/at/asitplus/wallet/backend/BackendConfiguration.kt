@@ -90,7 +90,7 @@ class BackendConfiguration {
                 InMemoryPkiService(
                     configurationProperties.pki.certValidityDays,
                     configurationProperties.pki.internal.issuerName,
-                    FileCryptoService(keyAdapter),
+                    DefaultCryptoServiceAdapter(keyAdapter),
                 )
             }
             PkiType.AERA -> {
@@ -127,7 +127,7 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun attestationService(issuerCryptoService: FileCryptoService): AttestationService =
+    fun attestationService(issuerCryptoService: CryptoServiceAdapter): AttestationService =
         DefaultAttestationService(issuerCryptoService)
 
     @Bean
@@ -210,23 +210,17 @@ class BackendConfiguration {
 
 
     @Bean
-    fun issuerCryptoService() = when (configurationProperties.issuerKey.type) {
-        KeyType.FILE -> FileCryptoService(
-            KeyFileAdapter(configurationProperties.issuerKey.file!!, resourceLoader),
-        )
-        KeyType.KEYSTORE -> FileCryptoService(
-            KeyStoreAdapter(configurationProperties.issuerKey.keystore!!),
-        )
-        KeyType.HSMFACADE -> {
-            initHsmFacadeConnection()
-            FileCryptoService(
-                HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!),
-            )
+    fun issuerCryptoService() = DefaultCryptoServiceAdapter(
+        when (configurationProperties.issuerKey.type) {
+            KeyType.FILE -> KeyFileAdapter(configurationProperties.issuerKey.file!!, resourceLoader)
+            KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.issuerKey.keystore!!)
+            KeyType.HSMFACADE -> {
+                initHsmFacadeConnection()
+                HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!)
+            }
+            KeyType.MEMORY -> RandomKeyAdapter()
         }
-        KeyType.MEMORY -> FileCryptoService(
-            RandomKeyAdapter()
-        )
-    }
+    )
 
     @Bean
     fun issuerAgent(

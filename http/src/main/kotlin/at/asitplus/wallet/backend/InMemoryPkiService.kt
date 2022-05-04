@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
-import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -18,7 +17,7 @@ import kotlin.random.Random
 class InMemoryPkiService(
     private val certValidityDays: Int = 1,
     private val issuerName: String = "CN=Issuer",
-    private val cryptoService: FileCryptoService = FileCryptoService(RandomKeyAdapter()),
+    private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -44,14 +43,14 @@ class InMemoryPkiService(
             Date.from(Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L)),
             issuer,
             subjectPublicKeyInfo
-        ).build(cryptoService.getJcaContentSigner(JwsAlgorithm.ES256)).encoded
+        ).build(cryptoService.jcaContentSigner).encoded
 
     override fun getCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())
         crlEntryList.forEach {
             crlBuilder.addCRLEntry(it.serialNumber, it.date, CRLReason.unspecified)
         }
-        return crlBuilder.build(cryptoService.getJcaContentSigner(JwsAlgorithm.ES256)).encoded
+        return crlBuilder.build(cryptoService.jcaContentSigner).encoded
     }
 
     override fun revokeCertificate(certificate: ByteArray) {

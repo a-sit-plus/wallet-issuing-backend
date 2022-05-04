@@ -21,7 +21,7 @@ import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 
 /**
- * Interface to use different sources of cryptographic keys in the [FileCryptoService].
+ * Interface to use different sources of cryptographic keys in the [CryptoServiceAdapter].
  */
 interface KeyAdapter {
     val privateKey: PrivateKey
