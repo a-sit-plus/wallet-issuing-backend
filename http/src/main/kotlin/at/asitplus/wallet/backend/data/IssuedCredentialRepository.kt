@@ -11,7 +11,8 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
     fun findAllByRevokedFalse(): Collection<IssuedCredential>
 
-    fun findAllByRevokedTrueOrderByRevocationListIndex(): Collection<IssuedCredential>
+    @Query("select i.revocationListIndex from IssuedCredential i where i.revoked = true order by i.revocationListIndex")
+    fun getRevocationListIndexByRevokedTrueOrdered(): Collection<Long>
 
     fun findByRevokedFalseAndDeviceBinding_Bpk(bpk: String): Collection<IssuedCredential>
 

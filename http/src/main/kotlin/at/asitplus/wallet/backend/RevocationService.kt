@@ -100,8 +100,7 @@ class DefaultRevocationService(
     }
 
     override fun getRevokedStatusListIndexList(): Collection<Int> {
-        return credentialRepo.findAllByRevokedTrueOrderByRevocationListIndex()
-            .map { it.revocationListIndex.toInt() }
+        return credentialRepo.getRevocationListIndexByRevokedTrueOrdered().map { it.toInt() }
     }
 
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
