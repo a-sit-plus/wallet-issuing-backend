@@ -53,6 +53,8 @@ class PupilIdControllerLogicTest {
 
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
+    private lateinit var deviceName: String
+    private lateinit var deviceId: String
 
     private val subjectCredentialStore = mock<SubjectCredentialStore>()
     private val client = Client()
@@ -73,7 +75,9 @@ class PupilIdControllerLogicTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
-        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        deviceName = UUID.randomUUID().toString()
+        deviceId = UUID.randomUUID().toString()
+        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
         if (deviceBindingRepository.findByCertificate(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
@@ -101,7 +105,7 @@ class PupilIdControllerLogicTest {
     @Test
     fun issue_wrongSubject_error() = runTest {
         certificate = Client().selfSignedCert.encoded
-        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
         if (deviceBindingRepository.findByCertificate(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
