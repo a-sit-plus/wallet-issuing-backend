@@ -66,7 +66,7 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict", "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi", "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
+        freeCompilerArgs = listOf("-Xjsr305=strict", "-opt-in=kotlinx.serialization.ExperimentalSerializationApi", "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
         jvmTarget = "11"
     }
 }
