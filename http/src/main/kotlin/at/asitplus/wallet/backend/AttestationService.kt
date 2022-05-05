@@ -2,42 +2,64 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
+import at.asitplus.wallet.lib.jws.EcCurve
+import at.asitplus.wallet.lib.jws.JsonWebKey
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborMap
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.security.interfaces.ECPublicKey
 import java.util.Date
 
 interface AttestationService {
 
     /**
      * Verifies the Android Key Attestation or Apple App Attestation
-     * structures of the client, creating a signed public key
+     * structures of the client (in [attestationCerts]),
+     * creating a signed public key (with data from [bindingCertificate])
      * if the device can be verified.
      */
-    fun verifyAttestation(attestationCerts: List<ByteArray>): String?
+    fun verifyAttestation(attestationCerts: List<ByteArray>, bindingCertificate: ByteArray): String?
 
+}
+
+@Serializable
+data class AttestedPublicKey(
+    @SerialName("jwk")
+    val jsonWebKey: JsonWebKey,
+    @SerialName("sn")
+    val serialNumber: Long,
+) {
+    fun serialize() = Json.encodeToString(this)
 }
 
 class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun verifyAttestation(attestationCerts: List<ByteArray>): String? {
+    override fun verifyAttestation(attestationCerts: List<ByteArray>, bindingCertificate: ByteArray): String? {
         try {
-            val publicKey = extractVerifiedPublicKey(attestationCerts)
-                ?: return null.also {
+            val certificate = CertificateFactory.getInstance("X.509")
+                .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
+            if (!verifyAttestationClient(attestationCerts, certificate))
+                return null.also {
                     log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
                 }
-
+            val serialNumber = certificate.serialNumber.longValueExact()
+            val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
+            val attestedPublicKey = AttestedPublicKey(publicKey, serialNumber)
             return JWSObject(
                 JWSHeader(cryptoService.jwsAlgorithm.joseType),
-                Payload(mapOf("pk" to publicKey.encodeBase64()))
+                Payload(attestedPublicKey.serialize().encodeToByteArray())
             ).also {
                 it.sign(cryptoService.jwsContentSigner)
             }.serialize()
@@ -47,23 +69,30 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         }
     }
 
-    internal fun extractVerifiedPublicKey(attestationCerts: List<ByteArray>, validityDate: Date = Date()) =
-        if (attestationCerts.size > 1)
-            extractVerifiedPublicKeyAndroid(attestationCerts, validityDate)
-        else
-            extractVerifiedPublicKeyIos(attestationCerts, validityDate)
-
-    private fun extractVerifiedPublicKeyAndroid(
+    internal fun verifyAttestationClient(
         attestationCerts: List<ByteArray>,
+        bindingCertificate: X509Certificate,
         validityDate: Date = Date()
-    ): ByteArray? {
+    ): Boolean = if (attestationCerts.size > 1)
+        verifyAttestationAndroid(attestationCerts, bindingCertificate, validityDate)
+    else
+        verifyAttestationApple(attestationCerts, validityDate)
+
+    private fun verifyAttestationAndroid(
+        attestationCerts: List<ByteArray>,
+        bindingCertificate: X509Certificate,
+        validityDate: Date = Date()
+    ) = kotlin.runCatching {
         val certificates = attestationCerts.mapNotNull { it.parseToCertificate() }
         // TODO Implement revocation check (custom REST JSON from Google)
-        if (!verifyCertificateChain(certificates, validityDate)) return null
+        if (!verifyCertificateChain(certificates, validityDate)) return false
         val rootCertPublicKey = certificates.last().publicKey
-        if (!googleRootPublicKey.contentEquals(rootCertPublicKey?.encoded)) return null
-        return certificates.first().publicKey.encoded
-    }
+        if (!googleRootPublicKey.contentEquals(rootCertPublicKey?.encoded)) return false
+        val bindingPublicKey = bindingCertificate.publicKey.encoded
+        val attestationPublicKey = certificates.first().publicKey.encoded
+        if (!bindingPublicKey.contentEquals(attestationPublicKey)) return false
+        return true
+    }.getOrElse { false }
 
     private fun verifyCertificateChain(certificates: List<X509Certificate>, validityDate: Date = Date()): Boolean {
         certificates.chunked(2).forEach {
@@ -79,27 +108,23 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         return true
     }
 
-    private fun extractVerifiedPublicKeyIos(
+    private fun verifyAttestationApple(
         attestationCerts: List<ByteArray>,
         validityDate: Date = Date()
-    ): ByteArray? {
-        try {
-            val cborMap = CborMap.createFromCborByteArray(attestationCerts.first())
-            val format = cborMap["fmt"].toJavaObject(String::class.java)
-            if (format != "apple-appattest") return null
-            val attestationStatement = cborMap["attStmt"] as CborMap
-            val certArray = attestationStatement["x5c"] as CborArray
-            val certificates = certArray
-                .filterIsInstance<CborByteString>()
-                .map { it.byteArrayValue() }
-                .mapNotNull { it.parseToCertificate() }
-            // TODO revocation check? there is no CRL endpoint in the certificates ...
-            if (!verifyCertificateChain(certificates + appleRootCertificate, validityDate)) return null
-            return certificates.first().publicKey.encoded
-        } catch (e: Throwable) {
-            return null
-        }
-    }
+    ) = kotlin.runCatching {
+        val cborMap = CborMap.createFromCborByteArray(attestationCerts.first())
+        val format = cborMap["fmt"].toJavaObject(String::class.java)
+        if (format != "apple-appattest") return false
+        val attestationStatement = cborMap["attStmt"] as CborMap
+        val certArray = attestationStatement["x5c"] as CborArray
+        val certificates = certArray
+            .filterIsInstance<CborByteString>()
+            .map { it.byteArrayValue() }
+            .mapNotNull { it.parseToCertificate() }
+        // TODO revocation check? there is no CRL endpoint in the certificates ...
+        if (!verifyCertificateChain(certificates + appleRootCertificate, validityDate)) return false
+        return true
+    }.getOrElse { false }
 
     private fun ByteArray.parseToCertificate() = kotlin.runCatching {
         CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate

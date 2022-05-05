@@ -143,11 +143,34 @@ HTTP/1.1 200
                   F7zzQbM/4pF1DfK+6jAKBggqhkjOPQQDAgNJADBGAiEAs9sOHPs3vuHP5zbaT
                   UTxC2j4a/afLfW1GlMJdHGwsToCIQCiAbOdx7Bth+T7MjQhv9hsYo0zDzuMBv
                   xYKF+pbNtJdg==",
-  "attestedPublicKey": "eyJhbGciOiJFUzI1NiJ9.eyJwayI6IkJFWHlSS3JVdWh6RHluV1N3YT
-                        JEcytUanNzaEVQRDBOZEFGUDBHVVlha2krQUZoTUxxT0hYUnN3MUgre
-                        FFNM2JmYXRoTlhJY3hicWg3N1dPaVJUMHFZTT0ifQ.OBdGISyFNba1Y
-                        pPEMj8Su-wWgSKDEBuFNAUHAggugQ1bbT01cjuLxphmiGnHYuXXi86w
-                        Sg_JkCOcgV-acUrysQ"
+  "attestedPublicKey": "eyJhbGciOiJFUzI1NiJ9.eyJqd2siOnsia3R5IjoiRUMiLCJjcnYiOi
+                        JQLTI1NiIsImtpZCI6ImRpZDprZXk6bUVwQjVWWDkzLy9wZGZBV0Zzc
+                        FlsbDlCQ21ybUlDZVJnaUJxbjhRdk1TYUIvaUEvQmY2anJNQkFBV1lE
+                        T0UyUk5BT0s4MUJkaHZtUWYrL1RPaFZ5VXNUQXUiLCJ4IjoiZVZWX2R
+                        fXzZYWHdGaGJLV0paZlFRcHE1aUFua1lJZ2FwX0VMekVtZ2Y0ZyIsIn
+                        kiOiJEOEZfcU9zd0VBQlpnTTRUWkUwQTRyelVGMkctWkJfNzlNNkZYS
+                        lN4TUM0In0sInNuIjoyMzEzMzIyNzQwODkyNzE3MzY0fQ.C3pPFUTsZ
+                        xZnnq-_KYv45pq--zrBFKrgfKuk82nF5NE1HuJUdFyS18a1Nqfibfr7
+                        HeAh9DpBV2o7rWTUv8HMjA"
+}
+```
+
+The `attestedPublicKey` structure contains the public key of the device binding certificate, along with the serial number of the device binding certificate:
+
+```
+{
+  "alg": "ES256"
+}
+.
+{
+  "jwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "kid": "did:key:mEpB5VX93//pdfAWFspYll9BCmrmICeRgiBqn8QvMSaB/iA/Bf6jrMBAAWYDOE2RNAOK81BdhvmQf+/TOhVyUsTAu",
+    "x": "eVV_d__6XXwFhbKWJZfQQpq5iAnkYIgap_ELzEmgf4g",
+    "y": "D8F_qOswEABZgM4TZE0A4rzUF2G-ZB_79M6FXJSxMC4"
+  },
+  "sn": 2313322740892717600
 }
 ```
 

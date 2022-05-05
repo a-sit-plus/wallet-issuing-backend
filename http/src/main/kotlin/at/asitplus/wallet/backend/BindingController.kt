@@ -124,7 +124,7 @@ class BindingController(
                     .also { log.info("/binding/create returns CSR invalid: {}", it) }
             deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
             session.setAttribute("certificate", certificate.encodeBase64())
-            val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts)
+            val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts, certificate)
             return ResponseEntity.ok(BindingCsrResponseJ(certificate, signedPublicKey))
                 .also { log.info("/binding/create returns ok: {}", it) }
         } catch (e: Throwable) {
