@@ -18,13 +18,14 @@ class IssuedCredential() {
         validUntil: Instant,
         deviceBinding: DeviceBinding,
         attributeName: String,
-        revocationListIndex: Long = 0L,
+        revocationListIndex: Long,
     ) : this() {
         this.vcId = vcId
         this.subjectId = subjectId
-        this.validUntil = validUntil
-        this.deviceBinding = deviceBinding
         this.attributeName = attributeName
+        this.validUntil = validUntil
+        this.revoked = false
+        this.deviceBinding = deviceBinding
         this.revocationListIndex = revocationListIndex
     }
 

@@ -52,7 +52,7 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `issued credential should not be revoked`() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        createIssuedCredential().also {
             credentialRepo.save(it)
         }
 
@@ -61,7 +61,7 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `issued credential marked as revoked should be revoked`() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        createIssuedCredential().also {
             it.revoked = true
             credentialRepo.save(it)
         }
@@ -71,7 +71,7 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revoke credentials by BPK`() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        createIssuedCredential().also {
             credentialRepo.save(it)
         }
 
@@ -85,7 +85,7 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revoke credentials by deviceId`() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        createIssuedCredential().also {
             credentialRepo.save(it)
         }
 
@@ -99,7 +99,7 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revoke existing credentials by wrong deviceId`() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        createIssuedCredential().also {
             credentialRepo.save(it)
         }
 
@@ -108,11 +108,14 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revoke existing credentials by wrong bpk`() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        createIssuedCredential().also {
             credentialRepo.save(it)
         }
 
         revocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId) shouldBe 0
     }
+
+    private fun createIssuedCredential(): IssuedCredential =
+        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 1L)
 
 }

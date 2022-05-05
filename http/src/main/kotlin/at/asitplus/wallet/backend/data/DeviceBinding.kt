@@ -15,6 +15,7 @@ class DeviceBinding() {
     constructor(bpk: String, certificate: ByteArray, deviceName: String, deviceId: String) : this() {
         this.bpk = bpk
         this.certificate = certificate
+        this.revoked = false
         this.deviceName = deviceName
         this.deviceId = deviceId
     }

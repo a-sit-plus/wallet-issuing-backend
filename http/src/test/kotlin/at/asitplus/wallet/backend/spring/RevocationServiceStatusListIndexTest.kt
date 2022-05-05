@@ -94,7 +94,7 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     fun cantIssueCredentialWithSameVcIdTwice() {
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName).also {
+        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 3).also {
             credentialRepo.save(it)
         }
 
