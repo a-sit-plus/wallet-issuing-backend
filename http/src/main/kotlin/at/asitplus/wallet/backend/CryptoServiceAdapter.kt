@@ -63,7 +63,7 @@ class DefaultCryptoServiceAdapter(
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
 
     init {
-        log.info("Loaded public key with keyId $keyId")
+        log.info("Loaded public key with keyId {}", keyId)
     }
 
     override fun toJsonWebKey() = jsonWebKey

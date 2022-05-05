@@ -59,7 +59,7 @@ class KeyFileAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
+        log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
     }
 
     private fun loadResource(resourceLoader: ResourceLoader, path: String) =
@@ -91,7 +91,7 @@ class KeyStoreAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
+        log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
     }
 
 }
@@ -118,7 +118,7 @@ class HsmFacadeAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded public key: ${publicKey.encoded.encodeBase64()}")
+        log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
     }
 
 }
@@ -141,7 +141,7 @@ class RandomKeyAdapter : KeyAdapter {
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve)!!
-        log.info("Generated new key pair with public key: ${keyPair.public.encoded.encodeBase64()}")
+        log.info("Generated new key pair with public key: '{}'", keyPair.public.encoded.encodeBase64())
     }
 
 }

@@ -32,7 +32,7 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         try {
             val publicKey = extractVerifiedPublicKey(attestationCerts)
                 ?: return null.also {
-                    log.error("Could not verify attestation chain: ${attestationCerts.map { it.encodeBase64() }}")
+                    log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
                 }
 
             return JWSObject(

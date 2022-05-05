@@ -56,7 +56,7 @@ class EcoCredentialDataProvider(
                 log.info("getCredential for '{}' returns {}", bpk, it)
             }
         } catch (e: Throwable) {
-            log.error("getCredential for '{}' got error", bpk, e)
+            log.error("getCredential for '$bpk' got error", e)
             return null
         }
     }

@@ -42,7 +42,7 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
             else -> null.also {
-                log.warn("Requested attribute '$attributeName' could not be issued")
+                log.warn("Requested attribute '{}' could not be issued", attributeName)
             }
         }
     }

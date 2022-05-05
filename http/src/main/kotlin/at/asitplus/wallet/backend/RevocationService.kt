@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.encodeBase64
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 
@@ -49,16 +50,19 @@ class DefaultRevocationService(
     ): Int? {
         if (credentialRepo.findByVcId(vcId) != null)
             return null.also {
-                log.error("Tried to store a new credential for existing vcId '$vcId'")
+                log.error("Tried to store a new credential for existing vcId '{}'", vcId)
             }
         val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
             ?: return null.also {
-                log.error("Got no authenticated user when trying to store vcId '$vcId'")
+                log.error("Got no authenticated user when trying to store vcId '{}'", vcId)
             }
         if (oneCredentialPerDeviceBinding) {
             val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
             if (revokedCreds > 0)
-                log.info("Revoked $revokedCreds already existing credentials for bpk '${deviceBinding.bpk}'")
+                log.info(
+                    "Revoked {} already existing credentials for device binding certificate '{}' for bpk '{}'",
+                    revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
+                )
         }
         val exp = java.time.Instant.ofEpochMilli(expirationDate.toEpochMilliseconds())
         val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1

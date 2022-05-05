@@ -42,7 +42,7 @@ class DatabaseDeviceBindingStorageService(
             }
         return deviceBindingRepository.findByCertificate(principal.certificate)
             ?: return null.also {
-                log.error("Found no authenticated user for certificate '${principal.certificate.encodeBase64()}'")
+                log.error("Found no authenticated user for certificate '{}", principal.certificate.encodeBase64())
             }
     }
 

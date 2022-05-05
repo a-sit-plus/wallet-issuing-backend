@@ -94,7 +94,7 @@ class DebugController(
     @GetMapping("/debug/credential/revoke")
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        log.info("/debug/credential/revoke called with vcId=$vcId")
+        log.info("/debug/credential/revoke called with vcId='{}'", vcId)
         revocationService.revokeCredentialsByVcId(vcId)
         return ModelAndView("redirect:/debug/credential/list")
     }
