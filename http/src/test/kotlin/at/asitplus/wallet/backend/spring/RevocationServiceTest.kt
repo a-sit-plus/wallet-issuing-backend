@@ -57,7 +57,7 @@ class RevocationServiceTest {
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
         var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
-        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())

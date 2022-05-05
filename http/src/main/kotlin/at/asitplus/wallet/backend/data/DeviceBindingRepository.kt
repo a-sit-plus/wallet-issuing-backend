@@ -6,10 +6,10 @@ import org.springframework.stereotype.Repository
 @Repository
 interface DeviceBindingRepository : JpaRepository<DeviceBinding, Long> {
 
-    fun findByCertificate(certificate: ByteArray): DeviceBinding?
+    fun findByCertificateAndRevokedIsFalse(certificate: ByteArray): DeviceBinding?
 
-    fun findAllByBpk(bpk: String): Collection<DeviceBinding>
+    fun findAllByBpkAndRevokedIsFalse(bpk: String): Collection<DeviceBinding>
 
-    fun findAllByBpkAndDeviceId(bpk: String, deviceId: String): Collection<DeviceBinding>
+    fun findAllByBpkAndDeviceIdAndRevokedIsFalse(bpk: String, deviceId: String): Collection<DeviceBinding>
 
 }

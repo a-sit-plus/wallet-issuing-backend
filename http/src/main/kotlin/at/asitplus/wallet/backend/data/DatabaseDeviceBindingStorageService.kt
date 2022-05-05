@@ -26,11 +26,11 @@ class DatabaseDeviceBindingStorageService(
     }
 
     override fun lookupBpk(decodedCert: ByteArray): String? {
-        return deviceBindingRepository.findByCertificate(decodedCert)?.bpk
+        return deviceBindingRepository.findByCertificateAndRevokedIsFalse(decodedCert)?.bpk
     }
 
     override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
-        return deviceBindingRepository.findAllByBpk(bpk)
+        return deviceBindingRepository.findAllByBpkAndRevokedIsFalse(bpk)
             .map { DeviceListEntry(it.deviceName, it.deviceId) }
     }
 
@@ -40,7 +40,7 @@ class DatabaseDeviceBindingStorageService(
             return null.also {
                 log.error("Got no authenticated user when trying to store vc")
             }
-        return deviceBindingRepository.findByCertificate(principal.certificate)
+        return deviceBindingRepository.findByCertificateAndRevokedIsFalse(principal.certificate)
             ?: return null.also {
                 log.error("Found no authenticated user for certificate '{}", principal.certificate.encodeBase64())
             }
@@ -48,9 +48,9 @@ class DatabaseDeviceBindingStorageService(
 
     override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
         val list = if (deviceId != null)
-            deviceBindingRepository.findAllByBpkAndDeviceId(bpk, deviceId)
+            deviceBindingRepository.findAllByBpkAndDeviceIdAndRevokedIsFalse(bpk, deviceId)
         else
-            deviceBindingRepository.findAllByBpk(bpk)
+            deviceBindingRepository.findAllByBpkAndRevokedIsFalse(bpk)
         val toRevoke = list.filter { !it.revoked }
         toRevoke.forEach { it.revoked = true }
         return deviceBindingRepository.saveAll(toRevoke)

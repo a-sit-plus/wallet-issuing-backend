@@ -78,7 +78,7 @@ class PupilIdControllerLogicTest {
         deviceName = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
         var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
-        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
@@ -106,7 +106,7 @@ class PupilIdControllerLogicTest {
     fun issue_wrongSubject_error() = runTest {
         certificate = Client().selfSignedCert.encoded
         var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
-        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())

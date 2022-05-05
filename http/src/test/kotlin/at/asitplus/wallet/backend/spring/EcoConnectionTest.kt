@@ -48,7 +48,7 @@ class EcoConnectionTest {
         bpk = "/GtkB4FteZ2IaRf1O8BA9nwNQng=" // or "0bvbtZTc2lzjWwwLD9eYm6DtBts="
         certificate = client.selfSignedCert.encoded
         var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
-        if (deviceBindingRepository.findByCertificate(certificate) == null) {
+        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
