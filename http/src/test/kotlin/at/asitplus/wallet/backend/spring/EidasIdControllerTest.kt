@@ -31,7 +31,7 @@ class EidasIdControllerTest {
     @Test
     fun demo_unauthenticated() {
         mockMvc.get("/eidasid/initialize")
-            .andExpect { status { isUnauthorized() } }
+            .andExpect { status { is3xxRedirection() } }
             .andReturn()
     }
 

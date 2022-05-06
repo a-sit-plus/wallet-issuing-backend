@@ -25,6 +25,7 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.session.MapSessionRepository
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession
@@ -63,7 +64,11 @@ class WebSecurityConfigEidasId(
             .exceptionHandling()
             .defaultAuthenticationEntryPointFor(
                 DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService),
-                AntPathRequestMatcher("/eidasid/**")
+                AntPathRequestMatcher("/eidasid/issue")
+            )
+            .defaultAuthenticationEntryPointFor(
+                LoginUrlAuthenticationEntryPoint("/login"),
+                AntPathRequestMatcher("/eidasid/initialize")
             )
             .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
             .and().logout().invalidateHttpSession(true).clearAuthentication(true)
