@@ -37,16 +37,17 @@ class EcoCredentialDataProvider(
         val credential = PupilIdCredential(
             id = subjectId,
             schoolName = body.schoolName ?: "",
-            schoolAddress = "${body.schoolZip} ${body.schoolCity}, ${body.schoolStreet}",
+            schoolCity = body.schoolCity ?: "",
+            schoolPostCode = body.schoolZip ?: "",
+            schoolStreet = body.schoolStreet ?: "",
             schoolNumber = body.schoolId ?: "",
             pupilNumber = body.studentId ?: "",
             firstName = body.firstname ?: "",
             lastName = body.lastname ?: "",
             dateOfBirth = body.dateOfBirth ?: "",
-            validUntil = "2023-09-01",
+            validUntil = body.validUntil ?: "",
             postCity = body.studentCity ?: "",
             postCode = body.studentZip ?: "",
-            // TODO studentStreet
             picture = body.photo?.decodeBase64ToArray() ?: byteArrayOf(),
         )
         credential.also {
@@ -68,8 +69,8 @@ class EcoCredentialDataProvider(
         val schoolId: String?,
         val studentCity: String?,
         val studentZip: String?,
-        val studentStreet: String?,
         val studentId: String?,
+        val validUntil: String?,
         val photo: String?,
     )
 

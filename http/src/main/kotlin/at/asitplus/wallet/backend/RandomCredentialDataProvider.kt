@@ -54,7 +54,7 @@ class RandomCredentialDataProvider constructor(
             "Pichler", "Moser", "Steiner", "Maier"
         ).random()
 
-        val schoolAddress = "Musterstraße 10, 1010 Wien"
+        val schoolAddress = "Musterstraße 10"
         val city = listOf("Wien", "Mödling", "Linz", "Salzburg", "Innsbruck", "Klagenfurt", "Graz").random()
         val zip = listOf("1010", "2050", "4050", "5060", "6070", "7080", "8090").random()
         var encodedPhoto: ByteArray = listOfPhotos
@@ -85,25 +85,23 @@ class RandomCredentialDataProvider constructor(
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
 
         return when (attributeType) {
-            ConstantIndex.PupilId.vcType -> {
-                PupilIdCredential(
-                    id = subjectId,
-                    schoolName = it.schoolName,
-                    schoolAddress = it.schoolAddress,
-                    schoolNumber = it.schoolNumber,
-                    pupilNumber = it.pupilNumber,
-                    firstName = it.firstName,
-                    lastName = it.lastName,
-                    dateOfBirth = it.dateOfBirth,
-                    validUntil = "2023-09-01",
-                    postCity = it.city,
-                    postCode = it.zip,
-                    picture = it.encodedPhoto
-                )
-            }
-            else -> {
-                null
-            }
+            ConstantIndex.PupilId.vcType -> PupilIdCredential(
+                id = subjectId,
+                schoolName = it.schoolName,
+                schoolCity = it.city,
+                schoolPostCode = it.zip,
+                schoolStreet = it.schoolAddress,
+                schoolNumber = it.schoolNumber,
+                pupilNumber = it.pupilNumber,
+                firstName = it.firstName,
+                lastName = it.lastName,
+                dateOfBirth = it.dateOfBirth,
+                validUntil = "2023-09-01",
+                postCity = it.city,
+                postCode = it.zip,
+                picture = it.encodedPhoto
+            )
+            else -> null
         }
     }
 
