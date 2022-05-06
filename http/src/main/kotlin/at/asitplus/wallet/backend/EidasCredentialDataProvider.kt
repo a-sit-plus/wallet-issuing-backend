@@ -19,12 +19,12 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
     private val list = mutableListOf<EidasClaimHolder>()
 
     fun storeClaims(eidasClaim: EidasClaim, bpk: String) {
+        list.removeAll { it.expiration.isBefore(Instant.now()) }
         list += EidasClaimHolder(
             expiration = Instant.now().plusSeconds(timeoutSeconds),
             bpk = bpk,
             claim = eidasClaim,
         )
-        list.removeAll { it.expiration.isAfter(Instant.now()) }
     }
 
     override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
