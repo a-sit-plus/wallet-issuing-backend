@@ -30,6 +30,7 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.net.URLEncoder
 import java.nio.charset.Charset
+import java.time.Instant
 import java.util.Collections
 import javax.imageio.ImageIO
 import javax.servlet.http.HttpServletRequest
@@ -159,6 +160,7 @@ class EidasIdController(
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
+        model["creation"] = Instant.now().toString()
         return ModelAndView("initialize", model)
     }
 

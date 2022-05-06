@@ -20,6 +20,7 @@ import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.time.Instant
 import java.util.Collections
 import java.util.UUID
 import javax.imageio.ImageIO
@@ -55,6 +56,7 @@ class DebugController(
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
+        model["creation"] = Instant.now().toString()
         return ModelAndView("initialize", model)
     }
 
