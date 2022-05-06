@@ -45,7 +45,7 @@ class EcoConnectionTest {
     fun beforeEach() {
         client = Client()
         // use bpk printed from extNonceService()
-        bpk = "/GtkB4FteZ2IaRf1O8BA9nwNQng=" // or "0bvbtZTc2lzjWwwLD9eYm6DtBts="
+        bpk = "dKyd87h31E+oHYLVqpZF+g=="
         certificate = client.selfSignedCert.encoded
         var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
         if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
@@ -58,7 +58,7 @@ class EcoConnectionTest {
     @Test
     fun extNonceService() {
         // Get valid nonce manually from https://educard.quarto.at/educard.user/
-        val nonce = "72007150-1dba-466d-9cfa-fe6ee6cc7bd4"
+        val nonce = "eaf95184-5f60-4809-8212-3a8c4b9d7db6"
 
         val bpk = extNonceAuthnService.exchangeNonceForBpk(nonce)
         bpk shouldHaveMinLength 8

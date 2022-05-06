@@ -25,40 +25,36 @@ class EcoCredentialDataProvider(
         return null // not supported for ECO
     }
 
-    override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
+    override fun getCredential(subjectId: String, attributeType: String, bpk: String) = kotlin.runCatching {
         if (attributeType != ConstantIndex.PupilId.vcType)
             return null
-        try {
-            val entity = restTemplate.getForEntity<EcoStudentData>(
-                "$url/Student/{bpk}",
-                uriVariables = mapOf("bpk" to bpk)
-            )
-            log.debug("getCredential for '{}' got {}", bpk, entity)
-            val body = entity.body
-            if (!entity.statusCode.is2xxSuccessful || body == null)
-                return null
-                    .also { log.info("getCredential for '{}' returns null", bpk) }
-            return PupilIdCredential(
-                id = subjectId,
-                schoolName = body.schoolName ?: "",
-                schoolAddress = "${body.schoolZip} ${body.schoolCity}, ${body.schoolStreet}",
-                schoolNumber = body.schoolId ?: "",
-                pupilNumber = body.studentId ?: "",
-                firstName = body.firstname ?: "",
-                lastName = body.lastname ?: "",
-                dateOfBirth = body.dateOfBirth ?: "",
-                validUntil = "2023-09-01",
-                postCity = body.studentCity ?: "",
-                postCode = body.studentZip ?: "",
-                // TODO studentStreet
-                picture = body.photo?.decodeBase64ToArray() ?: byteArrayOf(),
-            ).also {
-                log.info("getCredential for '{}' returns {}", bpk, it)
-            }
-        } catch (e: Throwable) {
-            log.error("getCredential for '$bpk' got error", e)
-            return null
+        val entity = restTemplate.getForEntity<EcoStudentData>(
+            "$url/Student/{bpk}",
+            uriVariables = mapOf("bpk" to bpk)
+        ).also { log.debug("getCredential for '{}' got {}", bpk, it) }
+        val body = entity.body
+            ?: return null.also { log.info("getCredential for '{}' returns null: {}", bpk, entity) }
+        val credential = PupilIdCredential(
+            id = subjectId,
+            schoolName = body.schoolName ?: "",
+            schoolAddress = "${body.schoolZip} ${body.schoolCity}, ${body.schoolStreet}",
+            schoolNumber = body.schoolId ?: "",
+            pupilNumber = body.studentId ?: "",
+            firstName = body.firstname ?: "",
+            lastName = body.lastname ?: "",
+            dateOfBirth = body.dateOfBirth ?: "",
+            validUntil = "2023-09-01",
+            postCity = body.studentCity ?: "",
+            postCode = body.studentZip ?: "",
+            // TODO studentStreet
+            picture = body.photo?.decodeBase64ToArray() ?: byteArrayOf(),
+        )
+        credential.also {
+            log.info("getCredential for '{}' returns {}", bpk, it)
         }
+    }.getOrElse {
+        log.error("getCredential for '$bpk' got error", it)
+        null
     }
 
     data class EcoStudentData(

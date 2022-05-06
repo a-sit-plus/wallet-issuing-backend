@@ -25,39 +25,25 @@ class EcoExtNonceAuthnService(
         return null
     }
 
-    override fun exchangeNonceForBpk(nonce: String): String? {
-        val entity = try {
-            restTemplate.getForEntity<CardCreationCodeResolveResult>(
-                "$url/CardCreationCode/{cardCode}",
-                uriVariables = mapOf("cardCode" to nonce)
-            )
-        } catch (e: Throwable) {
-            return null
-                .also { log.warn("Error on exchangeNonceForBpk('$nonce')", e) }
-        }
-        log.debug("exchangeNonceForBpk('{}') got {}", nonce, entity)
-        if (!entity.statusCode.is2xxSuccessful || entity.body == null)
-            return null
-        val body: CardCreationCodeResolveResult = entity.body ?: return null
-        return body.bpk
+    override fun exchangeNonceForBpk(nonce: String): String? = kotlin.runCatching {
+        val entity = restTemplate.getForEntity<CardCreationCodeResolveResult>(
+            "$url/CardCreationCode/{cardCode}",
+            uriVariables = mapOf("cardCode" to nonce)
+        ).also { log.debug("exchangeNonceForBpk('{}') got {}", nonce, it) }
+        entity.body?.bpk
+    }.getOrElse {
+        log.error("exchangeNonceForBpk('{}') got error", nonce, it)
+        null
     }
 
-    override fun invalidateNonce(nonce: String): Boolean {
-        val entity = try {
-            restTemplate.exchange<Any>(
-                "$url/CardCreationCode/{cardCode}",
-                HttpMethod.DELETE,
-                uriVariables = mapOf("cardCode" to nonce)
-            )
-        } catch (e: Throwable) {
-            return false
-                .also { log.warn("Error on invalidateNonce('$nonce')", e) }
-        }
-        log.debug("invalidateNonce('{}') got {}", nonce, entity)
-        if (!entity.statusCode.is2xxSuccessful)
-            return false
-        return true
-    }
+    override fun invalidateNonce(nonce: String): Boolean = kotlin.runCatching {
+        val entity = restTemplate.exchange<Any>(
+            "$url/CardCreationCode/{cardCode}",
+            HttpMethod.DELETE,
+            uriVariables = mapOf("cardCode" to nonce)
+        ).also { log.debug("invalidateNonce('{}') got {}", nonce, it) }
+        entity.statusCode.is2xxSuccessful
+    }.getOrDefault(false)
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class CardCreationCodeResolveResult(

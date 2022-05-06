@@ -19,24 +19,23 @@ class AeraPkiService(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
-        try {
-            val csr = PkiUtils.verifyCsr(csrEncoded, expectedSubject) ?: return null
-            val requestDto = SignRequestDto(
-                csr = csr.encoded.encodeBase64(),
-                expirationTimestamp = Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L).epochSecond,
-            )
-            val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
-            val requestEntity = HttpEntity(requestDto, headers)
-            val url = appendPath(url, "v1", "request-cert")
-            log.info("Posting to '{}' with {}", url, requestEntity)
-            val response = restTemplate.postForEntity(url, requestEntity, SignResponseDto::class.java)
-            log.info("Got response {}", response)
-            return response.body?.certificate?.decodeBase64ToArray()
-        } catch (e: Throwable) {
-            log.warn("verifyAndSign: error", e)
-            return null
-        }
+    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? = kotlin.runCatching {
+        val csr = PkiUtils.verifyCsr(csrEncoded, expectedSubject)
+            ?: return null.also { log.warn("verifyAndSign: CSR not verified: {}", csrEncoded.encodeBase64()) }
+        val requestDto = SignRequestDto(
+            csr = csr.encoded.encodeBase64(),
+            expirationTimestamp = Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L).epochSecond,
+        )
+        val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
+        val requestEntity = HttpEntity(requestDto, headers)
+        val url = appendPath(url, "v1", "request-cert")
+        log.info("verifyAndSign: Posting to '{}' with {}", url, requestEntity)
+        val response = restTemplate.postForEntity(url, requestEntity, SignResponseDto::class.java)
+        log.info("verifyAndSign: Got response {}", response)
+        response.body?.certificate?.decodeBase64ToArray()
+    }.getOrElse {
+        log.error("verifyAndSign: error", it)
+        null
     }
 
     /**
@@ -53,16 +52,18 @@ class AeraPkiService(
         return null
     }
 
-    override fun revokeCertificate(certificate: ByteArray) {
+    override fun revokeCertificate(certificate: ByteArray) = kotlin.runCatching {
         val requestDto = RevokeRequestDto(certificate = certificate.encodeBase64())
         val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
         val requestEntity = HttpEntity(requestDto, headers)
         val url = appendPath(url, "v1", "revoke-certificate")
-        log.info("Posting to '{}' with {}", url, requestDto)
+        log.info("revokeCertificate: Posting to '{}' with {}", url, requestDto)
         val response = restTemplate.postForEntity(url, requestEntity, RevokeResponseDto::class.java)
-        log.info("Got response {}", response)
+        log.info("revokeCertificate: Got response {}", response)
         if (!response.statusCode.is2xxSuccessful || response.body?.result != true)
-            log.warn("Revocation call was not successful")
+            log.warn("revokeCertificate: Not successful for '{}'", certificate.encodeBase64())
+    }.getOrElse {
+        log.error("revokeCertificate got error", it)
     }
 
     data class RevokeRequestDto(

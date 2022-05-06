@@ -1,8 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.encodeBase64
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
@@ -14,7 +12,6 @@ import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpMethod
 import org.springframework.http.client.ClientHttpResponse
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.web.client.DefaultResponseErrorHandler
 import org.springframework.web.client.RestTemplate
 import java.net.URI
@@ -38,13 +35,17 @@ class ClientTlsConfigurationService constructor(
         val requestFactory = HttpComponentsClientHttpRequestFactory(httpClient)
         restTemplate = restTemplateBuilder
             .requestFactory { requestFactory }
-            .errorHandler(NoopErrorHandler())
+            .errorHandler(LoggingErrorHandler())
             .build()
     }
 
-    inner class NoopErrorHandler : DefaultResponseErrorHandler() {
+    inner class LoggingErrorHandler : DefaultResponseErrorHandler() {
         override fun handleError(url: URI, method: HttpMethod, response: ClientHttpResponse) {
-            // do nothing
+            log.error(
+                "URL '{}', method '{}' got response statusCode '{}': {}",
+                url, method, response.statusCode, response.statusText
+            )
+            super.handleError(url, method, response)
         }
     }
 
