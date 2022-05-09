@@ -12,4 +12,6 @@ interface DeviceBindingRepository : JpaRepository<DeviceBinding, Long> {
 
     fun findAllByBpkAndDeviceIdAndRevokedIsFalse(bpk: String, deviceId: String): Collection<DeviceBinding>
 
+    fun findAllByRevokedFalse(): Collection<DeviceBinding>
+
 }
