@@ -13,12 +13,13 @@ import javax.persistence.OneToMany
 @Entity
 class DeviceBinding() {
 
-    constructor(bpk: String, certificate: ByteArray, deviceName: String, deviceId: String) : this() {
+    constructor(bpk: String, certificate: ByteArray, deviceName: String, deviceId: String, validUntil: Instant) : this() {
         this.bpk = bpk
         this.certificate = certificate
         this.revoked = false
         this.deviceName = deviceName
         this.deviceId = deviceId
+        this.validUntil = validUntil
     }
 
     @Id
@@ -36,7 +37,6 @@ class DeviceBinding() {
     @Lob
     lateinit var certificate: ByteArray
 
-    // TODO use this
     @Column
     lateinit var validUntil: Instant
 

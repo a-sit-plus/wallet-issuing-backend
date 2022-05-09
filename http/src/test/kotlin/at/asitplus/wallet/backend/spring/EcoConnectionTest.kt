@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
+import java.time.Instant
 import java.util.UUID
 
 @Disabled("Would need a valid API-Key in 'application-eco.yml'")
@@ -47,7 +48,13 @@ class EcoConnectionTest {
         // use bpk printed from extNonceService()
         bpk = "dKyd87h31E+oHYLVqpZF+g=="
         certificate = client.selfSignedCert.encoded
-        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        var deviceBinding = DeviceBinding(
+            bpk,
+            certificate,
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            Instant.now().plusSeconds(60)
+        )
         if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }

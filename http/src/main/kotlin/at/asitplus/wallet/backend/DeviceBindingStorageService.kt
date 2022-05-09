@@ -9,7 +9,7 @@ import java.time.Instant
  */
 interface DeviceBindingStorageService {
 
-    fun store(bpk: String, certificate: ByteArray, deviceName: String): DeviceBinding
+    fun store(bpk: String, certificate: ByteArray, deviceName: String, validUntil: Instant): DeviceBinding
 
     fun lookupBpk(decodedCert: ByteArray): String?
 

@@ -6,34 +6,8 @@ import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
 import org.springframework.web.util.UriComponentsBuilder
-import java.time.Instant
 
-interface PkiService {
-
-    /**
-     * Verifies the Certification Request (PKCS#10) of the client,
-     * and creates a signed certificate for that public key.
-     */
-    fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate?
-
-    /**
-     * Builds (or loads remotely) an X.509 Certificate Revocation List
-     */
-    fun getCrl(): ByteArray?
-
-    /**
-     * Gets the X.509 Certificate for the key pair that signs device binding certificates
-     */
-    fun getCaCertificate(): ByteArray?
-
-    /**
-     * Marks the certificate as revoked, i.e. it will be added to [getCrl]
-     */
-    fun revokeCertificate(certificate: ByteArray)
-
-}
-
-object PkiUtils {
+object Extensions {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -51,8 +25,3 @@ object PkiUtils {
         UriComponentsBuilder.fromHttpUrl(url).pathSegment(*path).toUriString()
 
 }
-
-data class SignedCertificate(
-    val encoded: ByteArray,
-    val validUntil: Instant,
-)

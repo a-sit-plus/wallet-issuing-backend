@@ -15,13 +15,14 @@ class DatabaseDeviceBindingStorageService(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun store(bpk: String, certificate: ByteArray, deviceName: String): DeviceBinding {
+    override fun store(bpk: String, certificate: ByteArray, deviceName: String, validUntil: Instant): DeviceBinding {
         log.info("Storing device binding for '{}' and '{}'", bpk, deviceName)
         return DeviceBinding(
             bpk = bpk,
             certificate = certificate,
             deviceName = deviceName,
-            deviceId = UUID.randomUUID().toString()
+            deviceId = UUID.randomUUID().toString(),
+            validUntil = validUntil
         ).also {
             deviceBindingRepository.save(it)
         }

@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.DeviceBindingAuthnService
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.IssueCredentialAdapter
 import at.asitplus.wallet.backend.PkiService
+import at.asitplus.wallet.backend.SignedCertificate
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -28,6 +29,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
+import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 
@@ -91,16 +93,18 @@ class BindingPupilIdCombinationSpringSecurityTest {
         clientMessage = UUID.randomUUID().toString()
         serverMessage = UUID.randomUUID().toString()
         challengeResponse = UUID.randomUUID().toString()
+        val validUntil = Instant.now().plusSeconds(60)
 
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
-        whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(certificate)
+        val signedCertificate = SignedCertificate(certificate, validUntil)
+        whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
         whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
+        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }

@@ -74,7 +74,13 @@ class PupilIdControllerLogicHsmFacadeTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
-        var deviceBinding = DeviceBinding(bpk, certificate, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+        var deviceBinding = DeviceBinding(
+            bpk,
+            certificate,
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            client.selfSignedCert.notAfter.toInstant()
+        )
         if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }

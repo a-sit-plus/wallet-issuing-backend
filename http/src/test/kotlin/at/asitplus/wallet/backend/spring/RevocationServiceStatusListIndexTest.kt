@@ -66,7 +66,7 @@ class RevocationServiceStatusListIndexTest {
         deviceName = UUID.randomUUID().toString()
         credentialRepo.deleteAll()
         deviceId = UUID.randomUUID().toString()
-        deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
+        deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }

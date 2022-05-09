@@ -49,11 +49,14 @@ class RevocationControllerLogicTest {
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
-        certificate = Client().selfSignedCert.encoded
+        val client = Client()
+        certificate = client.selfSignedCert.encoded
         whenever(bindingStorageService.lookupDevices(eq(bpk)))
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
+        val deviceBinding =
+            DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
         whenever(bindingStorageService.revoke(eq(bpk), eq(deviceId)))
-            .thenReturn(listOf(DeviceBinding(bpk, certificate, deviceName, deviceId)))
+            .thenReturn(listOf(deviceBinding))
         whenever(revocationService.revokeBinding(eq(bpk), eq(deviceId)))
             .thenReturn(1)
         whenever(revocationService.revokeBinding(eq(bpk), eq(null)))

@@ -24,19 +24,20 @@ class InMemoryPkiService(
 
     private val issuer = X500Name(issuerName)
     private val crlEntryList = mutableListOf<CrlEntry>()
-    private val caCertificate = signCertificate(issuer, cryptoService.subjectPublicKeyInfo)
+    private val caCertificate = signCertificate(issuer, cryptoService.subjectPublicKeyInfo).encoded
 
-    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? {
+    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? {
         try {
             val csr = verifyCsr(csrEncoded, expectedSubject) ?: return null
-            return signCertificate(csr.subject, csr.subjectPublicKeyInfo)
+            val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
+            return SignedCertificate(holder.encoded, holder.notAfter.toInstant())
         } catch (e: Throwable) {
             log.warn("verifyAndSign: error", e)
             return null
         }
     }
 
-    private fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): ByteArray =
+    private fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): X509CertificateHolder =
         X509v3CertificateBuilder(
             subject,
             BigInteger.valueOf(Random.nextLong()),
@@ -44,7 +45,7 @@ class InMemoryPkiService(
             Date.from(Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L)),
             issuer,
             subjectPublicKeyInfo
-        ).build(cryptoService.jcaContentSigner).encoded
+        ).build(cryptoService.jcaContentSigner)
 
     override fun getCaCertificate(): ByteArray {
         return caCertificate

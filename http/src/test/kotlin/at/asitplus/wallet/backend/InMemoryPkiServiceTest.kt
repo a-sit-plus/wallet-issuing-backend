@@ -40,9 +40,10 @@ class InMemoryPkiServiceTest {
         val csr = Client().generateCsr(subject)
         val certificate = service.verifyAndSign(csr, subject)
 
+        certificate.shouldNotBeNull()
         val verifierProvider =
             JcaContentVerifierProviderBuilder().build(X509CertificateHolder(service.getCaCertificate()))
-        val holder = X509CertificateHolder(certificate)
+        val holder = X509CertificateHolder(certificate.encoded)
         holder.isSignatureValid(verifierProvider) shouldBe true
         holder.isValidOn(Date()) shouldBe true
     }
@@ -53,9 +54,9 @@ class InMemoryPkiServiceTest {
         val csr = Client().generateCsr(subject)
         val certificate = service.verifyAndSign(csr, subject)
         certificate.shouldNotBeNull()
-        val serialNumber = X509CertificateHolder(certificate).serialNumber
+        val serialNumber = X509CertificateHolder(certificate.encoded).serialNumber
 
-        service.revokeCertificate(certificate)
+        service.revokeCertificate(certificate.encoded)
         val crl = service.getCrl()
 
         val verifierProvider =
@@ -72,7 +73,7 @@ class InMemoryPkiServiceTest {
         val csr = Client().generateCsr(subject)
         val certificate = service.verifyAndSign(csr, subject)
         certificate.shouldNotBeNull()
-        val serialNumber = X509CertificateHolder(certificate).serialNumber
+        val serialNumber = X509CertificateHolder(certificate.encoded).serialNumber
 
         val crl = service.getCrl()
 

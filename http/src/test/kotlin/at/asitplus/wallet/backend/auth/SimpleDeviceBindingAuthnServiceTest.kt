@@ -43,7 +43,12 @@ class SimpleDeviceBindingAuthnServiceTest {
     @Test
     fun success() {
         val challengeResponse = client.answerBindingChallenge(challenge)
-        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+        deviceBindingStorageService.store(
+            bpk,
+            client.selfSignedCert.encoded,
+            deviceName,
+            client.selfSignedCert.notAfter.toInstant()
+        )
 
         val result = service.validate(challengeResponse)
 
@@ -60,7 +65,12 @@ class SimpleDeviceBindingAuthnServiceTest {
             Payload(challenge.encodeBase64())
         )
         val challengeResponse = client.signBindingChallenge(jws)
-        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+        deviceBindingStorageService.store(
+            bpk,
+            client.selfSignedCert.encoded,
+            deviceName,
+            client.selfSignedCert.notAfter.toInstant()
+        )
 
         shouldThrow<BadCredentialsException> {
             service.validate(challengeResponse)
@@ -75,7 +85,12 @@ class SimpleDeviceBindingAuthnServiceTest {
             Payload(mapOf("challange" to challenge.encodeBase64()))
         )
         val challengeResponse = client.signBindingChallenge(jws)
-        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+        deviceBindingStorageService.store(
+            bpk,
+            client.selfSignedCert.encoded,
+            deviceName,
+            client.selfSignedCert.notAfter.toInstant()
+        )
 
         shouldThrow<BadCredentialsException> {
             service.validate(challengeResponse)
@@ -86,7 +101,12 @@ class SimpleDeviceBindingAuthnServiceTest {
     fun `wrong certificate in header`() {
         val otherClient = Client()
         val challengeResponse = client.answerBindingChallenge(challenge, otherClient.selfSignedCert.encoded)
-        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+        deviceBindingStorageService.store(
+            bpk,
+            client.selfSignedCert.encoded,
+            deviceName,
+            client.selfSignedCert.notAfter.toInstant()
+        )
 
         shouldThrow<BadCredentialsException> {
             service.validate(challengeResponse)
@@ -97,7 +117,12 @@ class SimpleDeviceBindingAuthnServiceTest {
     fun `device binding not known`() {
         val otherClient = Client()
         val challengeResponse = otherClient.answerBindingChallenge(challenge)
-        deviceBindingStorageService.store(bpk, client.selfSignedCert.encoded, deviceName)
+        deviceBindingStorageService.store(
+            bpk,
+            client.selfSignedCert.encoded,
+            deviceName,
+            client.selfSignedCert.notAfter.toInstant()
+        )
 
         val result = service.validate(challengeResponse)
 

@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingCleanupTask
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -25,14 +26,21 @@ class AutomaticCleanupTest {
     @Autowired
     private lateinit var credentialRepository: IssuedCredentialRepository
 
+    @Autowired
+    private lateinit var configuration: BackendConfigurationProperties
+
     @Test
     fun `should be called`() {
-        val deviceBinding = DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId")
+        val validUntilBinding =
+            Instant.now().minusSeconds(configuration.cleanup.bindingsExpirationDays * 24L * 60L * 60L)
+        val deviceBinding = DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId", validUntilBinding)
             .also { deviceBindingRepository.save(it) }
+        val validUntilCredential =
+            Instant.now().minusSeconds(configuration.cleanup.credentialsExpirationDays * 24L * 60L * 60L)
         val issuedCredential = IssuedCredential(
             "vcId",
             "subjectId",
-            Instant.now().minusSeconds(31L * 24L * 60L * 60L),
+            validUntilCredential,
             deviceBinding,
             "attributeName",
             1L

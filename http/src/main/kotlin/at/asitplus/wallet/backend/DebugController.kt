@@ -108,11 +108,11 @@ class DebugController(
         val attributeName = UUID.randomUUID().toString()
         val attributeValue = UUID.randomUUID().toString()
         val credentialSubject = AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
-        val exp = java.time.Instant.now().plusSeconds(3600)
+        val exp = Instant.now().plusSeconds(3600)
         val deviceName = "fake-" + UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
         val bpk = UUID.randomUUID().toString()
-        val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId).also {
+        val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId, exp).also {
             deviceBindingRepo.save(it)
         }
         val vcId = UUID.randomUUID().toString()

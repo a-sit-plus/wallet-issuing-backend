@@ -60,7 +60,15 @@ class PupilIdControllerFullRunTest {
         val bpk = UUID.randomUUID().toString()
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
-        deviceBindingRepository.save(DeviceBinding(bpk, client.selfSignedCert.encoded, deviceName, deviceId))
+        deviceBindingRepository.save(
+            DeviceBinding(
+                bpk,
+                client.selfSignedCert.encoded,
+                deviceName,
+                deviceId,
+                client.selfSignedCert.notAfter.toInstant()
+            )
+        )
     }
 
     @Test

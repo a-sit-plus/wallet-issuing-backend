@@ -22,6 +22,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 
@@ -70,7 +71,8 @@ class PupilIdControllerSpringSecurityTest {
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
+        val validUntil = Instant.now().plusSeconds(60)
+        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
             deviceBinding = deviceBindingRepository.save(deviceBinding)
         }

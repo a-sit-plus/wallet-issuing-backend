@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.PkiUtils.appendPath
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
+import org.bouncycastle.cert.X509CertificateHolder
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -19,24 +20,28 @@ class AeraPkiService(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): ByteArray? = kotlin.runCatching {
-        val csr = PkiUtils.verifyCsr(csrEncoded, expectedSubject)
-            ?: return null.also { log.warn("verifyAndSign: CSR not verified: {}", csrEncoded.encodeBase64()) }
-        val requestDto = SignRequestDto(
-            csr = csr.encoded.encodeBase64(),
-            expirationTimestamp = Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L).epochSecond,
-        )
-        val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
-        val requestEntity = HttpEntity(requestDto, headers)
-        val url = appendPath(url, "v1", "request-cert")
-        log.info("verifyAndSign: Posting to '{}' with {}", url, requestEntity)
-        val response = restTemplate.postForEntity(url, requestEntity, SignResponseDto::class.java)
-        log.info("verifyAndSign: Got response {}", response)
-        response.body?.certificate?.decodeBase64ToArray()
-    }.getOrElse {
-        log.error("verifyAndSign: error", it)
-        null
-    }
+    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? =
+        kotlin.runCatching {
+            val csr = PkiUtils.verifyCsr(csrEncoded, expectedSubject)
+                ?: return null.also { log.warn("verifyAndSign: CSR not verified: {}", csrEncoded.encodeBase64()) }
+            val requestDto = SignRequestDto(
+                csr = csr.encoded.encodeBase64(),
+                expirationTimestamp = Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L).epochSecond,
+            )
+            val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
+            val requestEntity = HttpEntity(requestDto, headers)
+            val url = appendPath(url, "v1", "request-cert")
+            log.info("verifyAndSign: Posting to '{}' with {}", url, requestEntity)
+            val response = restTemplate.postForEntity(url, requestEntity, SignResponseDto::class.java)
+            log.info("verifyAndSign: Got response {}", response)
+            val encoded = response.body?.certificate?.decodeBase64ToArray()
+                ?: return null
+            val validUntil = X509CertificateHolder(encoded).notAfter.toInstant()
+            SignedCertificate(encoded, validUntil)
+        }.getOrElse {
+            log.error("verifyAndSign: error", it)
+            null
+        }
 
     /**
      * CRL from AERA is hosted at an external URL

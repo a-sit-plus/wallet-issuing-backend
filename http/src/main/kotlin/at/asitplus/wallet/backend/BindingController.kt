@@ -122,10 +122,15 @@ class BindingController(
             val certificate = pkiService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
                 ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
                     .also { log.info("/binding/create returns CSR invalid: {}", it) }
-            deviceBindingStorageService.store(principal.name, certificate, body.deviceName)
-            session.setAttribute("certificate", certificate.encodeBase64())
-            val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts, certificate)
-            return ResponseEntity.ok(BindingCsrResponseJ(certificate, signedPublicKey))
+            deviceBindingStorageService.store(
+                principal.name,
+                certificate.encoded,
+                body.deviceName,
+                certificate.validUntil
+            )
+            session.setAttribute("certificate", certificate.encoded.encodeBase64())
+            val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts, certificate.encoded)
+            return ResponseEntity.ok(BindingCsrResponseJ(certificate.encoded, signedPublicKey))
                 .also { log.info("/binding/create returns ok: {}", it) }
         } catch (e: Throwable) {
             return ResponseEntity.internalServerError().build<BindingCsrResponseJ>()

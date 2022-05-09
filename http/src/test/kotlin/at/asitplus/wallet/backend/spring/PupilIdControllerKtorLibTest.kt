@@ -61,7 +61,15 @@ class PupilIdControllerKtorLibTest {
         val deviceName = UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
         clientCert = client.selfSignedCert.encoded
-        deviceBindingRepository.save(DeviceBinding(bpk, clientCert, deviceName, deviceId))
+        deviceBindingRepository.save(
+            DeviceBinding(
+                bpk,
+                clientCert,
+                deviceName,
+                deviceId,
+                client.selfSignedCert.notAfter.toInstant()
+            )
+        )
     }
 
     @Test

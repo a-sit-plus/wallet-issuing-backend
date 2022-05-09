@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 
@@ -33,7 +34,7 @@ class RandomCredentialDataProviderTest {
         subjectId2 = UUID.randomUUID().toString()
         deviceBindingStorageService = mock()
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", ""))
+            .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", "", Instant.now()))
         dataProvider = RandomCredentialDataProvider(listOfPhotos)
     }
 
@@ -43,14 +44,14 @@ class RandomCredentialDataProviderTest {
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-                .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", ""))
+                .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", "", Instant.now()))
             dataProvider.getClaim(subjectId1, attribute, bpk1).let {
                 it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 firstSetOfValues += it.value
             }
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-                .thenReturn(DeviceBinding(bpk2, byteArrayOf(), "", ""))
+                .thenReturn(DeviceBinding(bpk2, byteArrayOf(), "", "", Instant.now()))
             dataProvider.getClaim(subjectId2, attribute, bpk2).let {
                 it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)

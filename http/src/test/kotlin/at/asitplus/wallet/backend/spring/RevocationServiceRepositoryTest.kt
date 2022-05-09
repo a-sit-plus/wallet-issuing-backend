@@ -48,7 +48,7 @@ class RevocationServiceRepositoryTest {
         deviceName = UUID.randomUUID().toString()
         credentialRepo.deleteAll()
         if (deviceBindingStorageService.lookupBpk(certificate) == null)
-            deviceBinding = deviceBindingStorageService.store(bpk, certificate, deviceName)
+            deviceBinding = deviceBindingStorageService.store(bpk, certificate, deviceName, validUntil)
         deviceId = deviceBinding.deviceId
     }
 

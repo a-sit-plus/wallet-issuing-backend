@@ -60,7 +60,7 @@ class RevocationControllerFullRunTest {
         attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         validUntil = Instant.now().plusSeconds(5)
-        deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
+        deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         deviceBindingRepository.deleteAll()
         credentialRepo.deleteAll()
         deviceBinding = deviceBindingRepository.save(deviceBinding)
