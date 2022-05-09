@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.hsmfacade.provider.HsmFacadeProvider
+import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
 import at.asitplus.wallet.backend.auth.EcoExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
@@ -235,7 +236,7 @@ class BackendConfiguration {
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
-        revocationListUrl = PkiUtils.appendPath(configurationProperties.publicContext, "credentials", "status", "1")
+        revocationListUrl = appendPath(configurationProperties.publicContext, "credentials", "status", "1")
     )
 
     @Bean
@@ -254,7 +255,7 @@ class BackendConfiguration {
         issuer = issuerAgent,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
-        serviceEndpoint = PkiUtils.appendPath(configurationProperties.publicContext, "pupilid", "issue"),
+        serviceEndpoint = appendPath(configurationProperties.publicContext, "pupilid", "issue"),
         credentialScheme = ConstantIndex.PupilId,
     )
 
@@ -268,7 +269,7 @@ class BackendConfiguration {
         issuer = issuerAgent,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
-        serviceEndpoint = PkiUtils.appendPath(configurationProperties.publicContext, "eidasid", "issue"),
+        serviceEndpoint = appendPath(configurationProperties.publicContext, "eidasid", "issue"),
         credentialScheme = ConstantIndex.Generic,
     )
 

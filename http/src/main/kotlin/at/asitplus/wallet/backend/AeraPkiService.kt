@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.PkiUtils.appendPath
+import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import org.bouncycastle.cert.X509CertificateHolder

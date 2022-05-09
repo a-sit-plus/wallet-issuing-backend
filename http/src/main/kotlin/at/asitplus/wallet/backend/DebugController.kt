@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -135,11 +136,11 @@ class DebugController(
             )
         }
         model["vcList"] = vcList
-        model["createCredentialUrl"] = PkiUtils.appendPath(
+        model["createCredentialUrl"] = appendPath(
             configurationProperties.publicContext,
             "debug", "credential", "create"
         )
-        model["revokeActionUrl"] = PkiUtils.appendPath(
+        model["revokeActionUrl"] = appendPath(
             configurationProperties.publicContext,
             "debug", "credential", "revoke"
         )

@@ -5,7 +5,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
-import org.springframework.web.util.UriComponentsBuilder
 import java.time.Instant
 
 interface PkiService {
@@ -46,9 +45,6 @@ object PkiUtils {
             return null.also { log.warn("CSR subject not correct") }
         return csr
     }
-
-    fun appendPath(url: String, vararg path: String) =
-        UriComponentsBuilder.fromHttpUrl(url).pathSegment(*path).toUriString()
 
 }
 
