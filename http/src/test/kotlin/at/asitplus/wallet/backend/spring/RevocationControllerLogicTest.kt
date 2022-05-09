@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.DeviceListEntry
-import at.asitplus.wallet.backend.PkiService
 import at.asitplus.wallet.backend.RevocationController
 import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.data.DeviceBinding
@@ -12,7 +11,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -42,9 +40,6 @@ class RevocationControllerLogicTest {
     @MockBean
     private lateinit var revocationService: RevocationService
 
-    @MockBean
-    private lateinit var pkiService: PkiService
-
     private lateinit var bpk: String
     private lateinit var deviceName: String
     private lateinit var deviceId: String
@@ -60,8 +55,10 @@ class RevocationControllerLogicTest {
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
         whenever(bindingStorageService.revoke(eq(bpk), eq(deviceId)))
             .thenReturn(listOf(DeviceBinding(bpk, certificate, deviceName, deviceId)))
-        whenever(bindingStorageService.revoke(eq(bpk), eq(null)))
-            .thenReturn(listOf(DeviceBinding(bpk, certificate, deviceName, deviceId)))
+        whenever(revocationService.revokeBinding(eq(bpk), eq(deviceId)))
+            .thenReturn(1)
+        whenever(revocationService.revokeBinding(eq(bpk), eq(null)))
+            .thenReturn(1)
         whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(deviceId)))
             .thenReturn(1)
         whenever(revocationService.revokeCredentialsByBpkAndDeviceId(eq(bpk), eq(null)))
@@ -92,8 +89,6 @@ class RevocationControllerLogicTest {
             status { isOk() }
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
-
-        verify(pkiService).revokeCertificate(eq(certificate))
     }
 
     @Test
@@ -108,8 +103,6 @@ class RevocationControllerLogicTest {
             status { isOk() }
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
-
-        verify(pkiService).revokeCertificate(eq(certificate))
     }
 
     @Test

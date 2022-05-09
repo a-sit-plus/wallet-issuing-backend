@@ -28,12 +28,20 @@ interface RevocationService {
     fun getAllNonRevokedWithDetails(): Collection<IssuedCredential>
 
     fun getRevokedStatusListIndexList(): Collection<Int>
+
+    /**
+     * Revoke one or more device bindings for a pupil, either specified by their [bpk]
+     * or specified by their [bpk] and [deviceId].
+     * This will also revoke all issued credentials for that binding.
+     */
+    fun revokeBinding(bpk: String, deviceId: String?): Int
 }
 
 class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
+    private val pkiService: PkiService,
 ) : RevocationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -88,6 +96,19 @@ class DefaultRevocationService(
             return revokeCredentialsByBpk(bpk)
         val credentials = credentialRepo.findByRevokedFalseAndDeviceBinding_BpkAndDeviceBinding_DeviceId(bpk, deviceId)
         return revokeAllCredentials(credentials)
+    }
+
+    /**
+     * Revoke one or more device bindings for a pupil, either specified by their [bpk]
+     * or specified by their [bpk] and [deviceId].
+     * This will also revoke all issued credentials for that binding.
+     */
+    override fun revokeBinding(bpk: String, deviceId: String?): Int {
+        val revokedBindings = deviceBindingStorageService.revoke(bpk, deviceId)
+        if (revokedBindings.isEmpty())
+            return 0
+        revokedBindings.forEach { pkiService.revokeCertificate(it.certificate) }
+        return revokeCredentialsByBpkAndDeviceId(bpk, deviceId)
     }
 
     private fun revokeAllCredentials(credentials: Collection<IssuedCredential>): Int {

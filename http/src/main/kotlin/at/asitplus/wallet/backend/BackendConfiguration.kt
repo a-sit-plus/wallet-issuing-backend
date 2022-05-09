@@ -147,10 +147,12 @@ class BackendConfiguration {
     fun revocationService(
         credentialRepo: IssuedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
+        pkiService: PkiService,
     ): RevocationService = DefaultRevocationService(
         credentialRepo,
         deviceBindingStorageService,
-        configurationProperties.credentials.oneCredentialPerDeviceBinding
+        configurationProperties.credentials.oneCredentialPerDeviceBinding,
+        pkiService,
     )
 
     @Bean
