@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
+import java.time.Instant
 
 /**
  * Service to store device bindings, that are created by the Wallet App,
@@ -17,6 +18,8 @@ interface DeviceBindingStorageService {
     fun getDeviceBindingForCurrentUser(): DeviceBinding?
 
     fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding>
+
+    fun deleteExpiredBefore(cutoff: Instant): Int
 
 }
 

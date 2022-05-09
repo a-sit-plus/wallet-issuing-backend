@@ -36,6 +36,10 @@ class DeviceBinding() {
     @Lob
     lateinit var certificate: ByteArray
 
+    // TODO use this
+    @Column
+    lateinit var validUntil: Instant
+
     @Column
     var revoked: Boolean = false
 

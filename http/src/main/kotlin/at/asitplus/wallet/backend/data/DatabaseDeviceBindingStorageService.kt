@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.lib.encodeBase64
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
+import java.time.Instant
 import java.util.UUID
 
 class DatabaseDeviceBindingStorageService(
@@ -15,6 +16,7 @@ class DatabaseDeviceBindingStorageService(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun store(bpk: String, certificate: ByteArray, deviceName: String): DeviceBinding {
+        log.info("Storing device binding for '{}' and '{}'", bpk, deviceName)
         return DeviceBinding(
             bpk = bpk,
             certificate = certificate,
@@ -53,6 +55,16 @@ class DatabaseDeviceBindingStorageService(
             deviceBindingRepository.findAllByBpkAndRevokedIsFalse(bpk)
         val toRevoke = list.filter { !it.revoked }
         toRevoke.forEach { it.revoked = true }
+        log.info("Revoking {} device bindings", toRevoke.size)
         return deviceBindingRepository.saveAll(toRevoke)
+    }
+
+    override fun deleteExpiredBefore(cutoff: Instant): Int {
+        val list = deviceBindingRepository.findAllByValidUntilBefore(cutoff)
+        list.forEach {
+            log.info("Deleting device binding: '{}' for '{}'", it.deviceName, it.bpk)
+            deviceBindingRepository.delete(it)
+        }
+        return list.size
     }
 }

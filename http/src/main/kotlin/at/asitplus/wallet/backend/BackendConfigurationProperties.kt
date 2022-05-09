@@ -17,6 +17,10 @@ data class BackendConfigurationProperties(
      */
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
     /**
+     * Configuration for automatic cleanup of expired bindings, and credentials
+     */
+    val cleanup: CleanupConfigurationProperties = CleanupConfigurationProperties(),
+    /**
      * Key used for signing issued credentials
      */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
@@ -64,6 +68,30 @@ data class CredentialConfigurationProperties(
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
+)
+
+@ConstructorBinding
+data class CleanupConfigurationProperties(
+    /**
+     * Whether to enable the cleanup at all
+     */
+    val enabled: Boolean = false,
+    /**
+     * Rate at which expired bindings shall be deleted
+     */
+    val bindingsSchedulingRate: Duration = Duration.ofHours(24),
+    /**
+     * Timespan in days after which an expired binding shall be deleted
+     */
+    val bindingsExpirationDays: Int = 30,
+    /**
+     * Rate at which expired credentials shall be deleted
+     */
+    val credentialsSchedulingRate: Duration = Duration.ofHours(24),
+    /**
+     * Timespan in days after which an expired credential shall be deleted
+     */
+    val credentialsExpirationDays: Int = 30,
 )
 
 @ConstructorBinding

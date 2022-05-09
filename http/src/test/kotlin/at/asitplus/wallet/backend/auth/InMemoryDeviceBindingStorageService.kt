@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.DeviceListEntry
 import at.asitplus.wallet.backend.data.DeviceBinding
+import java.time.Instant
 import java.util.UUID
 
 class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
@@ -34,5 +35,13 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
             .filter { it.revoked == false }
         toRevoke.forEach { it.revoked = true }
         return toRevoke.toList()
+    }
+
+    override fun deleteExpiredBefore(cutoff: Instant): Int {
+        val toRemove = list.filter {
+            cutoff.isAfter(it.validUntil)
+        }
+        list.removeAll(toRemove)
+        return toRemove.size
     }
 }

@@ -522,6 +522,21 @@ spring:
     url: "jdbc:h2:mem:userstore"
 ```
 
+### Cleanup
+
+Old entries of the database (i.e. expired bindings, expired credentials) can be deleted periodically, if the configuration is enabled (it is disabled by default):
+
+```yaml
+backend:
+  cleanup:
+    enabled: true
+    bindings-scheduling-rate: PT24H
+    bindings-expiration-days: 30
+    credentials-scheduling-rate: PT24H
+    credentials-expiration-days: 30
+```
+
+The scheduling rate shall be configured in a [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-) compatible format (e.g. `PT24H`).
 
 ### Spring Boot Admin Client
 

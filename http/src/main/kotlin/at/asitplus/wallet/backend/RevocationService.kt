@@ -61,6 +61,12 @@ interface RevocationService {
      * This will also revoke all issued credentials for that binding.
      */
     fun revokeBinding(bpk: String, deviceId: String?): Int
+
+    /**
+     * Deletes all issued credentials that are not valid on the [cutoff] date any more.
+     */
+    fun deleteExpiredCredentialsBefore(cutoff: Instant): Int
+
 }
 
 class DefaultRevocationService(
@@ -178,7 +184,22 @@ class DefaultRevocationService(
         return credentialRepo.getRevocationListIndexByRevokedTrueOrdered().map { it.toInt() }
     }
 
+    /**
+     * Lists all non-revoked credentials that have been issued
+     */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
         return credentialRepo.findAllByRevokedFalse()
+    }
+
+    /**
+     * Deletes all issued credentials that are not valid on the [cutoff] date any more.
+     */
+    override fun deleteExpiredCredentialsBefore(cutoff: Instant): Int {
+        val list = credentialRepo.findAllByValidUntilBefore(cutoff)
+        list.forEach {
+            log.info("Deleting credential: {} for {} (bpk '{}')", it.vcId, it.subjectId, it.deviceBinding.bpk)
+            credentialRepo.delete(it)
+        }
+        return list.size
     }
 }

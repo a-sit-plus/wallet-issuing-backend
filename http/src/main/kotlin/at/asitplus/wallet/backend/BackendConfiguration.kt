@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
+import org.springframework.scheduling.annotation.EnableScheduling
 import java.security.Security
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -34,6 +35,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
+@EnableScheduling
 class BackendConfiguration {
 
     @Autowired
