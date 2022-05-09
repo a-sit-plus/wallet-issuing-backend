@@ -58,6 +58,18 @@ class IssuedCredential() {
 
     @Column
     var revocationListIndex: Long = 0L
-    
+
+    override fun toString(): String {
+        return "IssuedCredential(id=$id, " +
+                "createdOn=$createdOn, " +
+                "vcId='$vcId', " +
+                "subjectId='$subjectId', " +
+                "attributeName='$attributeName', " +
+                "validUntil=$validUntil, " +
+                "revoked=$revoked, " +
+                "deviceBinding=${deviceBinding.id}, " +
+                "revocationListIndex=$revocationListIndex)"
+    }
+
 
 }
