@@ -7,7 +7,6 @@ import at.asitplus.wallet.backend.RevocationController
 import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -68,7 +67,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun binding_wrongMessage_400() = runTest {
+    fun binding_wrongMessage_400() {
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
             content = "foo"
@@ -78,7 +77,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun binding_bpk_200() = runTest {
+    fun binding_bpk_200() {
         val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -92,7 +91,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun binding_bpkAndDeviceId_200() = runTest {
+    fun binding_bpkAndDeviceId_200() {
         val request = RevocationController.RevocationRequest(bpk, deviceId)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -106,7 +105,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun pupilid_wrongMessage_400() = runTest {
+    fun pupilid_wrongMessage_400() {
         mockMvc.post("/revoke/pupilid") {
             contentType = MediaType.APPLICATION_JSON
             content = "foo"
@@ -116,7 +115,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun pupilid_bpk_200() = runTest {
+    fun pupilid_bpk_200() {
         val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -130,7 +129,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun pupilid_bpkAndDeviceId_400() = runTest {
+    fun pupilid_bpkAndDeviceId_400() {
         val request = RevocationController.RevocationRequest(bpk, deviceId)
 
         mockMvc.post("/revoke/pupilid") {
@@ -142,7 +141,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun devices_noParam_400() = runTest {
+    fun devices_noParam_400() {
         mockMvc.get("/revoke/devices") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
@@ -151,7 +150,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun devices_bpk_200() = runTest {
+    fun devices_bpk_200() {
         val expectedResponse = RevocationController.DeviceListResponse(
             listOf(RevocationController.DeviceListResponseEntry(deviceId, deviceName))
         )
@@ -165,7 +164,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun devices_bpk_404() = runTest {
+    fun devices_bpk_404() {
         mockMvc.get("/revoke/devices?bpk=foo") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
@@ -174,7 +173,7 @@ class RevocationControllerLogicTest {
     }
 
     @Test
-    fun devices_bpkEncoded_404() = runTest {
+    fun devices_bpkEncoded_404() {
         mockMvc.get("/revoke/devices?bpk=%3D%2B%2F") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {

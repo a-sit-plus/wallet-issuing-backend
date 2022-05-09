@@ -67,22 +67,20 @@ class PupilIdControllerKtorLibTest {
     @Test
     fun start_challengeResponse_ok() = runTest {
         val request = holderMessenger.startDirect() as NextMessage.Send
-        val cryptoAdapter = object : PupilIdIssuingService.JwsAdapter {
-            override suspend fun createSignedJwsCallback(payload: String) =
-                KmmResult.success(
-                    DefaultJwsService(holderCryptoService).createSignedJws(
-                        JwsHeader(
-                            holderCryptoService.jwsAlgorithm,
-                            holderCryptoService.keyId,
-                            certificateChain = arrayOf(clientCert)
-                        ),
-                        payload.encodeToByteArray()
-                    )!!
-                )
+        val cryptoAdapter = PupilIdIssuingService.JwsAdapter { payload ->
+            KmmResult.success(
+                DefaultJwsService(holderCryptoService).createSignedJws(
+                    JwsHeader(
+                        holderCryptoService.jwsAlgorithm,
+                        holderCryptoService.keyId,
+                        certificateChain = arrayOf(clientCert)
+                    ),
+                    payload.encodeToByteArray()
+                )!!
+            )
         }
 
-        val service =
-            PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
+        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
         val result = service.issueCredentials(request.message)
 
         result.shouldBeInstanceOf<ServiceResult.Success>()

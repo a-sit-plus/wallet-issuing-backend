@@ -7,7 +7,6 @@ import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -75,7 +74,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_noAuthn_forbidden() = runTest {
+    fun start_noAuthn_forbidden() {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -87,7 +86,7 @@ abstract class BindingControllerSpringSecurityTest {
 
     @Test
     @WithMockUser(authorities = ["PUPIL"])
-    fun start_withMockUser_ok() = runTest {
+    fun start_withMockUser_ok() {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -97,7 +96,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_nonce_ok() = runTest {
+    fun start_nonce_ok() {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -108,7 +107,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_nonceNotKnown_forbidden() = runTest {
+    fun start_nonceNotKnown_forbidden() {
         whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(null)
 
         mockMvc.post("/binding/start") {
@@ -122,7 +121,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_confirm_ok() = runTest {
+    fun start_create_confirm_ok() {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -154,7 +153,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_noSession() = runTest {
+    fun start_create_noSession() {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -175,7 +174,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_invalidChallenge() = runTest {
+    fun start_create_invalidChallenge() {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -197,7 +196,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_confirm_create_sessionInvalid() = runTest {
+    fun start_create_confirm_create_sessionInvalid() {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)
@@ -240,7 +239,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    fun start_create_confirm_confirm_sessionInvalid() = runTest {
+    fun start_create_confirm_confirm_sessionInvalid() {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)

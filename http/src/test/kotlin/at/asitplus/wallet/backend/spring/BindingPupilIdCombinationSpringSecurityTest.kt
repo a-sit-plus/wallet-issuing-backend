@@ -14,7 +14,6 @@ import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -110,7 +109,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
     }
 
     @Test
-    fun start_create_confirm_issue_ok() = runTest {
+    fun start_create_confirm_issue_ok() {
         val startResponse = mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(startRequest)

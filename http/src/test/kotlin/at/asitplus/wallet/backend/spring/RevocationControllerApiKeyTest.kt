@@ -1,12 +1,9 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.RevocationController
 import at.asitplus.wallet.backend.RevocationService
-import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -62,7 +59,7 @@ class RevocationControllerApiKeyTest {
     }
 
     @Test
-    fun start_noAuthn_forbidden() = runTest {
+    fun start_noAuthn_forbidden() {
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)
@@ -73,7 +70,7 @@ class RevocationControllerApiKeyTest {
     }
 
     @Test
-    fun start_apiKey_ok() = runTest {
+    fun start_apiKey_ok() {
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
             content = mapper.writeValueAsString(request)

@@ -7,7 +7,6 @@ import at.asitplus.wallet.backend.IssueCredentialAdapter
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.NextMessage
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -80,7 +79,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun issue_noAuthn_forbidden() = runTest {
+    fun issue_noAuthn_forbidden() {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -91,7 +90,7 @@ class PupilIdControllerSpringSecurityTest {
 
     @Test
     @WithMockUser(authorities = ["DEVICE_BINDING"])
-    fun issue_withMockUser_ok() = runTest {
+    fun issue_withMockUser_ok() {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -101,7 +100,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun issue_challengeResponse_ok() = runTest {
+    fun issue_challengeResponse_ok() {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -121,7 +120,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun issue_getChallengeDirectlyResponse_ok() = runTest {
+    fun issue_getChallengeDirectlyResponse_ok() {
         mockMvc.get("/authn/devicebinding/challenge")
             .andExpect {
                 status { isOk() }
@@ -139,7 +138,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun issue_challengeResponse_sessionInvalid() = runTest {
+    fun issue_challengeResponse_sessionInvalid() {
         val firstResponse = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
@@ -170,7 +169,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    fun issue_challengeResponse_invalid() = runTest {
+    fun issue_challengeResponse_invalid() {
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(null)
 

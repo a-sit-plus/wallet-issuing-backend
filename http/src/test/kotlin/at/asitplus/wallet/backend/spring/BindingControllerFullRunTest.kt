@@ -10,7 +10,6 @@ import at.asitplus.wallet.pupilid.BindingParamsResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -57,7 +56,7 @@ class BindingControllerFullRunTest {
     }
 
     @Test
-    fun start_create_ok() = runTest {
+    fun start_create_ok() {
         val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
 
         val startResponse = mockMvc.post("/binding/start") {

@@ -9,7 +9,6 @@ import at.asitplus.wallet.pupilid.BindingParamsResponseJ
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -38,7 +37,7 @@ class BindingControllerLogicTest {
 
     @Test
     @WithMockUser(authorities = ["PUPIL"])
-    fun start_create_confirm_ok() = runTest {
+    fun start_create_confirm_ok() {
         val client = Client()
         val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
 
