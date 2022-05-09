@@ -2,13 +2,12 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.wallet.backend.BackendConfigurationProperties
 import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.Extensions.daysToSeconds
+import at.asitplus.wallet.backend.Extensions.InstantNowMinusDays
 import at.asitplus.wallet.backend.RevocationService
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import java.time.Instant
 
 @ConditionalOnProperty("\${backend.cleanup.enabled}")
 @Service
@@ -24,8 +23,7 @@ class DeviceBindingCleanupTask(
     fun runBindingCleanup() {
         if (!configuration.cleanup.enabled) return
         log.info("Running device binding cleanup")
-        val now = Instant.now()
-        val cutoff = now.minusSeconds(configuration.cleanup.bindingsExpirationDays.daysToSeconds)
+        val cutoff = InstantNowMinusDays(configuration.cleanup.bindingsExpirationDays)
         val count = deviceBindingStorageService.deleteExpiredBefore(cutoff)
         log.info("Removed {} bindings expired before {}", count, cutoff)
     }
@@ -34,8 +32,7 @@ class DeviceBindingCleanupTask(
     fun runCredentialCleanup() {
         if (!configuration.cleanup.enabled) return
         log.info("Running credentials cleanup")
-        val now = Instant.now()
-        val cutoff = now.minusSeconds(configuration.cleanup.credentialsExpirationDays.daysToSeconds)
+        val cutoff = InstantNowMinusDays(configuration.cleanup.credentialsExpirationDays)
         val count = revocationService.deleteExpiredCredentialsBefore(cutoff)
         log.info("Removed {} credentials expired before {}", count, cutoff)
     }

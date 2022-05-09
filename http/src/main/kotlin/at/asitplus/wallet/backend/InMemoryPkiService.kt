@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.Extensions.daysToSeconds
+import at.asitplus.wallet.backend.Extensions.InstantNowPlusDays
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
@@ -10,7 +10,6 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
-import java.time.Instant
 import java.util.Date
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
@@ -43,7 +42,7 @@ class InMemoryPkiService(
             subject,
             BigInteger.valueOf(Random.nextLong()),
             Date(),
-            Date.from(Instant.now().plusSeconds(certValidityDays.daysToSeconds)),
+            Date.from(InstantNowPlusDays(certValidityDays)),
             issuer,
             subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner)

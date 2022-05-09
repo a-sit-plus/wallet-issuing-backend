@@ -58,5 +58,6 @@ class IssuedCredential() {
 
     @Column
     var revocationListIndex: Long = 0L
+    
 
 }

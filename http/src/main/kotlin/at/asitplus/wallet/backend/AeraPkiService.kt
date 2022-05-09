@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.Extensions.InstantNowPlusDays
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.Extensions.daysToSeconds
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import org.bouncycastle.cert.X509CertificateHolder
@@ -10,7 +10,6 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.web.client.RestTemplate
-import java.time.Instant
 import java.util.UUID
 
 class AeraPkiService(
@@ -27,7 +26,7 @@ class AeraPkiService(
                 ?: return null.also { log.warn("verifyAndSign: CSR not verified: {}", csrEncoded.encodeBase64()) }
             val requestDto = SignRequestDto(
                 csr = csr.encoded.encodeBase64(),
-                expirationTimestamp = Instant.now().plusSeconds(certValidityDays.daysToSeconds).epochSecond,
+                expirationTimestamp = InstantNowPlusDays(certValidityDays).epochSecond,
             )
             val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
             val requestEntity = HttpEntity(requestDto, headers)

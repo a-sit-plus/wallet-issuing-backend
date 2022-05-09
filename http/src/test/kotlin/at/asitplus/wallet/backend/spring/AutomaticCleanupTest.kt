@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.BackendConfigurationProperties
-import at.asitplus.wallet.backend.Extensions.daysToSeconds
+import at.asitplus.wallet.backend.Extensions
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingCleanupTask
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -13,7 +13,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
-import java.time.Instant
 
 @SpringBootTest(properties = ["backend.cleanup.enabled=true"])
 class AutomaticCleanupTest {
@@ -32,12 +31,12 @@ class AutomaticCleanupTest {
 
     @Test
     fun `should be called`() {
-        val validUntilBinding =
-            Instant.now().minusSeconds((configuration.cleanup.bindingsExpirationDays + 1).daysToSeconds)
+        deviceBindingRepository.deleteAll()
+        credentialRepository.deleteAll()
+        val validUntilBinding = Extensions.InstantNowMinusDays(configuration.cleanup.bindingsExpirationDays + 1)
         val deviceBinding = DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId", validUntilBinding)
             .also { deviceBindingRepository.save(it) }
-        val validUntilCredential =
-            Instant.now().minusSeconds((configuration.cleanup.credentialsExpirationDays + 1).daysToSeconds)
+        val validUntilCredential = Extensions.InstantNowMinusDays(configuration.cleanup.credentialsExpirationDays + 1)
         val issuedCredential = IssuedCredential(
             "vcId",
             "subjectId",
@@ -46,6 +45,7 @@ class AutomaticCleanupTest {
             "attributeName",
             1L
         ).also { credentialRepository.save(it) }
+
         Thread.sleep(2000L)
 
         verify(deviceBindingCleanupTask).runBindingCleanup()
