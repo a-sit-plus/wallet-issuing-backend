@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.Extensions.appendPath
+import at.asitplus.wallet.backend.Extensions.daysToSeconds
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import org.bouncycastle.cert.X509CertificateHolder
@@ -26,7 +27,7 @@ class AeraPkiService(
                 ?: return null.also { log.warn("verifyAndSign: CSR not verified: {}", csrEncoded.encodeBase64()) }
             val requestDto = SignRequestDto(
                 csr = csr.encoded.encodeBase64(),
-                expirationTimestamp = Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L).epochSecond,
+                expirationTimestamp = Instant.now().plusSeconds(certValidityDays.daysToSeconds).epochSecond,
             )
             val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
             val requestEntity = HttpEntity(requestDto, headers)

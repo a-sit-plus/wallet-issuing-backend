@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.Extensions.daysToSeconds
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
@@ -42,7 +43,7 @@ class InMemoryPkiService(
             subject,
             BigInteger.valueOf(Random.nextLong()),
             Date(),
-            Date.from(Instant.now().plusSeconds(certValidityDays * 24L * 60L * 60L)),
+            Date.from(Instant.now().plusSeconds(certValidityDays.daysToSeconds)),
             issuer,
             subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner)

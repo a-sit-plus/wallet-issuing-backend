@@ -7,4 +7,6 @@ object Extensions {
     fun appendPath(url: String, vararg path: String) =
         UriComponentsBuilder.fromHttpUrl(url).pathSegment(*path).toUriString()
 
+    val Int.daysToSeconds get() = this * 24L * 60L * 60L
+
 }
