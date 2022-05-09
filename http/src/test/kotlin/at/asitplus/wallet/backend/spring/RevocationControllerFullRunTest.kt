@@ -9,20 +9,14 @@ import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.time.Instant
 import java.util.UUID
@@ -67,22 +61,19 @@ class RevocationControllerFullRunTest {
         subjectId = UUID.randomUUID().toString()
         validUntil = Instant.now().plusSeconds(5)
         deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId)
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
-        if (credentialRepo.findByVcId(vcId) == null) {
-            IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2).also {
-                credentialRepo.save(it)
-            }
+        deviceBindingRepository.deleteAll()
+        credentialRepo.deleteAll()
+        deviceBinding = deviceBindingRepository.save(deviceBinding)
+        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2).also {
+            credentialRepo.save(it)
         }
     }
 
     @Test
-    fun `revoking binding leads to revoked credential`() = runTest {
-        withContext(Dispatchers.IO) {
-            credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
-            deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
-        }
+    fun `revoking binding leads to revoked credential`() {
+        credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
+        deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
+
         val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -94,18 +85,14 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        withContext(Dispatchers.IO) {
-            credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
-            deviceBindingRepository.findAllByRevokedFalse().shouldBeEmpty()
-        }
+        credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
+        deviceBindingRepository.findAllByRevokedFalse().shouldBeEmpty()
     }
 
     @Test
-    fun `revoking binding by bpk and deviceId leads to revoked credential`() = runTest {
-        withContext(Dispatchers.IO) {
-            credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
-            deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
-        }
+    fun `revoking binding by bpk and deviceId leads to revoked credential`() {
+        credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
+        deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
         val request = RevocationController.RevocationRequest(bpk, deviceId)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -117,18 +104,16 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        withContext(Dispatchers.IO) {
-            credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
-            deviceBindingRepository.findAllByRevokedFalse().shouldBeEmpty()
-        }
+
+        credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
+        deviceBindingRepository.findAllByRevokedFalse().shouldBeEmpty()
     }
 
     @Test
-    fun `revoking pupilId by bpk does not lead to revoked binding`() = runTest {
-        withContext(Dispatchers.IO) {
-            credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
-            deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
-        }
+    fun `revoking pupilId by bpk does not lead to revoked binding`() {
+        credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
+        deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
+
         val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -140,10 +125,8 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        withContext(Dispatchers.IO) {
-            credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
-            deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
-        }
+        credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
+        deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
     }
 
 }

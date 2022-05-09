@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -46,7 +47,8 @@ class RevocationServiceRepositoryTest {
         certificate = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         credentialRepo.deleteAll()
-        deviceBinding = deviceBindingStorageService.store(bpk, certificate, deviceName)
+        if (deviceBindingStorageService.lookupBpk(certificate) == null)
+            deviceBinding = deviceBindingStorageService.store(bpk, certificate, deviceName)
         deviceId = deviceBinding.deviceId
     }
 
@@ -67,6 +69,25 @@ class RevocationServiceRepositoryTest {
         }
 
         revocationService.isRevoked(vcId) shouldBe true
+    }
+
+    @Test
+    fun `revoke credentials by vcId`() {
+        createIssuedCredential().also {
+            credentialRepo.save(it)
+        }
+
+        revocationService.revokeCredentialsByVcId(vcId) shouldBe 1
+    }
+
+    @Test
+    fun `check on non-existing vcId should return null`() {
+        revocationService.isRevoked(vcId).shouldBeNull()
+    }
+
+    @Test
+    fun `revocation of non-existing vcId should do nothing`() {
+        revocationService.revokeCredentialsByVcId(vcId) shouldBe 0
     }
 
     @Test

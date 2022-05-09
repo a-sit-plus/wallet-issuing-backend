@@ -11,7 +11,6 @@ import at.asitplus.wallet.lib.data.CredentialSubject
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import kotlinx.datetime.Clock
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
@@ -20,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import java.time.Instant
 import java.util.UUID
+import javax.transaction.Transactional
 import kotlin.random.Random
 
 @SpringBootTest
@@ -48,6 +48,8 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
     private lateinit var credentialSubject: CredentialSubject
+    private lateinit var issuanceDate: Instant
+    private lateinit var expirationDate: Instant
 
     @BeforeEach
     fun beforeEach() {
@@ -56,6 +58,8 @@ class RevocationServiceStatusListIndexTest {
         attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         credentialSubject = AtomicAttributeCredential(subjectId, attributeName, attributeValue)
+        issuanceDate = Instant.now()
+        expirationDate = issuanceDate.plusSeconds(60)
         validUntil = Instant.now().plusSeconds(2)
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
@@ -71,6 +75,16 @@ class RevocationServiceStatusListIndexTest {
     }
 
     @Test
+    @Transactional
+    fun `simple positive add and revoke vcId should work`() {
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
+        revocationService.isRevoked(vcId) shouldBe false
+        revocationService.revokeCredentialsByVcId(vcId) shouldBe 1
+        revocationService.isRevoked(vcId) shouldBe true
+    }
+
+    @Test
+    @Transactional
     fun otherCredentialsForSameDeviceBindingGetRevoked() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2).also {
             credentialRepo.save(it)
@@ -85,7 +99,7 @@ class RevocationServiceStatusListIndexTest {
             .thenReturn(deviceBinding)
 
         val storeGetNextIndex =
-            revocationService.storeGetNextIndex(vcId.drop(2), credentialSubject, Clock.System.now(), Clock.System.now())
+            revocationService.storeGetNextIndex(vcId.drop(2), credentialSubject, issuanceDate, expirationDate)
         storeGetNextIndex.shouldNotBeNull()
         storeGetNextIndex shouldBe 3
 
@@ -93,13 +107,45 @@ class RevocationServiceStatusListIndexTest {
     }
 
     @Test
+    @Transactional
     fun cantIssueCredentialWithSameVcIdTwice() {
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 3).also {
             credentialRepo.save(it)
         }
 
-        revocationService.storeGetNextIndex(vcId, credentialSubject, Clock.System.now(), Clock.System.now())
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
             .shouldBeNull()
+    }
+
+    @Test
+    @Transactional
+    fun `double adding vcId should return null`() {
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate).shouldNotBeNull()
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate).shouldBeNull()
+    }
+
+    @Test
+    @Transactional
+    fun `revocation list should match revocation calls`() {
+        val expectedRevocationList = revokeRandomCredentials()
+
+        val revocationList = revocationService.getRevokedStatusListIndexList()
+
+        revocationList shouldBe expectedRevocationList
+    }
+
+    private fun revokeRandomCredentials(): MutableList<Int> {
+        val expectedRevocationList = mutableListOf<Int>()
+        for (i in 1..256) {
+            val vcId = UUID.randomUUID().toString()
+            val revocationListIndex =
+                revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate)
+            if (Random.nextBoolean()) {
+                expectedRevocationList.add(revocationListIndex!!)
+                revocationService.revokeCredentialsByVcId(vcId)
+            }
+        }
+        return expectedRevocationList
     }
 
 }

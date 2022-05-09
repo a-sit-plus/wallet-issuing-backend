@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.data
 
 import org.hibernate.annotations.CreationTimestamp
 import java.time.Instant
+import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
@@ -44,7 +45,7 @@ class DeviceBinding() {
     @Column
     lateinit var deviceId: String
 
-    @OneToMany(mappedBy = "deviceBinding")
+    @OneToMany(mappedBy = "deviceBinding", cascade = [CascadeType.ALL])
     val issuedCredentialList: MutableList<IssuedCredential> = mutableListOf()
 
 }
