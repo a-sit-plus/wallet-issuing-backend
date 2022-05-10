@@ -4,7 +4,6 @@ import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase16
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingConfirmResponseJ
@@ -28,14 +27,10 @@ import java.security.Principal
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpSession
 
-
 @RestController
 class BindingController(
-    private val challengeService: ChallengeService,
-    private val pkiService: PkiService,
-    private val attestationService: AttestationService,
-    private val deviceBindingStorageService: DeviceBindingStorageService,
     private val extNonceAuthnService: ExtNonceAuthnService,
+    private val bindingService: BindingService,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -68,10 +63,8 @@ class BindingController(
         principal: Principal
     ): ResponseEntity<BindingParamsResponseJ> = kotlin.runCatching {
         log.info("/binding/start called for {} with {}", principal, body)
-        val challenge = challengeService.generate()
-        val subject = "CN=${challenge.encodeBase16()}"
-
-        ResponseEntity.ok(BindingParamsResponseJ(challenge, subject, "EC"))
+        val response = bindingService.getBindingParams(body.deviceName)
+        ResponseEntity.ok(BindingParamsResponseJ(response.challenge, response.subject, response.keyType))
             .also { log.info("/binding/start returns ok: {}", it) }
     }.getOrElse {
         log.error("/binding/start got error", it)
@@ -113,18 +106,17 @@ class BindingController(
         request: HttpServletRequest,
     ): ResponseEntity<BindingCsrResponseJ> = kotlin.runCatching {
         log.info("/binding/create called for {} with {}", principal, body)
-        if (!challengeService.verifyAndRemove(body.challenge))
-            return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                .also { log.info("/binding/create returns challenge invalid: {}", it) }
-
-        val certificate = pkiService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
+        val response = bindingService.signCertificate(
+            body.csr,
+            body.challenge,
+            body.deviceName,
+            body.attestationCerts,
+            principal.name
+        )
             ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                .also { log.info("/binding/create returns CSR invalid: {}", it) }
-
-        deviceBindingStorageService.store(principal.name, certificate.encoded, body.deviceName, certificate.validUntil)
-        session.setAttribute("certificate", certificate.encoded.encodeBase64())
-        val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts, certificate.encoded)
-        ResponseEntity.ok(BindingCsrResponseJ(certificate.encoded, signedPublicKey))
+                .also { log.info("/binding/create returns BAD_REQUEST 400") }
+        session.setAttribute("certificate", response.certificate.encodeBase64())
+        ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
             .also { log.info("/binding/create returns ok: {}", it) }
     }.getOrElse {
         log.error("/binding/create got error", it)
@@ -166,8 +158,8 @@ class BindingController(
         request: HttpServletRequest,
     ): ResponseEntity<BindingConfirmResponseJ> = kotlin.runCatching {
         log.info("/binding/confirm called for {} with {}", principal, body)
-        if (!body.success)
-            return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
+        val confirmed = bindingService.confirm(body.success)
+            ?: return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
                 .also { log.info("/binding/confirm returns success not set: {}", it) }
 
         // We want the client to not need to authenticate again when using the PupilIdController,
@@ -179,7 +171,7 @@ class BindingController(
             SecurityContextHolder.getContext().authentication =
                 DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
         }
-        return ResponseEntity.ok(BindingConfirmResponseJ(true))
+        return ResponseEntity.ok(BindingConfirmResponseJ(confirmed))
             .also { log.info("/binding/confirm returns ok: {}", it) }
     }.getOrElse {
         log.error("/binding/confirm got error", it)

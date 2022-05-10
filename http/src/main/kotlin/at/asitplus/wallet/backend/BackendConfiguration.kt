@@ -72,6 +72,15 @@ class BackendConfiguration {
     }
 
     @Bean
+    fun bindingService(
+        challengeService: ChallengeService,
+        pkiService: PkiService,
+        attestationService: AttestationService,
+        deviceBindingStorageService: DeviceBindingStorageService
+    ): BindingService =
+        DefaultBindingService(challengeService, pkiService, attestationService, deviceBindingStorageService)
+
+    @Bean
     fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
