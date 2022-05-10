@@ -56,6 +56,8 @@ publish:
     echo "VERSION=$VERSION" >> variables.env
   artifacts:
     when: always
+    paths:
+      - "http/build/libs/http*jar"
     reports:
       dotenv: variables.env
 
@@ -71,6 +73,8 @@ publishSnapshot:
     echo "VERSION=$VERSION" >> variables.env
   artifacts:
     when: always
+    paths:
+      - "http/build/libs/http*jar"
     reports:
       dotenv: variables.env
 
