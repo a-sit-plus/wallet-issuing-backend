@@ -7,13 +7,20 @@ import java.time.Instant
 @Repository
 interface DeviceBindingRepository : JpaRepository<DeviceBinding, Long> {
 
-    fun findByCertificateAndRevokedIsFalse(certificate: ByteArray): DeviceBinding?
+    fun findByCertificateAndValidUntilAfterAndRevokedIsFalse(
+        certificate: ByteArray,
+        validUntil: Instant
+    ): DeviceBinding?
 
-    fun findAllByBpkAndRevokedIsFalse(bpk: String): Collection<DeviceBinding>
+    fun findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk: String, validUntil: Instant): Collection<DeviceBinding>
 
-    fun findAllByBpkAndDeviceIdAndRevokedIsFalse(bpk: String, deviceId: String): Collection<DeviceBinding>
+    fun findAllByBpkAndDeviceIdAndValidUntilAfterAndRevokedIsFalse(
+        bpk: String,
+        deviceId: String,
+        validUntil: Instant
+    ): Collection<DeviceBinding>
 
-    fun findAllByRevokedFalse(): Collection<DeviceBinding>
+    fun findAllByRevokedFalseAndValidUntilAfter(validUntil: Instant): Collection<DeviceBinding>
 
     fun findAllByValidUntilBefore(cutoff: Instant): Collection<DeviceBinding>
 

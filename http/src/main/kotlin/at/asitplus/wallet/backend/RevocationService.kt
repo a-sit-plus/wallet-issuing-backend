@@ -140,7 +140,7 @@ class DefaultRevocationService(
      * Revokes all credentials for one pupil, specified by their [bpk].
      */
     override fun revokeCredentialsByBpk(bpk: String): Int {
-        val credentials = credentialRepo.findByRevokedFalseAndDeviceBinding_Bpk(bpk)
+        val credentials = credentialRepo.findByRevokedFalseAndValidUntilAfterAndDeviceBinding_Bpk(Instant.now(), bpk)
         return revokeAllCredentials(credentials)
     }
 
@@ -151,7 +151,10 @@ class DefaultRevocationService(
     override fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Int {
         if (deviceId == null)
             return revokeCredentialsByBpk(bpk)
-        val credentials = credentialRepo.findByRevokedFalseAndDeviceBinding_BpkAndDeviceBinding_DeviceId(bpk, deviceId)
+        val credentials =
+            credentialRepo.findByRevokedFalseAndValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
+                Instant.now(), bpk, deviceId
+            )
         return revokeAllCredentials(credentials)
     }
 
@@ -188,7 +191,7 @@ class DefaultRevocationService(
      * Lists all non-revoked credentials that have been issued
      */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
-        return credentialRepo.findAllByRevokedFalse()
+        return credentialRepo.findAllByRevokedFalseAndValidUntilAfter(Instant.now())
     }
 
     /**

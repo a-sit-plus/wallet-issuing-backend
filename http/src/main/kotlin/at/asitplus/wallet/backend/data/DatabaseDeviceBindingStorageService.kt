@@ -30,11 +30,13 @@ class DatabaseDeviceBindingStorageService(
     }
 
     override fun lookupBpk(decodedCert: ByteArray): String? {
-        return deviceBindingRepository.findByCertificateAndRevokedIsFalse(decodedCert)?.bpk
+        return deviceBindingRepository
+            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(decodedCert, Instant.now())?.bpk
     }
 
     override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
-        return deviceBindingRepository.findAllByBpkAndRevokedIsFalse(bpk)
+        return deviceBindingRepository
+            .findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk, Instant.now())
             .map { DeviceListEntry(it.deviceName, it.deviceId) }
     }
 
@@ -43,7 +45,8 @@ class DatabaseDeviceBindingStorageService(
             ?: return null.also {
                 log.error("Got no authenticated user when trying to store vc")
             }
-        return deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate)
+        return deviceBindingRepository
+            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(certificate, Instant.now())
             ?: return null.also {
                 log.error("Found no authenticated user for certificate '{}", certificate.encodeBase64())
             }
@@ -51,9 +54,11 @@ class DatabaseDeviceBindingStorageService(
 
     override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
         val list = if (deviceId != null)
-            deviceBindingRepository.findAllByBpkAndDeviceIdAndRevokedIsFalse(bpk, deviceId)
+            deviceBindingRepository
+                .findAllByBpkAndDeviceIdAndValidUntilAfterAndRevokedIsFalse(bpk, deviceId, Instant.now())
         else
-            deviceBindingRepository.findAllByBpkAndRevokedIsFalse(bpk)
+            deviceBindingRepository
+                .findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk, Instant.now())
         val toRevoke = list.filter { !it.revoked }
         toRevoke.forEach { it.revoked = true }
         log.info("Revoking {} device bindings", toRevoke.size)

@@ -102,7 +102,7 @@ class RevocationController(
                 .also { log.info("/revoke/pupilid returns HTTP 400, deviceId has been set") }
         val count = revocationService.revokeCredentialsByBpk(body.bpk)
         if (count == 0)
-            return ResponseEntity.badRequest().build<RevocationResponse>()
+            return ResponseEntity.notFound().build<RevocationResponse>()
                 .also { log.info("/revoke/pupilid returns HTTP 404") }
         return ResponseEntity.ok(RevocationResponse(count))
             .also { log.info("/revoke/pupilid returns HTTP 200: {}", it) }
