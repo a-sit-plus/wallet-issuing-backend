@@ -17,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.time.Instant
 import java.util.UUID
@@ -39,30 +40,32 @@ class RevocationControllerFullRunTest {
     private lateinit var credentialRepo: IssuedCredentialRepository
 
     private lateinit var bpk: String
-    private lateinit var deviceId: String
+    private lateinit var client: Client
     private lateinit var certificate: ByteArray
     private lateinit var vcId: String
     private lateinit var attributeName: String
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
     private lateinit var deviceBinding: DeviceBinding
+    private lateinit var deviceId: String
+    private lateinit var deviceName: String
 
     @BeforeEach
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
-        val client = Client()
+        client = Client()
         certificate = client.selfSignedCert.encoded
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         validUntil = Instant.now().plusSeconds(5)
         deviceBindingRepository.deleteAll()
-        credentialRepo.deleteAll()
         deviceBinding = client.storeDeviceBinding(bpk, deviceBindingRepository)
         deviceId = deviceBinding.deviceId
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2).also {
-            credentialRepo.save(it)
-        }
+        deviceName = deviceBinding.deviceName
+        credentialRepo.deleteAll()
+        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2)
+            .also { credentialRepo.save(it) }
     }
 
     @Test
@@ -86,6 +89,21 @@ class RevocationControllerFullRunTest {
     }
 
     @Test
+    fun `expired binding cannot be revoked`() {
+        val validUntil = Instant.now().minusSeconds(1)
+        saveExpiredBinding(validUntil)
+
+        val request = RevocationController.RevocationRequest(bpk)
+
+        mockMvc.post("/revoke/binding") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(request)
+        }.andExpect {
+            status { isNotFound() }
+        }.andReturn()
+    }
+
+    @Test
     fun `revoking binding by bpk and deviceId leads to revoked credential`() {
         credentialRepo.findAllByRevokedFalse().shouldNotBeEmpty()
         deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
@@ -99,7 +117,6 @@ class RevocationControllerFullRunTest {
             status { isOk() }
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
-
 
         credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
         deviceBindingRepository.findAllByRevokedFalse().shouldBeEmpty()
@@ -123,6 +140,61 @@ class RevocationControllerFullRunTest {
 
         credentialRepo.findAllByRevokedFalse().shouldBeEmpty()
         deviceBindingRepository.findAllByRevokedFalse().shouldNotBeEmpty()
+    }
+
+    @Test
+    fun `expired pupilId can not be revoked`() {
+        val validUntil = Instant.now().minusSeconds(1)
+        val deviceBinding = saveExpiredBinding(validUntil)
+        saveExpiredCredential(validUntil, deviceBinding)
+        val request = RevocationController.RevocationRequest(bpk)
+
+        mockMvc.post("/revoke/pupilid") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(request)
+        }.andExpect {
+            status { isNotFound() }
+        }.andReturn()
+    }
+
+    @Test
+    fun `active bindings are listed as devices`() {
+        val expectedResponse = RevocationController.DeviceListResponse(
+            listOf(RevocationController.DeviceListResponseEntry(deviceId, deviceName))
+        )
+
+        mockMvc.get("/revoke/devices?bpk=$bpk") {
+            accept = MediaType.APPLICATION_JSON
+        }.andExpect {
+            status { isOk() }
+            content { json(mapper.writeValueAsString(expectedResponse)) }
+        }.andReturn()
+    }
+
+    @Test
+    fun `expired bindings are not listed as devices`() {
+        val validUntil = Instant.now().minusSeconds(1)
+        val deviceBinding = saveExpiredBinding(validUntil)
+        saveExpiredCredential(validUntil, deviceBinding)
+
+        mockMvc.get("/revoke/devices?bpk=$bpk") {
+            accept = MediaType.APPLICATION_JSON
+        }.andExpect {
+            status { isNotFound() }
+        }.andReturn()
+    }
+
+    private fun saveExpiredBinding(validUntil: Instant): DeviceBinding {
+        deviceBindingRepository.deleteAll()
+        val deviceBinding = DeviceBinding(bpk, client.selfSignedCert.encoded, deviceName, deviceId, validUntil)
+            .also { deviceBindingRepository.save(it) }
+        return deviceBinding
+    }
+
+    private fun saveExpiredCredential(validUntil: Instant, deviceBinding: DeviceBinding) {
+        credentialRepo.deleteAll()
+        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 3)
+            .also { credentialRepo.save(it) }
     }
 
 }

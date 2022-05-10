@@ -36,6 +36,7 @@ class RevocationServiceRepositoryTest {
     private lateinit var attributeName: String
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
+    private lateinit var validUntilExpired: Instant
 
     @BeforeEach
     fun beforeEach() {
@@ -43,6 +44,7 @@ class RevocationServiceRepositoryTest {
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         validUntil = Instant.now().plusSeconds(2)
+        validUntilExpired = Instant.now().minusSeconds(2)
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
@@ -54,9 +56,16 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `issued credential should not be revoked`() {
-        createIssuedCredential().also {
-            credentialRepo.save(it)
-        }
+        createIssuedCredential()
+            .also { credentialRepo.save(it) }
+
+        revocationService.isRevoked(vcId) shouldBe false
+    }
+
+    @Test
+    fun `expired credential should not be revoked`() {
+        createExpiredCredential()
+            .also { credentialRepo.save(it) }
 
         revocationService.isRevoked(vcId) shouldBe false
     }
@@ -72,10 +81,19 @@ class RevocationServiceRepositoryTest {
     }
 
     @Test
-    fun `revoke credentials by vcId`() {
-        createIssuedCredential().also {
+    fun `expired credential marked as revoked should be revoked`() {
+        createExpiredCredential().also {
+            it.revoked = true
             credentialRepo.save(it)
         }
+
+        revocationService.isRevoked(vcId) shouldBe true
+    }
+
+    @Test
+    fun `revoke credentials by vcId`() {
+        createIssuedCredential()
+            .also { credentialRepo.save(it) }
 
         revocationService.revokeCredentialsByVcId(vcId) shouldBe 1
     }
@@ -91,12 +109,19 @@ class RevocationServiceRepositoryTest {
     }
 
     @Test
-    fun `revoke credentials by BPK`() {
-        createIssuedCredential().also {
-            credentialRepo.save(it)
-        }
+    fun `revoke credentials by bpk`() {
+        createIssuedCredential()
+            .also { credentialRepo.save(it) }
 
         revocationService.revokeCredentialsByBpk(bpk) shouldBe 1
+    }
+
+    @Test
+    fun `revoke expired credentials by bpk`() {
+        createExpiredCredential()
+            .also { credentialRepo.save(it) }
+
+        revocationService.revokeCredentialsByBpk(bpk) shouldBe 0
     }
 
     @Test
@@ -106,11 +131,18 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revoke credentials by deviceId`() {
-        createIssuedCredential().also {
-            credentialRepo.save(it)
-        }
+        createIssuedCredential()
+            .also { credentialRepo.save(it) }
 
         revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId) shouldBe 1
+    }
+
+    @Test
+    fun `revoke expired credentials by deviceId`() {
+        createExpiredCredential()
+            .also { credentialRepo.save(it) }
+
+        revocationService.revokeCredentialsByBpkAndDeviceId(bpk, deviceId) shouldBe 0
     }
 
     @Test
@@ -120,23 +152,24 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revoke existing credentials by wrong deviceId`() {
-        createIssuedCredential().also {
-            credentialRepo.save(it)
-        }
+        createIssuedCredential()
+            .also { credentialRepo.save(it) }
 
         revocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()) shouldBe 0
     }
 
     @Test
     fun `revoke existing credentials by wrong bpk`() {
-        createIssuedCredential().also {
-            credentialRepo.save(it)
-        }
+        createIssuedCredential()
+            .also { credentialRepo.save(it) }
 
         revocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId) shouldBe 0
     }
 
     private fun createIssuedCredential(): IssuedCredential =
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 1L)
+
+    private fun createExpiredCredential(): IssuedCredential =
+        IssuedCredential(vcId, subjectId, validUntilExpired, deviceBinding, attributeName, 1L)
 
 }

@@ -113,14 +113,12 @@ class DebugController(
         val deviceName = "fake-" + UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
         val bpk = UUID.randomUUID().toString()
-        val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId, exp).also {
-            deviceBindingRepo.save(it)
-        }
+        val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId, exp)
+            .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
         val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
-        IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, attributeName, revocationListIndex).also {
-            credentialRepo.save(it)
-        }
+        IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, attributeName, revocationListIndex)
+            .also { credentialRepo.save(it) }
         return ModelAndView("redirect:/debug/credential/list")
     }
 

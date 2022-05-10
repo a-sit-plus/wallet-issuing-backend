@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
@@ -21,8 +22,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -43,6 +46,7 @@ class PupilIdControllerFullRunTest {
     private lateinit var holderMessenger: IssueCredentialMessenger
     private lateinit var request: NextMessage.Send
     private lateinit var client: Client
+    private lateinit var bpk: String
 
     @BeforeEach
     fun beforeEach() {
@@ -55,12 +59,12 @@ class PupilIdControllerFullRunTest {
             keyId = holderCryptoService.keyId,
             messageWrapper = MessageWrapper(holderCryptoService)
         )
-        val bpk = UUID.randomUUID().toString()
+        bpk = UUID.randomUUID().toString()
         client.storeDeviceBinding(bpk, deviceBindingRepository)
     }
 
     @Test
-    fun start_challengeResponse_ok() = runTest {
+    fun `issue serves challenge, correct response leads to success`() = runTest {
         request = holderMessenger.startDirect() as NextMessage.Send
 
         val firstResponse = mockMvc.post("/pupilid/issue") {
@@ -71,9 +75,7 @@ class PupilIdControllerFullRunTest {
             header { exists(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
 
-        val headerValue = firstResponse.response.getHeaderValue(HttpHeaders.WWW_AUTHENTICATE)
-        val challenge = headerValue.toString().removePrefix("Challenge ").decodeBase64ToArray()!!
-        val challengeResponse = client.answerBindingChallenge(challenge)
+        val challengeResponse = answerChallenge(firstResponse)
 
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -88,7 +90,7 @@ class PupilIdControllerFullRunTest {
     }
 
     @Test
-    fun start_challengeDirectlyResponse_ok() = runTest {
+    fun `issue with response from challenge from direct endpoint`() = runTest {
         request = holderMessenger.startDirect() as NextMessage.Send
 
         val firstResponse = mockMvc.get("/authn/devicebinding/challenge")
@@ -110,6 +112,47 @@ class PupilIdControllerFullRunTest {
 
         val parsedMessage = holderMessenger.parseMessage(response.response.contentAsString)
         parsedMessage.shouldBeInstanceOf<NextMessage.Result<IssueCredentialProtocolResult>>()
+    }
+
+    @Test
+    fun `response with expired device binding leads to unauthorized`() = runTest {
+        deviceBindingRepository.deleteAll()
+        DeviceBinding(
+            bpk,
+            client.selfSignedCert.encoded,
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            Instant.now().minusSeconds(1)
+        ).also {
+            deviceBindingRepository.save(it)
+        }
+
+        request = holderMessenger.startDirect() as NextMessage.Send
+
+        val firstResponse = mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = request.message
+        }.andExpect {
+            status { isUnauthorized() }
+            header { exists(HttpHeaders.WWW_AUTHENTICATE) }
+        }.andReturn()
+
+        val challengeResponse = answerChallenge(firstResponse)
+
+        mockMvc.post("/pupilid/issue") {
+            contentType = MediaType.APPLICATION_JSON
+            content = request.message
+            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+        }.andExpect {
+            status { isUnauthorized() }
+            header { exists(HttpHeaders.WWW_AUTHENTICATE) }
+        }.andReturn()
+    }
+
+    private fun answerChallenge(response: MvcResult): String {
+        val headerValue = response.response.getHeaderValue(HttpHeaders.WWW_AUTHENTICATE)
+        val challenge = headerValue.toString().removePrefix("Challenge ").decodeBase64ToArray()!!
+        return client.answerBindingChallenge(challenge)
     }
 
 }
