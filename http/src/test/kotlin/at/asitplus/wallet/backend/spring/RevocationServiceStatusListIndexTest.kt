@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
@@ -41,8 +42,6 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var vcId: String
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
-    private lateinit var deviceName: String
-    private lateinit var deviceId: String
     private lateinit var deviceBinding: DeviceBinding
     private lateinit var attributeName: String
     private lateinit var attributeValue: String
@@ -54,6 +53,7 @@ class RevocationServiceStatusListIndexTest {
 
     @BeforeEach
     fun beforeEach() {
+        val client = Client()
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         attributeValue = UUID.randomUUID().toString()
@@ -63,13 +63,10 @@ class RevocationServiceStatusListIndexTest {
         expirationDate = issuanceDate.plusSeconds(60)
         validUntil = Instant.now().plusSeconds(2)
         bpk = UUID.randomUUID().toString()
-        certificate = Random.nextBytes(32)
-        deviceName = UUID.randomUUID().toString()
+        certificate = client.selfSignedCert.encoded
         credentialRepo.deleteAll()
-        deviceId = UUID.randomUUID().toString()
         deviceBindingRepository.deleteAll()
-        deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-            .also { deviceBindingRepository.save(it) }
+        deviceBinding = client.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
             .thenReturn(certificate)
     }

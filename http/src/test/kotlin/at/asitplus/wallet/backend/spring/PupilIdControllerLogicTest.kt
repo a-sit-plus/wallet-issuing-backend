@@ -52,8 +52,6 @@ class PupilIdControllerLogicTest {
 
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
-    private lateinit var deviceName: String
-    private lateinit var deviceId: String
 
     private val subjectCredentialStore = mock<SubjectCredentialStore>()
     private val client = Client()
@@ -74,12 +72,8 @@ class PupilIdControllerLogicTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
-        deviceName = UUID.randomUUID().toString()
-        deviceId = UUID.randomUUID().toString()
         deviceBindingRepository.deleteAll()
-        val validUntil = client.selfSignedCert.notAfter.toInstant()
-        DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-            .also { deviceBindingRepository.save(it) }
+        client.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
             .thenReturn(certificate)
     }
@@ -103,10 +97,10 @@ class PupilIdControllerLogicTest {
 
     @Test
     fun issue_wrongSubject_error() = runTest {
-        certificate = Client().selfSignedCert.encoded
+        val client1 = Client()
+        certificate = client1.selfSignedCert.encoded
         deviceBindingRepository.deleteAll()
-        DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
-            .also { deviceBindingRepository.save(it) }
+        client1.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
             .thenReturn(certificate)
         val request = holderMessenger.startDirect()

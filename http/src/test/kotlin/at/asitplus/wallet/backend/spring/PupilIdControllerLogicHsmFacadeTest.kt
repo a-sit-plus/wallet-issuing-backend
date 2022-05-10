@@ -73,11 +73,7 @@ class PupilIdControllerLogicHsmFacadeTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
-        val deviceName = UUID.randomUUID().toString()
-        val randomUUID = UUID.randomUUID()
-        val validUntil = client.selfSignedCert.notAfter.toInstant()
-        DeviceBinding(bpk, certificate, deviceName, randomUUID.toString(), validUntil)
-            .also { deviceBindingRepository.save(it) }
+        client.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
             .thenReturn(certificate)
     }

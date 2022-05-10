@@ -39,12 +39,10 @@ class RevocationControllerFullRunTest {
     private lateinit var credentialRepo: IssuedCredentialRepository
 
     private lateinit var bpk: String
-    private lateinit var deviceName: String
     private lateinit var deviceId: String
     private lateinit var certificate: ByteArray
     private lateinit var vcId: String
     private lateinit var attributeName: String
-    private lateinit var attributeValue: String
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
     private lateinit var deviceBinding: DeviceBinding
@@ -52,18 +50,16 @@ class RevocationControllerFullRunTest {
     @BeforeEach
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
-        deviceName = UUID.randomUUID().toString()
-        deviceId = UUID.randomUUID().toString()
-        certificate = Client().selfSignedCert.encoded
+        val client = Client()
+        certificate = client.selfSignedCert.encoded
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
-        attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         validUntil = Instant.now().plusSeconds(5)
-        deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         deviceBindingRepository.deleteAll()
         credentialRepo.deleteAll()
-        deviceBinding = deviceBindingRepository.save(deviceBinding)
+        deviceBinding = client.storeDeviceBinding(bpk, deviceBindingRepository)
+        deviceId = deviceBinding.deviceId
         IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2).also {
             credentialRepo.save(it)
         }

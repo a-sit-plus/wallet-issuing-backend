@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
@@ -57,17 +56,7 @@ class PupilIdControllerFullRunTest {
             messageWrapper = MessageWrapper(holderCryptoService)
         )
         val bpk = UUID.randomUUID().toString()
-        val deviceName = UUID.randomUUID().toString()
-        val deviceId = UUID.randomUUID().toString()
-        deviceBindingRepository.save(
-            DeviceBinding(
-                bpk,
-                client.selfSignedCert.encoded,
-                deviceName,
-                deviceId,
-                client.selfSignedCert.notAfter.toInstant()
-            )
-        )
+        client.storeDeviceBinding(bpk, deviceBindingRepository)
     }
 
     @Test

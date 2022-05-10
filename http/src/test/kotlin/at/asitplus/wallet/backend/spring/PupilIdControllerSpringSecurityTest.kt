@@ -1,11 +1,10 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
-import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.NextMessage
 import org.junit.jupiter.api.BeforeEach
@@ -22,9 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import java.time.Instant
 import java.util.UUID
-import kotlin.random.Random
 
 /**
  * Tests the Spring Security parts of the authentication for [PupilIdController],
@@ -52,17 +49,14 @@ class PupilIdControllerSpringSecurityTest {
     private lateinit var clientMessage: String
     private lateinit var serverMessage: String
     private lateinit var certificate: ByteArray
-    private lateinit var deviceName: String
-    private lateinit var deviceId: String
     private lateinit var bpk: String
     private lateinit var challengeResponse: String
 
     @BeforeEach
     fun beforeEach() {
+        val client = Client()
         bpk = UUID.randomUUID().toString()
-        certificate = Random.nextBytes(32)
-        deviceName = UUID.randomUUID().toString()
-        deviceId = UUID.randomUUID().toString()
+        certificate = client.selfSignedCert.encoded
         clientMessage = UUID.randomUUID().toString()
         serverMessage = UUID.randomUUID().toString()
         challengeResponse = UUID.randomUUID().toString()
@@ -71,9 +65,7 @@ class PupilIdControllerSpringSecurityTest {
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-        val validUntil = Instant.now().plusSeconds(60)
-        DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-            .also { deviceBindingRepository.save(it)  }
+        client.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
             .thenReturn(certificate)
     }

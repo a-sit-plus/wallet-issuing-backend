@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
@@ -24,6 +26,7 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.util.Date
+import java.util.UUID
 import kotlin.random.Random
 
 @Service
@@ -55,6 +58,18 @@ class Client {
             issuer,
             SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
         ).build(contentSigner)!!
+    }
+
+    fun storeDeviceBinding(bpk: String, deviceBindingRepository: DeviceBindingRepository): DeviceBinding {
+        return DeviceBinding(
+            bpk,
+            selfSignedCert.encoded,
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            selfSignedCert.notAfter.toInstant()
+        ).also {
+            deviceBindingRepository.save(it)
+        }
     }
 
     fun generateCsr(subject: String): ByteArray {
