@@ -24,7 +24,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
@@ -38,7 +37,7 @@ import java.util.UUID
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
 @SpringBootTest
-@AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 @WithMockUser(authorities = ["DEVICE_BINDING"])
 class PupilIdControllerLogicTest {
 

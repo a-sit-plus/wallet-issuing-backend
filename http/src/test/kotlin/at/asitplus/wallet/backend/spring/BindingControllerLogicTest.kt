@@ -12,7 +12,6 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
@@ -26,7 +25,7 @@ import java.util.UUID
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
 @SpringBootTest
-@AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 class BindingControllerLogicTest {
 
     @Autowired

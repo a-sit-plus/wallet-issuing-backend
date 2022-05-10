@@ -10,7 +10,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders.WWW_AUTHENTICATE
@@ -26,7 +25,7 @@ import java.util.UUID
  */
 @SpringBootTest
 @ActiveProfiles(profiles = ["pupilid", "apikey"])
-@AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 class RevocationControllerApiKeyTest {
 
     @Autowired

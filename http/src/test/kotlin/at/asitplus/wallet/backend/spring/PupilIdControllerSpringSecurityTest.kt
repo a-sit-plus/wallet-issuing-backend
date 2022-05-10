@@ -12,7 +12,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders
@@ -30,7 +29,7 @@ import kotlin.random.Random
  * i.e. it tests the filter, authentication provider, token and so on.
  */
 @SpringBootTest
-@AutoConfigureMockMvc(print = MockMvcPrint.LOG_DEBUG)
+@AutoConfigureMockMvc
 class PupilIdControllerSpringSecurityTest {
 
     @Autowired
