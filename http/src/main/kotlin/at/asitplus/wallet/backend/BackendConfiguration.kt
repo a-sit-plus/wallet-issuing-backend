@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.hsmfacade.provider.HsmFacadeProvider
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
 import at.asitplus.wallet.backend.auth.EcoExtNonceAuthnService
@@ -29,9 +28,6 @@ import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
-import java.security.Security
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import kotlin.time.Duration.Companion.minutes
 
 @Configuration
@@ -53,6 +49,11 @@ class BackendConfiguration {
 
     init {
         Napier.base(AntilogSlf4jAdapter())
+    }
+
+    @Bean
+    fun securityProviderBean(): SecurityProviderBean {
+        return SecurityProviderBean(configurationProperties, resourceLoader)
     }
 
     @Bean
@@ -78,54 +79,40 @@ class BackendConfiguration {
     fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
-    fun pkiService(): PkiService {
-        return when (configurationProperties.pki.type) {
-            PkiType.INTERNAL -> {
-                val keyAdapter = when (configurationProperties.pki.internal.key.type) {
-                    KeyType.FILE -> KeyFileAdapter(configurationProperties.pki.internal.key.file!!, resourceLoader)
-                    KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.pki.internal.key.keystore!!)
-                    KeyType.HSMFACADE -> {
-                        initHsmFacadeConnection()
-                        HsmFacadeAdapter(configurationProperties.pki.internal.key.hsmfacade!!)
-                    }
-                    KeyType.MEMORY -> RandomKeyAdapter()
-                }
-                InMemoryPkiService(
-                    configurationProperties.pki.certValidityDays,
-                    configurationProperties.pki.internal.issuerName,
-                    DefaultCryptoServiceAdapter(keyAdapter),
+    fun pkiService(securityProviderBean: SecurityProviderBean): PkiService = when (configurationProperties.pki.type) {
+        PkiType.INTERNAL -> {
+            val keyAdapter = when (configurationProperties.pki.internal.key.type) {
+                KeyType.FILE -> KeyFileAdapter(
+                    configurationProperties.pki.internal.key.file!!,
+                    resourceLoader,
+                    securityProviderBean
                 )
-            }
-            PkiType.AERA -> {
-                val restTemplate = ClientTlsConfigurationService(
-                    configurationProperties.pki.aera,
-                    restTemplateBuilder
-                ).restTemplate
-                AeraPkiService(
-                    configurationProperties.pki.certValidityDays,
-                    configurationProperties.pki.aera.url!!.toString(),
-                    restTemplate
+                KeyType.KEYSTORE -> KeyStoreAdapter(
+                    configurationProperties.pki.internal.key.keystore!!,
+                    securityProviderBean
                 )
+                KeyType.HSMFACADE -> HsmFacadeAdapter(
+                    configurationProperties.pki.internal.key.hsmfacade!!,
+                    securityProviderBean
+                )
+                KeyType.MEMORY -> RandomKeyAdapter()
             }
-        }
-    }
-
-    private fun initHsmFacadeConnection() {
-        if (configurationProperties.hsmfacade.enabled) {
-            val config = configurationProperties.hsmfacade
-            if (HsmFacadeProvider.instance.isInitialized) return
-            val rootCert = CertificateFactory.getInstance("X.509")
-                .generateCertificate(resourceLoader.getResource(config.rootCertificate!!.toString()).inputStream)
-                    as X509Certificate
-            HsmFacadeProvider.instance.init(
-                rootCert,
-                config.username!!,
-                config.password!!,
-                config.hostname!!,
-                config.port!!,
-                config.timeout
+            InMemoryPkiService(
+                configurationProperties.pki.certValidityDays,
+                configurationProperties.pki.internal.issuerName,
+                DefaultCryptoServiceAdapter(keyAdapter),
             )
-            Security.addProvider(HsmFacadeProvider.instance)
+        }
+        PkiType.AERA -> {
+            val restTemplate = ClientTlsConfigurationService(
+                configurationProperties.pki.aera,
+                restTemplateBuilder
+            ).restTemplate
+            AeraPkiService(
+                configurationProperties.pki.certValidityDays,
+                configurationProperties.pki.aera.url!!.toString(),
+                restTemplate
+            )
         }
     }
 
@@ -214,14 +201,15 @@ class BackendConfiguration {
 
 
     @Bean
-    fun issuerCryptoService() = DefaultCryptoServiceAdapter(
+    fun issuerCryptoService(securityProviderBean: SecurityProviderBean) = DefaultCryptoServiceAdapter(
         when (configurationProperties.issuerKey.type) {
-            KeyType.FILE -> KeyFileAdapter(configurationProperties.issuerKey.file!!, resourceLoader)
-            KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.issuerKey.keystore!!)
-            KeyType.HSMFACADE -> {
-                initHsmFacadeConnection()
-                HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!)
-            }
+            KeyType.FILE -> KeyFileAdapter(
+                configurationProperties.issuerKey.file!!,
+                resourceLoader,
+                securityProviderBean
+            )
+            KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.issuerKey.keystore!!, securityProviderBean)
+            KeyType.HSMFACADE -> HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!, securityProviderBean)
             KeyType.MEMORY -> RandomKeyAdapter()
         }
     )

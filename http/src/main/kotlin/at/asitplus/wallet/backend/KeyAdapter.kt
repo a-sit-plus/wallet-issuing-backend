@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.hsmfacade.provider.HsmFacadeProvider
 import at.asitplus.hsmfacade.provider.RemoteKeyStoreLoadParameter
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
@@ -19,6 +18,7 @@ import java.nio.charset.Charset
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.PublicKey
 import java.security.Security
 import java.security.interfaces.ECPublicKey
@@ -31,12 +31,13 @@ interface KeyAdapter {
     val publicKey: PublicKey
     val jsonWebKey: JsonWebKey
     val jwsAlgorithm: JwsAlgorithm
-    val provider: String
+    val provider: Provider
 }
 
 class KeyFileAdapter(
     config: KeyFileConfiguration,
-    resourceLoader: ResourceLoader
+    resourceLoader: ResourceLoader,
+    securityProviderBean: SecurityProviderBean
 ) : KeyAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -44,11 +45,10 @@ class KeyFileAdapter(
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
-    override val provider: String = "BC"
+    override val provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
 
     init {
-        Security.addProvider(BouncyCastleProvider())
         val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
         val privateKeyRead = PEMParser(StringReader(privateKeyString)).readObject()
         privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
@@ -69,7 +69,8 @@ class KeyFileAdapter(
 
 
 class KeyStoreAdapter(
-    config: KeyStoreConfiguration
+    config: KeyStoreConfiguration,
+    securityProviderBean: SecurityProviderBean,
 ) : KeyAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -77,13 +78,11 @@ class KeyStoreAdapter(
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
-    override val provider: String = config.provider ?: "BC"
+    override val provider: Provider = config.provider?.let { Security.getProvider(it) } ?: securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
 
     init {
-        if (config.provider == null)
-            Security.addProvider(BouncyCastleProvider())
-        val keyStore = KeyStore.getInstance(config.type, config.provider ?: "BC")
+        val keyStore = KeyStore.getInstance(config.type, provider)
         keyStore.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
         privateKey = keyStore.getKey(config.alias, config.aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
         publicKey = keyStore.getCertificate(config.alias).publicKey
@@ -98,6 +97,7 @@ class KeyStoreAdapter(
 
 class HsmFacadeAdapter(
     config: KeyHsmFacadeConfiguration,
+    securityProviderBean: SecurityProviderBean,
 ) : KeyAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -105,12 +105,11 @@ class HsmFacadeAdapter(
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
-    override val provider: String = "HsmFacade"
+    override val provider: Provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
 
     init {
-        val providerInstance = HsmFacadeProvider.instance
-        val keyStore = KeyStore.getInstance("RemoteKeyStore", providerInstance)
+        val keyStore = KeyStore.getInstance("RemoteKeyStore", securityProviderBean.provider)
         keyStore.load(RemoteKeyStoreLoadParameter(config.keyStoreName!!))
         privateKey = keyStore.getKey(config.keyStoreAlias!!, null) as PrivateKey
         publicKey = keyStore.getCertificate(config.keyStoreAlias).publicKey
@@ -123,19 +122,18 @@ class HsmFacadeAdapter(
 
 }
 
-class RandomKeyAdapter : KeyAdapter {
+class RandomKeyAdapter() : KeyAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
-    override val provider: String = "BC"
+    override val provider: Provider = BouncyCastleProvider().also { Security.addProvider(it) }
     override val jsonWebKey: JsonWebKey
 
     init {
-        Security.addProvider(BouncyCastleProvider())
-        val keyPair = KeyPairGenerator.getInstance("EC", "BC").also { it.initialize(256) }.generateKeyPair()
+        val keyPair = KeyPairGenerator.getInstance("EC", provider).also { it.initialize(256) }.generateKeyPair()
         privateKey = keyPair.private
         publicKey = keyPair.public
         val ecCurve = EcCurve.SECP_256_R_1

@@ -14,14 +14,12 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.springframework.stereotype.Service
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.Security
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
@@ -35,13 +33,11 @@ class Client {
     final lateinit var keyId: String
 
     constructor(keyPair: KeyPair) {
-        Security.addProvider(BouncyCastleProvider())
         this.keyPair = keyPair
         this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
     }
 
     constructor() {
-        Security.addProvider(BouncyCastleProvider())
         this.keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
         this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
     }

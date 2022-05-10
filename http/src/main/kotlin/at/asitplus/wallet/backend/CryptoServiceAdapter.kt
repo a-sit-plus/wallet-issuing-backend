@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.PublicKey
 import java.security.Security
 import java.security.Signature
@@ -57,7 +58,7 @@ class DefaultCryptoServiceAdapter(
 
     private val privateKey: PrivateKey = keyAdapter.privateKey
     private val publicKey: PublicKey = keyAdapter.publicKey
-    private val provider: String = keyAdapter.provider
+    private val provider: Provider = keyAdapter.provider
     private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
     override val keyId: String = jsonWebKey.keyId!!
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
@@ -168,7 +169,7 @@ class DefaultCryptoServiceAdapter(
 
     override val jwsContentSigner: JWSSigner
         get() = ECDSASigner(privateKey as ECPrivateKey).also {
-            it.jcaContext.provider = Security.getProvider(provider)
+            it.jcaContext.provider = provider
         }
 
     override val jcaContentSigner: ContentSigner
