@@ -18,8 +18,12 @@ import java.net.URI
 import java.security.KeyStore
 
 
-class ClientTlsConfigurationService constructor(
-    config: ExternalTlsConnection,
+/**
+ * Configures an instance of [RestTemplate] according to configuration from [ExternalConnectionConfig],
+ * to be used to consume a REST API at an external service.
+ */
+class RestTemplateConfigurationService constructor(
+    config: ExternalConnectionConfig,
     restTemplateBuilder: RestTemplateBuilder,
 ) {
 
@@ -49,7 +53,7 @@ class ClientTlsConfigurationService constructor(
         }
     }
 
-    private fun buildHttpClientTls(config: ExternalTlsConnection): CloseableHttpClient {
+    private fun buildHttpClientTls(config: ExternalConnectionConfig): CloseableHttpClient {
         val httpClientBuilder = HttpClients.custom()
         val sslContextBuilder = SSLContexts.custom()
         when (config.trust?.type) {

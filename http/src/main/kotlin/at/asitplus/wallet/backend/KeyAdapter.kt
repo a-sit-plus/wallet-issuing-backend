@@ -122,7 +122,7 @@ class HsmFacadeAdapter(
 
 }
 
-class RandomKeyAdapter() : KeyAdapter {
+class RandomKeyAdapter : KeyAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 

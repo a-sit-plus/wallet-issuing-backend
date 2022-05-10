@@ -12,6 +12,10 @@ import org.springframework.http.MediaType
 import org.springframework.web.client.RestTemplate
 import java.util.UUID
 
+/**
+ * Implements [PkiService] by calling the external PKI service from BRZ,
+ * called "AERA". In essence, it sends REST requests to an external server.
+ */
 class AeraPkiService(
     private val certValidityDays: Int,
     private val url: String,

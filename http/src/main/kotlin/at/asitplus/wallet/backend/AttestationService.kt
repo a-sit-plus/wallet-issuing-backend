@@ -10,10 +10,6 @@ import com.google.iot.cbor.CborMap
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -32,20 +28,16 @@ interface AttestationService {
 
 }
 
-@Serializable
-data class AttestedPublicKey(
-    @SerialName("jwk")
-    val jsonWebKey: JsonWebKey,
-    @SerialName("sn")
-    val serialNumber: Long,
-) {
-    fun serialize() = Json.encodeToString(this)
-}
-
 class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
+    /**
+     * Verifies the Android Key Attestation or Apple App Attestation
+     * structures of the client (in [attestationCerts]),
+     * creating a signed public key (with data from [bindingCertificate])
+     * if the device can be verified.
+     */
     override fun verifyAttestation(attestationCerts: List<ByteArray>, bindingCertificate: ByteArray): String? {
         try {
             val certificate = CertificateFactory.getInstance("X.509")
@@ -78,6 +70,9 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
     else
         verifyAttestationApple(attestationCerts, validityDate)
 
+    /**
+     * Verifies Google Key Attestation structure by parsing certificates
+     */
     private fun verifyAttestationAndroid(
         attestationCerts: List<ByteArray>,
         bindingCertificate: X509Certificate,
@@ -94,20 +89,9 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         return true
     }.getOrElse { false }
 
-    private fun verifyCertificateChain(certificates: List<X509Certificate>, validityDate: Date = Date()): Boolean {
-        certificates.chunked(2).forEach {
-            val leafCert = it.first()
-            val intermediateCert = it.last()
-            val signatureValid = kotlin.runCatching { leafCert.verify(intermediateCert.publicKey) }.isSuccess
-            if (!signatureValid)
-                return false
-            val timeValid = kotlin.runCatching { leafCert.checkValidity(validityDate) }.isSuccess
-            if (!timeValid)
-                return false
-        }
-        return true
-    }
-
+    /**
+     * Verifies Apple App Attestation structure by parsing CBOR and certificates.
+     */
     private fun verifyAttestationApple(
         attestationCerts: List<ByteArray>,
         validityDate: Date = Date()
@@ -126,11 +110,28 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         return true
     }.getOrElse { false }
 
+    private fun verifyCertificateChain(certificates: List<X509Certificate>, validityDate: Date = Date()): Boolean {
+        certificates.chunked(2).forEach {
+            val leafCert = it.first()
+            val intermediateCert = it.last()
+            val signatureValid = kotlin.runCatching { leafCert.verify(intermediateCert.publicKey) }.isSuccess
+            if (!signatureValid)
+                return false
+            val timeValid = kotlin.runCatching { leafCert.checkValidity(validityDate) }.isSuccess
+            if (!timeValid)
+                return false
+        }
+        return true
+    }
+
     private fun ByteArray.parseToCertificate() = kotlin.runCatching {
         CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
     }.getOrNull()
 
-    // from https://developer.android.com/training/articles/security-key-attestation
+    /**
+     * Root of trust for Android's Key Attestation, from
+     * https://developer.android.com/training/articles/security-key-attestation
+     */
     private val googleRootPublicKey = """
         MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAr7bHgiuxpwHsK7Qui8xU
         FmOr75gvMsd/dTEDDJdSSxtf6An7xyqpRR90PL2abxM1dEqlXnf2tqw1Ne4Xwl5j
@@ -146,7 +147,10 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         NpUFgNPN9PvQi8WEg5UmAGMCAwEAAQ==
     """.trimIndent().decodeBase64ToArray()!!
 
-    // from https://www.apple.com/certificateauthority/private/
+    /**
+     * Root of trust for Apple's App Attestation, from
+     * https://www.apple.com/certificateauthority/private/
+     */
     private val appleRootCertificate = """
         MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYw
         JAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwK

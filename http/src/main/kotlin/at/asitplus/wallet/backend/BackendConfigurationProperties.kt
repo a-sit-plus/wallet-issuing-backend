@@ -96,19 +96,49 @@ data class CleanupConfigurationProperties(
 
 @ConstructorBinding
 data class HsmFacadeConfiguration(
+    /**
+     * Whether to enable connection to the HsmFacade service at all
+     */
     val enabled: Boolean = false,
+    /**
+     * TLS root certificate used by the HsmFacade service, pinned here
+     */
     val rootCertificate: URI? = null,
+    /**
+     * Host to connect to
+     */
     val hostname: String? = null,
+    /**
+     * Port used for the connection
+     */
     val port: Int? = null,
+    /**
+     * Username for authentication
+     */
     val username: String? = null,
+    /**
+     * Password for authentication
+     */
     val password: String? = null,
+    /**
+     * Timeout for one call to the HsmFacade service in seconds
+     */
     val timeout: Long = 30,
 )
 
 @ConstructorBinding
 data class AttributeSourceConfigurationProperties(
+    /**
+     * Type of the attribute source
+     */
     val type: AttributeSourceType = AttributeSourceType.RANDOM,
-    val eco: ExternalAttributeSourceConfigurationProperties? = null,
+    /**
+     * Default for PupilId: Get attributes from ECO ("edu.card online")
+     */
+    val eco: EcoAttributeSourceConfigurationProperties? = null,
+    /**
+     * Generate random values for attributes
+     */
     val random: RandomAttributeSourceConfigurationProperties? = RandomAttributeSourceConfigurationProperties()
 )
 
@@ -119,7 +149,7 @@ enum class AttributeSourceType {
 }
 
 @ConstructorBinding
-data class ExternalAttributeSourceConfigurationProperties(
+data class EcoAttributeSourceConfigurationProperties(
     override val url: URI? = null,
     override val clientTls: Boolean = false,
     override val serverTls: Boolean = true,
@@ -127,9 +157,9 @@ data class ExternalAttributeSourceConfigurationProperties(
     override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
     override val apiKey: String? = null
-) : ExternalTlsConnection
+) : ExternalConnectionConfig
 
-interface ExternalTlsConnection {
+interface ExternalConnectionConfig {
     val url: URI?
     val clientTls: Boolean
     val serverTls: Boolean
@@ -197,7 +227,7 @@ data class AeraPkiConfigurationProperties(
     override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
     override val apiKey: String? = null
-) : ExternalTlsConnection
+) : ExternalConnectionConfig
 
 @ConstructorBinding
 data class DeviceBindingConfigurationProperties(
@@ -219,7 +249,7 @@ data class EcoDeviceBindingConfigurationProperties(
     override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
     override val apiKey: String? = null
-) : ExternalTlsConnection
+) : ExternalConnectionConfig
 
 @ConstructorBinding
 data class ApiKeyConfigurationProperties(

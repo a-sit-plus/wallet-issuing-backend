@@ -14,6 +14,10 @@ import java.util.Date
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
 
+/**
+ * Signs certificates for development deployments,
+ * i.e. with the key from a [CryptoServiceAdapter].
+ */
 class InMemoryPkiService(
     private val certValidityDays: Int = 1,
     private val issuerName: String = "CN=Issuer",

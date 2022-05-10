@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * Provides endpoints in the PupilId deployment:
+ * - REST for Wallet App to get credentials (with a device binding)
+ */
 @Profile("pupilid")
 @RestController
 class PupilIdController(

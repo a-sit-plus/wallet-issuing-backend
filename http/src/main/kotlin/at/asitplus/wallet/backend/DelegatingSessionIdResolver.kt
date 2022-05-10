@@ -4,6 +4,10 @@ import org.springframework.session.web.http.HttpSessionIdResolver
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+/**
+ * Used in EIDAS deployments to set session identifier to
+ * header `X-Auth-Token` and cookie `SESSION`.
+ */
 class DelegatingSessionIdResolver(private vararg val resolvers: HttpSessionIdResolver) : HttpSessionIdResolver {
 
     override fun resolveSessionIds(request: HttpServletRequest?): MutableList<String> {

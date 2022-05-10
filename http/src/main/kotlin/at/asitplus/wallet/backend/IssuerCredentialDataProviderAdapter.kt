@@ -8,7 +8,7 @@ import kotlin.time.Duration
 
 
 /**
- * Implements interface from VC Library to wrap calls to a specific [CredentialDataProvider]
+ * Implements interface from VC Library to wrap calls to a specific [CredentialDataProvider].
  */
 class IssuerCredentialDataProviderAdapter(
     private val lifetime: Duration,

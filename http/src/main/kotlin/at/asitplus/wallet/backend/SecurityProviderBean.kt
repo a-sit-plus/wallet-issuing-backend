@@ -10,6 +10,10 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
 
+/**
+ * Loads the [Provider] for cryptographic operations,
+ * e.g. a connection to a HsmFacade service or fallback [BouncyCastleProvider].
+ */
 class SecurityProviderBean(
     configurationProperties: BackendConfigurationProperties,
     resourceLoader: ResourceLoader,

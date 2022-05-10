@@ -52,26 +52,22 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun securityProviderBean(): SecurityProviderBean {
-        return SecurityProviderBean(configurationProperties, resourceLoader)
-    }
+    fun securityProviderBean(): SecurityProviderBean = SecurityProviderBean(configurationProperties, resourceLoader)
 
     @Bean
-    fun extNonceAuthnService(): ExtNonceAuthnService {
-        return when (configurationProperties.authn.deviceBinding.type) {
-            DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
-                SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
+    fun extNonceAuthnService(): ExtNonceAuthnService = when (configurationProperties.authn.deviceBinding.type) {
+        DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
+            SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
+        )
+        DeviceBindingNonceType.ECO -> {
+            val restTemplate = RestTemplateConfigurationService(
+                configurationProperties.authn.deviceBinding.eco,
+                restTemplateBuilder
+            ).restTemplate
+            EcoExtNonceAuthnService(
+                configurationProperties.authn.deviceBinding.eco.url!!,
+                restTemplate
             )
-            DeviceBindingNonceType.ECO -> {
-                val restTemplate = ClientTlsConfigurationService(
-                    configurationProperties.authn.deviceBinding.eco,
-                    restTemplateBuilder
-                ).restTemplate
-                EcoExtNonceAuthnService(
-                    configurationProperties.authn.deviceBinding.eco.url!!,
-                    restTemplate
-                )
-            }
         }
     }
 
@@ -79,7 +75,9 @@ class BackendConfiguration {
     fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
-    fun pkiService(securityProviderBean: SecurityProviderBean): PkiService = when (configurationProperties.pki.type) {
+    fun pkiService(
+        securityProviderBean: SecurityProviderBean
+    ): PkiService = when (configurationProperties.pki.type) {
         PkiType.INTERNAL -> {
             val keyAdapter = when (configurationProperties.pki.internal.key.type) {
                 KeyType.FILE -> KeyFileAdapter(
@@ -104,7 +102,7 @@ class BackendConfiguration {
             )
         }
         PkiType.AERA -> {
-            val restTemplate = ClientTlsConfigurationService(
+            val restTemplate = RestTemplateConfigurationService(
                 configurationProperties.pki.aera,
                 restTemplateBuilder
             ).restTemplate
@@ -117,7 +115,9 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun attestationService(issuerCryptoService: CryptoServiceAdapter): AttestationService =
+    fun attestationService(
+        issuerCryptoService: CryptoServiceAdapter
+    ): AttestationService =
         DefaultAttestationService(issuerCryptoService)
 
     @Bean
@@ -125,13 +125,16 @@ class BackendConfiguration {
         SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
 
     @Bean
-    fun deviceBindingStorageService(deviceBindingRepository: DeviceBindingRepository): DeviceBindingStorageService =
+    fun deviceBindingStorageService(
+        deviceBindingRepository: DeviceBindingRepository
+    ): DeviceBindingStorageService =
         DatabaseDeviceBindingStorageService(deviceBindingRepository)
 
     @Bean
     fun issueCredentialAdapter(
-        issueCredentialMessenger: IssueCredentialMessenger,
-    ): IssueCredentialAdapter = DefaultIssueCredentialAdapter(issueCredentialMessenger)
+        issueCredentialMessenger: IssueCredentialMessenger
+    ): IssueCredentialAdapter =
+        DefaultIssueCredentialAdapter(issueCredentialMessenger)
 
     @Bean
     fun revocationService(
@@ -154,11 +157,13 @@ class BackendConfiguration {
 
     @Bean
     fun issuerCredentialStoreAdapter(
-        revocationService: RevocationService,
+        revocationService: RevocationService
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
-    fun dataProvider(deviceBindingStorageService: DeviceBindingStorageService): CredentialDataProvider =
+    fun dataProvider(
+        deviceBindingStorageService: DeviceBindingStorageService
+    ): CredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
             AttributeSourceType.RANDOM -> {
                 val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
@@ -172,7 +177,7 @@ class BackendConfiguration {
                 )
             }
             AttributeSourceType.ECO -> {
-                val restTemplate = ClientTlsConfigurationService(
+                val restTemplate = RestTemplateConfigurationService(
                     configurationProperties.attributeSource.eco!!,
                     restTemplateBuilder
                 ).restTemplate
@@ -192,16 +197,16 @@ class BackendConfiguration {
     fun issuerCredentialDataProvider(
         credentialDataProvider: CredentialDataProvider,
         deviceBindingStorageService: DeviceBindingStorageService
-    ): IssuerCredentialDataProvider =
-        IssuerCredentialDataProviderAdapter(
-            lifetime = configurationProperties.credentials.lifetime.toMinutes().minutes,
-            credentialDataProvider = credentialDataProvider,
-            deviceBindingStorageService = deviceBindingStorageService
-        )
-
+    ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
+        lifetime = configurationProperties.credentials.lifetime.toMinutes().minutes,
+        credentialDataProvider = credentialDataProvider,
+        deviceBindingStorageService = deviceBindingStorageService
+    )
 
     @Bean
-    fun issuerCryptoService(securityProviderBean: SecurityProviderBean) = DefaultCryptoServiceAdapter(
+    fun issuerCryptoService(
+        securityProviderBean: SecurityProviderBean
+    ) = DefaultCryptoServiceAdapter(
         when (configurationProperties.issuerKey.type) {
             KeyType.FILE -> KeyFileAdapter(
                 configurationProperties.issuerKey.file!!,
@@ -228,7 +233,9 @@ class BackendConfiguration {
     )
 
     @Bean
-    fun issuerMessageWrapper(issuerCryptoService: CryptoService): MessageWrapper = MessageWrapper(
+    fun issuerMessageWrapper(
+        issuerCryptoService: CryptoService
+    ): MessageWrapper = MessageWrapper(
         cryptoService = issuerCryptoService,
         jwsService = DefaultJwsService(issuerCryptoService)
     )

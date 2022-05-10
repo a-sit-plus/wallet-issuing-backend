@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * Public endpoints, available without authentication:
- * - Revocation list for Verifiable Credentials
- * - Revocation list for Binding Certificates
+ * - Revocation list for Verifiable Credentials (RevocationList2020)
+ * - Revocation list for Binding Certificates (PKI CRL)
+ * - PKI CA certificate
  */
 @RestController
 class PublicController(

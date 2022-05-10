@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * Delivers an authn challenge to be used by clients for signing
+ * a response to be used for authentication in [BindingController].
+ */
 @RestController
 class AuthnController(
     private val deviceBindingAuthnChallengeService: ChallengeService,
