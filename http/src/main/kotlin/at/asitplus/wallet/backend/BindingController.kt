@@ -66,17 +66,16 @@ class BindingController(
     fun requestBindingParams(
         @RequestBody body: BindingParamsRequestJ,
         principal: Principal
-    ): ResponseEntity<BindingParamsResponseJ> {
+    ): ResponseEntity<BindingParamsResponseJ> = kotlin.runCatching {
         log.info("/binding/start called for {} with {}", principal, body)
-        try {
-            val challenge = challengeService.generate()
-            val subject = "CN=${challenge.encodeBase16()}"
-            return ResponseEntity.ok(BindingParamsResponseJ(challenge, subject, "EC"))
-                .also { log.info("/binding/start returns ok: {}", it) }
-        } catch (e: Throwable) {
-            return ResponseEntity.internalServerError().build<BindingParamsResponseJ>()
-                .also { log.error("/binding/start got error", e) }
-        }
+        val challenge = challengeService.generate()
+        val subject = "CN=${challenge.encodeBase16()}"
+
+        ResponseEntity.ok(BindingParamsResponseJ(challenge, subject, "EC"))
+            .also { log.info("/binding/start returns ok: {}", it) }
+    }.getOrElse {
+        log.error("/binding/start got error", it)
+        ResponseEntity.internalServerError().build()
     }
 
     @Operation(
@@ -112,30 +111,24 @@ class BindingController(
         principal: Principal,
         session: HttpSession,
         request: HttpServletRequest,
-    ): ResponseEntity<BindingCsrResponseJ> {
+    ): ResponseEntity<BindingCsrResponseJ> = kotlin.runCatching {
         log.info("/binding/create called for {} with {}", principal, body)
-        try {
-            if (!challengeService.verifyAndRemove(body.challenge)) {
-                return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                    .also { log.info("/binding/create returns challenge invalid: {}", it) }
-            }
-            val certificate = pkiService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
-                ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                    .also { log.info("/binding/create returns CSR invalid: {}", it) }
-            deviceBindingStorageService.store(
-                principal.name,
-                certificate.encoded,
-                body.deviceName,
-                certificate.validUntil
-            )
-            session.setAttribute("certificate", certificate.encoded.encodeBase64())
-            val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts, certificate.encoded)
-            return ResponseEntity.ok(BindingCsrResponseJ(certificate.encoded, signedPublicKey))
-                .also { log.info("/binding/create returns ok: {}", it) }
-        } catch (e: Throwable) {
-            return ResponseEntity.internalServerError().build<BindingCsrResponseJ>()
-                .also { log.error("/binding/create got error", e) }
-        }
+        if (!challengeService.verifyAndRemove(body.challenge))
+            return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+                .also { log.info("/binding/create returns challenge invalid: {}", it) }
+
+        val certificate = pkiService.verifyAndSign(body.csr, "CN=${body.challenge.encodeBase16()}")
+            ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+                .also { log.info("/binding/create returns CSR invalid: {}", it) }
+
+        deviceBindingStorageService.store(principal.name, certificate.encoded, body.deviceName, certificate.validUntil)
+        session.setAttribute("certificate", certificate.encoded.encodeBase64())
+        val signedPublicKey = attestationService.verifyAttestation(body.attestationCerts, certificate.encoded)
+        ResponseEntity.ok(BindingCsrResponseJ(certificate.encoded, signedPublicKey))
+            .also { log.info("/binding/create returns ok: {}", it) }
+    }.getOrElse {
+        log.error("/binding/create got error", it)
+        ResponseEntity.internalServerError().build()
     }
 
     @Operation(
@@ -171,28 +164,26 @@ class BindingController(
         principal: Principal,
         session: HttpSession,
         request: HttpServletRequest,
-    ): ResponseEntity<BindingConfirmResponseJ> {
+    ): ResponseEntity<BindingConfirmResponseJ> = kotlin.runCatching {
         log.info("/binding/confirm called for {} with {}", principal, body)
-        try {
-            if (!body.success) {
-                return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
-                    .also { log.info("/binding/confirm returns success not set: {}", it) }
-            }
-            // We want the client to not need to authenticate again when using the PupilIdController,
-            // so we'll set the expected authentication token into the current security context
-            // and do not log out the client (previously, "request.logout()" has been called here)
-            if (principal is ExtNonceAuthnToken) {
-                val certificate = session.getAttribute("certificate").toString().decodeBase64ToArray()!!
-                extNonceAuthnService.invalidateNonce(principal.credentials.toString())
-                SecurityContextHolder.getContext().authentication =
-                    DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
-            }
-            return ResponseEntity.ok(BindingConfirmResponseJ(true))
-                .also { log.info("/binding/confirm returns ok: {}", it) }
-        } catch (e: Throwable) {
-            return ResponseEntity.internalServerError().build<BindingConfirmResponseJ>()
-                .also { log.error("/binding/confirm got error", e) }
+        if (!body.success)
+            return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
+                .also { log.info("/binding/confirm returns success not set: {}", it) }
+
+        // We want the client to not need to authenticate again when using the PupilIdController,
+        // so we'll set the expected authentication token into the current security context
+        // and do not log out the client (previously, "request.logout()" has been called here)
+        if (principal is ExtNonceAuthnToken) {
+            val certificate = session.getAttribute("certificate").toString().decodeBase64ToArray()!!
+            extNonceAuthnService.invalidateNonce(principal.credentials.toString())
+            SecurityContextHolder.getContext().authentication =
+                DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
         }
+        return ResponseEntity.ok(BindingConfirmResponseJ(true))
+            .also { log.info("/binding/confirm returns ok: {}", it) }
+    }.getOrElse {
+        log.error("/binding/confirm got error", it)
+        ResponseEntity.internalServerError().build()
     }
 
 }
