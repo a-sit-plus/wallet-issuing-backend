@@ -1,6 +1,6 @@
 # PupilId Backend Service
 
-This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing PupilIds oder EidasIds.
+This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing PupilIds or EidasIds.
 
 The default public key that signs the credentials is:
 
@@ -21,7 +21,7 @@ The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagge
 
 `GET /crl/1` returns the X.509 Certificate Revocation List, if the PKI implementation supports this, i.e. only for the internal PKI (see below for configuration). When the external AERA service is used to sign device binding certificates, the CRL is available at an external URL (specified in the issued certificates).
 
-`GET /credentials/status/1` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/).
+`GET /credentials/status/1` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/). It is essentially a bitstring in which a bit is set if the verifiable credential with this `statusListIndex` is revoked. The bitstring is then zlib compressed and base64 encoded to be transported inside an JWS.
 
 Sample revocation list (transported as a JWS in compact representation, exploded here for readability):
 
@@ -58,15 +58,15 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 
 ### Device Binding
 
-The call to `/binding/start` requires authentication with an external Nonce extracted from a QR Code displayed by ECO (or this service, in the EIDAS deployment), to be sent in the header `X-Auth-ExtNonce`. The second call, to `/binding/create` needs to include the session identifier to be sent in the header `X-Auth-Token` (which in turn has been set by this service in the first response).
+`POST /binding/start` initiates the device binding process in the Wallet App.
 
-`POST /binding/start` initiates the device binding process in the App. User needs to scan a QR Code with a nonce first to be authorized to access this endpoint.
+`POST /binding/create` returns the device binding to the App.
 
-`POST /binding/create` returns the device binding to the App. User is authenticated through the session established by the call to `/binding/start`.
+`POST /binding/confirm` finishes the device binding process.
 
-`POST /binding/confirm` finishes the device binding process. User is authenticated through the session established by the call to `/binding/start`.
+The call to `/binding/start` requires authentication with an external nonce, to be sent in the header `X-Auth-ExtNonce`. The Wallet App extracts this nonce from a QR Code displayed by ECO (or this service, in the EIDAS deployment).
 
-Client needs to scan the QR Code from ECO first, to get a value for `X-Auth-ExtNonce`.
+Subsequent requests, to `/binding/create` and `/binding/confirm`, need to include the session identifier in the header `X-Auth-Token` (which in turn has been set by this service in the first response).
 
 Request from client:
 
@@ -108,27 +108,25 @@ X-Auth-Token: c703200e-3a03-4157-beb8-ca0d550ba56b
           dJZNvTwnZP3tRQyNpzQMZMnMCIQDepERQmECr3mqFGS4AQzSnWpwZZBjGtmU1NWiK/E92
           Ew==",
   "attestationCerts": [
-    "MIICpjCCAkqgAwIBAgIBATAMBggqhkjOPQQDAgUAMD8xEjAQBgNVBAwMCVN0cm9u
-     Z0JveDEpMCcGA1UEBRMgMDY4NDJmODRiY2JhZGJkMTk2NDA1YmZkNmE2MzQ5ZWIw
-     HhcNNzAwMTAxMDAwMDAwWhcNNDgwMTAxMDAwMDAwWjAfMR0wGwYDVQQDExRBbmRy
-     b2lkIEtleXN0b3JlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD1auUFh
-     E6prEafZ90OHrq6CPZS6+hTJ3HLmeqOw2OCytf0NaCLLz6DMLe1GV3EWxCDGi1UH
-     e10UO5zwx/2OyFCjggFTMIIBTzAOBgNVHQ8BAf8EBAMCB4AwggE7BgorBgEEAdZ5
-     AgERBIIBKzCCAScCAWQKAQICAWQKAQIEJDQ1Y2ZiYWRhLWE5NTItNGVhNS05M2Jj
-     LWYyZWQzNjVlOGRiOAQAMEy/hUVIBEYwRDEeMBwEFmF0LmFzaXRwbHVzLmJpb21l
-     dHJpY3MCAgFAMSIEIEFfrT4RcXh0HaTOlPpeZXwPjA8Z06Nw7B6ZSBe/nLXrMIGi
-     oQUxAwIBAqIDAgEDowQCAgEApQUxAwIBBKoDAgEBv4N4AwIBAr+FPgMCAQC/hUBM
-     MEoEIA9udcgBg7XewHSwBU1CcemTievksTawgZ3h8VC6D/nXAQH/CgEABCBmOJbI
-     61T3+Ji7mfx/sIEdmd7/o4Vwizd3ttcqU2kaH7+FQQUCAwHUwL+FQgUCAwMVf7+F
-     TgYCBAE0ZaG/hU8GAgQBNGWcMAwGCCqGSM49BAMCBQADSAAwRQIgae9OOc3Nwhak
-     cZCAeA9IXRWyBauT47ADg9Dy9EtasnMCIQDH/fwrI3O45Oqo6OQdBpqNGI77Gprv
-     rXoKs6kqldIjmA="
+    "MIICpjCCAkqgAwIBAgIBATAMBggqhkjOPQQDAgUAMD8xEjAQBgNVBAwMCVN0cm9uZ0JveDEpMC
+    cGA1UEBRMgMDY4NDJmODRiY2JhZGJkMTk2NDA1YmZkNmE2MzQ5ZWIwHhcNNzAwMTAxMDAwMDAwW
+    hcNNDgwMTAxMDAwMDAwWjAfMR0wGwYDVQQDExRBbmRyb2lkIEtleXN0b3JlIEtleTBZMBMGByqG
+    SM49AgEGCCqGSM49AwEHA0IABD1auUFhE6prEafZ90OHrq6CPZS6+hTJ3HLmeqOw2OCytf0NaCL
+    Lz6DMLe1GV3EWxCDGi1UHe10UO5zwx/2OyFCjggFTMIIBTzAOBgNVHQ8BAf8EBAMCB4AwggE7Bg
+    orBgEEAdZ5AgERBIIBKzCCAScCAWQKAQICAWQKAQIEJDQ1Y2ZiYWRhLWE5NTItNGVhNS05M2JjL
+    WYyZWQzNjVlOGRiOAQAMEy/hUVIBEYwRDEeMBwEFmF0LmFzaXRwbHVzLmJpb21ldHJpY3MCAgFA
+    MSIEIEFfrT4RcXh0HaTOlPpeZXwPjA8Z06Nw7B6ZSBe/nLXrMIGioQUxAwIBAqIDAgEDowQCAgE
+    ApQUxAwIBBKoDAgEBv4N4AwIBAr+FPgMCAQC/hUBMMEoEIA9udcgBg7XewHSwBU1CcemTievksT
+    awgZ3h8VC6D/nXAQH/CgEABCBmOJbI61T3+Ji7mfx/sIEdmd7/o4Vwizd3ttcqU2kaH7+FQQUCA
+    wHUwL+FQgUCAwMVf7+FTgYCBAE0ZaG/hU8GAgQBNGWcMAwGCCqGSM49BAMCBQADSAAwRQIgae9O
+    Oc3NwhakcZCAeA9IXRWyBauT47ADg9Dy9EtasnMCIQDH/fwrI3O45Oqo6OQdBpqNGI77GprvrXo
+    Ks6kqldIjmA="
   ],
   "deviceName": "Pixel 3"
 }
 ```
 
-The server verifies the CSR and sends it to the configured PKI service to get a signed certificate. The server also validates the attestation statement, and signs the public key of the client into the structure `attestedPublicKey`.
+The server verifies the CSR and sends it to the configured PKI service to get a signed certificate. The server also validates the attestation statement, and wraps the public key of the client in the structure `attestedPublicKey` (and signs it).
 
 Response from server (newlines for display purposes only):
 
@@ -195,13 +193,13 @@ HTTP/1.1 200
 }
 ```
 
-Note that the server does not set the header `X-Auth-Token` if the client has sent one in the request.
+Note that the server does not set the header `X-Auth-Token` in the response if the client has sent one in the request.
 
 The `X-Auth-Token` from this device binding process can be used by clients to start the issuing process without any additional authentication.
 
 ### Issuing
 
-`POST /pupilid/issue` issues a PupilId into the App. User needs to perform a device binding first (see above).
+`POST /pupilid/issue` issues a PupilId into the Wallet App. User needs to perform a device binding first (see above).
 
 On the first call to `/pupilid/issue`, this service answers with HTTP Status 401 and a challenge in the header `WWW-Authenticate: Challenge OBU7Uz4vI2uRmeZtGzm5FbNmVNpwNnwWQ06P15fRpiI=`.
 
@@ -320,7 +318,7 @@ This means that for every deployment, the configuration file (`application.yml` 
 
 There are two profiles implemented in this service: `pupilid` (the default) and `eidasid` for EIDAS deployments.
 
-When the profile `eidasid` is active (e.g. set with `spring.profiles.active=eidasid`, this service expects the user to log in on a desktop device with their E-ID. Then it displays a QR Code, that can be scanned with the Wallet App. The attributes issued as verifiable credentials match the attributes from the E-ID login.
+When the profile `eidasid` is active (e.g. set with `spring.profiles.active=eidasid`), this service expects the user to log in on a desktop device with their E-ID. Then it displays a QR Code, that can be scanned with the Wallet App. The attributes issued as verifiable credentials match the attributes from the E-ID login.
 
 There are several custom configuration properties, all under the key `backend`:
 
@@ -336,6 +334,8 @@ backend:
   debug:
     enabled: true
     qr-code-size: 400
+  cleanup:
+    enabled: false
   authn:
     challenge-timeout-seconds: 60
     api-keys:
