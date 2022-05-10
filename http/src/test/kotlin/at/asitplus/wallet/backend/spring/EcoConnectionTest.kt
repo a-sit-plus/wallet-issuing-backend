@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -33,7 +34,7 @@ class EcoConnectionTest {
     private lateinit var issuerCredentialDataProvider: IssuerCredentialDataProvider
 
     @MockBean
-    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    private lateinit var authenticationSupplier: AuthenticationSupplier
 
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
@@ -45,12 +46,8 @@ class EcoConnectionTest {
         // use bpk printed from extNonceService()
         bpk = "dKyd87h31E+oHYLVqpZF+g=="
         certificate = client.selfSignedCert.encoded
-        val deviceName = UUID.randomUUID().toString()
-        val deviceId = UUID.randomUUID().toString()
-        val validUntil = Instant.now().plusSeconds(60)
-        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
     }
 
     @Test

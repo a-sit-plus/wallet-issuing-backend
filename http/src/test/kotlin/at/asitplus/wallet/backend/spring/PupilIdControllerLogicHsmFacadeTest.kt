@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
@@ -49,7 +49,7 @@ class PupilIdControllerLogicHsmFacadeTest {
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
     @MockBean
-    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    private lateinit var authenticationSupplier: AuthenticationSupplier
 
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
@@ -76,10 +76,10 @@ class PupilIdControllerLogicHsmFacadeTest {
         val deviceName = UUID.randomUUID().toString()
         val randomUUID = UUID.randomUUID()
         val validUntil = client.selfSignedCert.notAfter.toInstant()
-        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, randomUUID.toString(), validUntil)
+        DeviceBinding(bpk, certificate, deviceName, randomUUID.toString(), validUntil)
             .also { deviceBindingRepository.save(it) }
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
     }
 
     @Test

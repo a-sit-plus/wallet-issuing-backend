@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
@@ -32,7 +33,7 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
     @MockBean
-    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    private lateinit var authenticationSupplier: AuthenticationSupplier
 
     @Autowired
     private lateinit var revocationService: RevocationService
@@ -69,8 +70,8 @@ class RevocationServiceStatusListIndexTest {
         deviceBindingRepository.deleteAll()
         deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
             .also { deviceBindingRepository.save(it) }
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
     }
 
     @Test
@@ -94,8 +95,6 @@ class RevocationServiceStatusListIndexTest {
             deviceBinding.issuedCredentialList += it
         }
         revocationService.getAllNonRevokedWithDetails().count() shouldBe 2
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
 
         val storeGetNextIndex =
             revocationService.storeGetNextIndex(vcId.drop(2), credentialSubject, issuanceDate, expirationDate)

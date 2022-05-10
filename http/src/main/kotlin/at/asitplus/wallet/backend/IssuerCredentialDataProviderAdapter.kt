@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.CredentialSubject
 import org.slf4j.LoggerFactory
@@ -19,16 +18,16 @@ class IssuerCredentialDataProviderAdapter(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
-        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        return credentialDataProvider.getClaim(subjectId, attributeName, deviceBinding.bpk)
+        val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
+        return credentialDataProvider.getClaim(subjectId, attributeName, bpk)
     }
 
     override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
-        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        return credentialDataProvider.getCredential(subjectId, attributeType, deviceBinding.bpk)
+        val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
+        return credentialDataProvider.getCredential(subjectId, attributeType, bpk)
     }
 
-    private fun getVerifiedDeviceBinding(subjectId: String): DeviceBinding? {
+    private fun getVerifiedDeviceBinding(subjectId: String): String? {
         val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
             ?: return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
@@ -41,7 +40,7 @@ class IssuerCredentialDataProviderAdapter(
                     deviceBinding.keyId, subjectId
                 )
             }
-        return deviceBinding
+        return deviceBinding.bpk
     }
 
     override fun getLifetime(): Duration {

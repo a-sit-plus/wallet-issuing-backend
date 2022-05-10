@@ -34,7 +34,7 @@ class RandomCredentialDataProviderTest {
         subjectId2 = UUID.randomUUID().toString()
         deviceBindingStorageService = mock()
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", "", Instant.now()))
+            .thenReturn(deviceBindingWithBpk(bpk1))
         dataProvider = RandomCredentialDataProvider(listOfPhotos)
     }
 
@@ -44,14 +44,14 @@ class RandomCredentialDataProviderTest {
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-                .thenReturn(DeviceBinding(bpk1, byteArrayOf(), "", "", Instant.now()))
+                .thenReturn(deviceBindingWithBpk(bpk1))
             dataProvider.getClaim(subjectId1, attribute, bpk1).let {
                 it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
                 firstSetOfValues += it.value
             }
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-                .thenReturn(DeviceBinding(bpk2, byteArrayOf(), "", "", Instant.now()))
+                .thenReturn(deviceBindingWithBpk(bpk2))
             dataProvider.getClaim(subjectId2, attribute, bpk2).let {
                 it.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(it, attribute)
@@ -60,6 +60,8 @@ class RandomCredentialDataProviderTest {
         }
         firstSetOfValues shouldNotBe secondSetOfValues
     }
+
+    private fun deviceBindingWithBpk(bpk: String) = DeviceBinding(bpk, byteArrayOf(), "", "", Instant.now())
 
     @Test
     fun `claims for the same bpk should be the same on successive calls`() {

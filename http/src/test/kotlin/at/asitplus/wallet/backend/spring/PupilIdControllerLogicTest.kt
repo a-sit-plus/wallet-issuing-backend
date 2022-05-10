@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DeviceBindingStorageService
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
@@ -48,7 +48,7 @@ class PupilIdControllerLogicTest {
     private lateinit var deviceBindingRepository: DeviceBindingRepository
 
     @MockBean
-    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    private lateinit var authenticationSupplier: AuthenticationSupplier
 
     private lateinit var bpk: String
     private lateinit var certificate: ByteArray
@@ -77,11 +77,11 @@ class PupilIdControllerLogicTest {
         deviceName = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
         deviceBindingRepository.deleteAll()
-        val deviceBinding =
-            DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
-                .also { deviceBindingRepository.save(it) }
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
+        val validUntil = client.selfSignedCert.notAfter.toInstant()
+        DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
+            .also { deviceBindingRepository.save(it) }
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
     }
 
     @Test
@@ -105,11 +105,10 @@ class PupilIdControllerLogicTest {
     fun issue_wrongSubject_error() = runTest {
         certificate = Client().selfSignedCert.encoded
         deviceBindingRepository.deleteAll()
-        val deviceBinding =
-            DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
-                .also { deviceBindingRepository.save(it) }
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
+        DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
+            .also { deviceBindingRepository.save(it) }
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
         val request = holderMessenger.startDirect()
         if (request !is NextMessage.Send) throw Exception("Internal Error")
 

@@ -2,15 +2,16 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.DeviceListEntry
-import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.lib.encodeBase64
 import org.slf4j.LoggerFactory
-import org.springframework.security.core.context.SecurityContextHolder
 import java.time.Instant
 import java.util.UUID
 
+
 class DatabaseDeviceBindingStorageService(
     private val deviceBindingRepository: DeviceBindingRepository,
+    private val authenticationSupplier: AuthenticationSupplier,
 ) : DeviceBindingStorageService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -38,14 +39,13 @@ class DatabaseDeviceBindingStorageService(
     }
 
     override fun getDeviceBindingForCurrentUser(): DeviceBinding? {
-        val principal = SecurityContextHolder.getContext()?.authentication?.principal
-        if (principal !is AuthenticatedDeviceBindingUser)
-            return null.also {
+        val certificate = authenticationSupplier.getCurrentUserCertificate()
+            ?: return null.also {
                 log.error("Got no authenticated user when trying to store vc")
             }
-        return deviceBindingRepository.findByCertificateAndRevokedIsFalse(principal.certificate)
+        return deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate)
             ?: return null.also {
-                log.error("Found no authenticated user for certificate '{}", principal.certificate.encodeBase64())
+                log.error("Found no authenticated user for certificate '{}", certificate.encodeBase64())
             }
     }
 

@@ -7,6 +7,7 @@ import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.IssueCredentialAdapter
 import at.asitplus.wallet.backend.PkiService
 import at.asitplus.wallet.backend.SignedCertificate
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.agent.NextMessage
@@ -58,7 +59,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
     private lateinit var issueCredentialAdapter: IssueCredentialAdapter
 
     @MockBean
-    private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    private lateinit var authenticationSupplier: AuthenticationSupplier
 
     @MockBean
     private lateinit var deviceBindingAuthnService: DeviceBindingAuthnService
@@ -68,7 +69,6 @@ class BindingPupilIdCombinationSpringSecurityTest {
     private lateinit var nonce: String
     private lateinit var csr: ByteArray
     private lateinit var deviceName: String
-    private lateinit var deviceId: String
     private lateinit var certificate: ByteArray
     private lateinit var startRequest: BindingParamsRequestJ
     private lateinit var clientMessage: String
@@ -82,7 +82,6 @@ class BindingPupilIdCombinationSpringSecurityTest {
         nonce = UUID.randomUUID().toString()
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
-        deviceId = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
         clientMessage = UUID.randomUUID().toString()
@@ -99,9 +98,8 @@ class BindingPupilIdCombinationSpringSecurityTest {
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-        whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
-            .thenReturn(deviceBinding)
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
     }
 
     @Test

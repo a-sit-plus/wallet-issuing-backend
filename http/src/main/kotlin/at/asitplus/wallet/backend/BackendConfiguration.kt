@@ -2,10 +2,12 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.EcoExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.InternalExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.SimpleApiKeyAuthnService
+import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
@@ -134,10 +136,14 @@ class BackendConfiguration {
         SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
 
     @Bean
+    fun authenticationSupplier(): AuthenticationSupplier = SpringSecurityAuthenticationSupplier()
+
+    @Bean
     fun deviceBindingStorageService(
-        deviceBindingRepository: DeviceBindingRepository
+        deviceBindingRepository: DeviceBindingRepository,
+        authenticationSupplier: AuthenticationSupplier,
     ): DeviceBindingStorageService =
-        DatabaseDeviceBindingStorageService(deviceBindingRepository)
+        DatabaseDeviceBindingStorageService(deviceBindingRepository, authenticationSupplier)
 
     @Bean
     fun issueCredentialAdapter(
