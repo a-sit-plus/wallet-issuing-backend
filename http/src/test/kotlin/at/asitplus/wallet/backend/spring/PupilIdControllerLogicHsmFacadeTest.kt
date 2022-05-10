@@ -34,7 +34,7 @@ import java.util.UUID
 
 /**
  * Tests the logic (the process) part of the [PupilIdController],
- * where the issuer-key is stored at a remote HSM Facde service
+ * where the issuer-key is stored at a remote HSM Facade service
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
 @SpringBootTest
@@ -74,16 +74,11 @@ class PupilIdControllerLogicHsmFacadeTest {
     fun beforeEach() {
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
-        var deviceBinding = DeviceBinding(
-            bpk,
-            certificate,
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            client.selfSignedCert.notAfter.toInstant()
-        )
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
+        val deviceName = UUID.randomUUID().toString()
+        val randomUUID = UUID.randomUUID()
+        val validUntil = client.selfSignedCert.notAfter.toInstant()
+        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, randomUUID.toString(), validUntil)
+            .also { deviceBindingRepository.save(it) }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
     }

@@ -32,9 +32,6 @@ class EcoConnectionTest {
     @Autowired
     private lateinit var issuerCredentialDataProvider: IssuerCredentialDataProvider
 
-    @Autowired
-    private lateinit var deviceBindingRepository: DeviceBindingRepository
-
     @MockBean
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
@@ -48,16 +45,10 @@ class EcoConnectionTest {
         // use bpk printed from extNonceService()
         bpk = "dKyd87h31E+oHYLVqpZF+g=="
         certificate = client.selfSignedCert.encoded
-        var deviceBinding = DeviceBinding(
-            bpk,
-            certificate,
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            Instant.now().plusSeconds(60)
-        )
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
+        val deviceName = UUID.randomUUID().toString()
+        val deviceId = UUID.randomUUID().toString()
+        val validUntil = Instant.now().plusSeconds(60)
+        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
     }

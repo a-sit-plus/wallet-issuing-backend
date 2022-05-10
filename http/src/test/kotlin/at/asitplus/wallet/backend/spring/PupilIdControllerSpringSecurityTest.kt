@@ -5,7 +5,6 @@ import at.asitplus.wallet.backend.DeviceBindingAuthnService
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.IssueCredentialAdapter
 import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.NextMessage
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -40,9 +39,6 @@ class PupilIdControllerSpringSecurityTest {
     @MockBean
     private lateinit var issueCredentialAdapter: IssueCredentialAdapter
 
-    @Autowired
-    private lateinit var deviceBindingRepository: DeviceBindingRepository
-
     @MockBean
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
@@ -72,10 +68,7 @@ class PupilIdControllerSpringSecurityTest {
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
         val validUntil = Instant.now().plusSeconds(60)
-        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
+        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
     }

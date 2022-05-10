@@ -59,9 +59,6 @@ class BindingPupilIdCombinationSpringSecurityTest {
     @MockBean
     private lateinit var issueCredentialAdapter: IssueCredentialAdapter
 
-    @Autowired
-    private lateinit var deviceBindingRepository: DeviceBindingRepository
-
     @MockBean
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
 
@@ -104,10 +101,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
             .thenReturn(NextMessage.Send(serverMessage, null))
         whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
             .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-        var deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
+        val deviceBinding = DeviceBinding(bpk, certificate, deviceName, deviceId, validUntil)
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
     }

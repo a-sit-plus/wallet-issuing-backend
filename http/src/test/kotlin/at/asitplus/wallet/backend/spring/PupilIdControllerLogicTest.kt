@@ -77,11 +77,10 @@ class PupilIdControllerLogicTest {
         certificate = client.selfSignedCert.encoded
         deviceName = UUID.randomUUID().toString()
         deviceId = UUID.randomUUID().toString()
-        var deviceBinding =
+        deviceBindingRepository.deleteAll()
+        val deviceBinding =
             DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
+                .also { deviceBindingRepository.save(it) }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
     }
@@ -106,11 +105,10 @@ class PupilIdControllerLogicTest {
     @Test
     fun issue_wrongSubject_error() = runTest {
         certificate = Client().selfSignedCert.encoded
-        var deviceBinding =
+        deviceBindingRepository.deleteAll()
+        val deviceBinding =
             DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
-        if (deviceBindingRepository.findByCertificateAndRevokedIsFalse(certificate) == null) {
-            deviceBinding = deviceBindingRepository.save(deviceBinding)
-        }
+                .also { deviceBindingRepository.save(it) }
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBinding)
         val request = holderMessenger.startDirect()
