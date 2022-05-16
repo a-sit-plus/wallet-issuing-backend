@@ -89,7 +89,7 @@ class BindingPupilIdCombinationKtorLibTest {
         val deviceAdapter = object : DeviceAdapter {
             override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) = KmmResult.success(true)
             override suspend fun loadAttestationCerts() = KmmResult.success(listOf<ByteArray>())
-            override fun storeCertificate(certificate: ByteArray) = KmmResult.success(true)
+            override fun storeCertificate(certificate: ByteArray, attestedPublicKey: String?) = KmmResult.success(true)
             override fun getPublicKeyEncoded() = KmmResult.success(keyPair.public.encoded)
             override val deviceName: String = randomDeviceName
         }

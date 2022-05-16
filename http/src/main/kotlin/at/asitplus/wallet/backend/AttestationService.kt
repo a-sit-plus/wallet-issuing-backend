@@ -4,6 +4,7 @@ import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
+import at.asitplus.wallet.pupilid.AttestedPublicKey
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborMap
@@ -48,7 +49,7 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
                 }
             val serialNumber = certificate.serialNumber.longValueExact()
             val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
-            val attestedPublicKey = AttestedPublicKey(publicKey, serialNumber)
+            val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!, serialNumber)
             return JWSObject(
                 JWSHeader(cryptoService.jwsAlgorithm.joseType),
                 Payload(attestedPublicKey.serialize().encodeToByteArray())

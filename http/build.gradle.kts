@@ -45,7 +45,7 @@ dependencies {
     implementation("org.webjars:datatables:1.11.4")
     implementation("de.codecentric:spring-boot-admin-starter-client:2.6.6")
     implementation("at.asitplus.wallet:vclib-jvm:1.3.4-SNAPSHOT")
-    implementation("at.asitplus.wallet:pupilidlib-jvm:1.3.1-SNAPSHOT")
+    implementation("at.asitplus.wallet:pupilidlib-jvm:1.4.0-SNAPSHOT")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.7")
