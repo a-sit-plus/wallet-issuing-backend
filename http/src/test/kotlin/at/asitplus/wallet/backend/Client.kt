@@ -33,7 +33,7 @@ import kotlin.random.Random
 class Client {
 
     final lateinit var keyPair: KeyPair
-    final lateinit var keyId: String
+    final var keyId: String
 
     constructor(keyPair: KeyPair) {
         this.keyPair = keyPair

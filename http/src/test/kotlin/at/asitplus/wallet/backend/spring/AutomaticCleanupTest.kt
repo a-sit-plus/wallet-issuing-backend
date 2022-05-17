@@ -37,7 +37,7 @@ class AutomaticCleanupTest {
         val deviceBinding = DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId", validUntilBinding)
             .also { deviceBindingRepository.save(it) }
         val validUntilCredential = Extensions.InstantNowMinusDays(configuration.cleanup.credentialsExpirationDays + 1)
-        val issuedCredential = IssuedCredential(
+        IssuedCredential(
             "vcId",
             "subjectId",
             validUntilCredential,

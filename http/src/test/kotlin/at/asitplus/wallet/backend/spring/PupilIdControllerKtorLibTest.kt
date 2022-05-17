@@ -56,8 +56,6 @@ class PupilIdControllerKtorLibTest {
             messageWrapper = MessageWrapper(holderCryptoService)
         )
         val bpk = UUID.randomUUID().toString()
-        val deviceName = UUID.randomUUID().toString()
-        val deviceId = UUID.randomUUID().toString()
         clientCert = client.selfSignedCert.encoded
         client.storeDeviceBinding(bpk, deviceBindingRepository)
     }
