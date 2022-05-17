@@ -5,7 +5,6 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -65,7 +64,7 @@ class RandomCredentialDataProvider constructor(
         subjectId: String,
         attributeName: String,
         bpk: String,
-        maxLifetime: Duration
+        maxExpiration: Instant
     ): CredentialDataProvider.CredentialToBeIssued? {
         val it = randomAttributeCache[bpk]
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
@@ -79,15 +78,14 @@ class RandomCredentialDataProvider constructor(
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilNumber)
             else -> return null
         }
-        val expiration = Instant.now().plus(maxLifetime)
-        return CredentialDataProvider.CredentialToBeIssued(subject, expiration, ConstantIndex.Generic.vcType)
+        return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
     }
 
     override fun getCredential(
         subjectId: String,
         attributeType: String,
         bpk: String,
-        maxLifetime: Duration
+        maxExpiration: Instant
     ): CredentialDataProvider.CredentialToBeIssued? {
         val it = randomAttributeCache[bpk]
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
@@ -110,8 +108,7 @@ class RandomCredentialDataProvider constructor(
             postCode = it.zip,
             picture = it.encodedPhoto
         )
-        val expiration = Instant.now().plus(maxLifetime)
-        return CredentialDataProvider.CredentialToBeIssued(subject, expiration, ConstantIndex.Generic.vcType)
+        return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

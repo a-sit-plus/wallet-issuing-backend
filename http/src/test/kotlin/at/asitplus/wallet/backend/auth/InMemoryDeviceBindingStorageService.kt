@@ -9,7 +9,6 @@ import java.util.UUID
 class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
 
     private val list = mutableListOf<DeviceBinding>()
-    private var deviceBindingForCurrentUser: DeviceBinding? = null
 
     override fun store(bpk: String, certificate: ByteArray, deviceName: String, validUntil: Instant) =
         DeviceBinding(bpk, certificate, deviceName, UUID.randomUUID().toString(), validUntil).also {
@@ -22,7 +21,7 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
     override fun lookupDevices(bpk: String) =
         list.filter { it.bpk == bpk }.map { DeviceListEntry(it.deviceName, it.deviceId) }
 
-    override fun getDeviceBindingForCurrentUser() = deviceBindingForCurrentUser
+    override fun getDeviceBindingForCurrentUser() = list.firstOrNull()
 
     override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
         val toRevoke = list.filter { it.bpk == bpk }

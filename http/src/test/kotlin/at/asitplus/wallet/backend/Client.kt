@@ -45,7 +45,7 @@ class Client {
         this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
     }
 
-    private val lifetimeSeconds: Long = 60
+    val lifetimeSeconds: Long = 60
     private val issuer = X500Name("CN=Issuer")
     private val contentSigner by lazy { JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private) }
 

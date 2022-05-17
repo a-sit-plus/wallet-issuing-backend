@@ -4,7 +4,6 @@ import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.time.Instant
 
 
@@ -32,7 +31,7 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
         subjectId: String,
         attributeName: String,
         bpk: String,
-        maxLifetime: Duration
+        maxExpiration: Instant
     ): CredentialDataProvider.CredentialToBeIssued? {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
             return null // other attribute names are not supported
@@ -51,11 +50,10 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
                 log.warn("Requested attribute '{}' could not be issued", attributeName)
             }
         }
-        val expiration = Instant.now().plus(maxLifetime)
-        return CredentialDataProvider.CredentialToBeIssued(subject, expiration, ConstantIndex.Generic.vcType)
+        return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
     }
 
-    override fun getCredential(subjectId: String, attributeType: String, bpk: String, maxLifetime: Duration) =
+    override fun getCredential(subjectId: String, attributeType: String, bpk: String, maxExpiration: Instant) =
         null // not supported for EIDAS
 
 

@@ -1,9 +1,11 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import kotlinx.datetime.toKotlinInstant
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.time.Instant
 
 
 /**
@@ -21,8 +23,11 @@ class IssuerCredentialDataProviderAdapter(
         subjectId: String,
         attributeName: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
-        val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
-        val credential = credentialDataProvider.getClaim(subjectId, attributeName, bpk, lifetime)
+        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
+        val bindingExpiration = deviceBinding.validUntil
+        val maxExpiration = Instant.now() + lifetime
+        val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
+        val credential = credentialDataProvider.getClaim(subjectId, attributeName, deviceBinding.bpk, cappedExpiration)
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
@@ -36,8 +41,11 @@ class IssuerCredentialDataProviderAdapter(
         subjectId: String,
         attributeType: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
-        val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
-        val credential = credentialDataProvider.getCredential(subjectId, attributeType, bpk, lifetime)
+        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
+        val bindingExpiration = deviceBinding.validUntil
+        val maxExpiration = Instant.now() + lifetime
+        val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
+        val credential = credentialDataProvider.getCredential(subjectId, attributeType, deviceBinding.bpk, cappedExpiration)
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
@@ -47,7 +55,7 @@ class IssuerCredentialDataProviderAdapter(
         }
     }
 
-    private fun getVerifiedDeviceBinding(subjectId: String): String? {
+    private fun getVerifiedDeviceBinding(subjectId: String): DeviceBinding? {
         val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
             ?: return null.also {
                 log.error("Got no authenticated user when trying to issue credentials")
@@ -60,7 +68,7 @@ class IssuerCredentialDataProviderAdapter(
                     deviceBinding.keyId, subjectId
                 )
             }
-        return deviceBinding.bpk
+        return deviceBinding
     }
 
 }

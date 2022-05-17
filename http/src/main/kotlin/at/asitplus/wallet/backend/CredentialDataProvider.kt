@@ -1,15 +1,14 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.data.CredentialSubject
-import java.time.Duration
 import java.time.Instant
 
 interface CredentialDataProvider {
 
-    fun getClaim(subjectId: String, attributeName: String, bpk: String, maxLifetime: Duration)
+    fun getClaim(subjectId: String, attributeName: String, bpk: String, maxExpiration: Instant)
             : CredentialToBeIssued?
 
-    fun getCredential(subjectId: String, attributeType: String, bpk: String, maxLifetime: Duration)
+    fun getCredential(subjectId: String, attributeType: String, bpk: String, maxExpiration: Instant)
             : CredentialToBeIssued?
 
     data class CredentialToBeIssued(

@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
@@ -25,6 +24,7 @@ class RandomCredentialDataProviderTest {
     private lateinit var bpk2: String
     private lateinit var dataProvider: RandomCredentialDataProvider
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
+    private val expiration = Instant.now().plusSeconds(5)
 
     @BeforeEach
     fun setup() {
@@ -39,6 +39,7 @@ class RandomCredentialDataProviderTest {
         dataProvider = RandomCredentialDataProvider(listOfPhotos)
     }
 
+
     @Test
     fun `claims for different bpks should be different on successive calls`() {
         val firstSetOfValues = mutableListOf<String>()
@@ -46,7 +47,7 @@ class RandomCredentialDataProviderTest {
         for (attribute in AttributeIndex.genericAttributes) {
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
                 .thenReturn(deviceBindingWithBpk(bpk1))
-            dataProvider.getClaim(subjectId1, attribute, bpk1, Duration.ofSeconds(5)).let {
+            dataProvider.getClaim(subjectId1, attribute, bpk1, expiration).let {
                 it.shouldNotBeNull()
                 val subject = it.subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
@@ -55,7 +56,7 @@ class RandomCredentialDataProviderTest {
             }
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
                 .thenReturn(deviceBindingWithBpk(bpk2))
-            dataProvider.getClaim(subjectId2, attribute, bpk2, Duration.ofSeconds(5)).let {
+            dataProvider.getClaim(subjectId2, attribute, bpk2, expiration).let {
                 it.shouldNotBeNull()
                 val subject = it.subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
@@ -73,14 +74,14 @@ class RandomCredentialDataProviderTest {
         val firstSetOfValues = mutableListOf<String>()
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
-            dataProvider.getClaim(subjectId1, attribute, bpk1, Duration.ofSeconds(5)).let {
+            dataProvider.getClaim(subjectId1, attribute, bpk1, expiration).let {
                 it.shouldNotBeNull()
                 val subject = it.subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
                 firstSetOfValues += subject.value
             }
-            dataProvider.getClaim(subjectId2, attribute, bpk1, Duration.ofSeconds(5)).let {
+            dataProvider.getClaim(subjectId2, attribute, bpk1, expiration).let {
                 it.shouldNotBeNull()
                 val subject = it.subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()

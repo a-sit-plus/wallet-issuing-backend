@@ -6,7 +6,6 @@ import at.asitplus.wallet.lib.decodeBase64ToArray
 import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
-import java.time.Duration
 import java.time.Instant
 
 
@@ -22,14 +21,14 @@ class EcoCredentialDataProvider(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun getClaim(subjectId: String, attributeName: String, bpk: String, maxLifetime: Duration) =
+    override fun getClaim(subjectId: String, attributeName: String, bpk: String, maxExpiration: Instant) =
         null // not supported for ECO
 
     override fun getCredential(
         subjectId: String,
         attributeType: String,
         bpk: String,
-        maxLifetime: Duration
+        maxExpiration: Instant
     ) = kotlin.runCatching {
         if (attributeType != ConstantIndex.PupilId.vcType)
             return null
@@ -39,7 +38,6 @@ class EcoCredentialDataProvider(
         ).also { log.debug("getCredential for '{}' got {}", bpk, it) }
         val body = entity.body
             ?: return null.also { log.info("getCredential for '{}' returns null: {}", bpk, entity) }
-        val maxExpiration = Instant.now().plus(maxLifetime)
         val parsedExpiration = body.validUntil?.let { Instant.parse(it) } ?: maxExpiration
         val cappedExpiration = if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
         if (cappedExpiration != maxExpiration)
