@@ -51,7 +51,8 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
                 log.warn("Requested attribute '{}' could not be issued", attributeName)
             }
         }
-        return CredentialDataProvider.CredentialToBeIssued(subject, maxLifetime, ConstantIndex.Generic.vcType)
+        val expiration = Instant.now().plus(maxLifetime)
+        return CredentialDataProvider.CredentialToBeIssued(subject, expiration, ConstantIndex.Generic.vcType)
     }
 
     override fun getCredential(subjectId: String, attributeType: String, bpk: String, maxLifetime: Duration) =

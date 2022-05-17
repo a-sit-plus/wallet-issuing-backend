@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import kotlinx.datetime.toKotlinInstant
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 
 /**
@@ -26,7 +26,7 @@ class IssuerCredentialDataProviderAdapter(
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
-                it.lifetime.toSeconds().seconds,
+                it.expiration.toKotlinInstant(),
                 it.attributeType
             )
         }
@@ -41,7 +41,7 @@ class IssuerCredentialDataProviderAdapter(
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
-                it.lifetime.toSeconds().seconds,
+                it.expiration.toKotlinInstant(),
                 it.attributeType
             )
         }

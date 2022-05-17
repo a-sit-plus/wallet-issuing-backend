@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.data.CredentialSubject
 import java.time.Duration
+import java.time.Instant
 
 interface CredentialDataProvider {
 
@@ -13,7 +14,7 @@ interface CredentialDataProvider {
 
     data class CredentialToBeIssued(
         val subject: CredentialSubject,
-        val lifetime: Duration,
+        val expiration: Instant,
         val attributeType: String,
     )
 

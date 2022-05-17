@@ -6,6 +6,7 @@ import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
@@ -78,7 +79,8 @@ class RandomCredentialDataProvider constructor(
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilNumber)
             else -> return null
         }
-        return CredentialDataProvider.CredentialToBeIssued(subject, maxLifetime, ConstantIndex.Generic.vcType)
+        val expiration = Instant.now().plus(maxLifetime)
+        return CredentialDataProvider.CredentialToBeIssued(subject, expiration, ConstantIndex.Generic.vcType)
     }
 
     override fun getCredential(
@@ -108,7 +110,8 @@ class RandomCredentialDataProvider constructor(
             postCode = it.zip,
             picture = it.encodedPhoto
         )
-        return CredentialDataProvider.CredentialToBeIssued(subject, maxLifetime, ConstantIndex.Generic.vcType)
+        val expiration = Instant.now().plus(maxLifetime)
+        return CredentialDataProvider.CredentialToBeIssued(subject, expiration, ConstantIndex.Generic.vcType)
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
