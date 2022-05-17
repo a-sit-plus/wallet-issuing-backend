@@ -1,9 +1,10 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 
@@ -27,7 +28,12 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
         )
     }
 
-    override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
+    override fun getClaim(
+        subjectId: String,
+        attributeName: String,
+        bpk: String,
+        maxLifetime: Duration
+    ): CredentialDataProvider.CredentialToBeIssued? {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
             return null // other attribute names are not supported
 
@@ -36,20 +42,21 @@ class EidasCredentialDataProvider(private val timeoutSeconds: Long) : Credential
                 log.error("Found no stored EIDAS claim for bpk '{}'", bpk)
             }
 
-        return when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
+        val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
             "given-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.givenName)
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
-            else -> null.also {
+            else -> return null.also {
                 log.warn("Requested attribute '{}' could not be issued", attributeName)
             }
         }
+        return CredentialDataProvider.CredentialToBeIssued(subject, maxLifetime, ConstantIndex.Generic.vcType)
     }
 
-    override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
-        return null // not supported for EIDAS
-    }
+    override fun getCredential(subjectId: String, attributeType: String, bpk: String, maxLifetime: Duration) =
+        null // not supported for EIDAS
+
 
     data class EidasClaim(val subject: String, val birthdate: String, val givenName: String, val familyName: String)
 

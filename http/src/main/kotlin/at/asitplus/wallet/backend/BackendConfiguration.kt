@@ -213,7 +213,7 @@ class BackendConfiguration {
         credentialDataProvider: CredentialDataProvider,
         deviceBindingStorageService: DeviceBindingStorageService
     ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
-        lifetime = configurationProperties.credentials.lifetime.toMinutes().minutes,
+        lifetime = configurationProperties.credentials.lifetime,
         credentialDataProvider = credentialDataProvider,
         deviceBindingStorageService = deviceBindingStorageService
     )

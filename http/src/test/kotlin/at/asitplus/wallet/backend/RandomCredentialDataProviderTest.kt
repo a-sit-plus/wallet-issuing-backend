@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
@@ -45,17 +46,21 @@ class RandomCredentialDataProviderTest {
         for (attribute in AttributeIndex.genericAttributes) {
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
                 .thenReturn(deviceBindingWithBpk(bpk1))
-            dataProvider.getClaim(subjectId1, attribute, bpk1).let {
-                it.shouldBeInstanceOf<AtomicAttributeCredential>()
-                assertClaim(it, attribute)
-                firstSetOfValues += it.value
+            dataProvider.getClaim(subjectId1, attribute, bpk1, Duration.ofSeconds(5)).let {
+                it.shouldNotBeNull()
+                val subject = it.subject
+                subject.shouldBeInstanceOf<AtomicAttributeCredential>()
+                assertClaim(subject, attribute)
+                firstSetOfValues += subject.value
             }
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
                 .thenReturn(deviceBindingWithBpk(bpk2))
-            dataProvider.getClaim(subjectId2, attribute, bpk2).let {
-                it.shouldBeInstanceOf<AtomicAttributeCredential>()
-                assertClaim(it, attribute)
-                secondSetOfValues += it.value
+            dataProvider.getClaim(subjectId2, attribute, bpk2, Duration.ofSeconds(5)).let {
+                it.shouldNotBeNull()
+                val subject = it.subject
+                subject.shouldBeInstanceOf<AtomicAttributeCredential>()
+                assertClaim(subject, attribute)
+                secondSetOfValues += subject.value
             }
         }
         firstSetOfValues shouldNotBe secondSetOfValues
@@ -68,15 +73,19 @@ class RandomCredentialDataProviderTest {
         val firstSetOfValues = mutableListOf<String>()
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
-            dataProvider.getClaim(subjectId1, attribute, bpk1).let {
-                it.shouldBeInstanceOf<AtomicAttributeCredential>()
-                assertClaim(it, attribute)
-                firstSetOfValues += it.value
+            dataProvider.getClaim(subjectId1, attribute, bpk1, Duration.ofSeconds(5)).let {
+                it.shouldNotBeNull()
+                val subject = it.subject
+                subject.shouldBeInstanceOf<AtomicAttributeCredential>()
+                assertClaim(subject, attribute)
+                firstSetOfValues += subject.value
             }
-            dataProvider.getClaim(subjectId2, attribute, bpk1).let {
-                it.shouldBeInstanceOf<AtomicAttributeCredential>()
-                assertClaim(it, attribute)
-                secondSetOfValues += it.value
+            dataProvider.getClaim(subjectId2, attribute, bpk1, Duration.ofSeconds(5)).let {
+                it.shouldNotBeNull()
+                val subject = it.subject
+                subject.shouldBeInstanceOf<AtomicAttributeCredential>()
+                assertClaim(subject, attribute)
+                secondSetOfValues += subject.value
             }
         }
         firstSetOfValues shouldBe secondSetOfValues

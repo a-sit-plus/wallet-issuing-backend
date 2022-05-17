@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
-import at.asitplus.wallet.lib.data.ConstantIndex
 import org.slf4j.LoggerFactory
-import kotlin.time.Duration
+import java.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 
 /**
@@ -22,9 +22,13 @@ class IssuerCredentialDataProviderAdapter(
         attributeName: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
-        val subject = credentialDataProvider.getClaim(subjectId, attributeName, bpk)
-        return subject?.let {
-            IssuerCredentialDataProvider.CredentialToBeIssued(it, lifetime, ConstantIndex.Generic.vcType)
+        val credential = credentialDataProvider.getClaim(subjectId, attributeName, bpk, lifetime)
+        return credential?.let {
+            IssuerCredentialDataProvider.CredentialToBeIssued(
+                it.subject,
+                it.lifetime.toSeconds().seconds,
+                it.attributeType
+            )
         }
     }
 
@@ -33,9 +37,13 @@ class IssuerCredentialDataProviderAdapter(
         attributeType: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
-        val subject = credentialDataProvider.getCredential(subjectId, attributeType, bpk)
-        return subject?.let {
-            IssuerCredentialDataProvider.CredentialToBeIssued(it, lifetime, attributeType)
+        val credential = credentialDataProvider.getCredential(subjectId, attributeType, bpk, lifetime)
+        return credential?.let {
+            IssuerCredentialDataProvider.CredentialToBeIssued(
+                it.subject,
+                it.lifetime.toSeconds().seconds,
+                it.attributeType
+            )
         }
     }
 

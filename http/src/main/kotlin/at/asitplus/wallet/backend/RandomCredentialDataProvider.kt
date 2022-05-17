@@ -2,11 +2,10 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
@@ -19,12 +18,10 @@ class RandomCredentialDataProvider constructor(
     private val listOfPhotos: Map<String, ByteArray>,
 ) : CredentialDataProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
-
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
 
     inner class RandomAttributeSet {
-        val randomGender = listOf("male", "female").random()
+        private val randomGender = listOf("male", "female").random()
         private val randomSchoolPrefix = listOf(
             "Schiller", "Tesla", "Newton", "Einstein", "Marie Curie", "Rosalind Franklin",
             "Anne Frank", "Geschwister Scholl"
@@ -63,46 +60,55 @@ class RandomCredentialDataProvider constructor(
             .ifEmpty { listOf(fallbackPhoto.decodeBase64ToArray()!!) }.random()
     }
 
-    override fun getClaim(subjectId: String, attributeName: String, bpk: String): CredentialSubject? {
+    override fun getClaim(
+        subjectId: String,
+        attributeName: String,
+        bpk: String,
+        maxLifetime: Duration
+    ): CredentialDataProvider.CredentialToBeIssued? {
         val it = randomAttributeCache[bpk]
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
-        return when {
-            attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX) -> {
-                when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
-                    "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
-                    "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
-                    "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
-                    "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilNumber)
-                    else -> null
-                }
-            }
-            else -> null
+        if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX)) {
+            return null
         }
+        val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
+            "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
+            "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
+            "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
+            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilNumber)
+            else -> return null
+        }
+        return CredentialDataProvider.CredentialToBeIssued(subject, maxLifetime, ConstantIndex.Generic.vcType)
     }
 
-    override fun getCredential(subjectId: String, attributeType: String, bpk: String): CredentialSubject? {
+    override fun getCredential(
+        subjectId: String,
+        attributeType: String,
+        bpk: String,
+        maxLifetime: Duration
+    ): CredentialDataProvider.CredentialToBeIssued? {
         val it = randomAttributeCache[bpk]
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
-
-        return when (attributeType) {
-            ConstantIndex.PupilId.vcType -> PupilIdCredential(
-                id = subjectId,
-                schoolName = it.schoolName,
-                schoolCity = it.city,
-                schoolPostCode = it.zip,
-                schoolStreet = it.schoolAddress,
-                schoolNumber = it.schoolNumber,
-                pupilNumber = it.pupilNumber,
-                firstName = it.firstName,
-                lastName = it.lastName,
-                dateOfBirth = it.dateOfBirth,
-                validUntil = "2023-09-01",
-                postCity = it.city,
-                postCode = it.zip,
-                picture = it.encodedPhoto
-            )
-            else -> null
+        if (attributeType != ConstantIndex.PupilId.vcType) {
+            return null
         }
+        val subject = PupilIdCredential(
+            id = subjectId,
+            schoolName = it.schoolName,
+            schoolCity = it.city,
+            schoolPostCode = it.zip,
+            schoolStreet = it.schoolAddress,
+            schoolNumber = it.schoolNumber,
+            pupilNumber = it.pupilNumber,
+            firstName = it.firstName,
+            lastName = it.lastName,
+            dateOfBirth = it.dateOfBirth,
+            validUntil = "2023-09-01",
+            postCity = it.city,
+            postCode = it.zip,
+            picture = it.encodedPhoto
+        )
+        return CredentialDataProvider.CredentialToBeIssued(subject, maxLifetime, ConstantIndex.Generic.vcType)
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
