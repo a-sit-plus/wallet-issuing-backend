@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
-import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.data.ConstantIndex
 import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 
@@ -17,14 +17,26 @@ class IssuerCredentialDataProviderAdapter(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun getClaim(subjectId: String, attributeName: String): CredentialSubject? {
+    override fun getClaim(
+        subjectId: String,
+        attributeName: String
+    ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
-        return credentialDataProvider.getClaim(subjectId, attributeName, bpk)
+        val subject = credentialDataProvider.getClaim(subjectId, attributeName, bpk)
+        return subject?.let {
+            IssuerCredentialDataProvider.CredentialToBeIssued(it, lifetime, ConstantIndex.Generic.vcType)
+        }
     }
 
-    override fun getCredential(subjectId: String, attributeType: String): CredentialSubject? {
+    override fun getCredential(
+        subjectId: String,
+        attributeType: String
+    ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val bpk = getVerifiedDeviceBinding(subjectId) ?: return null
-        return credentialDataProvider.getCredential(subjectId, attributeType, bpk)
+        val subject = credentialDataProvider.getCredential(subjectId, attributeType, bpk)
+        return subject?.let {
+            IssuerCredentialDataProvider.CredentialToBeIssued(it, lifetime, attributeType)
+        }
     }
 
     private fun getVerifiedDeviceBinding(subjectId: String): String? {
@@ -41,10 +53,6 @@ class IssuerCredentialDataProviderAdapter(
                 )
             }
         return deviceBinding.bpk
-    }
-
-    override fun getLifetime(): Duration {
-        return lifetime
     }
 
 }
