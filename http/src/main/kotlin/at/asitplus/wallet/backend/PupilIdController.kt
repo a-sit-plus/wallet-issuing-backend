@@ -53,11 +53,7 @@ class PupilIdController(
                 description = "Client is not authenticated, i.e. needs to answer challenge from header `WWW-Authenticate` first",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
     )
     @PostMapping("/pupilid/issue")
@@ -68,38 +64,20 @@ class PupilIdController(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
         log.info("/pupilid/issue called for {} with '{}'", authentication, body)
-        when (val result = issueCredentialAdapter.parseMessage(body)) {
-            is NextMessage.Result<*> -> {
-                return ResponseEntity.ok().build<String>()
-                    .also { request.logout() }
-                    .also { log.info("/pupilid/issue returns HTTP 200: Finished") }
-            }
-            is NextMessage.Send -> {
-                return ResponseEntity.ok(result.message)
-                    .also { request.logout() }
-                    .also { log.info("/pupilid/issue returns HTTP 200: {}...", result.message.take(128)) }
-            }
-            is NextMessage.Error -> {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
-                    .also { request.logout() }
-                    .also { log.warn("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
-            }
-            is NextMessage.SendProblemReport -> {
-                return ResponseEntity.ok(result.message)
-                    .also { request.logout() }
-                    .also { log.info("/pupilid/issue returns HTTP 200: Problem Report {}", result.message) }
-            }
-            is NextMessage.ReceivedProblemReport -> {
-                return ResponseEntity.ok().build<String>()
-                    .also { request.logout() }
-                    .also { log.info("/pupilid/issue returns HTTP 200: Received Problem Report {}", result.message) }
-            }
-            else -> {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
-                    .also { request.logout() }
-                    .also { log.warn("/pupilid/issue returns HTTP 500: Internal error {}", result) }
-            }
-        }
+        return when (val result = issueCredentialAdapter.parseMessage(body)) {
+            is NextMessage.Result<*> -> ResponseEntity.ok().build<String>()
+                .also { log.info("/pupilid/issue returns HTTP 200: Finished") }
+            is NextMessage.Send -> ResponseEntity.ok(result.message)
+                .also { log.info("/pupilid/issue returns HTTP 200: {}...", result.message.take(128)) }
+            is NextMessage.Error -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
+                .also { log.warn("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
+            is NextMessage.SendProblemReport -> ResponseEntity.ok(result.message)
+                .also { log.info("/pupilid/issue returns HTTP 200: Problem Report {}", result.message) }
+            is NextMessage.ReceivedProblemReport -> ResponseEntity.ok().build<String>()
+                .also { log.info("/pupilid/issue returns HTTP 200: Received Problem Report {}", result.message) }
+            else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
+                .also { log.warn("/pupilid/issue returns HTTP 500: Internal error {}", result) }
+        }.also { request.logout() }
     }
 
 }
