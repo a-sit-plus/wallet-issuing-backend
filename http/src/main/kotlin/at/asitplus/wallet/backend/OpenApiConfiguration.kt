@@ -3,6 +3,9 @@ package at.asitplus.wallet.backend
 import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
+import io.swagger.v3.oas.models.media.Content
+import io.swagger.v3.oas.models.media.MediaType
+import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.security.SecurityScheme
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.info.BuildProperties
@@ -52,6 +55,22 @@ class OpenApiConfiguration {
                         .bearerFormat("JWT")
                         .description("Response to challenge sent in header `WWW—Authenticate`, shall contain JWT signed with device binding key.")
                 )
+                    .addResponses(
+                        "errorResponse", ApiResponse().description("Internal server error").content(
+                            Content().addMediaType(
+                                "application/json", MediaType().example( // From Spring's DefaultErrorAttributes
+                                    "{\n" +
+                                            "    \"error\": \"Internal Server Error\",\n" +
+                                            "    \"exception\": \"java.lang.IllegalArgumentException\",\n" +
+                                            "    \"message\": \"foo\",\n" +
+                                            "    \"path\": \"/credentials/status/1\",\n" +
+                                            "    \"status\": 500,\n" +
+                                            "    \"timestamp\": \"2022-05-18T08:24:17.239+00:00\"\n" +
+                                            "}"
+                                )
+                            )
+                        )
+                    )
             )
             .info(Info().title("PupilId API").description("PupilId Backend Service").version(buildProperties.version))
     }

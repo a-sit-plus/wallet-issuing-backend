@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -35,24 +34,15 @@ class PublicController(
                 description = "A verifiable credential in 'Revocation List 2020' format",
                 content = [Content(examples = [ExampleObject(value = "<JWS containing RevocationList2020 payload>")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
     )
     @GetMapping("/credentials/status/1")
     fun getVcRevocationList() = runBlocking {
         log.info("/credentials/status/1 called")
-        try {
-            val rl = issuerAgent.issueRevocationListCredential()
-            log.info("/credentials/status/1 returns {}", rl)
-            ResponseEntity.ok(rl)
-        } catch (e: Throwable) {
-            log.error("/credentials/status/1 returning 500, server error", e)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-        }
+        val rl = issuer.issueRevocationListCredential()
+        log.info("/credentials/status/1 returns {}", rl)
+        ResponseEntity.ok(rl)
     }
 
     @Operation(
@@ -68,28 +58,19 @@ class PublicController(
                 description = "CRL not found, e.g. it is hosted at an external URL",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
     )
     @GetMapping("/crl/1")
     fun getCertificateRevocationList(): ResponseEntity<ByteArray> {
         log.info("/crl/1 called")
-        try {
-            val crl = pkiService.getCrl()
-            if (crl != null) {
-                log.info("/crl/1 returns {}", crl.encodeBase64())
-                return ResponseEntity.ok(crl)
-            }
-            log.info("/crl/1 returns 404, not found")
-            return ResponseEntity.notFound().build()
-        } catch (e: Throwable) {
-            log.error("/crl/1 returning 500, server error", e)
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        val crl = pkiService.getCrl()
+        if (crl != null) {
+            log.info("/crl/1 returns {}", crl.encodeBase64())
+            return ResponseEntity.ok(crl)
         }
+        log.info("/crl/1 returns 404, not found")
+        return ResponseEntity.notFound().build()
     }
 
     @Operation(
@@ -105,28 +86,19 @@ class PublicController(
                 description = "CA certificate not found, e.g. it is hosted at an external URL",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
     )
     @GetMapping("/ca/1")
     fun getCaCertificate(): ResponseEntity<ByteArray> {
         log.info("/ca/1 called")
-        try {
-            val caCertificate = pkiService.getCaCertificate()
-            if (caCertificate != null) {
-                log.info("/ca/1 returns {}", caCertificate.encodeBase64())
-                return ResponseEntity.ok(caCertificate)
-            }
-            log.info("/ca/1 returns 404, not found")
-            return ResponseEntity.notFound().build()
-        } catch (e: Throwable) {
-            log.error("/ca/1 returning 500, server error", e)
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        val caCertificate = pkiService.getCaCertificate()
+        if (caCertificate != null) {
+            log.info("/ca/1 returns {}", caCertificate.encodeBase64())
+            return ResponseEntity.ok(caCertificate)
         }
+        log.info("/ca/1 returns 404, not found")
+        return ResponseEntity.notFound().build()
     }
 
 }

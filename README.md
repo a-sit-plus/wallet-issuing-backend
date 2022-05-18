@@ -577,3 +577,37 @@ spring:
       enabled: true
 ```
 
+### Error Handling
+
+By default, Spring Boot handles errors thrown by our code and transforms them into a JSON document in the form of
+
+```json
+{
+  "error": "Internal Server Error",
+  "path": "/credentials/status/1",
+  "status": 500,
+  "timestamp": "2022-05-18T08:24:17.239+00:00"
+}
+```
+
+If these configuration properties are set:
+
+```yaml
+server:
+  error:
+    include-exception: true
+    include-message: always
+```
+
+and the application throws an exception like `IllegalArgumentException("foo")`, the response contains:
+
+```json
+{
+  "error": "Internal Server Error",
+  "exception": "java.lang.IllegalArgumentException",
+  "message": "foo",
+  "path": "/credentials/status/1",
+  "status": 500,
+  "timestamp": "2022-05-18T08:24:17.239+00:00"
+}
+```
