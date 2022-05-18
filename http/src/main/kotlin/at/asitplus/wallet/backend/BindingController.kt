@@ -40,20 +40,13 @@ class BindingController(
         description = "Get parameters to initiate a binding between a key on the mobile device and the authenticated user.",
         security = [SecurityRequirement(name = "extNonce")],
         responses = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Binding parameters have been created",
-            ),
+            ApiResponse(responseCode = "200", description = "Binding parameters have been created"),
             ApiResponse(
                 responseCode = "403",
                 description = "Client is not authenticated, i.e. it needs to send ext. nonce in header `X-Auth-ExtNonce`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error during processing",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/binding/start")
@@ -61,14 +54,11 @@ class BindingController(
     fun requestBindingParams(
         @RequestBody body: BindingParamsRequestJ,
         principal: Principal
-    ): ResponseEntity<BindingParamsResponseJ> = kotlin.runCatching {
+    ): ResponseEntity<BindingParamsResponseJ> {
         log.info("/binding/start called for {} with {}", principal, body)
         val response = bindingService.getBindingParams(body.deviceName)
-        ResponseEntity.ok(BindingParamsResponseJ(response.challenge, response.subject, response.keyType))
+        return ResponseEntity.ok(BindingParamsResponseJ(response.challenge, response.subject, response.keyType))
             .also { log.info("/binding/start returns ok: {}", it) }
-    }.getOrElse {
-        log.error("/binding/start got error", it)
-        ResponseEntity.internalServerError().build()
     }
 
     @Operation(
@@ -76,10 +66,7 @@ class BindingController(
         description = "Post certification request to get a binding.",
         security = [SecurityRequirement(name = "xAuthToken")],
         responses = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Binding has been created",
-            ),
+            ApiResponse(responseCode = "200", description = "Binding has been created"),
             ApiResponse(
                 responseCode = "400",
                 description = "Value for `challenge` or `csr` is not valid",
@@ -90,11 +77,7 @@ class BindingController(
                 description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error during processing",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/binding/create")
@@ -104,7 +87,7 @@ class BindingController(
         principal: Principal,
         session: HttpSession,
         request: HttpServletRequest,
-    ): ResponseEntity<BindingCsrResponseJ> = kotlin.runCatching {
+    ): ResponseEntity<BindingCsrResponseJ> {
         log.info("/binding/create called for {} with {}", principal, body)
         val response = bindingService.signCertificate(
             body.csr,
@@ -112,15 +95,11 @@ class BindingController(
             body.deviceName,
             body.attestationCerts,
             principal.name
-        )
-            ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-                .also { log.info("/binding/create returns BAD_REQUEST 400") }
+        ) ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
+            .also { log.info("/binding/create returns BAD_REQUEST 400") }
         session.setAttribute("certificate", response.certificate.encodeBase64())
-        ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
+        return ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
             .also { log.info("/binding/create returns ok: {}", it) }
-    }.getOrElse {
-        log.error("/binding/create got error", it)
-        ResponseEntity.internalServerError().build()
     }
 
     @Operation(
@@ -128,10 +107,7 @@ class BindingController(
         description = "Confirm the reception of the binding certificate.",
         security = [SecurityRequirement(name = "xAuthToken")],
         responses = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Confirmation has been recorded",
-            ),
+            ApiResponse(responseCode = "200", description = "Confirmation has been recorded"),
             ApiResponse(
                 responseCode = "400",
                 description = "Value for `success` is not valid, i.e. should be `true`",
@@ -142,11 +118,7 @@ class BindingController(
                 description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error during processing",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/binding/confirm")
@@ -156,7 +128,7 @@ class BindingController(
         principal: Principal,
         session: HttpSession,
         request: HttpServletRequest,
-    ): ResponseEntity<BindingConfirmResponseJ> = kotlin.runCatching {
+    ): ResponseEntity<BindingConfirmResponseJ> {
         log.info("/binding/confirm called for {} with {}", principal, body)
         val confirmed = bindingService.confirm(body.success)
             ?: return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
@@ -173,9 +145,6 @@ class BindingController(
         }
         return ResponseEntity.ok(BindingConfirmResponseJ(confirmed))
             .also { log.info("/binding/confirm returns ok: {}", it) }
-    }.getOrElse {
-        log.error("/binding/confirm got error", it)
-        ResponseEntity.internalServerError().build()
     }
 
 }
