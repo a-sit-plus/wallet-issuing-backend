@@ -14,6 +14,7 @@ import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
+import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerAgent
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
@@ -30,7 +31,6 @@ import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
-import kotlin.time.Duration.Companion.minutes
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -239,7 +239,7 @@ class BackendConfiguration {
         issuerCredentialStore: IssuerCredentialStore,
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
         issuerCryptoService: CryptoService
-    ): IssuerAgent = IssuerAgent(
+    ): Issuer = IssuerAgent(
         keyId = issuerCryptoService.keyId,
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
@@ -258,11 +258,11 @@ class BackendConfiguration {
     @Profile("pupilid")
     @Bean
     fun issueCredentialMessengerPupilId(
-        issuerAgent: IssuerAgent,
+        issuer: Issuer,
         issuerCryptoService: CryptoService,
         issuerMessageWrapper: MessageWrapper
     ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
-        issuer = issuerAgent,
+        issuer = issuer,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
         serviceEndpoint = appendPath(configurationProperties.publicContext, "pupilid", "issue"),
@@ -272,11 +272,11 @@ class BackendConfiguration {
     @Profile("eidasid")
     @Bean
     fun issueCredentialMessengerEidasId(
-        issuerAgent: IssuerAgent,
+        issuer: Issuer,
         issuerCryptoService: CryptoService,
         issuerMessageWrapper: MessageWrapper
     ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
-        issuer = issuerAgent,
+        issuer = issuer,
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
         serviceEndpoint = appendPath(configurationProperties.publicContext, "eidasid", "issue"),

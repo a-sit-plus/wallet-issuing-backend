@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.lib.agent.IssuerAgent
+import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.encodeBase64
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class PublicController(
-    private val issuerAgent: IssuerAgent,
+    private val issuer: Issuer,
     private val pkiService: PkiService,
 ) {
 
