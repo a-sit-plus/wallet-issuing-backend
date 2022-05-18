@@ -48,6 +48,7 @@ class RevocationController(
                 description = "No device binding has been found for the input value",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/revoke/binding")
@@ -91,6 +92,7 @@ class RevocationController(
                 description = "No PupilId has been found for the input value",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/revoke/pupilid")
@@ -132,6 +134,7 @@ class RevocationController(
                 description = "No devices found for pupil with `bpk`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @GetMapping("/revoke/devices")
