@@ -82,16 +82,15 @@ class DefaultBindingService(
         bpk: String
     ): BindingCertificate? {
         if (!challengeService.verifyAndRemove(challenge))
-            return null
-                .also { log.info("/binding/create returns challenge invalid: {}", it) }
+            return null.also { log.warn("binding challenge invalid: {}", it) }
 
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
-            ?: return null
-                .also { log.info("/binding/create returns CSR invalid: {}", it) }
+            ?: return null.also { log.warn("CSR invalid: {}", it) }
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
         val signedPublicKey = attestationService.verifyAttestation(attestationCerts, certificate.encoded)
         log.info("Created new device binding for '{}': {}", bpk, certificate.encoded.encodeBase64())
+
         return BindingCertificate(certificate.encoded, signedPublicKey)
     }
 

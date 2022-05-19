@@ -86,7 +86,8 @@ class RevocationControllerErrorTest {
             .header("X-API-Key", apiKey)
             .exchange()
             .expectStatus().isNotFound
-            .expectBody().isEmpty
+            .expectBody().jsonPath("status").isEqualTo(404)
+            .jsonPath("path").isEqualTo("/revoke/binding")
     }
 
     @Test
@@ -133,7 +134,9 @@ class RevocationControllerErrorTest {
             .header("X-API-Key", apiKey)
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody().isEmpty
+            .expectBody().jsonPath("status").isEqualTo(400)
+            .jsonPath("path").isEqualTo("/revoke/pupilid")
+            .jsonPath("message").isEqualTo("deviceId set")
     }
 
     @Test
@@ -146,7 +149,8 @@ class RevocationControllerErrorTest {
             .header("X-API-Key", apiKey)
             .exchange()
             .expectStatus().isNotFound
-            .expectBody().isEmpty
+            .expectBody().jsonPath("status").isEqualTo(404)
+            .jsonPath("path").isEqualTo("/revoke/pupilid")
     }
 
     @Test
@@ -186,13 +190,24 @@ class RevocationControllerErrorTest {
     }
 
     @Test
-    fun `devices returns error document for wrong request`() {
-        webClient.get().uri("/revoke/devices/")
+    fun `devices returns error document for missing bpk`() {
+        webClient.get().uri("/revoke/devices")
             .header("X-API-Key", apiKey)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody().jsonPath("status").isEqualTo(400)
-            .jsonPath("path").isEqualTo("/revoke/devices/")
+            .jsonPath("path").isEqualTo("/revoke/devices")
+    }
+
+    @Test
+    fun `devices returns error document for blank bpk`() {
+        webClient.get().uri("/revoke/devices?bpk={bpk}", " ")
+            .header("X-API-Key", apiKey)
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody().jsonPath("status").isEqualTo(400)
+            .jsonPath("path").isEqualTo("/revoke/devices")
+            .jsonPath("message").isEqualTo("bpk not set")
     }
 
     @Test
@@ -204,7 +219,8 @@ class RevocationControllerErrorTest {
             .header("X-API-Key", apiKey)
             .exchange()
             .expectStatus().isNotFound
-            .expectBody().isEmpty
+            .expectBody().jsonPath("status").isEqualTo(404)
+            .jsonPath("path").isEqualTo("/revoke/devices")
     }
 
     @Test

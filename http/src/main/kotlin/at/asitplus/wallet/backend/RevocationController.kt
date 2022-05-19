@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 
 
 /**
@@ -57,8 +59,8 @@ class RevocationController(
         log.info("/revoke/binding called with {}", body)
         val count = revocationService.revokeBinding(body.bpk, body.deviceId)
         if (count == 0)
-            return ResponseEntity.notFound().build<RevocationResponse>()
-                .also { log.info("/revoke/binding returns HTTP 404") }
+            throw ResponseStatusException(HttpStatus.NOT_FOUND)
+                .also { log.warn("/revoke/binding returns HTTP 404") }
         return ResponseEntity.ok(RevocationResponse(count))
             .also { log.info("/revoke/binding returns HTTP 200: {}", it) }
     }
@@ -100,12 +102,12 @@ class RevocationController(
     fun revokePupilId(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/pupilid called with {}", body)
         if (body.deviceId != null)
-            return ResponseEntity.badRequest().build<RevocationResponse>()
-                .also { log.info("/revoke/pupilid returns HTTP 400, deviceId has been set") }
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "deviceId set")
+                .also { log.warn("/revoke/pupilid returns HTTP 400: deviceId set") }
         val count = revocationService.revokeCredentialsByBpk(body.bpk)
         if (count == 0)
-            return ResponseEntity.notFound().build<RevocationResponse>()
-                .also { log.info("/revoke/pupilid returns HTTP 404") }
+            throw ResponseStatusException(HttpStatus.NOT_FOUND)
+                .also { log.warn("/revoke/pupilid returns HTTP 404") }
         return ResponseEntity.ok(RevocationResponse(count))
             .also { log.info("/revoke/pupilid returns HTTP 200: {}", it) }
     }
@@ -141,19 +143,15 @@ class RevocationController(
     @PreAuthorize("hasAuthority(\"REVOCATION\")")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
         log.info("/revoke/devices called for bpk '{}'", bpk)
-        if (bpk.isBlank()) {
-            return ResponseEntity.badRequest().build<DeviceListResponse>()
-                .also { log.info("/revoke/devices returns HTTP 400") }
-        }
+        if (bpk.isBlank())
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "bpk not set")
+                .also { log.warn("/revoke/devices returns HTTP 400: bpk not set") }
         val list = bindingStorageService.lookupDevices(bpk)
-        if (list.isEmpty()) {
-            return ResponseEntity.notFound().build<DeviceListResponse>()
-                .also { log.info("/revoke/devices returns HTTP 404") }
-        }
+        if (list.isEmpty())
+            throw ResponseStatusException(HttpStatus.NOT_FOUND)
+                .also { log.warn("/revoke/devices returns HTTP 404") }
         return ResponseEntity.ok(
-            DeviceListResponse(
-                list.map { DeviceListResponseEntry(it.deviceId, it.deviceName) }
-            )
+            DeviceListResponse(list.map { DeviceListResponseEntry(it.deviceId, it.deviceName) })
         ).also { log.info("/revoke/devices returns HTTP 200: {}", it) }
     }
 

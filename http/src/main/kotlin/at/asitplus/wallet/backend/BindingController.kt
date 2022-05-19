@@ -17,12 +17,14 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 import java.security.Principal
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpSession
@@ -58,7 +60,7 @@ class BindingController(
         log.info("/binding/start called for {} with {}", principal, body)
         val response = bindingService.getBindingParams(body.deviceName)
         return ResponseEntity.ok(BindingParamsResponseJ(response.challenge, response.subject, response.keyType))
-            .also { log.info("/binding/start returns ok: {}", it) }
+            .also { log.info("/binding/start returns HTTP 200: {}", it) }
     }
 
     @Operation(
@@ -95,11 +97,11 @@ class BindingController(
             body.deviceName,
             body.attestationCerts,
             principal.name
-        ) ?: return ResponseEntity.badRequest().build<BindingCsrResponseJ>()
-            .also { log.info("/binding/create returns BAD_REQUEST 400") }
+        ) ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
+            .also { log.warn("/binding/create returns HTTP 400") }
         session.setAttribute("certificate", response.certificate.encodeBase64())
         return ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
-            .also { log.info("/binding/create returns ok: {}", it) }
+            .also { log.info("/binding/create returns HTTP 200: {}", it) }
     }
 
     @Operation(
@@ -131,8 +133,8 @@ class BindingController(
     ): ResponseEntity<BindingConfirmResponseJ> {
         log.info("/binding/confirm called for {} with {}", principal, body)
         val confirmed = bindingService.confirm(body.success)
-            ?: return ResponseEntity.badRequest().build<BindingConfirmResponseJ>()
-                .also { log.info("/binding/confirm returns success not set: {}", it) }
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "success not set")
+                .also { log.warn("/binding/confirm returns HTTP 400: success not set") }
 
         // We want the client to not need to authenticate again when using the PupilIdController,
         // so we'll set the expected authentication token into the current security context
@@ -144,7 +146,7 @@ class BindingController(
                 DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
         }
         return ResponseEntity.ok(BindingConfirmResponseJ(confirmed))
-            .also { log.info("/binding/confirm returns ok: {}", it) }
+            .also { log.info("/binding/confirm returns HTTP 200: {}", it) }
     }
 
 }

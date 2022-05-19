@@ -8,9 +8,11 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 
 /**
  * Public endpoints, available without authentication:
@@ -65,12 +67,10 @@ class PublicController(
     fun getCertificateRevocationList(): ResponseEntity<ByteArray> {
         log.info("/crl/1 called")
         val crl = pkiService.getCrl()
-        if (crl != null) {
-            log.info("/crl/1 returns {}", crl.encodeBase64())
-            return ResponseEntity.ok(crl)
-        }
-        log.info("/crl/1 returns 404, not found")
-        return ResponseEntity.notFound().build()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+                .also { log.warn("/crl/1 returns 404, not found") }
+        log.info("/crl/1 returns {}", crl.encodeBase64())
+        return ResponseEntity.ok(crl)
     }
 
     @Operation(
@@ -93,12 +93,10 @@ class PublicController(
     fun getCaCertificate(): ResponseEntity<ByteArray> {
         log.info("/ca/1 called")
         val caCertificate = pkiService.getCaCertificate()
-        if (caCertificate != null) {
-            log.info("/ca/1 returns {}", caCertificate.encodeBase64())
-            return ResponseEntity.ok(caCertificate)
-        }
-        log.info("/ca/1 returns 404, not found")
-        return ResponseEntity.notFound().build()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+                .also { log.warn("/ca/1 returns 404, not found") }
+        log.info("/ca/1 returns {}", caCertificate.encodeBase64())
+        return ResponseEntity.ok(caCertificate)
     }
 
 }

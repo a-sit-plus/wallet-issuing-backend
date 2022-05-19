@@ -104,6 +104,20 @@ class BindingControllerErrorTest {
     }
 
     @Test
+    fun `binding create returns error document 400`() {
+        whenever(bindingService.signCertificate(any(), any(), any(), any(), any()))
+            .thenReturn(null)
+
+        webClient.post().uri("/binding/create")
+            .bodyValue(BindingCsrRequestJ(byteArrayOf(), byteArrayOf(), "deviceName", listOf()))
+            .header("X-Auth-ExtNonce", nonce)
+            .exchange()
+            .expectStatus().is4xxClientError
+            .expectBody().jsonPath("status").isEqualTo(400)
+            .jsonPath("path").isEqualTo("/binding/create")
+    }
+
+    @Test
     fun `binding create unauthorized`() {
         webClient.post().uri("/binding/create")
             .bodyValue(BindingCsrRequestJ(byteArrayOf(), byteArrayOf(), "deviceName", listOf()))
@@ -138,6 +152,21 @@ class BindingControllerErrorTest {
             .jsonPath("exception").value(containsString(IllegalArgumentException::class.java.simpleName))
             .jsonPath("path").isEqualTo("/binding/confirm")
             .jsonPath("message").isEqualTo(exceptionMessage)
+    }
+
+    @Test
+    fun `binding confirm returns error document for success not set`() {
+        whenever(bindingService.confirm(eq(false)))
+            .thenReturn(null)
+
+        webClient.post().uri("/binding/confirm")
+            .bodyValue(BindingConfirmRequestJ(false))
+            .header("X-Auth-ExtNonce", nonce)
+            .exchange()
+            .expectStatus().is4xxClientError
+            .expectBody().jsonPath("status").isEqualTo(400)
+            .jsonPath("path").isEqualTo("/binding/confirm")
+            .jsonPath("message").isEqualTo("success not set")
     }
 
     @Test

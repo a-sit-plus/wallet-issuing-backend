@@ -60,7 +60,8 @@ class PublicControllerErrorTest {
 
         webClient.get().uri("/crl/1").exchange()
             .expectStatus().isNotFound
-            .expectBody().isEmpty
+            .expectBody().jsonPath("status").isEqualTo(404)
+            .jsonPath("path").isEqualTo("/crl/1")
     }
 
     @Test
@@ -81,7 +82,8 @@ class PublicControllerErrorTest {
 
         webClient.get().uri("/ca/1").exchange()
             .expectStatus().isNotFound
-            .expectBody().isEmpty
+            .expectBody().jsonPath("status").isEqualTo(404)
+            .jsonPath("path").isEqualTo("/ca/1")
     }
 
     @Test
