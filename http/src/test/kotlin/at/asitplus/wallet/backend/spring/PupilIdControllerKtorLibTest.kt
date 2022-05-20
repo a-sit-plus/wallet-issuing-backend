@@ -14,6 +14,8 @@ import at.asitplus.wallet.lib.jws.JwsHeader
 import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.PupilIdIssuingService
 import at.asitplus.wallet.pupilid.ServiceResult
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -61,7 +63,7 @@ class PupilIdControllerKtorLibTest {
     }
 
     @Test
-    fun start_challengeResponse_ok() = runTest {
+    fun issue_challengeResponse_ok() = runTest {
         val request = holderMessenger.startDirect() as NextMessage.Send
         val cryptoAdapter = PupilIdIssuingService.JwsAdapter { payload ->
             KmmResult.success(
@@ -80,6 +82,33 @@ class PupilIdControllerKtorLibTest {
         val result = service.issueCredentials(request.message)
 
         result.shouldBeInstanceOf<ServiceResult.Success>()
+    }
+
+    @Test
+    fun issue_wrongAuth_error() = runTest {
+        val request = holderMessenger.startDirect() as NextMessage.Send
+        val cryptoAdapter = PupilIdIssuingService.JwsAdapter { payload ->
+            KmmResult.success(
+                DefaultJwsService(holderCryptoService).createSignedJws(
+                    JwsHeader(
+                        holderCryptoService.jwsAlgorithm,
+                        holderCryptoService.keyId,
+                        certificateChain = arrayOf(clientCert)
+                    ),
+                    payload.encodeToByteArray().reversedArray()
+                )!!
+            )
+        }
+
+        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
+        val result = service.issueCredentials(request.message)
+
+        result.shouldBeInstanceOf<ServiceResult.ErrorFromNetwork>()
+        val details = result.details
+        details.shouldNotBeNull()
+        details.status shouldBe 401
+        details.path shouldBe "/pupilid/issue"
+        details.error shouldBe "Unauthorized"
     }
 
 }
