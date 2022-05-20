@@ -29,6 +29,7 @@ class ApiKeyAuthnProvider(
             throw BadCredentialsException("not supported")
         val username = apiKeyAuthnService.validate(credentials)
             ?: throw BadCredentialsException("Error")
+                .also { log.warn("Could not validate credentials: {}", credentials) }
         log.info("Exchanged apiKey '{}' for user '{}'", credentials, username)
         return ApiKeyAuthnToken(credentials, username)
     }

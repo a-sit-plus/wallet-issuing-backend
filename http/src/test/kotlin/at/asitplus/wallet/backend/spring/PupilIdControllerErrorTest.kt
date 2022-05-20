@@ -94,6 +94,18 @@ class PupilIdControllerErrorTest {
     }
 
     @Test
+    fun `pupilid issue wrong authorization`() {
+        webClient.post().uri("/pupilid/issue")
+            .bodyValue("foo")
+            .header(HttpHeaders.AUTHORIZATION, "Response ${challengeResponse.reversed()}")
+            .exchange()
+            .expectStatus().isUnauthorized
+            .expectBody().jsonPath("status").isEqualTo(401)
+            .jsonPath("exception").value(containsString(AccessDeniedException::class.java.simpleName))
+            .jsonPath("path").isEqualTo("/pupilid/issue")
+    }
+
+    @Test
     fun `pupilid issue GET not allowed`() {
         webClient.get().uri("/pupilid/issue")
             .exchange()

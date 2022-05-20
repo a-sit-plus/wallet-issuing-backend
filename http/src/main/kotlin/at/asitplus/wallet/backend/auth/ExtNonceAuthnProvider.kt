@@ -29,6 +29,7 @@ class ExtNonceAuthnProvider(
             throw BadCredentialsException("not supported")
         val bpk = extNonceAuthnService.exchangeNonceForBpk(credentials)
             ?: throw BadCredentialsException("Error")
+                .also { log.warn("Could not validate credentials: {}", credentials) }
         log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)
         return ExtNonceAuthnToken(credentials, bpk)
     }

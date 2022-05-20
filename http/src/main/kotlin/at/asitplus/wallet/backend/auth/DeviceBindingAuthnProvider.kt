@@ -31,6 +31,7 @@ class DeviceBindingAuthnProvider(
             throw BadCredentialsException("not supported")
         val result = deviceBindingAuthnService.validate(credentials)
             ?: throw BadCredentialsException("bpk not found")
+                .also { log.warn("Could not validate credentials: {}", credentials) }
         return DeviceBindingAuthnToken(credentials, result.bpk, result.certificate)
     }
 
