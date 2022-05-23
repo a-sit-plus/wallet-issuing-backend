@@ -38,25 +38,25 @@ class EcoCredentialDataProvider(
         ).also { log.debug("getCredential for '{}' got {}", bpk, it) }
         val body = entity.body
             ?: return null.also { log.info("getCredential for '{}' returns null: {}", bpk, entity) }
-        val parsedExpiration = body.validUntil?.let { Instant.parse(it) } ?: maxExpiration
+        val parsedExpiration = kotlin.runCatching { Instant.parse(body.validUntil) }.getOrNull() ?: maxExpiration
         val cappedExpiration = if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
         if (cappedExpiration != maxExpiration)
             log.info("Capping expiration to '{}', max expiration would be '{}'", cappedExpiration, maxExpiration)
         val subject = PupilIdCredential(
             id = subjectId,
-            schoolName = body.schoolName ?: "",
-            schoolCity = body.schoolCity ?: "",
-            schoolPostCode = body.schoolZip ?: "",
-            schoolStreet = body.schoolStreet ?: "",
-            schoolNumber = body.schoolId ?: "",
-            pupilNumber = body.studentId ?: "",
-            firstName = body.firstname ?: "",
-            lastName = body.lastname ?: "",
-            dateOfBirth = body.dateOfBirth ?: "",
-            validUntil = body.validUntil ?: "",
-            postCity = body.studentCity ?: "",
-            postCode = body.studentZip ?: "",
-            picture = body.photo?.decodeBase64ToArray() ?: byteArrayOf(),
+            firstName = body.firstname,
+            lastName = body.lastname,
+            dateOfBirth = body.dateOfBirth,
+            schoolName = body.schoolName,
+            schoolCity = body.schoolCity,
+            schoolZip = body.schoolZip,
+            schoolStreet = body.schoolStreet,
+            schoolId = body.schoolId,
+            pupilCity = body.studentCity,
+            pupilZip = body.studentZip,
+            pupilId = body.studentId,
+            picture = body.photo.decodeBase64ToArray() ?: byteArrayOf(),
+            validUntil = body.validUntil,
         )
         CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
             log.info("getCredential for '{}' returns {}", bpk, it)
@@ -67,19 +67,19 @@ class EcoCredentialDataProvider(
     }
 
     data class EcoStudentData(
-        val firstname: String?,
-        val lastname: String?,
-        val dateOfBirth: String?,
-        val schoolName: String?,
-        val schoolCity: String?,
-        val schoolZip: String?,
-        val schoolStreet: String?,
-        val schoolId: String?,
+        val firstname: String,
+        val lastname: String,
+        val dateOfBirth: String,
+        val schoolName: String,
+        val schoolCity: String,
+        val schoolZip: String,
+        val schoolStreet: String,
+        val schoolId: String,
         val studentCity: String?,
         val studentZip: String?,
         val studentId: String?,
-        val validUntil: String?,
-        val photo: String?,
+        val photo: String,
+        val validUntil: String,
     )
 
 }

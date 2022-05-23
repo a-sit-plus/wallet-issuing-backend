@@ -31,8 +31,8 @@ class RandomCredentialDataProvider constructor(
             "Mittelschule", "HTL", "HAK", "Hauptschule"
         ).random()
         val schoolName = "$randomSchoolPrefix $randomSchoolSuffix"
-        val schoolNumber = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
-        val pupilNumber =  // e.g. 00200000/00000004
+        val schoolId = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
+        val pupilId =  // e.g. 00200000/00000004
             (1..2).joinToString("/") { (1..8).map { "0123456789".random() }.joinToString("") }
         val dateOfBirth: String = run {
             val maxAge = 18 * 12 * 31
@@ -75,7 +75,7 @@ class RandomCredentialDataProvider constructor(
             "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
-            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilNumber)
+            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilId)
             else -> return null
         }
         return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
@@ -94,19 +94,19 @@ class RandomCredentialDataProvider constructor(
         }
         val subject = PupilIdCredential(
             id = subjectId,
-            schoolName = it.schoolName,
-            schoolCity = it.city,
-            schoolPostCode = it.zip,
-            schoolStreet = it.schoolAddress,
-            schoolNumber = it.schoolNumber,
-            pupilNumber = it.pupilNumber,
             firstName = it.firstName,
             lastName = it.lastName,
             dateOfBirth = it.dateOfBirth,
+            schoolName = it.schoolName,
+            schoolCity = it.city,
+            schoolZip = it.zip,
+            schoolStreet = it.schoolAddress,
+            schoolId = it.schoolId,
+            pupilCity = it.city,
+            pupilZip = it.zip,
+            pupilId = it.pupilId,
+            picture = it.encodedPhoto,
             validUntil = "2023-09-01",
-            postCity = it.city,
-            postCode = it.zip,
-            picture = it.encodedPhoto
         )
         return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
     }

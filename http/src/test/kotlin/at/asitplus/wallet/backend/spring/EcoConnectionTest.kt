@@ -33,6 +33,9 @@ class EcoConnectionTest {
     @Autowired
     private lateinit var issuerCredentialDataProvider: IssuerCredentialDataProvider
 
+    @Autowired
+    private lateinit var deviceBindingRepository: DeviceBindingRepository
+
     @MockBean
     private lateinit var authenticationSupplier: AuthenticationSupplier
 
@@ -46,6 +49,7 @@ class EcoConnectionTest {
         // use bpk printed from extNonceService()
         bpk = "dKyd87h31E+oHYLVqpZF+g=="
         certificate = client.selfSignedCert.encoded
+        client.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
             .thenReturn(certificate)
     }
@@ -53,7 +57,7 @@ class EcoConnectionTest {
     @Test
     fun extNonceService() {
         // Get valid nonce manually from https://educard.quarto.at/educard.user/
-        val nonce = "eaf95184-5f60-4809-8212-3a8c4b9d7db6"
+        val nonce = "82b1979f-edde-48ca-9c74-d272842dd506"
 
         val bpk = extNonceAuthnService.exchangeNonceForBpk(nonce)
         bpk shouldHaveMinLength 8
