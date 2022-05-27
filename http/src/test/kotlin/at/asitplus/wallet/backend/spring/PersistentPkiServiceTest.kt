@@ -1,0 +1,108 @@
+package at.asitplus.wallet.backend.spring
+
+import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.InMemoryPkiService
+import at.asitplus.wallet.backend.PersistentPkiService
+import at.asitplus.wallet.backend.PkiService
+import at.asitplus.wallet.backend.RandomKeyAdapter
+import at.asitplus.wallet.backend.data.IssuedCertificateRepository
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
+import org.bouncycastle.cert.X509CRLHolder
+import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import java.util.Date
+import java.util.UUID
+
+@DataJpaTest
+class PersistentPkiServiceTest {
+
+    @Autowired
+    private lateinit var issuedCertificateRepository: IssuedCertificateRepository
+
+    private lateinit var service: PkiService
+
+    @BeforeEach
+    fun setup() {
+        service = PersistentPkiService(
+            certValidityDays = 1,
+            issuerName = "CN=Test",
+            issuedCertificateRepository = issuedCertificateRepository,
+            cryptoService = DefaultCryptoServiceAdapter(RandomKeyAdapter())
+        )
+    }
+
+    @Test
+    fun `sign correct CSR`() {
+        val subject = "CN=${UUID.randomUUID()}"
+        val csr = Client().generateCsr(subject)
+
+        val certificate = service.verifyAndSign(csr, subject)
+
+        certificate.shouldNotBeNull()
+    }
+
+    @Test
+    fun `do not sign CSR with wrong subject`() {
+        val subject = "CN=${UUID.randomUUID()}"
+        val csr = Client().generateCsr(subject)
+
+        val certificate = service.verifyAndSign(csr, "CN=${UUID.randomUUID()}")
+
+        certificate.shouldBeNull()
+    }
+
+    @Test
+    fun `device binding certificates are valid`() {
+        val subject = "CN=${UUID.randomUUID()}"
+        val csr = Client().generateCsr(subject)
+        val certificate = service.verifyAndSign(csr, subject)
+
+        certificate.shouldNotBeNull()
+        val verifierProvider =
+            JcaContentVerifierProviderBuilder().build(X509CertificateHolder(service.getCaCertificate()))
+        val holder = X509CertificateHolder(certificate.encoded)
+        holder.isSignatureValid(verifierProvider) shouldBe true
+        holder.isValidOn(Date()) shouldBe true
+    }
+
+    @Test
+    fun `add revoked certificate to CRL`() {
+        val subject = "CN=${UUID.randomUUID()}"
+        val csr = Client().generateCsr(subject)
+        val certificate = service.verifyAndSign(csr, subject)
+        certificate.shouldNotBeNull()
+        val serialNumber = X509CertificateHolder(certificate.encoded).serialNumber
+
+        service.revokeCertificate(certificate.encoded)
+        val crl = service.getCrl()
+
+        val verifierProvider =
+            JcaContentVerifierProviderBuilder().build(X509CertificateHolder(service.getCaCertificate()))
+        val crlHolder = X509CRLHolder(crl)
+        crlHolder.isSignatureValid(verifierProvider) shouldBe true
+        val revokedCert = crlHolder.getRevokedCertificate(serialNumber)
+        revokedCert.shouldNotBeNull()
+    }
+
+    @Test
+    fun `do not add non-revoked certificate to CRL`() {
+        val subject = "CN=${UUID.randomUUID()}"
+        val csr = Client().generateCsr(subject)
+        val certificate = service.verifyAndSign(csr, subject)
+        certificate.shouldNotBeNull()
+        val serialNumber = X509CertificateHolder(certificate.encoded).serialNumber
+
+        val crl = service.getCrl()
+
+        val revokedCert = X509CRLHolder(crl).getRevokedCertificate(serialNumber)
+        revokedCert.shouldBeNull()
+    }
+
+}

@@ -43,12 +43,12 @@ class InMemoryPkiService(
 
     private fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): X509CertificateHolder =
         X509v3CertificateBuilder(
-            subject,
-            BigInteger.valueOf(Random.nextLong()),
-            Date(),
-            Date.from(InstantNowPlusDays(certValidityDays)),
-            issuer,
-            subjectPublicKeyInfo
+            /* issuer = */ issuer,
+            /* serial = */ BigInteger.valueOf(Random.nextLong()),
+            /* notBefore = */ Date(),
+            /* notAfter = */ Date.from(InstantNowPlusDays(certValidityDays)),
+            /* subject = */ subject,
+            /* publicKeyInfo = */ subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner)
 
     override fun getCaCertificate(): ByteArray {
