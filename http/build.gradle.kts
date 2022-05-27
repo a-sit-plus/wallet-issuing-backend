@@ -54,6 +54,7 @@ dependencies {
     implementation("io.github.aakira:napier:2.5.0")
     implementation("com.google.iot.cbor:cbor:0.01.02")
     implementation("at.asitplus.hsmfacade:provider:0.8.3")
+    implementation("at.asitplus.wallet:remotecrypto:0.0.1-SNAPSHOT")
     runtimeOnly("com.h2database:h2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

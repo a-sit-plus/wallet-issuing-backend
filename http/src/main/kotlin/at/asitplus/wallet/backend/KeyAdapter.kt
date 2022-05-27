@@ -5,6 +5,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
+import at.asitplus.wallet.remotecrypto.EcRemoteKeyParameterSpec
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -118,6 +119,34 @@ class HsmFacadeAdapter(
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
         log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
+    }
+
+}
+
+class RemoteKeyAdapter(
+    config: KeyRemoteCryptoConfiguration,
+    securityProviderBean: SecurityProviderBean,
+) : KeyAdapter {
+
+    private val log = LoggerFactory.getLogger(this.javaClass)
+
+    override val privateKey: PrivateKey
+    override val publicKey: PublicKey
+    override val jwsAlgorithm: JwsAlgorithm
+    override val provider: Provider = securityProviderBean.provider
+    override val jsonWebKey: JsonWebKey
+
+    init {
+        val spec = EcRemoteKeyParameterSpec("secp256r1", config.keyName!!)
+        val generator = KeyPairGenerator.getInstance("EC", provider).apply { initialize(spec) }
+        val keyPair = generator.generateKeyPair()
+        privateKey = keyPair.private
+        publicKey = keyPair.public
+        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
+        val ecCurve = EcCurve.SECP_256_R_1
+        jwsAlgorithm = JwsAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
+        log.info("Loaded remote public key: '{}'", publicKey.encoded.encodeBase64())
     }
 
 }

@@ -25,7 +25,6 @@ class PersistentPkiService(
     private val certValidityDays: Int = 30,
     private val issuerName: String = "CN=Persistent-Issuer",
     private val issuedCertificateRepository: IssuedCertificateRepository,
-    // TODO Use RemoteKey
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
 ) : PkiService {
 
