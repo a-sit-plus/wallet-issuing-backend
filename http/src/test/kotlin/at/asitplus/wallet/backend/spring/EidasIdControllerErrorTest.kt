@@ -30,7 +30,7 @@ import java.util.UUID
     properties = ["server.error.include-exception=true", "server.error.include-message=always"]
 )
 @ActiveProfiles("eidasid")
-@AutoConfigureWebTestClient
+@AutoConfigureWebTestClient(timeout = "PT1M")
 class EidasIdControllerErrorTest {
 
     @Autowired

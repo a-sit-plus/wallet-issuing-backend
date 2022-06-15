@@ -29,7 +29,7 @@ import java.util.UUID
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["server.error.include-exception=true", "server.error.include-message=always"]
 )
-@AutoConfigureWebTestClient
+@AutoConfigureWebTestClient(timeout = "PT1M")
 class PupilIdControllerErrorTest {
 
     @Autowired
