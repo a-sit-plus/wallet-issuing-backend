@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.FileInputStream
+import java.util.*
 
 plugins {
     id("org.springframework.boot") version "2.6.7"
@@ -34,7 +36,7 @@ dependencies {
     implementation("org.apache.httpcomponents:httpclient")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.3.2")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("com.nimbusds:nimbus-jose-jwt:9.22")
@@ -67,7 +69,11 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict", "-opt-in=kotlinx.serialization.ExperimentalSerializationApi", "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
+        freeCompilerArgs = listOf(
+            "-Xjsr305=strict",
+            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+        )
         jvmTarget = "11"
     }
 }
@@ -76,7 +82,10 @@ tasks.test {
     useJUnitPlatform()
     testLogging {
         showExceptions = true
-        events = setOf(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED, org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED)
+        events = setOf(
+            org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED,
+            org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED
+        )
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
     systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG")
@@ -88,6 +97,11 @@ tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar
 
 springBoot {
     buildInfo()
+}
+
+Properties().apply {
+    kotlin.runCatching { load(FileInputStream(project.rootProject.file("local.properties"))) }
+    forEach { (k, v) -> extra.set(k as String, v) }
 }
 
 val gitLabPrivateToken: String? by extra
@@ -142,11 +156,11 @@ repositories {
 
 
 publishing {
-	publications {
-		create<MavenPublication>("bootJava") {
-			artifact(tasks.getByName("bootJar"))
-		}
-	}
+    publications {
+        create<MavenPublication>("bootJava") {
+            artifact(tasks.getByName("bootJar"))
+        }
+    }
     repositories {
         mavenLocal()
         if (System.getenv("CI_JOB_TOKEN") != null) {
