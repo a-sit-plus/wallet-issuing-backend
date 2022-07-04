@@ -105,6 +105,10 @@ class BackendConfiguration {
                     securityProviderBean
                 )
                 KeyType.MEMORY -> RandomKeyAdapter()
+                KeyType.REMOTE -> RemoteKeyAdapter(
+                    configurationProperties.pki.internal.key.remote!!,
+                    securityProviderBean
+                )
             }
             InMemoryPkiService(
                 configurationProperties.pki.certValidityDays,
@@ -231,6 +235,7 @@ class BackendConfiguration {
             KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.issuerKey.keystore!!, securityProviderBean)
             KeyType.HSMFACADE -> HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!, securityProviderBean)
             KeyType.MEMORY -> RandomKeyAdapter()
+            KeyType.REMOTE -> RemoteKeyAdapter(configurationProperties.issuerKey.remote!!, securityProviderBean)
         }
     )
 

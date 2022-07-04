@@ -29,6 +29,10 @@ data class BackendConfigurationProperties(
      */
     val hsmfacade: HsmFacadeConfiguration = HsmFacadeConfiguration(),
     /**
+     * General connection information to Remote Crypto Service
+     */
+    val remoteCrypto: RemoteCryptoConfiguration = RemoteCryptoConfiguration(),
+    /**
      * Configure debug endpoints
      */
     val debug: DebugConfigurationProperties = DebugConfigurationProperties(),
@@ -124,6 +128,30 @@ data class HsmFacadeConfiguration(
      * Timeout for one call to the HsmFacade service in seconds
      */
     val timeout: Long = 30,
+)
+
+@ConstructorBinding
+data class RemoteCryptoConfiguration(
+    /**
+     * Whether to enable connection to the Remote Crypto service at all
+     */
+    val enabled: Boolean = false,
+    /**
+     * Host to connect to
+     */
+    val hostname: String? = null,
+    /**
+     * Port used for the connection
+     */
+    val port: Int? = null,
+    /**
+     * Username for authentication
+     */
+    val username: String? = null,
+    /**
+     * Password for authentication
+     */
+    val password: String? = null,
 )
 
 @ConstructorBinding
@@ -263,6 +291,7 @@ data class KeyConfiguration(
     val file: KeyFileConfiguration? = null,
     val keystore: KeyStoreConfiguration? = null,
     val hsmfacade: KeyHsmFacadeConfiguration? = null,
+    val remote: KeyRemoteCryptoConfiguration? = null,
 )
 
 @ConstructorBinding
@@ -288,6 +317,11 @@ data class KeyHsmFacadeConfiguration(
 )
 
 @ConstructorBinding
+data class KeyRemoteCryptoConfiguration(
+    val keyName: String? = null,
+)
+
+@ConstructorBinding
 data class TrustConfiguration(
     val type: TrustType = TrustType.SYSTEM,
     val truststore: TrustStoreConfiguration? = null,
@@ -306,6 +340,7 @@ enum class KeyType {
     MEMORY,
     KEYSTORE,
     HSMFACADE,
+    REMOTE,
 }
 
 enum class TrustType {

@@ -450,6 +450,12 @@ hsmfacade:
   key-store-alias: key1
 ```
 
+```yaml
+type: REMOTE
+remote:
+  key-name: key1
+```
+
 Using keys from a remote HsmFacade service also requires setting the general connection properties:
 
 ```yaml
@@ -462,6 +468,18 @@ backend:
     username: user
     password: password
     timeout: 30
+```
+
+Using keys from a remote crypto service also requires setting the general connection properties:
+
+```yaml
+backend:
+  remote-crypto:
+    enabled: true
+    hostname: remote.example.com
+    port: 443
+    username: user
+    password: password
 ```
 
 Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above:
