@@ -4,8 +4,12 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+    includeBuild("vclib")
+    includeBuild("pupilidlib")
+    includeBuild("remote-crypto-provider")
 }
 
-rootProject.name = "backend"
-include("http")
+rootProject.name = "PupilID"
+
+include( "http")
 
