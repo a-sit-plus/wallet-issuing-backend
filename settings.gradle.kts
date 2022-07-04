@@ -6,7 +6,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "PupilID"
+rootProject.name = "backend"
 
 include( "http")
 includeBuild("vclib"){

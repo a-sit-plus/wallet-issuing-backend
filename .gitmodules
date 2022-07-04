@@ -4,8 +4,8 @@
 	branch = development
 [submodule "pupilidlib"]
 	path = pupilidlib
-	url = git@gitlab.iaik.tugraz.at:wallet/pupilid-kmm-lib.git
+	url = ../pupilid-kmm-lib.git
 	branch = development
 [submodule "remote-crypto-provider"]
 	path = remote-crypto-provider
-	url = git@gitlab.iaik.tugraz.at:wallet/remote-crypto-provider.git
+	url = ../remote-crypto-provider.git
