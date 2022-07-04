@@ -21,6 +21,9 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
+    all {
+        resolutionStrategy
+    }
 }
 
 dependencies {
@@ -46,8 +49,8 @@ dependencies {
     implementation("org.webjars:jquery:3.6.0")
     implementation("org.webjars:datatables:1.11.4")
     implementation("de.codecentric:spring-boot-admin-starter-client:2.6.6")
-    implementation("at.asitplus.wallet:vclib-jvm:1.3.8-SNAPSHOT")
-    implementation("at.asitplus.wallet:pupilidlib-jvm:1.4.3-SNAPSHOT")
+    implementation("at.asitplus.wallet:vclib")
+    implementation("at.asitplus.wallet:pupilidlib")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.7")
@@ -56,7 +59,7 @@ dependencies {
     implementation("io.github.aakira:napier:2.5.0")
     implementation("com.google.iot.cbor:cbor:0.01.02")
     implementation("at.asitplus.hsmfacade:provider:0.8.3")
-    implementation("at.asitplus.wallet:remotecrypto:0.0.1-SNAPSHOT")
+    implementation("at.asitplus.wallet:remotecrypto")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql:42.4.0")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

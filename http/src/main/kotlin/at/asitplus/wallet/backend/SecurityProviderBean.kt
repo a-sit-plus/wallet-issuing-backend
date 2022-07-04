@@ -51,8 +51,7 @@ class SecurityProviderBean(
             val remoteCryptoProvider = RemoteCryptoProvider.instance
             if (!remoteCryptoProvider.isInitialized) {
                 remoteCryptoProvider.init(
-                    config.username!!,
-                    config.password!!,
+                    config.apiKey!!,
                     config.hostname!!,
                     config.port!!,
                 )

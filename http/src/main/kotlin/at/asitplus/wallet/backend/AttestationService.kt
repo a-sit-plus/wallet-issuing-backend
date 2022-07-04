@@ -47,9 +47,8 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
                 return null.also {
                     log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
                 }
-            val serialNumber = certificate.serialNumber.longValueExact()
             val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
-            val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!, serialNumber)
+            val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!)
             return JWSObject(
                 JWSHeader(cryptoService.jwsAlgorithm.joseType),
                 Payload(attestedPublicKey.serialize().encodeToByteArray())

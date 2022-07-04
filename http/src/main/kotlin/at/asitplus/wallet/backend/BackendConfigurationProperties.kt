@@ -147,11 +147,7 @@ data class RemoteCryptoConfiguration(
     /**
      * Username for authentication
      */
-    val username: String? = null,
-    /**
-     * Password for authentication
-     */
-    val password: String? = null,
+    val apiKey: String? = null
 )
 
 @ConstructorBinding
@@ -318,7 +314,8 @@ data class KeyHsmFacadeConfiguration(
 
 @ConstructorBinding
 data class KeyRemoteCryptoConfiguration(
-    val keyName: String? = null,
+    val keyName: String,
+    val pemEncodedPublicKey: String,
 )
 
 @ConstructorBinding

@@ -137,7 +137,7 @@ class RemoteKeyAdapter(
     override val jsonWebKey: JsonWebKey
 
     init {
-        val spec = EcRemoteKeyParameterSpec("secp256r1", config.keyName!!)
+        val spec = EcRemoteKeyParameterSpec("secp256r1", config.keyName, config.pemEncodedPublicKey )
         val generator = KeyPairGenerator.getInstance("EC", provider).apply { initialize(spec) }
         val keyPair = generator.generateKeyPair()
         privateKey = keyPair.private
