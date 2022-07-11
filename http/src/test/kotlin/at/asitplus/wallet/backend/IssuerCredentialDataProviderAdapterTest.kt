@@ -40,7 +40,8 @@ class IssuerCredentialDataProviderAdapterTest {
         adapter = IssuerCredentialDataProviderAdapter(
             lifetime,
             credentialDataProvider,
-            deviceBindingStorageService
+            deviceBindingStorageService,
+            gracePeriod = Duration.ZERO
         )
     }
 

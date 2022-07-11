@@ -221,7 +221,8 @@ class BackendConfiguration {
     ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
         lifetime = configurationProperties.credentials.lifetime,
         credentialDataProvider = credentialDataProvider,
-        deviceBindingStorageService = deviceBindingStorageService
+        deviceBindingStorageService = deviceBindingStorageService,
+        gracePeriod = configurationProperties.credentials.gracePeriod
     )
 
     @Bean
@@ -253,7 +254,6 @@ class BackendConfiguration {
         dataProvider = issuerCredentialDataProvider,
         //TODO
         revocationListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
-        revocationListOverlapPeriod = 90.days,
         schoolYearStart = Month(9) to 10u
     )
 

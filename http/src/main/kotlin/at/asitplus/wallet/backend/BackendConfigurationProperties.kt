@@ -79,6 +79,11 @@ data class CredentialConfigurationProperties(
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
+
+    /**
+     * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
+     */
+    val gracePeriod: Duration = Duration.ofDays(90),
 )
 
 @ConstructorBinding

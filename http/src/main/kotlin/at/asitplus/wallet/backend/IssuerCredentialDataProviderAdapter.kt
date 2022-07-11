@@ -15,6 +15,7 @@ class IssuerCredentialDataProviderAdapter(
     private val lifetime: Duration,
     private val credentialDataProvider: CredentialDataProvider,
     private val deviceBindingStorageService: DeviceBindingStorageService,
+    private val gracePeriod: Duration,
 ) : IssuerCredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -24,10 +25,16 @@ class IssuerCredentialDataProviderAdapter(
         attributeName: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        val bindingExpiration = deviceBinding.validUntil
+        val bindingExpiration = deviceBinding.validUntil + gracePeriod
         val maxExpiration = Instant.now() + lifetime
-        val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
-        val credential = credentialDataProvider.getClaim(subjectId, attributeName, deviceBinding.bpk, cappedExpiration)
+        val cappedExpiration =
+            if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
+        val credential = credentialDataProvider.getClaim(
+            subjectId,
+            attributeName,
+            deviceBinding.bpk,
+            cappedExpiration
+        )
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
@@ -42,10 +49,16 @@ class IssuerCredentialDataProviderAdapter(
         attributeType: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        val bindingExpiration = deviceBinding.validUntil
+        val bindingExpiration = deviceBinding.validUntil + gracePeriod
         val maxExpiration = Instant.now() + lifetime
-        val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
-        val credential = credentialDataProvider.getCredential(subjectId, attributeType, deviceBinding.bpk, cappedExpiration)
+        val cappedExpiration =
+            if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
+        val credential = credentialDataProvider.getCredential(
+            subjectId,
+            attributeType,
+            deviceBinding.bpk,
+            cappedExpiration
+        )
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
