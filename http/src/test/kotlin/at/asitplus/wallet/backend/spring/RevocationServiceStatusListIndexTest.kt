@@ -23,6 +23,7 @@ import java.time.Instant
 import java.time.Year
 import java.util.UUID
 import javax.transaction.Transactional
+import kotlin.properties.Delegates
 import kotlin.random.Random
 
 @SpringBootTest
@@ -51,18 +52,22 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var credentialSubject: CredentialSubject
     private lateinit var issuanceDate: Instant
     private lateinit var expirationDate: Instant
+    private lateinit var now: Instant
+    private var schoolYear by Delegates.notNull<Int>()
 
     @BeforeEach
     fun beforeEach() {
+        schoolYear = 2021
+        now = Instant.parse("$schoolYear-11-10T00:00:00.00Z")
         val client = Client()
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         credentialSubject = AtomicAttributeCredential(subjectId, attributeName, attributeValue)
-        issuanceDate = Instant.now()
+        issuanceDate = now
         expirationDate = issuanceDate.plusSeconds(60)
-        validUntil = Instant.now().plusSeconds(2)
+        validUntil = now.plusSeconds(2)
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
         credentialRepo.deleteAll()
@@ -80,11 +85,11 @@ class RevocationServiceStatusListIndexTest {
             credentialSubject,
             issuanceDate,
             expirationDate,
-            2021
+            schoolYear
         )
-        revocationService.isRevoked(vcId, 2021) shouldBe false
-        revocationService.revokeCredentialsByVcId(vcId, 2021) shouldBe 1
-        revocationService.isRevoked(vcId, 2021) shouldBe true
+        revocationService.isRevoked(vcId, schoolYear) shouldBe false
+        revocationService.revokeCredentialsByVcId(vcId, schoolYear) shouldBe 1
+        revocationService.isRevoked(vcId, schoolYear) shouldBe true
     }
 
     @Test
@@ -94,7 +99,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil,
-            Year.of(2021),
+            Year.of(schoolYear),
             deviceBinding,
             attributeName,
             2
@@ -106,7 +111,7 @@ class RevocationServiceStatusListIndexTest {
             vcId.reversed(),
             subjectId.reversed(),
             validUntil,
-            Year.of(2021),
+            Year.of(schoolYear),
             deviceBinding,
             attributeName,
             1
@@ -122,7 +127,7 @@ class RevocationServiceStatusListIndexTest {
                 credentialSubject,
                 issuanceDate,
                 expirationDate,
-                2021
+                schoolYear
             )
         storeGetNextIndex.shouldNotBeNull()
         storeGetNextIndex shouldBe 3
@@ -137,7 +142,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil,
-            Year.of(2021),
+            Year.of(schoolYear),
             deviceBinding,
             attributeName,
             3
@@ -149,7 +154,7 @@ class RevocationServiceStatusListIndexTest {
             credentialSubject,
             issuanceDate,
             expirationDate,
-            2021
+            schoolYear
         )
             .shouldBeNull()
     }
@@ -162,14 +167,14 @@ class RevocationServiceStatusListIndexTest {
             credentialSubject,
             issuanceDate,
             expirationDate,
-            2021
+            schoolYear
         ).shouldNotBeNull()
         revocationService.storeGetNextIndex(
             vcId,
             credentialSubject,
             issuanceDate,
             expirationDate,
-            2021
+            schoolYear
         ).shouldBeNull()
     }
 
@@ -178,7 +183,7 @@ class RevocationServiceStatusListIndexTest {
     fun `revocation list should match revocation calls`() {
         val expectedRevocationList = revokeRandomCredentials()
 
-        val revocationList = revocationService.getRevokedStatusListIndexList(2021)
+        val revocationList = revocationService.getRevokedStatusListIndexList(schoolYear)
 
         revocationList shouldBe expectedRevocationList
     }
@@ -193,11 +198,11 @@ class RevocationServiceStatusListIndexTest {
                     credentialSubject,
                     issuanceDate,
                     expirationDate,
-                    2021
+                    schoolYear
                 )
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)
-                revocationService.revokeCredentialsByVcId(vcId, 2021)
+                revocationService.revokeCredentialsByVcId(vcId, schoolYear)
             }
         }
         return expectedRevocationList

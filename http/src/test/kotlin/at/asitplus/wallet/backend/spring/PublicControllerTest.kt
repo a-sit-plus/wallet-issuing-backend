@@ -18,7 +18,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET VC status list`() {
-        mockMvc.get("/credentials/status/1") {
+        mockMvc.get("/credentials/status/2021") {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }

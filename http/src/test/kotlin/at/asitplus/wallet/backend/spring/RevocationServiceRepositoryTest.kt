@@ -13,7 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.time.Instant
 import java.time.Year
-import java.util.UUID
+import java.util.*
+import kotlin.properties.Delegates
 import kotlin.random.Random
 
 @SpringBootTest
@@ -38,20 +39,25 @@ class RevocationServiceRepositoryTest {
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
     private lateinit var validUntilExpired: Instant
+    private lateinit var now: Instant
+    private var schoolYear by Delegates.notNull<Int>()
 
     @BeforeEach
     fun beforeEach() {
+        schoolYear = 2021
+        now = Instant.parse("$schoolYear-11-10T00:00:00.00Z")
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
-        validUntil = Instant.now().plusSeconds(2)
-        validUntilExpired = Instant.now().minusSeconds(2)
+        validUntil = now.plusSeconds(2)
+        validUntilExpired = now.minusSeconds(2)
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         credentialRepo.deleteAll()
         if (deviceBindingStorageService.lookupBpk(certificate) == null)
-            deviceBinding = deviceBindingStorageService.store(bpk, certificate, deviceName, validUntil)
+            deviceBinding =
+                deviceBindingStorageService.store(bpk, certificate, deviceName, validUntil)
         deviceId = deviceBinding.deviceId
     }
 
@@ -60,7 +66,7 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId,2021) shouldBe false
+        revocationService.isRevoked(vcId, schoolYear) shouldBe false
     }
 
     @Test
@@ -68,7 +74,7 @@ class RevocationServiceRepositoryTest {
         createExpiredCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId,2021) shouldBe false
+        revocationService.isRevoked(vcId, schoolYear) shouldBe false
     }
 
     @Test
@@ -78,7 +84,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId,2021) shouldBe true
+        revocationService.isRevoked(vcId, schoolYear) shouldBe true
     }
 
     @Test
@@ -88,7 +94,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId,2021) shouldBe true
+        revocationService.isRevoked(vcId, schoolYear) shouldBe true
     }
 
     @Test
@@ -96,17 +102,17 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByVcId(vcId,2021) shouldBe 1
+        revocationService.revokeCredentialsByVcId(vcId, schoolYear) shouldBe 1
     }
 
     @Test
     fun `check on non-existing vcId should return null`() {
-        revocationService.isRevoked(vcId,2021).shouldBeNull()
+        revocationService.isRevoked(vcId, schoolYear).shouldBeNull()
     }
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.revokeCredentialsByVcId(vcId,2021) shouldBe 0
+        revocationService.revokeCredentialsByVcId(vcId, schoolYear) shouldBe 0
     }
 
     @Test
@@ -156,7 +162,10 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByBpkAndDeviceId(bpk, UUID.randomUUID().toString()) shouldBe 0
+        revocationService.revokeCredentialsByBpkAndDeviceId(
+            bpk,
+            UUID.randomUUID().toString()
+        ) shouldBe 0
     }
 
     @Test
@@ -164,13 +173,32 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByBpkAndDeviceId(UUID.randomUUID().toString(), deviceId) shouldBe 0
+        revocationService.revokeCredentialsByBpkAndDeviceId(
+            UUID.randomUUID().toString(),
+            deviceId
+        ) shouldBe 0
     }
 
     private fun createIssuedCredential(): IssuedCredential =
-        IssuedCredential(vcId, subjectId, validUntil, Year.of(2021), deviceBinding, attributeName, 1L)
+        IssuedCredential(
+            vcId,
+            subjectId,
+            validUntil,
+            Year.of(schoolYear),
+            deviceBinding,
+            attributeName,
+            1L
+        )
 
     private fun createExpiredCredential(): IssuedCredential =
-        IssuedCredential(vcId, subjectId, validUntilExpired, Year.of(2021),deviceBinding, attributeName, 1L)
+        IssuedCredential(
+            vcId,
+            subjectId,
+            validUntilExpired,
+            Year.of(schoolYear),
+            deviceBinding,
+            attributeName,
+            1L
+        )
 
 }
