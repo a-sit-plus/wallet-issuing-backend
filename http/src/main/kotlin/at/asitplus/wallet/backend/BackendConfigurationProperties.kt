@@ -12,6 +12,13 @@ data class BackendConfigurationProperties(
      * Public URL of this instance, used for several URLs in messages sent to the Wallet
      */
     val publicContext: String = "http://localhost:8080/",
+
+
+    /**
+     * Date when a school year starts (MM-DD)
+     */
+    val schoolYearRollover: String = "09-10",
+
     /**
      * Configuration for issued credentials
      */

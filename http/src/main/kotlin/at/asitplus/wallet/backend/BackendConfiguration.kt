@@ -22,6 +22,7 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
+import kotlinx.datetime.Month
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
+import kotlin.time.Duration.Companion.days
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -249,7 +251,10 @@ class BackendConfiguration {
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
-        revocationListUrl = appendPath(configurationProperties.publicContext, "credentials", "status", "1")
+        //TODO
+        revocationListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
+        revocationListOverlapPeriod = 90.days,
+        schoolYearStart = Month(9) to 10u
     )
 
     @Bean

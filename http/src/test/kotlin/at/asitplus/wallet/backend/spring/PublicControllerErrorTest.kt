@@ -43,14 +43,14 @@ class PublicControllerErrorTest {
     @Test
     fun `GET VC status list returns error document`() {
         runTest {
-            whenever(issuer.issueRevocationListCredential()).thenThrow(IllegalArgumentException(exceptionMessage))
+            whenever(issuer.issueRevocationListCredential(2021)).thenThrow(IllegalArgumentException(exceptionMessage))
         }
 
-        webClient.get().uri("/credentials/status/1").exchange()
+        webClient.get().uri("/credentials/status/2021").exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
             .jsonPath("exception").value(containsString(IllegalArgumentException::class.java.simpleName))
-            .jsonPath("path").isEqualTo("/credentials/status/1")
+            .jsonPath("path").isEqualTo("/credentials/status/2021")
             .jsonPath("message").isEqualTo(exceptionMessage)
     }
 

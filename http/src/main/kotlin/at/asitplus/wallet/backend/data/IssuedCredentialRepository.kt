@@ -4,16 +4,19 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
+import java.time.Year
 
 @Repository
 interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
-    fun findByVcId(vcId: String): IssuedCredential?
+    fun findBySchoolYearAndVcId(schoolYear: Year, vcId: String): IssuedCredential?
 
     fun findAllByRevokedFalseAndValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>
 
-    @Query("select i.revocationListIndex from IssuedCredential i where i.revoked = true order by i.revocationListIndex")
-    fun getRevocationListIndexByRevokedTrueOrdered(): Collection<Long>
+
+    @Query("select i.revocationListIndex from IssuedCredential i where i.revoked = true and i.schoolYear = ?1 order by i.revocationListIndex")
+    fun getRevocationListIndexByRevokedTrueOrdered(schoolYear: Year): Collection<Long>
+
 
     fun findByRevokedFalseAndValidUntilAfterAndDeviceBinding_Bpk(
         validUntil: Instant,
@@ -30,5 +33,7 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
     fun getMaxRevocationListIndex(): Long?
 
     fun findAllByValidUntilBefore(cutoff: Instant): Collection<IssuedCredential>
+
+
 
 }

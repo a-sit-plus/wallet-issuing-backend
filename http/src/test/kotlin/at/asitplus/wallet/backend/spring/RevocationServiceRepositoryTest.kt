@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.time.Instant
+import java.time.Year
 import java.util.UUID
 import kotlin.random.Random
 
@@ -59,7 +60,7 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId) shouldBe false
+        revocationService.isRevoked(vcId,2021) shouldBe false
     }
 
     @Test
@@ -67,7 +68,7 @@ class RevocationServiceRepositoryTest {
         createExpiredCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId) shouldBe false
+        revocationService.isRevoked(vcId,2021) shouldBe false
     }
 
     @Test
@@ -77,7 +78,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId) shouldBe true
+        revocationService.isRevoked(vcId,2021) shouldBe true
     }
 
     @Test
@@ -87,7 +88,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId) shouldBe true
+        revocationService.isRevoked(vcId,2021) shouldBe true
     }
 
     @Test
@@ -95,17 +96,17 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByVcId(vcId) shouldBe 1
+        revocationService.revokeCredentialsByVcId(vcId,2021) shouldBe 1
     }
 
     @Test
     fun `check on non-existing vcId should return null`() {
-        revocationService.isRevoked(vcId).shouldBeNull()
+        revocationService.isRevoked(vcId,2021).shouldBeNull()
     }
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.revokeCredentialsByVcId(vcId) shouldBe 0
+        revocationService.revokeCredentialsByVcId(vcId,2021) shouldBe 0
     }
 
     @Test
@@ -167,9 +168,9 @@ class RevocationServiceRepositoryTest {
     }
 
     private fun createIssuedCredential(): IssuedCredential =
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 1L)
+        IssuedCredential(vcId, subjectId, validUntil, Year.of(2021), deviceBinding, attributeName, 1L)
 
     private fun createExpiredCredential(): IssuedCredential =
-        IssuedCredential(vcId, subjectId, validUntilExpired, deviceBinding, attributeName, 1L)
+        IssuedCredential(vcId, subjectId, validUntilExpired, Year.of(2021),deviceBinding, attributeName, 1L)
 
 }

@@ -22,6 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.time.Instant
+import java.time.Year
 import java.util.Collections
 import java.util.UUID
 import javax.imageio.ImageIO
@@ -98,7 +99,7 @@ class DebugController(
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId='{}'", vcId)
-        revocationService.revokeCredentialsByVcId(vcId)
+        revocationService.revokeCredentialsByVcId(vcId,2021)
         return ModelAndView("redirect:/debug/credential/list")
     }
 
@@ -117,7 +118,7 @@ class DebugController(
             .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
         val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
-        IssuedCredential(vcId, credentialSubject.id, exp, deviceBinding, attributeName, revocationListIndex)
+        IssuedCredential(vcId, credentialSubject.id, exp, Year.of(2021), deviceBinding, attributeName, revocationListIndex)
             .also { credentialRepo.save(it) }
         return ModelAndView("redirect:/debug/credential/list")
     }

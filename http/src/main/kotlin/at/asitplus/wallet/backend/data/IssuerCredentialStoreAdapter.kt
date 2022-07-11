@@ -12,8 +12,8 @@ class IssuerCredentialStoreAdapter(
     private val revocationService: RevocationService,
 ) : IssuerCredentialStore {
 
-    override fun revoke(vcId: String): Boolean {
-        return revocationService.revokeCredentialsByVcId(vcId) > 0
+    override fun revoke(vcId: String, schoolYear: Int): Boolean {
+        return revocationService.revokeCredentialsByVcId(vcId, schoolYear) > 0
     }
 
     override fun storeGetNextIndex(
@@ -21,17 +21,19 @@ class IssuerCredentialStoreAdapter(
         credentialSubject: CredentialSubject,
         issuanceDate: kotlinx.datetime.Instant,
         expirationDate: kotlinx.datetime.Instant,
+        schoolYear: Int
     ): Int? {
         return revocationService.storeGetNextIndex(
             vcId,
             credentialSubject,
             issuanceDate.toJavaInstant(),
-            expirationDate.toJavaInstant()
+            expirationDate.toJavaInstant(),
+            schoolYear
         )
     }
 
-    override fun getRevokedStatusListIndexList(): Collection<Int> {
-        return revocationService.getRevokedStatusListIndexList()
+    override fun getRevokedStatusListIndexList(schoolYear: Int): Collection<Int> {
+        return revocationService.getRevokedStatusListIndexList(schoolYear)
     }
 
 }

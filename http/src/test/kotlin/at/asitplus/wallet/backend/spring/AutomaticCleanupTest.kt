@@ -13,6 +13,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
+import java.time.Year
 
 @SpringBootTest(properties = ["backend.cleanup.enabled=true"])
 class AutomaticCleanupTest {
@@ -41,6 +42,7 @@ class AutomaticCleanupTest {
             "vcId",
             "subjectId",
             validUntilCredential,
+            Year.of(2021),
             deviceBinding,
             "attributeName",
             1L

@@ -11,8 +11,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 /**
  * Public endpoints, available without authentication:
@@ -29,6 +32,26 @@ class PublicController(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
+        summary = "Get currently valid VC revocation lists",
+        description = "Get a JSON array of endpoints serving 'Revocation List 2020'-formatted revocation lists",
+        responses = [
+            ApiResponse(
+                description = "A JSON array with a list of endpoints",
+                content = [Content(examples = [ExampleObject(value = "[\"https://wallet.a-sit.at/credentials/status/2022\", " +
+                        "\"https://wallet.a-sit.at/credentials/status/2022\"]")])]
+            ),
+            ApiResponse(responseCode = "500", ref = "errorResponse"),
+        ]
+    )
+    @GetMapping("/credentials/status/current")
+    fun getCurrentVcRevocationLists() = runBlocking {
+        log.info("/credentials/status/current called")
+        val rl = issuer.compileCurrentRevocationLists()
+        log.info("/credentials/status/current returns {}", rl)
+        ResponseEntity.ok(rl)
+    }
+
+    @Operation(
         summary = "Get the VC revocation list",
         description = "Get a list of revoked credentials in 'Revocation List 2020' format",
         responses = [
@@ -39,11 +62,11 @@ class PublicController(
             ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
     )
-    @GetMapping("/credentials/status/1")
-    fun getVcRevocationList() = runBlocking {
-        log.info("/credentials/status/1 called")
-        val rl = issuer.issueRevocationListCredential()
-        log.info("/credentials/status/1 returns {}", rl)
+    @GetMapping("/credentials/status/{schoolYear}")
+    fun getVcRevocationList(@PathVariable schoolYear:Int) = runBlocking {
+        log.info("/credentials/status/$schoolYear called")
+        val rl = issuer.issueRevocationListCredential(schoolYear)
+        log.info("/credentials/status/$schoolYear returns {}", rl)
         ResponseEntity.ok(rl)
     }
 

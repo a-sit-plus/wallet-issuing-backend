@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.time.Instant
+import java.time.Year
 import java.util.UUID
 
 @SpringBootTest
@@ -64,7 +65,7 @@ class RevocationControllerFullRunTest {
         deviceId = deviceBinding.deviceId
         deviceName = deviceBinding.deviceName
         credentialRepo.deleteAll()
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 2)
+        IssuedCredential(vcId, subjectId, validUntil, Year.of(2021),deviceBinding, attributeName, 2)
             .also { credentialRepo.save(it) }
     }
 
@@ -193,7 +194,7 @@ class RevocationControllerFullRunTest {
 
     private fun saveExpiredCredential(validUntil: Instant, deviceBinding: DeviceBinding) {
         credentialRepo.deleteAll()
-        IssuedCredential(vcId, subjectId, validUntil, deviceBinding, attributeName, 3)
+        IssuedCredential(vcId, subjectId, validUntil,Year.of(2021), deviceBinding, attributeName, 3)
             .also { credentialRepo.save(it) }
     }
 
