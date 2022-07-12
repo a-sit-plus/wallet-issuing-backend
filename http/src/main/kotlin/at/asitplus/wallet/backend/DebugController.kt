@@ -6,11 +6,14 @@ import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.lib.agent.IssuerAgent
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -21,12 +24,11 @@ import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.time.Instant
 import java.time.Year
-import java.util.Collections
-import java.util.UUID
+import java.util.*
 import javax.imageio.ImageIO
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 
 @Controller
 class DebugController(
@@ -35,6 +37,7 @@ class DebugController(
     private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
+    private val clock: Clock = Clock.System
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -58,7 +61,7 @@ class DebugController(
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["creation"] = Instant.now().toString()
+        model["creation"] = clock.now().toString()
         return ModelAndView("initialize", model)
     }
 
@@ -99,7 +102,7 @@ class DebugController(
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId='{}'", vcId)
-        revocationService.revokeCredentialsByVcId(vcId,2021)
+        revocationService.revokeCredentialsByVcId(vcId, IssuerAgent.getSchoolYearFor(configurationProperties.schooYearStart,clock.now()))
         return ModelAndView("redirect:/debug/credential/list")
     }
 
@@ -109,16 +112,36 @@ class DebugController(
         log.info("/debug/credential/create called")
         val attributeName = UUID.randomUUID().toString()
         val attributeValue = UUID.randomUUID().toString()
-        val credentialSubject = AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
-        val exp = Instant.now().plusSeconds(3600)
+        val credentialSubject =
+            AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
+        val exp = clock.now() + 1.hours
         val deviceName = "fake-" + UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
         val bpk = UUID.randomUUID().toString()
-        val deviceBinding = DeviceBinding(bpk, Random.Default.nextBytes(32), deviceName, deviceId, exp)
+        val deviceBinding = DeviceBinding(
+            bpk,
+            Random.Default.nextBytes(32),
+            deviceName,
+            deviceId,
+            exp.toJavaInstant()
+        )
             .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
         val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
-        IssuedCredential(vcId, credentialSubject.id, exp, Year.of(2021), deviceBinding, attributeName, revocationListIndex)
+        IssuedCredential(
+            vcId,
+            credentialSubject.id,
+            exp.toJavaInstant(),
+            Year.of(
+                IssuerAgent.getSchoolYearFor(
+                    configurationProperties.schooYearStart,
+                    clock.now()
+                )
+            ),
+            deviceBinding,
+            attributeName,
+            revocationListIndex
+        )
             .also { credentialRepo.save(it) }
         return ModelAndView("redirect:/debug/credential/list")
     }

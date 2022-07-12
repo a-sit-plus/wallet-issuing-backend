@@ -4,8 +4,10 @@ import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.encodeBase64
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import java.time.Year
 
 
@@ -76,6 +78,7 @@ class DefaultRevocationService(
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
     private val pkiService: PkiService,
+    private val clock: Clock = Clock.System
 ) : RevocationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -121,7 +124,7 @@ class DefaultRevocationService(
         val issuedCredential = IssuedCredential(
             vcId,
             credentialSubject.id,
-            expirationDate,
+            expirationDate.toJavaInstant(),
             Year.of(schoolYear),
             deviceBinding,
             attributeName,
@@ -146,7 +149,7 @@ class DefaultRevocationService(
      */
     override fun revokeCredentialsByBpk(bpk: String): Int {
         val credentials = credentialRepo.findByRevokedFalseAndValidUntilAfterAndDeviceBinding_Bpk(
-            Instant.now(),
+            clock.now().toJavaInstant(),
             bpk
         )
         return revokeAllCredentials(credentials)
@@ -161,7 +164,7 @@ class DefaultRevocationService(
             return revokeCredentialsByBpk(bpk)
         val credentials =
             credentialRepo.findByRevokedFalseAndValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
-                Instant.now(), bpk, deviceId
+                clock.now().toJavaInstant(), bpk, deviceId
             )
         return revokeAllCredentials(credentials)
     }
@@ -200,14 +203,14 @@ class DefaultRevocationService(
      * Lists all non-revoked credentials that have been issued
      */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
-        return credentialRepo.findAllByRevokedFalseAndValidUntilAfter(Instant.now())
+        return credentialRepo.findAllByRevokedFalseAndValidUntilAfter(clock.now().toJavaInstant())
     }
 
     /**
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
      */
     override fun deleteExpiredCredentialsBefore(cutoff: Instant): Int {
-        val list = credentialRepo.findAllByValidUntilBefore(cutoff)
+        val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             log.info(
                 "Deleting credential: {} for {} (bpk '{}')",

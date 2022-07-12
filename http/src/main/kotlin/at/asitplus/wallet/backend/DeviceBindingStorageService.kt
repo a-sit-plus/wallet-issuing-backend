@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 /**
  * Service to store device bindings, that are created by the Wallet App,

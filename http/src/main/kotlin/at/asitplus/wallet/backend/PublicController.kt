@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 
 /**
  * Public endpoints, available without authentication:

@@ -26,8 +26,8 @@ class IssuerCredentialStoreAdapter(
         return revocationService.storeGetNextIndex(
             vcId,
             credentialSubject,
-            issuanceDate.toJavaInstant(),
-            expirationDate.toJavaInstant(),
+            issuanceDate,
+            expirationDate,
             schoolYear
         )
     }

@@ -5,7 +5,7 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import java.time.Instant
+import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random

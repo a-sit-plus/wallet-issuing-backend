@@ -2,18 +2,19 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.BackendConfigurationProperties
 import at.asitplus.wallet.backend.Extensions
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingCleanupTask
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.data.IssuedCredential
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.TestTimeSource
+import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.lib.agent.FixedTimeClock
 import io.kotest.matchers.collections.shouldBeEmpty
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import java.time.Year
+import kotlin.time.Duration.Companion.days
 
 @SpringBootTest(properties = ["backend.cleanup.enabled=true"])
 class AutomaticCleanupTest {
@@ -34,15 +35,19 @@ class AutomaticCleanupTest {
     fun `should be called`() {
         deviceBindingRepository.deleteAll()
         credentialRepository.deleteAll()
-        val validUntilBinding = Extensions.InstantNowMinusDays(configuration.cleanup.bindingsExpirationDays + 1)
-        val deviceBinding = DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId", validUntilBinding)
-            .also { deviceBindingRepository.save(it) }
-        val validUntilCredential = Extensions.InstantNowMinusDays(configuration.cleanup.credentialsExpirationDays + 1)
+
+        val validUntilBinding =
+            TestTimeSource.now() + (configuration.cleanup.bindingsExpirationDays + 1).days
+        val deviceBinding =
+            DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId", validUntilBinding.toJavaInstant())
+                .also { deviceBindingRepository.save(it) }
+        val validUntilCredential =
+            TestTimeSource.now() - (configuration.cleanup.credentialsExpirationDays + 1).days
         IssuedCredential(
             "vcId",
             "subjectId",
-            validUntilCredential,
-            Year.of(2021),
+            validUntilCredential.toJavaInstant(),
+            TestTimeSource.javaSchoolYear,
             deviceBinding,
             "attributeName",
             1L

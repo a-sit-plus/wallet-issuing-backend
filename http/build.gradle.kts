@@ -6,10 +6,10 @@ plugins {
     id("org.springframework.boot") version "2.6.7"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     id("maven-publish")
-    kotlin("jvm") version "1.6.21"
-    kotlin("plugin.spring") version "1.6.21"
-    kotlin("plugin.jpa") version "1.6.21"
-    kotlin("plugin.serialization") version "1.6.21"
+    kotlin("jvm") version "1.7.10"
+    kotlin("plugin.spring") version "1.7.10"
+    kotlin("plugin.jpa") version "1.7.10"
+    kotlin("plugin.serialization") version "1.7.10"
 }
 
 val artifactVersion: String by extra
@@ -39,10 +39,9 @@ dependencies {
     implementation("org.apache.httpcomponents:httpclient")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.3.2")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
-    implementation("com.nimbusds:nimbus-jose-jwt:9.22")
+    implementation("com.nimbusds:nimbus-jose-jwt:9.23")
     implementation("com.google.zxing:core:3.4.1")
     implementation("org.webjars:webjars-locator:0.45")
     implementation("org.webjars:bootstrap:5.1.3")
@@ -51,7 +50,7 @@ dependencies {
     implementation("de.codecentric:spring-boot-admin-starter-client:2.6.6")
     implementation("at.asitplus.wallet:vclib-jvm")
     implementation("at.asitplus.wallet:pupilidlib-jvm")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.7")
     implementation("org.springdoc:springdoc-openapi-kotlin:1.6.7")
@@ -66,10 +65,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.3")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
     testImplementation("io.ktor:ktor-client-java:2.0.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.2.3")
+    testImplementation("io.kotest:kotest-assertions-core:5.3.1")
 }
 
 tasks.withType<KotlinCompile> {
@@ -77,7 +76,8 @@ tasks.withType<KotlinCompile> {
         freeCompilerArgs = listOf(
             "-Xjsr305=strict",
             "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "-opt-in=kotlin.time.ExperimentalTime"
         )
         jvmTarget = "11"
     }

@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher

@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.PkiService
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.lib.agent.Issuer
 import kotlinx.coroutines.test.runTest
 import org.hamcrest.Matchers.containsString
@@ -43,7 +44,7 @@ class PublicControllerErrorTest {
     @Test
     fun `GET VC status list returns error document`() {
         runTest {
-            whenever(issuer.issueRevocationListCredential(2021)).thenThrow(IllegalArgumentException(exceptionMessage))
+            whenever(issuer.issueRevocationListCredential(TestTimeSource.schoolYear)).thenThrow(IllegalArgumentException(exceptionMessage))
         }
 
         webClient.get().uri("/credentials/status/2021").exchange()

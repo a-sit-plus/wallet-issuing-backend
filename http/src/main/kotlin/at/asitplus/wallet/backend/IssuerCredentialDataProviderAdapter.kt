@@ -2,10 +2,10 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
+import kotlin.time.Duration
 
 
 /**
@@ -16,6 +16,7 @@ class IssuerCredentialDataProviderAdapter(
     private val credentialDataProvider: CredentialDataProvider,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val gracePeriod: Duration,
+    private val clock: Clock = Clock.System
 ) : IssuerCredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -25,8 +26,8 @@ class IssuerCredentialDataProviderAdapter(
         attributeName: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        val bindingExpiration = deviceBinding.validUntil + gracePeriod
-        val maxExpiration = Instant.now() + lifetime
+        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant() + gracePeriod
+        val maxExpiration = clock.now() + lifetime
         val cappedExpiration =
             if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
         val credential = credentialDataProvider.getClaim(
@@ -38,7 +39,7 @@ class IssuerCredentialDataProviderAdapter(
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
-                it.expiration.toKotlinInstant(),
+                it.expiration,
                 it.attributeType
             )
         }
@@ -49,8 +50,8 @@ class IssuerCredentialDataProviderAdapter(
         attributeType: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        val bindingExpiration = deviceBinding.validUntil + gracePeriod
-        val maxExpiration = Instant.now() + lifetime
+        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant() + gracePeriod
+        val maxExpiration = clock.now() + lifetime
         val cappedExpiration =
             if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
         val credential = credentialDataProvider.getCredential(
@@ -62,7 +63,7 @@ class IssuerCredentialDataProviderAdapter(
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
-                it.expiration.toKotlinInstant(),
+                it.expiration,
                 it.attributeType
             )
         }

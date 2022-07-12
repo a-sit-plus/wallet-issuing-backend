@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import kotlinx.datetime.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
@@ -28,8 +29,7 @@ import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.time.Instant
-import java.util.Collections
+import java.util.*
 import javax.imageio.ImageIO
 import javax.servlet.http.HttpServletRequest
 
@@ -45,6 +45,7 @@ class EidasIdController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
     private val credentialDataProvider: CredentialDataProvider,
+    private val clock: Clock = Clock.System
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -88,13 +89,28 @@ class EidasIdController(
             is NextMessage.Result<*> -> ResponseEntity.ok().build<String>()
                 .also { log.info("/eidasid/issue returns HTTP 200: Finished") }
             is NextMessage.Send -> ResponseEntity.ok(result.message)
-                .also { log.info("/eidasid/issue returns HTTP 200: {}...", result.message.take(128)) }
+                .also {
+                    log.info(
+                        "/eidasid/issue returns HTTP 200: {}...",
+                        result.message.take(128)
+                    )
+                }
             is NextMessage.Error -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
                 .also { log.warn("/eidasid/issue returns HTTP 400: Incorrect protocol state") }
             is NextMessage.SendProblemReport -> ResponseEntity.ok(result.message)
-                .also { log.info("/eidasid/issue returns HTTP 200: Problem Report {}", result.message) }
+                .also {
+                    log.info(
+                        "/eidasid/issue returns HTTP 200: Problem Report {}",
+                        result.message
+                    )
+                }
             is NextMessage.ReceivedProblemReport -> ResponseEntity.ok().build<String>()
-                .also { log.info("/eidasid/issue returns HTTP 200: Received Problem Report {}", result.message) }
+                .also {
+                    log.info(
+                        "/eidasid/issue returns HTTP 200: Received Problem Report {}",
+                        result.message
+                    )
+                }
             else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
                 .also { log.warn("/eidasid/issue returns HTTP 500: Internal error {}", result) }
         }.also { request.logout() }
@@ -124,8 +140,10 @@ class EidasIdController(
         val subject = principal.getAttribute<String>("sub")!! // "ZP:Bysw9ZBchD2iWuNu2taXqk3aK+I="
         val birthdate = principal.getAttribute<String>("birthdate")!! // "1990-01-01"
         val givenName = principal.getAttribute<String>("given_name")!! // "XXXGerda"
-        val familyName = principal.getAttribute<String>("family_name")!! // "XXXMusterfrau Erwachsen"
-        val eidasClaim = EidasCredentialDataProvider.EidasClaim(subject, birthdate, givenName, familyName)
+        val familyName =
+            principal.getAttribute<String>("family_name")!! // "XXXMusterfrau Erwachsen"
+        val eidasClaim =
+            EidasCredentialDataProvider.EidasClaim(subject, birthdate, givenName, familyName)
         log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
         credentialDataProvider.storeClaims(eidasClaim, nonceBpk.bpk)
 
@@ -136,7 +154,7 @@ class EidasIdController(
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["creation"] = Instant.now().toString()
+        model["creation"] = clock.now().toString()
         return ModelAndView("initialize", model)
     }
 

@@ -3,6 +3,9 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.TestTimeSource
+import at.asitplus.wallet.backend.TestTimeSource.javaSchoolYear
+import at.asitplus.wallet.backend.TestTimeSource.schoolYear
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -13,20 +16,23 @@ import at.asitplus.wallet.lib.data.CredentialSubject
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import java.time.Instant
-import java.time.Year
+import org.springframework.test.context.TestPropertySource
 import java.util.UUID
 import javax.transaction.Transactional
 import kotlin.properties.Delegates
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
+@TestPropertySource(properties = ["backend.time-source=TEST"])
 class RevocationServiceStatusListIndexTest {
 
     @Autowired
@@ -52,22 +58,18 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var credentialSubject: CredentialSubject
     private lateinit var issuanceDate: Instant
     private lateinit var expirationDate: Instant
-    private lateinit var now: Instant
-    private var schoolYear by Delegates.notNull<Int>()
 
     @BeforeEach
     fun beforeEach() {
-        schoolYear = 2021
-        now = Instant.parse("$schoolYear-11-10T00:00:00.00Z")
         val client = Client()
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         credentialSubject = AtomicAttributeCredential(subjectId, attributeName, attributeValue)
-        issuanceDate = now
-        expirationDate = issuanceDate.plusSeconds(60)
-        validUntil = now.plusSeconds(2)
+        issuanceDate = TestTimeSource.now()
+        expirationDate = TestTimeSource.now() + 60.seconds
+        validUntil = TestTimeSource.now() + 2.seconds
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
         credentialRepo.deleteAll()
@@ -98,8 +100,8 @@ class RevocationServiceStatusListIndexTest {
         IssuedCredential(
             vcId,
             subjectId,
-            validUntil,
-            Year.of(schoolYear),
+            validUntil.toJavaInstant(),
+            javaSchoolYear,
             deviceBinding,
             attributeName,
             2
@@ -110,8 +112,8 @@ class RevocationServiceStatusListIndexTest {
         IssuedCredential(
             vcId.reversed(),
             subjectId.reversed(),
-            validUntil,
-            Year.of(schoolYear),
+            validUntil.toJavaInstant(),
+            javaSchoolYear,
             deviceBinding,
             attributeName,
             1
@@ -141,8 +143,8 @@ class RevocationServiceStatusListIndexTest {
         IssuedCredential(
             vcId,
             subjectId,
-            validUntil,
-            Year.of(schoolYear),
+            validUntil.toJavaInstant(),
+            javaSchoolYear,
             deviceBinding,
             attributeName,
             3

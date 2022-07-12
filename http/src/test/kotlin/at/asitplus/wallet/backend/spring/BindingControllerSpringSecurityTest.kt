@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.ChallengeService
 import at.asitplus.wallet.backend.PkiService
 import at.asitplus.wallet.backend.SignedCertificate
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
@@ -24,9 +25,9 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Tests the Spring Security parts of the authentication for [BindingController],
@@ -70,7 +71,7 @@ abstract class BindingControllerSpringSecurityTest {
         csr = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
-        val validUntil = Instant.now().plusSeconds(60)
+        val validUntil = TestTimeSource.now() + 60.seconds
         val signedCertificate = SignedCertificate(certificate, validUntil)
         whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
         startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())

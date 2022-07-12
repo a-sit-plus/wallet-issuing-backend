@@ -3,8 +3,10 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
-import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
 
 
 /**
@@ -12,16 +14,16 @@ import java.time.Instant
  * the previously stored attributes (from an OIDC login),
  * i.e. it looks up data with the `bpk` from its internal map
  */
-class EidasCredentialDataProvider(private val timeoutSeconds: Long) : CredentialDataProvider {
+class EidasCredentialDataProvider(private val timeoutSeconds: Long, private val clock: Clock=Clock.System) : CredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val list = mutableListOf<EidasClaimHolder>()
 
     fun storeClaims(eidasClaim: EidasClaim, bpk: String) {
-        list.removeAll { it.expiration.isBefore(Instant.now()) }
+        list.removeAll { it.expiration <clock.now() }
         list += EidasClaimHolder(
-            expiration = Instant.now().plusSeconds(timeoutSeconds),
+            expiration = clock.now() + timeoutSeconds.seconds,
             bpk = bpk,
             claim = eidasClaim,
         )

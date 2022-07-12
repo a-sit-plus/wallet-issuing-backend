@@ -13,6 +13,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.security.authentication.BadCredentialsException
@@ -42,7 +43,7 @@ class SimpleDeviceBindingAuthnServiceTest {
             bpk,
             client.selfSignedCert.encoded,
             deviceName,
-            client.selfSignedCert.notAfter.toInstant()
+            client.selfSignedCert.notAfter.toInstant().toKotlinInstant()
         )
     }
 

@@ -15,6 +15,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 class RandomCredentialDataProviderTest {
 
@@ -24,7 +25,7 @@ class RandomCredentialDataProviderTest {
     private lateinit var bpk2: String
     private lateinit var dataProvider: RandomCredentialDataProvider
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
-    private val expiration = Instant.now().plusSeconds(5)
+    private val expiration = TestTimeSource.now() + 5.seconds
 
     @BeforeEach
     fun setup() {

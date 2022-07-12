@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.data.CredentialSubject
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 interface CredentialDataProvider {
 

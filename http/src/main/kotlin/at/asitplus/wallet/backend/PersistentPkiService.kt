@@ -1,9 +1,11 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.Extensions.InstantNowPlusDays
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
 import at.asitplus.wallet.backend.data.IssuedCertificate
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -12,10 +14,10 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
-import java.time.Instant
-import java.util.Date
+import java.util.*
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.days
 
 /**
  * Signs certificates with a remote signing service,
@@ -26,6 +28,7 @@ class PersistentPkiService(
     private val issuerName: String = "CN=Persistent-Issuer",
     private val issuedCertificateRepository: IssuedCertificateRepository,
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
+    private val clock: Clock = Clock.System
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -39,30 +42,33 @@ class PersistentPkiService(
         try {
             val csr = verifyCsr(csrEncoded, expectedSubject) ?: return null
             val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
-            return SignedCertificate(holder.encoded, holder.notAfter.toInstant())
+            return SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
         } catch (e: Throwable) {
             log.warn("verifyAndSign: error", e)
             return null
         }
     }
 
-    private fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): X509CertificateHolder {
-        val validFrom = Instant.now()
-        val validUntil = InstantNowPlusDays(certValidityDays)
+    private fun signCertificate(
+        subject: X500Name,
+        subjectPublicKeyInfo: SubjectPublicKeyInfo
+    ): X509CertificateHolder {
+        val validFrom = clock.now()
+        val validUntil = clock.now() + certValidityDays.days
         val serialNumber = uniqueSerialNumber()
         return X509v3CertificateBuilder(
             /* issuer = */ issuer,
             /* serial = */ BigInteger.valueOf(serialNumber),
-            /* notBefore = */ Date.from(validFrom),
-            /* notAfter = */ Date.from(validUntil),
+            /* notBefore = */ Date.from(validFrom.toJavaInstant()),
+            /* notAfter = */ Date.from(validUntil.toJavaInstant()),
             /* subject = */ subject,
             /* publicKeyInfo = */ subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner).also {
             val issuedCertificate = IssuedCertificate(
                 subject = subject.toString(),
                 issuer = issuerName,
-                validFrom = validFrom,
-                validUntil = validUntil,
+                validFrom = validFrom.toJavaInstant(),
+                validUntil = validUntil.toJavaInstant(),
                 serialNumber = serialNumber,
                 certificate = it.encoded
             )
@@ -84,12 +90,12 @@ class PersistentPkiService(
     override fun getCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())
         issuedCertificateRepository.findAllByRevokedTrueAndValidFromBeforeAndValidUntilAfter(
-            Instant.now(),
-            Instant.now()
+            clock.now().toJavaInstant(),
+            clock.now().toJavaInstant()
         ).forEach {
             crlBuilder.addCRLEntry(
                 /* userCertificateSerial = */ BigInteger.valueOf(it.serialNumber),
-                /* revocationDate = */ Date.from(it.revocationDate ?: Instant.now()),
+                /* revocationDate = */ Date.from(it.revocationDate ?: clock.now().toJavaInstant()),
                 /* reason = */ CRLReason.unspecified
             )
         }
@@ -98,7 +104,7 @@ class PersistentPkiService(
 
     override fun revokeCertificate(certificate: ByteArray) {
         issuedCertificateRepository.findByCertificate(certificate)?.let {
-            it.revocationDate = Instant.now()
+            it.revocationDate = clock.now().toJavaInstant()
             it.revoked = true
             issuedCertificateRepository.save(it)
         }

@@ -1,27 +1,16 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
-import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.auth.EcoExtNonceAuthnService
-import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.backend.auth.InternalExtNonceAuthnService
-import at.asitplus.wallet.backend.auth.SimpleApiKeyAuthnService
-import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
+import at.asitplus.wallet.backend.auth.*
 import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
-import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.IssuerAgent
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
-import at.asitplus.wallet.lib.agent.IssuerCredentialStore
-import at.asitplus.wallet.lib.agent.MessageWrapper
+import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Month
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -56,24 +45,26 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun securityProviderBean(): SecurityProviderBean = SecurityProviderBean(configurationProperties, resourceLoader)
+    fun securityProviderBean(): SecurityProviderBean =
+        SecurityProviderBean(configurationProperties, resourceLoader)
 
     @Bean
-    fun extNonceAuthnService(): ExtNonceAuthnService = when (configurationProperties.authn.deviceBinding.type) {
-        DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
-            SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
-        )
-        DeviceBindingNonceType.ECO -> {
-            val restTemplate = RestTemplateConfigurationService(
-                configurationProperties.authn.deviceBinding.eco,
-                restTemplateBuilder
-            ).restTemplate
-            EcoExtNonceAuthnService(
-                configurationProperties.authn.deviceBinding.eco.url!!,
-                restTemplate
+    fun extNonceAuthnService(): ExtNonceAuthnService =
+        when (configurationProperties.authn.deviceBinding.type) {
+            DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
+                SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
             )
+            DeviceBindingNonceType.ECO -> {
+                val restTemplate = RestTemplateConfigurationService(
+                    configurationProperties.authn.deviceBinding.eco,
+                    restTemplateBuilder
+                ).restTemplate
+                EcoExtNonceAuthnService(
+                    configurationProperties.authn.deviceBinding.eco.url!!,
+                    restTemplate
+                )
+            }
         }
-    }
 
     @Bean
     fun bindingService(
@@ -82,10 +73,16 @@ class BackendConfiguration {
         attestationService: AttestationService,
         deviceBindingStorageService: DeviceBindingStorageService
     ): BindingService =
-        DefaultBindingService(challengeService, pkiService, attestationService, deviceBindingStorageService)
+        DefaultBindingService(
+            challengeService,
+            pkiService,
+            attestationService,
+            deviceBindingStorageService
+        )
 
     @Bean
-    fun apiKeyAuthnService(): ApiKeyAuthnService = SimpleApiKeyAuthnService(configurationProperties.authn)
+    fun apiKeyAuthnService(): ApiKeyAuthnService =
+        SimpleApiKeyAuthnService(configurationProperties.authn)
 
     @Bean
     fun pkiService(
@@ -113,9 +110,13 @@ class BackendConfiguration {
                 )
             }
             InMemoryPkiService(
-                configurationProperties.pki.certValidityDays,
+                configurationProperties.pki.certValidityDays.days,
                 configurationProperties.pki.internal.issuerName,
                 DefaultCryptoServiceAdapter(keyAdapter),
+                when (configurationProperties.timeSource) {
+                    TimeSource.SYSTEM -> Clock.System
+                    TimeSource.TEST -> TestTimeSource.clock
+                }
             )
         }
         PkiType.AERA -> {
@@ -124,9 +125,13 @@ class BackendConfiguration {
                 restTemplateBuilder
             ).restTemplate
             AeraPkiService(
-                configurationProperties.pki.certValidityDays,
+                configurationProperties.pki.certValidityDays.days,
                 configurationProperties.pki.aera.url!!.toString(),
-                restTemplate
+                restTemplate,
+                when (configurationProperties.timeSource) {
+                    TimeSource.SYSTEM -> Clock.System
+                    TimeSource.TEST -> TestTimeSource.clock
+                }
             )
         }
     }
@@ -167,6 +172,10 @@ class BackendConfiguration {
         deviceBindingStorageService,
         configurationProperties.credentials.oneCredentialPerDeviceBinding,
         pkiService,
+        when (configurationProperties.timeSource) {
+            TimeSource.SYSTEM -> Clock.System
+            TimeSource.TEST -> TestTimeSource.clock
+        }
     )
 
     @Bean
@@ -174,7 +183,10 @@ class BackendConfiguration {
         deviceBindingStorageService: DeviceBindingStorageService,
         deviceBindingAuthnChallengeService: ChallengeService,
     ): DeviceBindingAuthnService =
-        SimpleDeviceBindingAuthnService(deviceBindingStorageService, deviceBindingAuthnChallengeService)
+        SimpleDeviceBindingAuthnService(
+            deviceBindingStorageService,
+            deviceBindingAuthnChallengeService
+        )
 
     @Bean
     fun issuerCredentialStoreAdapter(
@@ -187,7 +199,8 @@ class BackendConfiguration {
     ): CredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
             AttributeSourceType.RANDOM -> {
-                val locationPattern = "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
+                val locationPattern =
+                    "${configurationProperties.attributeSource.random!!.photoLocation}/*.jpg"
                 val mapOfPhotos = resourcePatternResolver.getResources(locationPattern)
                     .filter { it.exists() }
                     .filter { it.filename != null }
@@ -235,10 +248,19 @@ class BackendConfiguration {
                 resourceLoader,
                 securityProviderBean
             )
-            KeyType.KEYSTORE -> KeyStoreAdapter(configurationProperties.issuerKey.keystore!!, securityProviderBean)
-            KeyType.HSMFACADE -> HsmFacadeAdapter(configurationProperties.issuerKey.hsmfacade!!, securityProviderBean)
+            KeyType.KEYSTORE -> KeyStoreAdapter(
+                configurationProperties.issuerKey.keystore!!,
+                securityProviderBean
+            )
+            KeyType.HSMFACADE -> HsmFacadeAdapter(
+                configurationProperties.issuerKey.hsmfacade!!,
+                securityProviderBean
+            )
             KeyType.MEMORY -> RandomKeyAdapter()
-            KeyType.REMOTE -> RemoteKeyAdapter(configurationProperties.issuerKey.remote!!, securityProviderBean)
+            KeyType.REMOTE -> RemoteKeyAdapter(
+                configurationProperties.issuerKey.remote!!,
+                securityProviderBean
+            )
         }
     )
 
@@ -253,7 +275,11 @@ class BackendConfiguration {
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
         //TODO
-        revocationListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
+        revocationListBaseUrl = appendPath(
+            configurationProperties.publicContext,
+            "credentials",
+            "status"
+        ),
         schoolYearStart = Month(9) to 10u
     )
 

@@ -1,7 +1,9 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.Extensions.InstantNowPlusDays
 import at.asitplus.wallet.backend.PkiUtils.verifyCsr
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -10,18 +12,21 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
-import java.util.Date
+import java.util.*
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration
 
 /**
  * Signs certificates for development deployments,
  * i.e. with the key from a [CryptoServiceAdapter].
  */
 class InMemoryPkiService(
-    private val certValidityDays: Int = 1,
+    private val certValidity: Duration = 1.days,
     private val issuerName: String = "CN=Issuer",
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
+    private val clock: Clock = Clock.System
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -34,19 +39,22 @@ class InMemoryPkiService(
         try {
             val csr = verifyCsr(csrEncoded, expectedSubject) ?: return null
             val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
-            return SignedCertificate(holder.encoded, holder.notAfter.toInstant())
+            return SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
         } catch (e: Throwable) {
             log.warn("verifyAndSign: error", e)
             return null
         }
     }
 
-    private fun signCertificate(subject: X500Name, subjectPublicKeyInfo: SubjectPublicKeyInfo): X509CertificateHolder =
+    private fun signCertificate(
+        subject: X500Name,
+        subjectPublicKeyInfo: SubjectPublicKeyInfo
+    ): X509CertificateHolder =
         X509v3CertificateBuilder(
             /* issuer = */ issuer,
             /* serial = */ BigInteger.valueOf(Random.nextLong()),
             /* notBefore = */ Date(),
-            /* notAfter = */ Date.from(InstantNowPlusDays(certValidityDays)),
+            /* notAfter = */ Date.from((clock.now() + certValidity).toJavaInstant()),
             /* subject = */ subject,
             /* publicKeyInfo = */ subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner)

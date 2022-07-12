@@ -3,15 +3,22 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.DeviceListEntry
 import at.asitplus.wallet.backend.data.DeviceBinding
-import java.time.Instant
-import java.util.UUID
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
+import java.util.*
 
 class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
 
     private val list = mutableListOf<DeviceBinding>()
 
-    override fun store(bpk: String, certificate: ByteArray, deviceName: String, validUntil: Instant) =
-        DeviceBinding(bpk, certificate, deviceName, UUID.randomUUID().toString(), validUntil).also {
+    override fun store(
+        bpk: String,
+        certificate: ByteArray,
+        deviceName: String,
+        validUntil: Instant
+    ) =
+        DeviceBinding(bpk, certificate, deviceName, UUID.randomUUID().toString(), validUntil.toJavaInstant()).also {
             list += it
         }
 
@@ -32,9 +39,7 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
     }
 
     override fun deleteExpiredBefore(cutoff: Instant): Int {
-        val toRemove = list.filter {
-            cutoff.isAfter(it.validUntil)
-        }
+        val toRemove = list.filter { cutoff > it.validUntil.toKotlinInstant() }
         list.removeAll(toRemove)
         return toRemove.size
     }

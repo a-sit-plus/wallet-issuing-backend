@@ -4,14 +4,17 @@ import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.DeviceListEntry
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.lib.encodeBase64
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import java.util.UUID
 
 
 class DatabaseDeviceBindingStorageService(
     private val deviceBindingRepository: DeviceBindingRepository,
     private val authenticationSupplier: AuthenticationSupplier,
+    private val clock: Clock=Clock.System
 ) : DeviceBindingStorageService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -23,7 +26,7 @@ class DatabaseDeviceBindingStorageService(
             certificate = certificate,
             deviceName = deviceName,
             deviceId = UUID.randomUUID().toString(),
-            validUntil = validUntil
+            validUntil = validUntil.toJavaInstant()
         ).also {
             deviceBindingRepository.save(it)
         }
@@ -31,12 +34,12 @@ class DatabaseDeviceBindingStorageService(
 
     override fun lookupBpk(decodedCert: ByteArray): String? {
         return deviceBindingRepository
-            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(decodedCert, Instant.now())?.bpk
+            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(decodedCert, clock.now().toJavaInstant())?.bpk
     }
 
     override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
         return deviceBindingRepository
-            .findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk, Instant.now())
+            .findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk, clock.now().toJavaInstant())
             .map { DeviceListEntry(it.deviceName, it.deviceId) }
     }
 
@@ -46,7 +49,7 @@ class DatabaseDeviceBindingStorageService(
                 log.error("Got no authenticated user when trying to store vc")
             }
         return deviceBindingRepository
-            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(certificate, Instant.now())
+            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(certificate, clock.now().toJavaInstant())
             ?: return null.also {
                 log.error("Found no authenticated user for certificate '{}", certificate.encodeBase64())
             }
@@ -55,10 +58,10 @@ class DatabaseDeviceBindingStorageService(
     override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
         val list = if (deviceId != null)
             deviceBindingRepository
-                .findAllByBpkAndDeviceIdAndValidUntilAfterAndRevokedIsFalse(bpk, deviceId, Instant.now())
+                .findAllByBpkAndDeviceIdAndValidUntilAfterAndRevokedIsFalse(bpk, deviceId, clock.now().toJavaInstant())
         else
             deviceBindingRepository
-                .findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk, Instant.now())
+                .findAllByBpkAndValidUntilAfterAndRevokedIsFalse(bpk, clock.now().toJavaInstant())
         val toRevoke = list.filter { !it.revoked }
         toRevoke.forEach { it.revoked = true }
         log.info("Revoking {} device bindings", toRevoke.size)
@@ -66,7 +69,7 @@ class DatabaseDeviceBindingStorageService(
     }
 
     override fun deleteExpiredBefore(cutoff: Instant): Int {
-        val list = deviceBindingRepository.findAllByValidUntilBefore(cutoff)
+        val list = deviceBindingRepository.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             log.info("Deleting device binding: '{}' for '{}'", it.deviceName, it.bpk)
             deviceBindingRepository.delete(it)

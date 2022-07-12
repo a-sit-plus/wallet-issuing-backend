@@ -1,9 +1,12 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.lib.agent.MonthAndDay
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 import java.net.URI
-import java.time.Duration
+import kotlin.time.Duration
 
 @ConfigurationProperties(prefix = "backend")
 @ConstructorBinding
@@ -13,11 +16,12 @@ data class BackendConfigurationProperties(
      */
     val publicContext: String = "http://localhost:8080/",
 
+    val timeSource: TimeSource = TimeSource.SYSTEM,
 
     /**
      * Date when a school year starts (MM-DD)
      */
-    val schoolYearRollover: String = "09-10",
+    private val schoolYearRollover: String = "09-10",
 
     /**
      * Configuration for issued credentials
@@ -55,7 +59,10 @@ data class BackendConfigurationProperties(
      * Configure the source of attributes for the credentials
      */
     val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
-)
+) {
+    val schooYearStart: MonthAndDay =
+        schoolYearRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
+}
 
 @ConstructorBinding
 data class DebugConfigurationProperties(
@@ -74,7 +81,7 @@ data class CredentialConfigurationProperties(
     /**
      * Lifetime of the credentials issued, e.g. 60 minutes (`PT6M`) or 180 days (`P180D`)
      */
-    val lifetime: Duration = Duration.ofMinutes(60),
+    private val lifetimeStr: String = "PT6M",
     /**
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
@@ -83,8 +90,12 @@ data class CredentialConfigurationProperties(
     /**
      * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
      */
-    val gracePeriod: Duration = Duration.ofDays(90),
-)
+    private val gracePeriodStr: String = "P90D",
+) {
+    //eager evaluation → fail on load
+    val lifetime: Duration = Duration.parse(lifetimeStr)
+    val gracePeriod = Duration.parse(gracePeriodStr)
+}
 
 @ConstructorBinding
 data class CleanupConfigurationProperties(
@@ -95,7 +106,7 @@ data class CleanupConfigurationProperties(
     /**
      * Rate at which expired bindings shall be deleted
      */
-    val bindingsSchedulingRate: Duration = Duration.ofHours(24),
+    val bindingsSchedulingRateStr: String = "PT24H",
     /**
      * Timespan in days after which an expired binding shall be deleted
      */
@@ -103,12 +114,15 @@ data class CleanupConfigurationProperties(
     /**
      * Rate at which expired credentials shall be deleted
      */
-    val credentialsSchedulingRate: Duration = Duration.ofHours(24),
+    val credentialsSchedulingRateStr: String = "PT24H",
     /**
      * Timespan in days after which an expired credential shall be deleted
      */
     val credentialsExpirationDays: Int = 30,
-)
+) {
+    val bindingsSchedulingRate = Duration.parse(bindingsSchedulingRateStr)
+    val credentialsSchedulingRate = Duration.parse(credentialsSchedulingRateStr)
+}
 
 @ConstructorBinding
 data class HsmFacadeConfiguration(

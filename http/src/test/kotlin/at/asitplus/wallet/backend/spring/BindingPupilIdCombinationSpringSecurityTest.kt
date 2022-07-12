@@ -1,12 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.ChallengeService
-import at.asitplus.wallet.backend.DeviceBindingAuthnResult
-import at.asitplus.wallet.backend.DeviceBindingAuthnService
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.IssueCredentialAdapter
-import at.asitplus.wallet.backend.PkiService
-import at.asitplus.wallet.backend.SignedCertificate
+import at.asitplus.wallet.backend.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
@@ -31,6 +25,7 @@ import org.springframework.test.web.servlet.post
 import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Tests the Spring Security parts of the authentication for [DeviceBinding] and [PupilIdController]
@@ -87,7 +82,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
         clientMessage = UUID.randomUUID().toString()
         serverMessage = UUID.randomUUID().toString()
         challengeResponse = UUID.randomUUID().toString()
-        val validUntil = Instant.now().plusSeconds(60)
+        val validUntil = TestTimeSource.now() + 60.seconds
 
         whenever(challengeService.generate()).thenReturn(challenge)
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)

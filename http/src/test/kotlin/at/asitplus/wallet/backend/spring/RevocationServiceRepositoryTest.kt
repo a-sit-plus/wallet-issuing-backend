@@ -2,22 +2,25 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import java.time.Instant
-import java.time.Year
+import org.springframework.test.context.TestPropertySource
 import java.util.*
-import kotlin.properties.Delegates
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
+@TestPropertySource(properties = ["backend.time-source=TEST"])
 class RevocationServiceRepositoryTest {
 
     @Autowired
@@ -39,18 +42,14 @@ class RevocationServiceRepositoryTest {
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
     private lateinit var validUntilExpired: Instant
-    private lateinit var now: Instant
-    private var schoolYear by Delegates.notNull<Int>()
 
     @BeforeEach
     fun beforeEach() {
-        schoolYear = 2021
-        now = Instant.parse("$schoolYear-11-10T00:00:00.00Z")
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
-        validUntil = now.plusSeconds(2)
-        validUntilExpired = now.minusSeconds(2)
+        validUntil = TestTimeSource.now() + 2.seconds
+        validUntilExpired = TestTimeSource.now() - 2.seconds
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
@@ -66,7 +65,7 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId, schoolYear) shouldBe false
+        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe false
     }
 
     @Test
@@ -74,7 +73,7 @@ class RevocationServiceRepositoryTest {
         createExpiredCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId, schoolYear) shouldBe false
+        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe false
     }
 
     @Test
@@ -84,7 +83,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId, schoolYear) shouldBe true
+        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe true
     }
 
     @Test
@@ -94,7 +93,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId, schoolYear) shouldBe true
+        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe true
     }
 
     @Test
@@ -102,17 +101,17 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByVcId(vcId, schoolYear) shouldBe 1
+        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.schoolYear) shouldBe 1
     }
 
     @Test
     fun `check on non-existing vcId should return null`() {
-        revocationService.isRevoked(vcId, schoolYear).shouldBeNull()
+        revocationService.isRevoked(vcId, TestTimeSource.schoolYear).shouldBeNull()
     }
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.revokeCredentialsByVcId(vcId, schoolYear) shouldBe 0
+        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.schoolYear) shouldBe 0
     }
 
     @Test
@@ -183,8 +182,8 @@ class RevocationServiceRepositoryTest {
         IssuedCredential(
             vcId,
             subjectId,
-            validUntil,
-            Year.of(schoolYear),
+            validUntil.toJavaInstant(),
+            TestTimeSource.javaSchoolYear,
             deviceBinding,
             attributeName,
             1L
@@ -194,8 +193,8 @@ class RevocationServiceRepositoryTest {
         IssuedCredential(
             vcId,
             subjectId,
-            validUntilExpired,
-            Year.of(schoolYear),
+            validUntilExpired.toJavaInstant(),
+            TestTimeSource.javaSchoolYear,
             deviceBinding,
             attributeName,
             1L

@@ -6,10 +6,13 @@ import at.asitplus.wallet.lib.data.SchemaIndex.ATTR_GENERIC_PREFIX
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.time.Duration
+import kotlin.time.Duration
 import java.util.UUID
+import kotlin.properties.Delegates
+import kotlin.time.Duration.Companion.seconds
 
 class IssuerCredentialDataProviderAdapterTest {
 
@@ -19,7 +22,7 @@ class IssuerCredentialDataProviderAdapterTest {
     private lateinit var deviceName: String
     private lateinit var bpk: String
     private lateinit var client: Client
-    private lateinit var lifetime: Duration
+    private var lifetime: Duration by  Delegates.notNull()
     private lateinit var adapter: IssuerCredentialDataProviderAdapter
 
     @BeforeEach
@@ -34,9 +37,9 @@ class IssuerCredentialDataProviderAdapterTest {
             bpk,
             client.selfSignedCert.encoded,
             deviceName,
-            client.selfSignedCert.notAfter.toInstant()
+            client.selfSignedCert.notAfter.toInstant().toKotlinInstant()
         )
-        lifetime = Duration.ofSeconds(client.lifetimeSeconds * 2)
+        lifetime = (client.lifetimeSeconds * 2).seconds
         adapter = IssuerCredentialDataProviderAdapter(
             lifetime,
             credentialDataProvider,
