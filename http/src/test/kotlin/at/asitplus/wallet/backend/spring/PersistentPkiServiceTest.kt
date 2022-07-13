@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Clock
 import org.bouncycastle.cert.X509CRLHolder
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.test.context.TestPropertySource
 import java.util.Date
 import java.util.UUID
 
@@ -30,7 +32,7 @@ class PersistentPkiServiceTest {
             issuerName = "CN=Test",
             issuedCertificateRepository = issuedCertificateRepository,
             cryptoService = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
-            clock = TestTimeSource.clock
+            clock = Clock.System
         )
     }
 

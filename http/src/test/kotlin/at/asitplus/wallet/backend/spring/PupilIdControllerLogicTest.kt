@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.UUID
@@ -39,6 +40,7 @@ import java.util.UUID
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = ["backend.time-source=TEST"])
 @WithMockUser(authorities = ["DEVICE_BINDING"])
 class PupilIdControllerLogicTest {
 
