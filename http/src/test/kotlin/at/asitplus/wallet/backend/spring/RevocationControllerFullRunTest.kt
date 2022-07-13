@@ -7,6 +7,7 @@ import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.javaSchoolYear
 import at.asitplus.wallet.lib.agent.IssuerAgent
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.matchers.collections.shouldBeEmpty

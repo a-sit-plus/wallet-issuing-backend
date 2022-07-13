@@ -23,7 +23,7 @@ class AeraPkiService(
     private val certValidity: Duration,
     private val url: String,
     private val restTemplate: RestTemplate,
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

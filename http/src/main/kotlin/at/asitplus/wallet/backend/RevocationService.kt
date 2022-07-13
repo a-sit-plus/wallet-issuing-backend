@@ -78,7 +78,7 @@ class DefaultRevocationService(
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
     private val pkiService: PkiService,
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) : RevocationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

@@ -14,7 +14,7 @@ import java.util.UUID
 class DatabaseDeviceBindingStorageService(
     private val deviceBindingRepository: DeviceBindingRepository,
     private val authenticationSupplier: AuthenticationSupplier,
-    private val clock: Clock=Clock.System
+    private val clock: Clock
 ) : DeviceBindingStorageService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

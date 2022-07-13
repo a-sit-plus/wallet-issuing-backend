@@ -16,7 +16,7 @@ class IssuerCredentialDataProviderAdapter(
     private val credentialDataProvider: CredentialDataProvider,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val gracePeriod: Duration,
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) : IssuerCredentialDataProvider {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

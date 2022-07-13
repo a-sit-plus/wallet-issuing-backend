@@ -1,11 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
-import at.asitplus.wallet.backend.InMemoryPkiService
-import at.asitplus.wallet.backend.PersistentPkiService
-import at.asitplus.wallet.backend.PkiService
-import at.asitplus.wallet.backend.RandomKeyAdapter
+import at.asitplus.wallet.backend.*
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -34,7 +29,8 @@ class PersistentPkiServiceTest {
             certValidityDays = 1,
             issuerName = "CN=Test",
             issuedCertificateRepository = issuedCertificateRepository,
-            cryptoService = DefaultCryptoServiceAdapter(RandomKeyAdapter())
+            cryptoService = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
+            clock = TestTimeSource.clock
         )
     }
 

@@ -1,15 +1,10 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.agent.DefaultCryptoService
-import at.asitplus.wallet.lib.agent.HolderAgent
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.IssueCredentialProtocolResult
-import at.asitplus.wallet.lib.agent.MessageWrapper
-import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -26,7 +21,7 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 /**
  * Simulates a full run of a client using the [PupilIdController].
@@ -52,7 +47,10 @@ class PupilIdControllerFullRunTest {
     fun beforeEach() {
         client = Client()
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
-        holderAgent = HolderAgent.newDefaultInstance(cryptoService = holderCryptoService)
+        holderAgent = HolderAgent.newDefaultInstance(
+            cryptoService = holderCryptoService,
+            clock= TestTimeSource.clock,
+        )
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,

@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.javaSchoolYear
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Instant

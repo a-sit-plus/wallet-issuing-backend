@@ -16,7 +16,7 @@ class DeviceBindingCleanupTask(
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val revocationService: RevocationService,
     private val configuration: BackendConfigurationProperties,
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

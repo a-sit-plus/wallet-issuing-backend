@@ -45,7 +45,7 @@ class EidasIdController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
     private val credentialDataProvider: CredentialDataProvider,
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

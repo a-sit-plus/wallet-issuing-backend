@@ -26,7 +26,7 @@ class InMemoryPkiService(
     private val certValidity: Duration = 1.days,
     private val issuerName: String = "CN=Issuer",
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

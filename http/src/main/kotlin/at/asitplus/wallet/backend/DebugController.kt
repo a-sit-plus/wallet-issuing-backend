@@ -37,7 +37,7 @@ class DebugController(
     private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

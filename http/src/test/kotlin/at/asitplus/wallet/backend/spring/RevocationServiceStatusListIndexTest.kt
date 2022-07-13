@@ -1,10 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.RevocationService
-import at.asitplus.wallet.backend.TestTimeSource
-import at.asitplus.wallet.backend.TestTimeSource.javaSchoolYear
+import at.asitplus.wallet.backend.*
 import at.asitplus.wallet.backend.TestTimeSource.schoolYear
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
@@ -101,7 +97,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            javaSchoolYear,
+            TestTimeSource.javaSchoolYear,
             deviceBinding,
             attributeName,
             2
@@ -113,7 +109,7 @@ class RevocationServiceStatusListIndexTest {
             vcId.reversed(),
             subjectId.reversed(),
             validUntil.toJavaInstant(),
-            javaSchoolYear,
+            TestTimeSource.javaSchoolYear,
             deviceBinding,
             attributeName,
             1
@@ -144,7 +140,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            javaSchoolYear,
+            TestTimeSource.javaSchoolYear,
             deviceBinding,
             attributeName,
             3

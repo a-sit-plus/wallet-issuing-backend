@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.lib.encodeBase64
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -21,7 +22,7 @@ import java.util.UUID
 
 class SimpleDeviceBindingAuthnServiceTest {
 
-    private val challengeService = SimpleChallengeService()
+    private val challengeService = SimpleChallengeService(        clock = TestTimeSource.clock)
     private val deviceBindingStorageService = InMemoryDeviceBindingStorageService()
     private val service = SimpleDeviceBindingAuthnService(
         deviceBindingStorageService = deviceBindingStorageService,

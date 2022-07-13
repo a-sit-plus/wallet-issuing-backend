@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -59,7 +60,8 @@ class PupilIdControllerLogicHsmFacadeTest {
     private val holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
     private val holderAgent = HolderAgent.newDefaultInstance(
         subjectCredentialStore = subjectCredentialStore,
-        cryptoService = holderCryptoService
+        cryptoService = holderCryptoService,
+        clock = TestTimeSource.clock
     )
     private val messageWrapper = MessageWrapper(holderCryptoService)
     private val holderMessenger = IssueCredentialMessenger.newHolderInstance(

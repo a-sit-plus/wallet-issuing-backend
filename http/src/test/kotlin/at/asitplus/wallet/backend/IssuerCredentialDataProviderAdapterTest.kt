@@ -44,7 +44,8 @@ class IssuerCredentialDataProviderAdapterTest {
             lifetime,
             credentialDataProvider,
             deviceBindingStorageService,
-            gracePeriod = Duration.ZERO
+            gracePeriod = Duration.ZERO,
+            clock = TestTimeSource.clock
         )
     }
 

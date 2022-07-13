@@ -1,24 +1,14 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.agent.DefaultCryptoService
-import at.asitplus.wallet.lib.agent.HolderAgent
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.MessageWrapper
-import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.pupilid.Asn1Service
-import at.asitplus.wallet.pupilid.DeviceAdapter
-import at.asitplus.wallet.pupilid.DeviceBindingPupilIdIssuingService
-import at.asitplus.wallet.pupilid.HashAlgorithm
-import at.asitplus.wallet.pupilid.KeyAlgorithm
-import at.asitplus.wallet.pupilid.KmmResult
-import at.asitplus.wallet.pupilid.ServiceResult
+import at.asitplus.wallet.pupilid.*
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.ktor.client.engine.java.Java
+import io.ktor.client.engine.java.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,9 +18,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.web.server.LocalServerPort
+import org.springframework.test.context.TestPropertySource
 import java.security.KeyPair
 import java.security.Signature
-import java.util.UUID
+import java.util.*
 
 
 /**
@@ -39,6 +30,7 @@ import java.util.UUID
  * Uses the KMM library with ktor to simulate the client.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(properties = ["backend.time-source=TEST"])
 @AutoConfigureMockMvc
 class BindingPupilIdCombinationKtorLibTest {
 
@@ -60,7 +52,10 @@ class BindingPupilIdCombinationKtorLibTest {
     fun beforeEach() {
         client = Client()
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
-        holderAgent = HolderAgent.newDefaultInstance(cryptoService = holderCryptoService)
+        holderAgent = HolderAgent.newDefaultInstance(
+            cryptoService = holderCryptoService,
+            clock = TestTimeSource.clock
+        )
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,
@@ -87,9 +82,13 @@ class BindingPupilIdCombinationKtorLibTest {
 
     private fun createService(keyPair: KeyPair): DeviceBindingPupilIdIssuingService {
         val deviceAdapter = object : DeviceAdapter {
-            override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) = KmmResult.success(true)
+            override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) =
+                KmmResult.success(true)
+
             override suspend fun loadAttestationCerts() = KmmResult.success(listOf<ByteArray>())
-            override fun storeCertificate(certificate: ByteArray, attestedPublicKey: String?) = KmmResult.success(true)
+            override fun storeCertificate(certificate: ByteArray, attestedPublicKey: String?) =
+                KmmResult.success(true)
+
             override fun getPublicKeyEncoded() = KmmResult.success(keyPair.public.encoded)
             override val deviceName: String = randomDeviceName
         }

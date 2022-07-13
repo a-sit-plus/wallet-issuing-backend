@@ -28,7 +28,7 @@ class PersistentPkiService(
     private val issuerName: String = "CN=Persistent-Issuer",
     private val issuedCertificateRepository: IssuedCertificateRepository,
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
-    private val clock: Clock = Clock.System
+    private val clock: Clock
 ) : PkiService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)

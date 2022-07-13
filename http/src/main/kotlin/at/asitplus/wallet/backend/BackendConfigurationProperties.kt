@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.lib.agent.MonthAndDay
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -81,7 +80,7 @@ data class CredentialConfigurationProperties(
     /**
      * Lifetime of the credentials issued, e.g. 60 minutes (`PT6M`) or 180 days (`P180D`)
      */
-    private val lifetimeStr: String = "PT6M",
+    private val lifetime: String = "PT6M",
     /**
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
@@ -90,11 +89,11 @@ data class CredentialConfigurationProperties(
     /**
      * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
      */
-    private val gracePeriodStr: String = "P90D",
+    private val gracePeriod: String = "P90D",
 ) {
     //eager evaluation → fail on load
-    val lifetime: Duration = Duration.parse(lifetimeStr)
-    val gracePeriod = Duration.parse(gracePeriodStr)
+    val lifeTime: Duration = Duration.parse(lifetime)
+    val gracePeriodDuration = Duration.parse(gracePeriod)
 }
 
 @ConstructorBinding
@@ -106,7 +105,7 @@ data class CleanupConfigurationProperties(
     /**
      * Rate at which expired bindings shall be deleted
      */
-    val bindingsSchedulingRateStr: String = "PT24H",
+    val bindingsSchedulingRate: String = "PT24H",
     /**
      * Timespan in days after which an expired binding shall be deleted
      */
@@ -114,14 +113,14 @@ data class CleanupConfigurationProperties(
     /**
      * Rate at which expired credentials shall be deleted
      */
-    val credentialsSchedulingRateStr: String = "PT24H",
+    val credentialsSchedulingRate: String = "PT24H",
     /**
      * Timespan in days after which an expired credential shall be deleted
      */
     val credentialsExpirationDays: Int = 30,
 ) {
-    val bindingsSchedulingRate = Duration.parse(bindingsSchedulingRateStr)
-    val credentialsSchedulingRate = Duration.parse(credentialsSchedulingRateStr)
+    val bindingsSchedulingRateDuration = Duration.parse(bindingsSchedulingRate)
+    val credentialsSchedulingRateDuration = Duration.parse(credentialsSchedulingRate)
 }
 
 @ConstructorBinding

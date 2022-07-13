@@ -33,13 +33,14 @@ interface ChallengeService {
 class SimpleChallengeService(
     private val challengeLength: Int = 32,
     private val lifetimeSeconds: Int = 60,
+    private val clock:Clock
 ) : ChallengeService {
 
     private val list = mutableListOf<Entry>()
 
     override fun generate(): ByteArray {
         removeExpiredChallenges()
-        return Entry(Random.nextBytes(challengeLength), Clock.System.now()).also { list += it }.challenge
+        return Entry(Random.nextBytes(challengeLength), clock.now()).also { list += it }.challenge
     }
 
     override fun verify(challenge: ByteArray): Boolean {
@@ -58,7 +59,7 @@ class SimpleChallengeService(
 
     private fun removeExpiredChallenges() {
         list.removeAll {
-            it.creation < Clock.System.now() - lifetimeSeconds.seconds
+            it.creation < clock.now() - lifetimeSeconds.seconds
         }
     }
 

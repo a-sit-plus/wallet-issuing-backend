@@ -11,7 +11,6 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Month
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -22,6 +21,7 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -52,7 +52,10 @@ class BackendConfiguration {
     fun extNonceAuthnService(): ExtNonceAuthnService =
         when (configurationProperties.authn.deviceBinding.type) {
             DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
-                SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
+                SimpleChallengeService(
+                    lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds,
+                    clock = clock()
+                )
             )
             DeviceBindingNonceType.ECO -> {
                 val restTemplate = RestTemplateConfigurationService(
@@ -113,10 +116,7 @@ class BackendConfiguration {
                 configurationProperties.pki.certValidityDays.days,
                 configurationProperties.pki.internal.issuerName,
                 DefaultCryptoServiceAdapter(keyAdapter),
-                when (configurationProperties.timeSource) {
-                    TimeSource.SYSTEM -> Clock.System
-                    TimeSource.TEST -> TestTimeSource.clock
-                }
+                clock()
             )
         }
         PkiType.AERA -> {
@@ -128,10 +128,7 @@ class BackendConfiguration {
                 configurationProperties.pki.certValidityDays.days,
                 configurationProperties.pki.aera.url!!.toString(),
                 restTemplate,
-                when (configurationProperties.timeSource) {
-                    TimeSource.SYSTEM -> Clock.System
-                    TimeSource.TEST -> TestTimeSource.clock
-                }
+                clock()
             )
         }
     }
@@ -144,7 +141,10 @@ class BackendConfiguration {
 
     @Bean
     fun challengeService(): ChallengeService =
-        SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
+        SimpleChallengeService(
+            lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds,
+            clock = clock()
+        )
 
     @Bean
     fun authenticationSupplier(): AuthenticationSupplier = SpringSecurityAuthenticationSupplier()
@@ -154,7 +154,11 @@ class BackendConfiguration {
         deviceBindingRepository: DeviceBindingRepository,
         authenticationSupplier: AuthenticationSupplier,
     ): DeviceBindingStorageService =
-        DatabaseDeviceBindingStorageService(deviceBindingRepository, authenticationSupplier)
+        DatabaseDeviceBindingStorageService(
+            deviceBindingRepository,
+            authenticationSupplier,
+            clock = clock()
+        )
 
     @Bean
     fun issueCredentialAdapter(
@@ -172,11 +176,14 @@ class BackendConfiguration {
         deviceBindingStorageService,
         configurationProperties.credentials.oneCredentialPerDeviceBinding,
         pkiService,
-        when (configurationProperties.timeSource) {
-            TimeSource.SYSTEM -> Clock.System
-            TimeSource.TEST -> TestTimeSource.clock
-        }
+        clock()
     )
+
+    @Bean
+    fun clock(): Clock = when (configurationProperties.timeSource) {
+        TimeSource.SYSTEM -> Clock.System
+        TimeSource.TEST -> TestTimeSource.clock
+    }
 
     @Bean
     fun deviceBindingAuthnService(
@@ -222,7 +229,8 @@ class BackendConfiguration {
             }
             AttributeSourceType.EIDAS -> {
                 EidasCredentialDataProvider(
-                    600
+                    600.seconds,
+                    clock = clock()
                 )
             }
         }
@@ -232,10 +240,11 @@ class BackendConfiguration {
         credentialDataProvider: CredentialDataProvider,
         deviceBindingStorageService: DeviceBindingStorageService
     ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
-        lifetime = configurationProperties.credentials.lifetime,
+        lifetime = configurationProperties.credentials.lifeTime,
         credentialDataProvider = credentialDataProvider,
         deviceBindingStorageService = deviceBindingStorageService,
-        gracePeriod = configurationProperties.credentials.gracePeriod
+        gracePeriod = configurationProperties.credentials.gracePeriodDuration,
+        clock = clock()
     )
 
     @Bean
@@ -280,7 +289,8 @@ class BackendConfiguration {
             "credentials",
             "status"
         ),
-        schoolYearStart = Month(9) to 10u
+        schoolYearStart = configurationProperties.schooYearStart,
+        clock = clock()
     )
 
     @Bean

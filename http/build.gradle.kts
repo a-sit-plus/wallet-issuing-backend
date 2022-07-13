@@ -68,7 +68,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.3")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
     testImplementation("io.ktor:ktor-client-java:2.0.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.3.1")
+    testImplementation("io.kotest:kotest-assertions-core:5.3.2")
 }
 
 tasks.withType<KotlinCompile> {

@@ -3,16 +3,16 @@ package at.asitplus.wallet.backend
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Clock
 import org.bouncycastle.cert.X509CRLHolder
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.junit.jupiter.api.Test
-import java.util.Date
-import java.util.UUID
+import java.util.*
 
 class InMemoryPkiServiceTest {
 
-    private val service = InMemoryPkiService()
+    private val service = InMemoryPkiService(clock = Clock.System)
 
     @Test
     fun `sign correct CSR`() {

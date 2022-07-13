@@ -4,6 +4,7 @@ import at.asitplus.wallet.backend.BackendConfigurationProperties
 import at.asitplus.wallet.backend.Extensions
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.javaSchoolYear
 import at.asitplus.wallet.lib.agent.FixedTimeClock
 import io.kotest.matchers.collections.shouldBeEmpty
 import kotlinx.datetime.Instant

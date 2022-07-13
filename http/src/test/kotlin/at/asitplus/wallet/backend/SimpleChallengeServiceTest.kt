@@ -1,12 +1,16 @@
 package at.asitplus.wallet.backend
 
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test
 
 class SimpleChallengeServiceTest {
 
     private val timeoutSeconds = 1
-    private val service = SimpleChallengeService(lifetimeSeconds = timeoutSeconds)
+    private val service = SimpleChallengeService(
+        lifetimeSeconds = timeoutSeconds,
+        clock = Clock.System
+    )
 
     @Test
     fun timeout() {
