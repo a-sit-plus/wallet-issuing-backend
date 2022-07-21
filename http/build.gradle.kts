@@ -69,6 +69,7 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
     testImplementation("io.ktor:ktor-client-java:2.0.0")
     testImplementation("io.kotest:kotest-assertions-core:5.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.3.2")
 }
 
 tasks.withType<KotlinCompile> {

@@ -26,7 +26,7 @@ class IssuerCredentialDataProviderAdapter(
         attributeName: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant() + gracePeriod
+        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
         val maxExpiration = clock.now() + lifetime
         val cappedExpiration =
             if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
@@ -50,7 +50,7 @@ class IssuerCredentialDataProviderAdapter(
         attributeType: String
     ): IssuerCredentialDataProvider.CredentialToBeIssued? {
         val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
-        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant() + gracePeriod
+        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
         val maxExpiration = clock.now() + lifetime
         val cappedExpiration =
             if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
@@ -63,7 +63,7 @@ class IssuerCredentialDataProviderAdapter(
         return credential?.let {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
-                it.expiration,
+                it.expiration + gracePeriod,
                 it.attributeType
             )
         }

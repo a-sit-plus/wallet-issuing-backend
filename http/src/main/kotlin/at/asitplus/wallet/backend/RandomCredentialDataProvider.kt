@@ -9,7 +9,10 @@ import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
-
+internal const val RND_MONTH="09"
+internal const val RND_DAY="01"
+internal const val RND_YEAR="2023"
+internal const val EXP = "$RND_YEAR-$RND_MONTH-$RND_DAY"
 
 /**
  * Provides random credential data for the currently logged-in user
@@ -106,7 +109,7 @@ class RandomCredentialDataProvider constructor(
             pupilZip = it.zip,
             pupilId = it.pupilId,
             picture = it.encodedPhoto,
-            validUntil = "2023-09-01",
+            validUntil = EXP,
         )
         return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
     }
