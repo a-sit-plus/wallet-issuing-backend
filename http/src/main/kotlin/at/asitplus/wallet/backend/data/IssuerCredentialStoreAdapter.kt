@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
-import kotlinx.datetime.toJavaInstant
 
 /**
  * Implements interface [IssuerCredentialStore] from VC Library to wrap calls to [RevocationService].
@@ -12,8 +11,8 @@ class IssuerCredentialStoreAdapter(
     private val revocationService: RevocationService,
 ) : IssuerCredentialStore {
 
-    override fun revoke(vcId: String, schoolYear: Int): Boolean {
-        return revocationService.revokeCredentialsByVcId(vcId, schoolYear) > 0
+    override fun revoke(vcId: String, timePeriod: Int): Boolean {
+        return revocationService.revokeCredentialsByVcId(vcId, timePeriod) > 0
     }
 
     override fun storeGetNextIndex(
@@ -21,19 +20,19 @@ class IssuerCredentialStoreAdapter(
         credentialSubject: CredentialSubject,
         issuanceDate: kotlinx.datetime.Instant,
         expirationDate: kotlinx.datetime.Instant,
-        schoolYear: Int
+        timePeriod: Int
     ): Int? {
         return revocationService.storeGetNextIndex(
             vcId,
             credentialSubject,
             issuanceDate,
             expirationDate,
-            schoolYear
+            timePeriod
         )
     }
 
-    override fun getRevokedStatusListIndexList(schoolYear: Int): Collection<Int> {
-        return revocationService.getRevokedStatusListIndexList(schoolYear)
+    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int> {
+        return revocationService.getRevokedStatusListIndexList(timePeriod)
     }
 
 }

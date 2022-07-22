@@ -20,7 +20,7 @@ data class BackendConfigurationProperties(
     /**
      * Date when a school year starts (MM-DD)
      */
-    private val schoolYearRollover: String = "09-10",
+    private val timePeriodRollover: String = "09-10",
 
     /**
      * Configuration for issued credentials
@@ -60,7 +60,7 @@ data class BackendConfigurationProperties(
     val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
 ) {
     val schooYearStart: MonthAndDay =
-        schoolYearRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
+        timePeriodRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
 }
 
 @ConstructorBinding

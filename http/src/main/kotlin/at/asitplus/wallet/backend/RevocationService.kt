@@ -28,7 +28,7 @@ interface RevocationService {
      * Revokes one credential, specified by its [vcId] (which is a unique identifier
      * for one verifiable credential, in the form of `urn:uuid:${uuid4()}`)
      */
-    fun revokeCredentialsByVcId(vcId: String, schoolYear: Int): Int
+    fun revokeCredentialsByVcId(vcId: String, timePeriod: Int): Int
 
     /**
      * Stores the verifiable credential that is about to be issued,
@@ -41,13 +41,13 @@ interface RevocationService {
         credentialSubject: CredentialSubject,
         issuanceDate: Instant,
         expirationDate: Instant,
-        schoolYear: Int
+        timePeriod: Int
     ): Int?
 
     /**
      * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
      */
-    fun isRevoked(vcId: String, schoolYear: Int): Boolean?
+    fun isRevoked(vcId: String, timePeriod: Int): Boolean?
 
     /**
      * Lists all non-revoked credentials that have been issued
@@ -57,7 +57,7 @@ interface RevocationService {
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
-    fun getRevokedStatusListIndexList(schoolYear: Int): Collection<Int>
+    fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int>
 
     /**
      * Revoke one or more device bindings for a pupil, either specified by their [bpk]
@@ -86,8 +86,8 @@ class DefaultRevocationService(
     /**
      * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
      */
-    override fun isRevoked(vcId: String, schoolYear: Int): Boolean? {
-        return credentialRepo.findBySchoolYearAndVcId(Year.of(schoolYear), vcId)?.revoked
+    override fun isRevoked(vcId: String, timePeriod: Int): Boolean? {
+        return credentialRepo.findBytimePeriodAndVcId(Year.of(timePeriod), vcId)?.revoked
     }
 
     /**
@@ -101,9 +101,9 @@ class DefaultRevocationService(
         credentialSubject: CredentialSubject,
         issuanceDate: Instant,
         expirationDate: Instant,
-        schoolYear: Int
+        timePeriod: Int
     ): Int? {
-        if (credentialRepo.findBySchoolYearAndVcId(Year.of(schoolYear), vcId) != null)
+        if (credentialRepo.findBytimePeriodAndVcId(Year.of(timePeriod), vcId) != null)
             return null.also {
                 log.error("Tried to store a new credential for existing vcId '{}'", vcId)
             }
@@ -125,7 +125,7 @@ class DefaultRevocationService(
             vcId,
             credentialSubject.id,
             expirationDate.toJavaInstant(),
-            Year.of(schoolYear),
+            Year.of(timePeriod),
             deviceBinding,
             attributeName,
             revocationListIndex
@@ -138,9 +138,9 @@ class DefaultRevocationService(
      * Revokes one credential, specified by its [vcId] (which is a unique identifier
      * for one verifiable credential, in the form of `urn:uuid:${uuid4()}`)
      */
-    override fun revokeCredentialsByVcId(vcId: String, schoolYear: Int): Int {
+    override fun revokeCredentialsByVcId(vcId: String, timePeriod: Int): Int {
         val credential =
-            credentialRepo.findBySchoolYearAndVcId(Year.of(schoolYear), vcId) ?: return 0
+            credentialRepo.findBytimePeriodAndVcId(Year.of(timePeriod), vcId) ?: return 0
         return revokeAllCredentials(listOf(credential))
     }
 
@@ -194,8 +194,8 @@ class DefaultRevocationService(
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
-    override fun getRevokedStatusListIndexList(schoolYear: Int): Collection<Int> {
-        return credentialRepo.getRevocationListIndexByRevokedTrueOrdered(Year.of(schoolYear))
+    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int> {
+        return credentialRepo.getRevocationListIndexByRevokedTrueOrdered(Year.of(timePeriod))
             .map { it.toInt() }
     }
 

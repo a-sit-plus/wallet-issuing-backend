@@ -17,7 +17,7 @@ class IssuedCredential() {
         vcId: String,
         subjectId: String,
         validUntil: Instant,
-        schoolYear: Year,
+        timePeriod: Year,
         deviceBinding: DeviceBinding,
         attributeName: String,
         revocationListIndex: Long,
@@ -26,7 +26,7 @@ class IssuedCredential() {
         this.subjectId = subjectId
         this.attributeName = attributeName
         this.validUntil = validUntil
-        this.schoolYear = schoolYear
+        this.timePeriod = timePeriod
         this.revoked = false
         this.deviceBinding = deviceBinding
         this.revocationListIndex = revocationListIndex
@@ -53,7 +53,7 @@ class IssuedCredential() {
     lateinit var validUntil: Instant
 
     @Column
-    lateinit var schoolYear: Year
+    lateinit var timePeriod: Year
 
     @Column
     var revoked: Boolean = false
@@ -72,7 +72,7 @@ class IssuedCredential() {
                 "subjectId='$subjectId', " +
                 "attributeName='$attributeName', " +
                 "validUntil=$validUntil, " +
-                "schoolYear=$schoolYear, " +
+                "timePeriod=$timePeriod, " +
                 "revoked=$revoked, " +
                 "deviceBinding=${deviceBinding.id}, " +
                 "revocationListIndex=$revocationListIndex)"

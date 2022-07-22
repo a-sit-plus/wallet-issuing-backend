@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.*
-import at.asitplus.wallet.backend.TestTimeSource.schoolYear
+import at.asitplus.wallet.backend.TestTimeSource.timePeriod
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -83,11 +83,11 @@ class RevocationServiceStatusListIndexTest {
             credentialSubject,
             issuanceDate,
             expirationDate,
-            schoolYear
+            timePeriod
         )
-        revocationService.isRevoked(vcId, schoolYear) shouldBe false
-        revocationService.revokeCredentialsByVcId(vcId, schoolYear) shouldBe 1
-        revocationService.isRevoked(vcId, schoolYear) shouldBe true
+        revocationService.isRevoked(vcId, timePeriod) shouldBe false
+        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
+        revocationService.isRevoked(vcId, timePeriod) shouldBe true
     }
 
     @Test
@@ -97,7 +97,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javaSchoolYear,
+            TestTimeSource.javatimePeriod,
             deviceBinding,
             attributeName,
             2
@@ -109,7 +109,7 @@ class RevocationServiceStatusListIndexTest {
             vcId.reversed(),
             subjectId.reversed(),
             validUntil.toJavaInstant(),
-            TestTimeSource.javaSchoolYear,
+            TestTimeSource.javatimePeriod,
             deviceBinding,
             attributeName,
             1
@@ -125,7 +125,7 @@ class RevocationServiceStatusListIndexTest {
                 credentialSubject,
                 issuanceDate,
                 expirationDate,
-                schoolYear
+                timePeriod
             )
         storeGetNextIndex.shouldNotBeNull()
         storeGetNextIndex shouldBe 3
@@ -140,7 +140,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javaSchoolYear,
+            TestTimeSource.javatimePeriod,
             deviceBinding,
             attributeName,
             3
@@ -152,7 +152,7 @@ class RevocationServiceStatusListIndexTest {
             credentialSubject,
             issuanceDate,
             expirationDate,
-            schoolYear
+            timePeriod
         )
             .shouldBeNull()
     }
@@ -165,14 +165,14 @@ class RevocationServiceStatusListIndexTest {
             credentialSubject,
             issuanceDate,
             expirationDate,
-            schoolYear
+            timePeriod
         ).shouldNotBeNull()
         revocationService.storeGetNextIndex(
             vcId,
             credentialSubject,
             issuanceDate,
             expirationDate,
-            schoolYear
+            timePeriod
         ).shouldBeNull()
     }
 
@@ -181,7 +181,7 @@ class RevocationServiceStatusListIndexTest {
     fun `revocation list should match revocation calls`() {
         val expectedRevocationList = revokeRandomCredentials()
 
-        val revocationList = revocationService.getRevokedStatusListIndexList(schoolYear)
+        val revocationList = revocationService.getRevokedStatusListIndexList(timePeriod)
 
         revocationList shouldBe expectedRevocationList
     }
@@ -196,11 +196,11 @@ class RevocationServiceStatusListIndexTest {
                     credentialSubject,
                     issuanceDate,
                     expirationDate,
-                    schoolYear
+                    timePeriod
                 )
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)
-                revocationService.revokeCredentialsByVcId(vcId, schoolYear)
+                revocationService.revokeCredentialsByVcId(vcId, timePeriod)
             }
         }
         return expectedRevocationList

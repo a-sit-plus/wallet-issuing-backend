@@ -6,7 +6,7 @@ import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.javaSchoolYear
+import at.asitplus.wallet.backend.javatimePeriod
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Instant
@@ -66,7 +66,7 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe false
+        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe false
     }
 
     @Test
@@ -74,7 +74,7 @@ class RevocationServiceRepositoryTest {
         createExpiredCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe false
+        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe false
     }
 
     @Test
@@ -84,7 +84,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe true
+        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe true
     }
 
     @Test
@@ -94,7 +94,7 @@ class RevocationServiceRepositoryTest {
             credentialRepo.save(it)
         }
 
-        revocationService.isRevoked(vcId, TestTimeSource.schoolYear) shouldBe true
+        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe true
     }
 
     @Test
@@ -102,17 +102,17 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.schoolYear) shouldBe 1
+        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.timePeriod) shouldBe 1
     }
 
     @Test
     fun `check on non-existing vcId should return null`() {
-        revocationService.isRevoked(vcId, TestTimeSource.schoolYear).shouldBeNull()
+        revocationService.isRevoked(vcId, TestTimeSource.timePeriod).shouldBeNull()
     }
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.schoolYear) shouldBe 0
+        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.timePeriod) shouldBe 0
     }
 
     @Test
@@ -184,7 +184,7 @@ class RevocationServiceRepositoryTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javaSchoolYear,
+            TestTimeSource.javatimePeriod,
             deviceBinding,
             attributeName,
             1L
@@ -195,7 +195,7 @@ class RevocationServiceRepositoryTest {
             vcId,
             subjectId,
             validUntilExpired.toJavaInstant(),
-            TestTimeSource.javaSchoolYear,
+            TestTimeSource.javatimePeriod,
             deviceBinding,
             attributeName,
             1L

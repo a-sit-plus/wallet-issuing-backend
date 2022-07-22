@@ -289,7 +289,7 @@ class BackendConfiguration {
             "credentials",
             "status"
         ),
-        schoolYearStart = configurationProperties.schooYearStart,
+        timePeriodStart = configurationProperties.schooYearStart,
         clock = clock()
     )
 

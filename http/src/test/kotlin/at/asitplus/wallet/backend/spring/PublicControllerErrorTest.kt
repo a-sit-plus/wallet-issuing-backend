@@ -44,7 +44,7 @@ class PublicControllerErrorTest {
     @Test
     fun `GET VC status list returns error document`() {
         runTest {
-            whenever(issuer.issueRevocationListCredential(TestTimeSource.schoolYear)).thenThrow(IllegalArgumentException(exceptionMessage))
+            whenever(issuer.issueRevocationListCredential(TestTimeSource.timePeriod)).thenThrow(IllegalArgumentException(exceptionMessage))
         }
 
         webClient.get().uri("/credentials/status/2021").exchange()

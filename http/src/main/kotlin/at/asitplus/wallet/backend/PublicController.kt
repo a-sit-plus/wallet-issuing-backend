@@ -60,11 +60,11 @@ class PublicController(
             ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
     )
-    @GetMapping("/credentials/status/{schoolYear}")
-    fun getVcRevocationList(@PathVariable schoolYear:Int) = runBlocking {
-        log.info("/credentials/status/$schoolYear called")
-        val rl = issuer.issueRevocationListCredential(schoolYear)
-        log.info("/credentials/status/$schoolYear returns {}", rl)
+    @GetMapping("/credentials/status/{timePeriod}")
+    fun getVcRevocationList(@PathVariable timePeriod:Int) = runBlocking {
+        log.info("/credentials/status/$timePeriod called")
+        val rl = issuer.issueRevocationListCredential(timePeriod)
+        log.info("/credentials/status/$timePeriod returns {}", rl)
         ResponseEntity.ok(rl)
     }
 

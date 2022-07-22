@@ -9,13 +9,13 @@ import java.time.Year
 @Repository
 interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
-    fun findBySchoolYearAndVcId(schoolYear: Year, vcId: String): IssuedCredential?
+    fun findBytimePeriodAndVcId(timePeriod: Year, vcId: String): IssuedCredential?
 
     fun findAllByRevokedFalseAndValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>
 
 
-    @Query("select i.revocationListIndex from IssuedCredential i where i.revoked = true and i.schoolYear = ?1 order by i.revocationListIndex")
-    fun getRevocationListIndexByRevokedTrueOrdered(schoolYear: Year): Collection<Long>
+    @Query("select i.revocationListIndex from IssuedCredential i where i.revoked = true and i.timePeriod = ?1 order by i.revocationListIndex")
+    fun getRevocationListIndexByRevokedTrueOrdered(timePeriod: Year): Collection<Long>
 
 
     fun findByRevokedFalseAndValidUntilAfterAndDeviceBinding_Bpk(

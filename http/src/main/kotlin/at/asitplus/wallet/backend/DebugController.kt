@@ -102,7 +102,7 @@ class DebugController(
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId='{}'", vcId)
-        revocationService.revokeCredentialsByVcId(vcId, IssuerAgent.getSchoolYearFor(configurationProperties.schooYearStart,clock.now()))
+        revocationService.revokeCredentialsByVcId(vcId, IssuerAgent.gettimePeriodFor(configurationProperties.schooYearStart,clock.now()))
         return ModelAndView("redirect:/debug/credential/list")
     }
 
@@ -133,7 +133,7 @@ class DebugController(
             credentialSubject.id,
             exp.toJavaInstant(),
             Year.of(
-                IssuerAgent.getSchoolYearFor(
+                IssuerAgent.gettimePeriodFor(
                     configurationProperties.schooYearStart,
                     clock.now()
                 )
