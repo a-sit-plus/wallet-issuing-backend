@@ -6,7 +6,7 @@ backend:
     port: 9050
     username: provider-junit
     password: supersecret123
-    timeout: 5
+    timeout: 50
   issuer-key:
     type: HSMFACADE
     hsmfacade:

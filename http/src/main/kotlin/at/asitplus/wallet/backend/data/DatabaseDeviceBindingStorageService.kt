@@ -48,10 +48,14 @@ class DatabaseDeviceBindingStorageService(
             ?: return null.also {
                 log.error("Got no authenticated user when trying to store vc")
             }
+        val now = clock.now().toJavaInstant()
         return deviceBindingRepository
-            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(certificate, clock.now().toJavaInstant())
+            .findByCertificateAndValidUntilAfterAndRevokedIsFalse(certificate, now)
             ?: return null.also {
-                log.error("Found no authenticated user for certificate '{}", certificate.encodeBase64())
+                log.error(
+                    "Found no authenticated user at $now for certificate '{}",
+                    certificate.encodeBase64()
+                )
             }
     }
 
