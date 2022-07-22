@@ -21,7 +21,12 @@ class EcoCredentialDataProvider(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override fun getClaim(subjectId: String, attributeName: String, bpk: String, maxExpiration: Instant) =
+    override fun getClaim(
+        subjectId: String,
+        attributeName: String,
+        bpk: String,
+        maxExpiration: Instant
+    ) =
         null // not supported for ECO
 
     override fun getCredential(
@@ -38,10 +43,24 @@ class EcoCredentialDataProvider(
         ).also { log.debug("getCredential for '{}' got {}", bpk, it) }
         val body = entity.body
             ?: return null.also { log.info("getCredential for '{}' returns null: {}", bpk, entity) }
-        val parsedExpiration = kotlin.runCatching { Instant.parse(body.validUntil) }.getOrNull() ?: maxExpiration
-        val cappedExpiration = if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
+        val (expString, parsedExpiration) = (kotlin.runCatching {
+            body.validUntil to Instant.parse(
+                body.validUntil
+            )
+        }.getOrNull()
+            ?: kotlin.run {
+                log.warn("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
+                "${body.validUntil}Z".let { it to Instant.parse(it) }
+            })
+        log.debug("Using validUntil String $expString")
+        val cappedExpiration =
+            if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
         if (cappedExpiration != maxExpiration)
-            log.info("Capping expiration to '{}', max expiration would be '{}'", cappedExpiration, maxExpiration)
+            log.info(
+                "Capping expiration to '{}', max expiration would be '{}'",
+                cappedExpiration,
+                maxExpiration
+            )
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = body.firstname,
@@ -56,7 +75,7 @@ class EcoCredentialDataProvider(
             pupilZip = body.studentZip,
             pupilId = body.studentId,
             picture = body.photo.decodeBase64ToArray() ?: byteArrayOf(),
-            validUntil = body.validUntil,
+            validUntil = expString
         )
         CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
             log.info("getCredential for '{}' returns {}", bpk, it)
