@@ -6,7 +6,7 @@ import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.lib.agent.IssuerAgent
+import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
@@ -37,7 +37,8 @@ class DebugController(
     private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
-    private val clock: Clock
+    private val clock: Clock,
+    private val timePeriodProvider: TimePeriodProvider,
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -102,7 +103,10 @@ class DebugController(
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/credential/revoke called with vcId='{}'", vcId)
-        revocationService.revokeCredentialsByVcId(vcId, IssuerAgent.gettimePeriodFor(configurationProperties.schooYearStart,clock.now()))
+        revocationService.revokeCredentialsByVcId(
+            vcId,
+            timePeriodProvider.getTimePeriodFor(clock.now())
+        )
         return ModelAndView("redirect:/debug/credential/list")
     }
 
@@ -132,12 +136,7 @@ class DebugController(
             vcId,
             credentialSubject.id,
             exp.toJavaInstant(),
-            Year.of(
-                IssuerAgent.gettimePeriodFor(
-                    configurationProperties.schooYearStart,
-                    clock.now()
-                )
-            ),
+            Year.of(timePeriodProvider.getTimePeriodFor(clock.now())),
             deviceBinding,
             attributeName,
             revocationListIndex

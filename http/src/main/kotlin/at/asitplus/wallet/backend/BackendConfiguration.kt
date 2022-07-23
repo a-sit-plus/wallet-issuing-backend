@@ -289,9 +289,13 @@ class BackendConfiguration {
             "credentials",
             "status"
         ),
-        timePeriodStart = configurationProperties.schooYearStart,
+        timePeriodProvider = timePeriodProvider(),
         clock = clock()
     )
+
+    @Bean
+    fun timePeriodProvider(): TimePeriodProvider =
+        SchoolyearBasedTimePeriodProvider(configurationProperties.schooYearStart)
 
     @Bean
     fun issuerMessageWrapper(
