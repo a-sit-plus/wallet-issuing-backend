@@ -51,7 +51,9 @@ class EcoCredentialDataProvider(
             ?: kotlin.run {
                 log.warn("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
                 "${body.validUntil}Z".let { it to Instant.parse(it) }
-            })
+            }).let { (str, instant) ->
+            str.substring(0, 10) to instant
+        }
         log.debug("Using validUntil String $expString")
         val cappedExpiration =
             if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
