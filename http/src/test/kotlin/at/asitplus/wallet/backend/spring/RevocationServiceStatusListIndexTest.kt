@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.*
+import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.TestTimeSource.timePeriod
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
@@ -21,9 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
-import java.util.UUID
+import java.util.*
 import javax.transaction.Transactional
-import kotlin.properties.Delegates
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -97,7 +98,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             2
@@ -109,7 +110,7 @@ class RevocationServiceStatusListIndexTest {
             vcId.reversed(),
             subjectId.reversed(),
             validUntil.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             1
@@ -140,7 +141,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             3

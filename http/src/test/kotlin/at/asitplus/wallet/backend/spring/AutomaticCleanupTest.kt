@@ -1,20 +1,15 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.BackendConfigurationProperties
-import at.asitplus.wallet.backend.Extensions
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.*
-import at.asitplus.wallet.backend.javatimePeriod
-import at.asitplus.wallet.lib.agent.FixedTimeClock
 import io.kotest.matchers.collections.shouldBeEmpty
-import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
-import java.time.Year
 import kotlin.time.Duration.Companion.days
 
 @SpringBootTest(properties = ["backend.cleanup.enabled=true"])
@@ -48,7 +43,7 @@ class AutomaticCleanupTest {
             "vcId",
             "subjectId",
             validUntilCredential.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             "attributeName",
             1L

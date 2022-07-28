@@ -6,7 +6,6 @@ import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.javatimePeriod
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Instant
@@ -184,7 +183,7 @@ class RevocationServiceRepositoryTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             1L
@@ -195,7 +194,7 @@ class RevocationServiceRepositoryTest {
             vcId,
             subjectId,
             validUntilExpired.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             1L

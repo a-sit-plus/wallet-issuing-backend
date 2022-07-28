@@ -2,13 +2,7 @@ package at.asitplus.wallet.backend.data
 
 import org.hibernate.annotations.CreationTimestamp
 import java.time.Instant
-import java.time.Year
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
+import javax.persistence.*
 
 @Entity
 class IssuedCredential() {
@@ -17,7 +11,7 @@ class IssuedCredential() {
         vcId: String,
         subjectId: String,
         validUntil: Instant,
-        timePeriod: Year,
+        timePeriod: Int,
         deviceBinding: DeviceBinding,
         attributeName: String,
         revocationListIndex: Long,
@@ -53,7 +47,7 @@ class IssuedCredential() {
     lateinit var validUntil: Instant
 
     @Column
-    lateinit var timePeriod: Year
+    var timePeriod: Int = 0
 
     @Column
     var revoked: Boolean = false

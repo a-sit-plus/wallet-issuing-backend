@@ -8,7 +8,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
-import java.time.Year
 
 
 interface RevocationService {
@@ -87,7 +86,7 @@ class DefaultRevocationService(
      * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
      */
     override fun isRevoked(vcId: String, timePeriod: Int): Boolean? {
-        return credentialRepo.findBytimePeriodAndVcId(Year.of(timePeriod), vcId)?.revoked
+        return credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId)?.revoked
     }
 
     /**
@@ -103,7 +102,7 @@ class DefaultRevocationService(
         expirationDate: Instant,
         timePeriod: Int
     ): Int? {
-        if (credentialRepo.findBytimePeriodAndVcId(Year.of(timePeriod), vcId) != null)
+        if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
             return null.also {
                 log.error("Tried to store a new credential for existing vcId '{}'", vcId)
             }
@@ -125,7 +124,7 @@ class DefaultRevocationService(
             vcId,
             credentialSubject.id,
             expirationDate.toJavaInstant(),
-            Year.of(timePeriod),
+            timePeriod,
             deviceBinding,
             attributeName,
             revocationListIndex
@@ -140,7 +139,7 @@ class DefaultRevocationService(
      */
     override fun revokeCredentialsByVcId(vcId: String, timePeriod: Int): Int {
         val credential =
-            credentialRepo.findBytimePeriodAndVcId(Year.of(timePeriod), vcId) ?: return 0
+            credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) ?: return 0
         return revokeAllCredentials(listOf(credential))
     }
 
@@ -195,7 +194,7 @@ class DefaultRevocationService(
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
     override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int> {
-        return credentialRepo.getRevocationListIndexByRevokedTrueOrdered(Year.of(timePeriod))
+        return credentialRepo.getRevocationListIndexByRevokedTrueOrdered(timePeriod)
             .map { it.toInt() }
     }
 

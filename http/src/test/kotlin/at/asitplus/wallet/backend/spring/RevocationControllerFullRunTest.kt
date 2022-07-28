@@ -7,8 +7,6 @@ import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.javatimePeriod
-import at.asitplus.wallet.lib.agent.IssuerAgent
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -25,7 +23,6 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import java.time.Year
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
@@ -76,7 +73,7 @@ class RevocationControllerFullRunTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             2
@@ -238,7 +235,7 @@ class RevocationControllerFullRunTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.javatimePeriod,
+            TestTimeSource.timePeriod,
             deviceBinding,
             attributeName,
             3

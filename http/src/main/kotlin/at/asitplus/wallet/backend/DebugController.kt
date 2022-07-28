@@ -24,7 +24,6 @@ import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.time.Year
 import java.util.*
 import javax.imageio.ImageIO
 import kotlin.random.Random
@@ -136,7 +135,7 @@ class DebugController(
             vcId,
             credentialSubject.id,
             exp.toJavaInstant(),
-            Year.of(timePeriodProvider.getTimePeriodFor(clock.now())),
+            timePeriodProvider.getTimePeriodFor(clock.now()),
             deviceBinding,
             attributeName,
             revocationListIndex
