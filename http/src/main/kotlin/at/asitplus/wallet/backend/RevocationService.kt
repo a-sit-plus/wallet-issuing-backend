@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.encodeBase64
 import kotlinx.datetime.Clock

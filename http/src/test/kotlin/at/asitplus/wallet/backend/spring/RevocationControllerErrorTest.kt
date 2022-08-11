@@ -1,24 +1,18 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.PkiService
 import at.asitplus.wallet.backend.RevocationController
 import at.asitplus.wallet.backend.RevocationService
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
-import at.asitplus.wallet.lib.agent.Issuer
-import kotlinx.coroutines.test.runTest
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.http.HttpHeaders
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import java.util.UUID

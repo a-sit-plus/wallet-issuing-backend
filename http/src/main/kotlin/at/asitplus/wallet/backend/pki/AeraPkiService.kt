@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.pki
 
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.lib.decodeBase64ToArray
@@ -13,7 +13,6 @@ import org.springframework.http.MediaType
 import org.springframework.web.client.RestTemplate
 import kotlin.time.Duration
 import java.util.*
-import kotlin.time.Duration.Companion.days
 
 /**
  * Implements [PkiService] by calling the external PKI service from BRZ,

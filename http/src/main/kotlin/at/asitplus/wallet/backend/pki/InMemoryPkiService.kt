@@ -1,22 +1,27 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.pki
 
-import at.asitplus.wallet.backend.PkiUtils.verifyCsr
+import at.asitplus.wallet.backend.CryptoServiceAdapter
+import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.RandomKeyAdapter
+import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.util.*
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 /**
  * Signs certificates for development deployments,
@@ -31,9 +36,21 @@ class InMemoryPkiService(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val issuer = X500Name(issuerName)
     private val crlEntryList = mutableListOf<CrlEntry>()
-    private val caCertificate = signCertificate(issuer, cryptoService.subjectPublicKeyInfo).encoded
+    private val issuer = cryptoService.certificate?.let {
+        X500Name.getInstance(
+            BCStyle.INSTANCE,
+            it.subjectX500Principal.encoded
+        )
+    } ?: X500Name(issuerName)
+
+    private val caCertificate =
+        cryptoService.certificate ?: JcaX509CertificateConverter().getCertificate(
+            signCertificate(
+                issuer,
+                cryptoService.subjectPublicKeyInfo
+            )
+        )
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? {
         try {
@@ -60,7 +77,7 @@ class InMemoryPkiService(
         ).build(cryptoService.jcaContentSigner)
 
     override fun getCaCertificate(): ByteArray {
-        return caCertificate
+        return caCertificate.encoded
     }
 
     override fun getCrl(): ByteArray {

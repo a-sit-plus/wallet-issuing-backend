@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.encodeBase64
 import io.swagger.v3.oas.annotations.Operation

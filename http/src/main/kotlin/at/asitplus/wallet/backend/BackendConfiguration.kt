@@ -2,10 +2,11 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.*
-import at.asitplus.wallet.backend.data.DatabaseDeviceBindingStorageService
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
+import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.pki.AeraPkiService
+import at.asitplus.wallet.backend.pki.InMemoryPkiService
+import at.asitplus.wallet.backend.pki.PersistentPkiService
+import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
@@ -39,6 +40,9 @@ class BackendConfiguration {
 
     @Autowired
     private lateinit var restTemplateBuilder: RestTemplateBuilder
+
+    @Autowired
+    private lateinit var issuedCertificateRepository: IssuedCertificateRepository
 
     init {
         Napier.base(AntilogSlf4jAdapter())
@@ -91,7 +95,7 @@ class BackendConfiguration {
     fun pkiService(
         securityProviderBean: SecurityProviderBean
     ): PkiService = when (configurationProperties.pki.type) {
-        PkiType.INTERNAL -> {
+        PkiType.INTERNAL, PkiType.PERSISTENT -> {
             val keyAdapter = when (configurationProperties.pki.internal.key.type) {
                 KeyType.FILE -> KeyFileAdapter(
                     configurationProperties.pki.internal.key.file!!,
@@ -109,15 +113,28 @@ class BackendConfiguration {
                 KeyType.MEMORY -> RandomKeyAdapter()
                 KeyType.REMOTE -> RemoteKeyAdapter(
                     configurationProperties.pki.internal.key.remote!!,
+                    resourceLoader,
                     securityProviderBean
                 )
             }
-            InMemoryPkiService(
-                configurationProperties.pki.certValidityDays.days,
-                configurationProperties.pki.internal.issuerName,
-                DefaultCryptoServiceAdapter(keyAdapter),
-                clock()
-            )
+            when (configurationProperties.pki.type) {
+                PkiType.INTERNAL -> InMemoryPkiService(
+                    configurationProperties.pki.certValidityDays.days,
+                    configurationProperties.pki.internal.issuerName,
+                    DefaultCryptoServiceAdapter(keyAdapter),
+                    clock()
+                )
+                PkiType.PERSISTENT -> PersistentPkiService(
+                    configurationProperties.pki.certValidityDays.days,
+                    issuedCertificateRepository,
+                    DefaultCryptoServiceAdapter(keyAdapter),
+                    clock()
+                )
+                else -> {
+                    throw RuntimeException("WUT?!")
+                }
+            }
+
         }
         PkiType.AERA -> {
             val restTemplate = RestTemplateConfigurationService(
@@ -268,6 +285,7 @@ class BackendConfiguration {
             KeyType.MEMORY -> RandomKeyAdapter()
             KeyType.REMOTE -> RemoteKeyAdapter(
                 configurationProperties.issuerKey.remote!!,
+                resourceLoader,
                 securityProviderBean
             )
         }

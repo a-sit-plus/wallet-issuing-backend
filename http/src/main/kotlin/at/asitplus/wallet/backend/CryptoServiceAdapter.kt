@@ -34,6 +34,7 @@ import java.security.PublicKey
 import java.security.Security
 import java.security.Signature
 import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import javax.crypto.Cipher
@@ -48,6 +49,7 @@ interface CryptoServiceAdapter : CryptoService {
     val subjectPublicKeyInfo: SubjectPublicKeyInfo
     val jwsContentSigner: JWSSigner
     val jcaContentSigner: ContentSigner
+    val certificate: X509Certificate?
 }
 
 class DefaultCryptoServiceAdapter(
@@ -62,6 +64,7 @@ class DefaultCryptoServiceAdapter(
     private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
     override val keyId: String = jsonWebKey.keyId!!
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
+    override val certificate =keyAdapter.certificate
 
     init {
         log.info("Loaded public key with keyId {}", keyId)

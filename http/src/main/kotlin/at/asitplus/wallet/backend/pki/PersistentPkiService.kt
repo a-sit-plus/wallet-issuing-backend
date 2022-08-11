@@ -1,12 +1,16 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.pki
 
-import at.asitplus.wallet.backend.PkiUtils.verifyCsr
+import at.asitplus.wallet.backend.CryptoServiceAdapter
+import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.RandomKeyAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificate
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
+import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -15,7 +19,7 @@ import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.util.*
-import javax.security.auth.x500.X500Principal
+import kotlin.time.Duration
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 
@@ -24,8 +28,7 @@ import kotlin.time.Duration.Companion.days
  * storing all issued certificates in [IssuedCertificate].
  */
 class PersistentPkiService(
-    private val certValidityDays: Int = 30,
-    private val issuerName: String = "CN=Persistent-Issuer",
+    private val certValidity: Duration = 30.days,
     private val issuedCertificateRepository: IssuedCertificateRepository,
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
     private val clock: Clock
@@ -33,10 +36,10 @@ class PersistentPkiService(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val issuer = X500Name(issuerName)
+    private val caCertificate =
+        cryptoService.certificate ?: throw RuntimeException("No certificate provided")
 
-    // TODO Load from remote, and cache here
-    private val caCertificate = signCertificate(issuer, cryptoService.subjectPublicKeyInfo).encoded
+    private val issuer = X500Name.getInstance(BCStyle.INSTANCE, caCertificate.subjectX500Principal.encoded)
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? {
         try {
@@ -54,7 +57,7 @@ class PersistentPkiService(
         subjectPublicKeyInfo: SubjectPublicKeyInfo
     ): X509CertificateHolder {
         val validFrom = clock.now()
-        val validUntil = clock.now() + certValidityDays.days
+        val validUntil = clock.now() + certValidity
         val serialNumber = uniqueSerialNumber()
         return X509v3CertificateBuilder(
             /* issuer = */ issuer,
@@ -66,7 +69,7 @@ class PersistentPkiService(
         ).build(cryptoService.jcaContentSigner).also {
             val issuedCertificate = IssuedCertificate(
                 subject = subject.toString(),
-                issuer = issuerName,
+                issuer = issuer.toString(),
                 validFrom = validFrom.toJavaInstant(),
                 validUntil = validUntil.toJavaInstant(),
                 serialNumber = serialNumber,
@@ -84,11 +87,11 @@ class PersistentPkiService(
     }
 
     override fun getCaCertificate(): ByteArray {
-        return caCertificate
+        return caCertificate.encoded
     }
 
     override fun getCrl(): ByteArray {
-        val crlBuilder = JcaX509v2CRLBuilder(X500Principal(issuerName), Date())
+        val crlBuilder = JcaX509v2CRLBuilder(caCertificate.subjectX500Principal, Date())
         issuedCertificateRepository.findAllByRevokedTrueAndValidFromBeforeAndValidUntilAfter(
             clock.now().toJavaInstant(),
             clock.now().toJavaInstant()

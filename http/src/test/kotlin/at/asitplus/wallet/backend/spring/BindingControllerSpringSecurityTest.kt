@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.ChallengeService
-import at.asitplus.wallet.backend.PkiService
-import at.asitplus.wallet.backend.SignedCertificate
+import at.asitplus.wallet.backend.pki.PkiService
+import at.asitplus.wallet.backend.pki.SignedCertificate
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ

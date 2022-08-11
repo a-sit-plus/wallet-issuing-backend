@@ -8,6 +8,8 @@ import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.remotecrypto.EcRemoteKeyParameterSpec
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
@@ -15,13 +17,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
 import java.io.StringReader
+import java.net.URI
+import java.net.URL
 import java.nio.charset.Charset
-import java.security.KeyPairGenerator
-import java.security.KeyStore
-import java.security.PrivateKey
-import java.security.Provider
-import java.security.PublicKey
-import java.security.Security
+import java.security.*
+import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
 
 /**
@@ -30,6 +30,7 @@ import java.security.interfaces.ECPublicKey
 interface KeyAdapter {
     val privateKey: PrivateKey
     val publicKey: PublicKey
+    val certificate: X509Certificate?
     val jsonWebKey: JsonWebKey
     val jwsAlgorithm: JwsAlgorithm
     val provider: Provider
@@ -44,6 +45,7 @@ class KeyFileAdapter(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
+    override val certificate: X509Certificate?
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
     override val provider = securityProviderBean.provider
@@ -53,40 +55,58 @@ class KeyFileAdapter(
         val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
         val privateKeyRead = PEMParser(StringReader(privateKeyString)).readObject()
         privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
-        val publicKeyString = loadResource(resourceLoader, config.publicKey.toString())
-        val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
-        publicKey = JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo)
-        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
+
+        val (k, c) = loadCertOrPubKey(config.publicKey, config.certificate, resourceLoader)
+        require(k is ECPublicKey) { "expected ECPublicKey" }
+
+        publicKey = k
+        certificate = c
+
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
         log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
     }
 
-    private fun loadResource(resourceLoader: ResourceLoader, path: String) =
-        StreamUtils.copyToString(resourceLoader.getResource(path).inputStream, Charset.defaultCharset())
-
 }
 
 
 class KeyStoreAdapter(
-    config: KeyStoreConfiguration,
-    securityProviderBean: SecurityProviderBean,
+    override val provider: Provider,
+    url: URL,
+    type: String,
+    password: String?,
+    alias: String,
+    aliasPassword: String?
 ) : KeyAdapter {
+
+    constructor(
+        config: KeyStoreConfiguration,
+        securityProviderBean: SecurityProviderBean,
+    ) : this(config.provider?.let { Security.getProvider(it) } ?: securityProviderBean.provider,
+        config.path.toURL(), config.type, config.password, config.alias, config.aliasPassword)
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
+    override val certificate: X509Certificate
     override val jwsAlgorithm: JwsAlgorithm
-    override val provider: Provider = config.provider?.let { Security.getProvider(it) } ?: securityProviderBean.provider
+
     override val jsonWebKey: JsonWebKey
 
     init {
-        val keyStore = KeyStore.getInstance(config.type, provider)
-        keyStore.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
-        privateKey = keyStore.getKey(config.alias, config.aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
-        publicKey = keyStore.getCertificate(config.alias).publicKey
+        val keyStore = KeyStore.getInstance(type, provider)
+        keyStore.load(
+            url.openStream(),
+            password?.toCharArray() ?: charArrayOf()
+        )
+        privateKey = keyStore.getKey(
+            alias,
+            aliasPassword?.toCharArray() ?: charArrayOf()
+        ) as PrivateKey
+        certificate = keyStore.getCertificate(alias) as X509Certificate
+        publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
@@ -105,6 +125,7 @@ class HsmFacadeAdapter(
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
+    override val certificate: X509Certificate
     override val jwsAlgorithm: JwsAlgorithm
     override val provider: Provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
@@ -113,7 +134,8 @@ class HsmFacadeAdapter(
         val keyStore = KeyStore.getInstance("RemoteKeyStore", securityProviderBean.provider)
         keyStore.load(RemoteKeyStoreLoadParameter(config.keyStoreName!!))
         privateKey = keyStore.getKey(config.keyStoreAlias!!, null) as PrivateKey
-        publicKey = keyStore.getCertificate(config.keyStoreAlias).publicKey
+        certificate = keyStore.getCertificate(config.keyStoreAlias) as X509Certificate
+        publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
@@ -125,24 +147,32 @@ class HsmFacadeAdapter(
 
 class RemoteKeyAdapter(
     config: KeyRemoteCryptoConfiguration,
+    resourceLoader: ResourceLoader,
     securityProviderBean: SecurityProviderBean,
 ) : KeyAdapter {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
+    override val certificate: X509Certificate?
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
     override val provider: Provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
 
     init {
-        val spec = EcRemoteKeyParameterSpec("secp256r1", config.keyName, config.pemEncodedPublicKey )
+
+        val (k, c) = loadCertOrPubKey(config.publicKey, config.certificate, resourceLoader)
+        require(k is ECPublicKey) { "expected ECPublicKey" }
+
+        publicKey = k
+        certificate = c
+
+        val spec = EcRemoteKeyParameterSpec("secp256r1", config.keyName, pubKey = publicKey)
         val generator = KeyPairGenerator.getInstance("EC", provider).apply { initialize(spec) }
         val keyPair = generator.generateKeyPair()
         privateKey = keyPair.private
-        publicKey = keyPair.public
-        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
+
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
@@ -157,18 +187,54 @@ class RandomKeyAdapter : KeyAdapter {
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
+    override val certificate: X509Certificate? = null
     override val jwsAlgorithm: JwsAlgorithm
     override val provider: Provider = BouncyCastleProvider().also { Security.addProvider(it) }
     override val jsonWebKey: JsonWebKey
 
     init {
-        val keyPair = KeyPairGenerator.getInstance("EC", provider).also { it.initialize(256) }.generateKeyPair()
+        val keyPair = KeyPairGenerator.getInstance("EC", provider).also { it.initialize(256) }
+            .generateKeyPair()
         privateKey = keyPair.private
         publicKey = keyPair.public
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve)!!
-        log.info("Generated new key pair with public key: '{}'", keyPair.public.encoded.encodeBase64())
+        log.info(
+            "Generated new key pair with public key: '{}'",
+            keyPair.public.encoded.encodeBase64()
+        )
     }
+}
 
+
+private fun loadCertOrPubKey(
+    publicKey: URI?,
+    certificate: URI?,
+    resourceLoader: ResourceLoader
+): Pair<PublicKey, X509Certificate?> {
+    if (publicKey == null && certificate == null) throw RuntimeException("Neither cert nor public key configured. Set one!")
+    if (publicKey != null && certificate != null) throw RuntimeException("Both public key and certificate set. Set either but not both!")
+    return (publicKey?.let {
+        val publicKeyString = loadResource(resourceLoader, it.toString())
+        val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
+        JcaPEMKeyConverter().getPublicKey(publicKeyRead as SubjectPublicKeyInfo) to null
+    } ?: certificate?.let {
+        loadCertificate(resourceLoader, it).let { it.publicKey to it }
+    })!!
+}
+
+
+private fun loadResource(resourceLoader: ResourceLoader, path: String) =
+    StreamUtils.copyToString(
+        resourceLoader.getResource(path).inputStream,
+        Charset.defaultCharset()
+    )
+
+
+private fun loadCertificate(resourceLoader: ResourceLoader, src: URI): X509Certificate {
+    val pemCert = loadResource(resourceLoader, src.toString())
+    return JcaX509CertificateConverter().apply { setProvider("BC") }.getCertificate(
+        PEMParser(StringReader(pemCert)).readObject() as X509CertificateHolder
+    )
 }

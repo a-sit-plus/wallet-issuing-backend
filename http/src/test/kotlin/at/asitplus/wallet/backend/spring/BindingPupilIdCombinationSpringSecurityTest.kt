@@ -4,6 +4,8 @@ import at.asitplus.wallet.backend.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.pki.PkiService
+import at.asitplus.wallet.backend.pki.SignedCertificate
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
@@ -22,7 +24,6 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds

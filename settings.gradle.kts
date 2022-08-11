@@ -21,6 +21,6 @@ includeBuild("pupilidlib"){
 }
 includeBuild("remote-crypto-provider"){
     dependencySubstitution {
-        substitute(module("at.asitplus.wallet:remotecrypto")).using(project(":"))
+        substitute(module("at.asitplus.wallet:remotecrypto")).using(project(":lib"))
     }
 }

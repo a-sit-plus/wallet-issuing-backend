@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.encodeBase16
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.JwkType

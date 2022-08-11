@@ -258,6 +258,7 @@ data class PkiConfigurationProperties(
 
 enum class PkiType {
     INTERNAL,
+    PERSISTENT,
     AERA
 }
 
@@ -318,7 +319,8 @@ data class KeyConfiguration(
 @ConstructorBinding
 data class KeyFileConfiguration(
     val privateKey: URI,
-    val publicKey: URI,
+    val publicKey: URI?,
+    val certificate: URI?,
 )
 
 @ConstructorBinding
@@ -340,7 +342,8 @@ data class KeyHsmFacadeConfiguration(
 @ConstructorBinding
 data class KeyRemoteCryptoConfiguration(
     val keyName: String,
-    val pemEncodedPublicKey: String,
+    val publicKey: URI?,
+    val certificate: URI?,
 )
 
 @ConstructorBinding

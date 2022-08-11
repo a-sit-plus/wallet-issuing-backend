@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.PkiService
+import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.lib.agent.Issuer
 import kotlinx.coroutines.test.runTest

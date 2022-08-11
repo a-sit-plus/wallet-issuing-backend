@@ -1,21 +1,26 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.*
+import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.KeyStoreAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
+import at.asitplus.wallet.backend.pki.PersistentPkiService
+import at.asitplus.wallet.backend.pki.PkiService
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
 import org.bouncycastle.cert.X509CRLHolder
 import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.test.context.TestPropertySource
-import java.util.Date
-import java.util.UUID
+import java.net.URL
+import java.util.*
+import kotlin.time.Duration.Companion.days
 
 @DataJpaTest
 class PersistentPkiServiceTest {
@@ -28,10 +33,15 @@ class PersistentPkiServiceTest {
     @BeforeEach
     fun setup() {
         service = PersistentPkiService(
-            certValidityDays = 1,
-            issuerName = "CN=Test",
+            certValidity = 1.days,
             issuedCertificateRepository = issuedCertificateRepository,
-            cryptoService = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
+            cryptoService = DefaultCryptoServiceAdapter(
+                KeyStoreAdapter(
+                    BouncyCastleProvider(),
+                    URL("file:./src/test/resources/persistent.p12"),
+                    "PKCS12", password = "test", alias = "test", aliasPassword = "test"
+                )
+            ),
             clock = Clock.System
         )
     }
