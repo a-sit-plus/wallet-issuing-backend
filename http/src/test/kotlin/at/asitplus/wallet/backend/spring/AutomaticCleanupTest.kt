@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.*
 import io.kotest.matchers.collections.shouldBeEmpty

@@ -6,6 +6,8 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.backend.pki.SignedCertificate
+import at.asitplus.wallet.backend.service.ChallengeService
+import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ

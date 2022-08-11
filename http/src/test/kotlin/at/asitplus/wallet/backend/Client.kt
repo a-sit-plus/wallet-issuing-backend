@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
+import at.asitplus.wallet.backend.service.fromJcaKey
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey

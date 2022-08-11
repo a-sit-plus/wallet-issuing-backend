@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.DeviceBinding
 import kotlinx.datetime.Instant

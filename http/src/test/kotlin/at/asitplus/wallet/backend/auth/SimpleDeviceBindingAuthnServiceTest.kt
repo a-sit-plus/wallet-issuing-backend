@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.SimpleChallengeService
+import at.asitplus.wallet.backend.service.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.lib.encodeBase64

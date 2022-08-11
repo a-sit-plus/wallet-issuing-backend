@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.service
 
+import at.asitplus.wallet.backend.config.*
 import at.asitplus.wallet.lib.encodeBase64
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client.CloseableHttpClient

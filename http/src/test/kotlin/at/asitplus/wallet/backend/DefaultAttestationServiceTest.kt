@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.pki.RandomKeyAdapter
+import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test

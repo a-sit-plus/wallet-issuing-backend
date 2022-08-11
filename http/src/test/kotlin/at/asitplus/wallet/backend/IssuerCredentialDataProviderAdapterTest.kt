@@ -1,6 +1,10 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.auth.InMemoryDeviceBindingStorageService
+import at.asitplus.wallet.backend.data.CredentialDataProvider
+import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
+import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex.ATTR_GENERIC_PREFIX
 import io.kotest.matchers.booleans.shouldBeTrue

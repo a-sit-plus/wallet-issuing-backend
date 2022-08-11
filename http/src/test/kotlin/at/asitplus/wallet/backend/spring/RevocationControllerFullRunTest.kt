@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.RevocationController
+import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository

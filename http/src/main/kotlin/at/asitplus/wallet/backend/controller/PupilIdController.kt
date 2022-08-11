@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content

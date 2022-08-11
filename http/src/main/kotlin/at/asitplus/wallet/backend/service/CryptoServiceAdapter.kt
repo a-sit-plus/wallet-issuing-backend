@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.service
 
+import at.asitplus.wallet.backend.pki.KeyAdapter
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.lib.KmmResult
 import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
@@ -31,7 +32,6 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
-import java.security.Security
 import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate

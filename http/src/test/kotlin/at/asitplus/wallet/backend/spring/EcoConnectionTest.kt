@@ -1,10 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DeviceBindingStorageService
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -19,8 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
-import java.time.Instant
-import java.util.UUID
 
 @Disabled("Would need a valid API-Key in 'application-eco.yml'")
 @ActiveProfiles(profiles = ["eco", "pupilid"])

@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.data
 
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex

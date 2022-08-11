@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.service.SimpleChallengeService
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test

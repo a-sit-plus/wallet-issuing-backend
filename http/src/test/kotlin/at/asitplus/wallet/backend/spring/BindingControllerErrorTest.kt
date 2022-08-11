@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.BindingService
+import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ

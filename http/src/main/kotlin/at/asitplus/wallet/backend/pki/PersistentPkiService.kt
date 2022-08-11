@@ -1,8 +1,7 @@
 package at.asitplus.wallet.backend.pki
 
-import at.asitplus.wallet.backend.CryptoServiceAdapter
-import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
-import at.asitplus.wallet.backend.RandomKeyAdapter
+import at.asitplus.wallet.backend.service.CryptoServiceAdapter
+import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificate
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr

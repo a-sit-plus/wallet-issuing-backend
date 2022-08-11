@@ -1,6 +1,5 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.config
 
-import org.apache.logging.log4j.LogManager
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener

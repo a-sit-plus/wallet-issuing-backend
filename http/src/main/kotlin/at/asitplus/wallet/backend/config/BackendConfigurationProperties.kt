@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.config
 
+import at.asitplus.wallet.backend.TimeSource
 import at.asitplus.wallet.lib.agent.MonthAndDay
 import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties

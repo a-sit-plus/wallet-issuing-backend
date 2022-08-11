@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.DeviceListEntry
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.service.DeviceListEntry
 import at.asitplus.wallet.backend.data.DeviceBinding
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant

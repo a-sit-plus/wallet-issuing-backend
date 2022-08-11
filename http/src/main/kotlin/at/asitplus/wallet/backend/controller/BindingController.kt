@@ -1,5 +1,6 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken

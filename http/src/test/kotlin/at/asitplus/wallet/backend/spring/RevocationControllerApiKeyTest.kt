@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.RevocationController
-import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.controller.RevocationController
+import at.asitplus.wallet.backend.service.RevocationService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

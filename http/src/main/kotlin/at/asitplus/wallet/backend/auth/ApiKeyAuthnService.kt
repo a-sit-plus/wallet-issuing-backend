@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
-import at.asitplus.wallet.backend.AuthnConfigurationProperties
+import at.asitplus.wallet.backend.config.AuthnConfigurationProperties
 
 /**
  * Service to validate an API key from a client's request

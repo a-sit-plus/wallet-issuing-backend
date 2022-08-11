@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.DefaultCryptoServiceAdapter
-import at.asitplus.wallet.backend.KeyStoreAdapter
+import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.pki.KeyStoreAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import at.asitplus.wallet.backend.pki.PersistentPkiService
 import at.asitplus.wallet.backend.pki.PkiService

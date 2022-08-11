@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.data
 
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.DeviceListEntry
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.service.DeviceListEntry
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.lib.encodeBase64
 import kotlinx.datetime.Clock

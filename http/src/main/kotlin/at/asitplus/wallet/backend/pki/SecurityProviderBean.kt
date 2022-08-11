@@ -1,6 +1,7 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.pki
 
 import at.asitplus.hsmfacade.provider.HsmFacadeProvider
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.remotecrypto.RemoteCryptoProvider
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.slf4j.LoggerFactory

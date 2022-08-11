@@ -1,13 +1,12 @@
 package at.asitplus.wallet.backend.auth
 
-import at.asitplus.wallet.backend.ChallengeService
+import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.lib.encodeBase64
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.AuthenticationEntryPoint
-import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 

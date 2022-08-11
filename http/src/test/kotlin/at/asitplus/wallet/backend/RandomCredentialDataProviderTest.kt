@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
 import io.kotest.matchers.nulls.shouldNotBeNull

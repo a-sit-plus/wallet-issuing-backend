@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.data
 
-import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
 

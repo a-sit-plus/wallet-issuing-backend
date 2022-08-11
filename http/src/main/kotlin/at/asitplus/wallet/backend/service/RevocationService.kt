@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository

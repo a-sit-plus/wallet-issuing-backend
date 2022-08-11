@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.backend.service.ChallengeService
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import com.nimbusds.jose.JWSObject

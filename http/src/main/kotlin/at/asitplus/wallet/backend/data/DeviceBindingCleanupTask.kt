@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.data
 
-import at.asitplus.wallet.backend.BackendConfigurationProperties
-import at.asitplus.wallet.backend.DeviceBindingStorageService
-import at.asitplus.wallet.backend.RevocationService
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.service.RevocationService
 import kotlinx.datetime.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

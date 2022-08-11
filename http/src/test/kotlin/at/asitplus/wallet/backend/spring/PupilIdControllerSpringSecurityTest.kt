@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
-import at.asitplus.wallet.backend.IssueCredentialAdapter
+import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.NextMessage

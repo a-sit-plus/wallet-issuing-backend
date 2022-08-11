@@ -1,4 +1,4 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.data
 
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -81,7 +81,11 @@ class RandomCredentialDataProvider constructor(
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilId)
             else -> return null
         }
-        return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
+        return CredentialDataProvider.CredentialToBeIssued(
+            subject,
+            maxExpiration,
+            ConstantIndex.Generic.vcType
+        )
     }
 
     override fun getCredential(
@@ -111,7 +115,11 @@ class RandomCredentialDataProvider constructor(
             picture = it.encodedPhoto,
             validUntil = EXP,
         )
-        return CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
+        return CredentialDataProvider.CredentialToBeIssued(
+            subject,
+            maxExpiration,
+            ConstantIndex.Generic.vcType
+        )
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

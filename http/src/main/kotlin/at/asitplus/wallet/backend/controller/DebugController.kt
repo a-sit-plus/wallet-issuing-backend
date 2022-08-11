@@ -1,6 +1,8 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.Extensions.appendPath
+import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository

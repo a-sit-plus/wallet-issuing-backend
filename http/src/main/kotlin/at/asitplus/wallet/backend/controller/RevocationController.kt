@@ -1,5 +1,7 @@
-package at.asitplus.wallet.backend
+package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.service.RevocationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
