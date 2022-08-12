@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.pki.KeyStoreAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import at.asitplus.wallet.backend.pki.PersistentPkiService
 import at.asitplus.wallet.backend.pki.PkiService
+import at.asitplus.wallet.backend.pki.RemoteKeyAdapter
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -54,6 +55,15 @@ class PersistentPkiServiceTest {
         val certificate = service.verifyAndSign(csr, subject)
 
         certificate.shouldNotBeNull()
+    }
+
+    @Test
+    fun `cryptographic material stays the same`() {
+        val cert = service.getCaCertificate()
+        repeat(10){
+            setup()
+            service.getCaCertificate() shouldBe cert
+        }
     }
 
     @Test
