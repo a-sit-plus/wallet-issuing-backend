@@ -3,27 +3,17 @@ server:
 logging:
   level:
     at.asitplus: DEBUG
-spring:
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        jdbc:
-          lob:
-            non_contextual_creation: true
-  datasource:
-    url: "jdbc:h2:mem:userstore"
-  test:
-    mockmvc:
-      print: log_debug
-  config:
-    import:
-  cloud:
-    config:
-      enabled: false
 backend:
   public-context: "http://localhost:8443/"
+  pki:
+    cert-validity-days: 185
+    type: PERSISTENT
+    internal:
+      key:
+        type: REMOTE
+        remote:
+          key-name: "032qukjd"
+          certificate: "file:src/test/resources/032qukjd.cer"
   credentials:
     lifetime: P1D
     one-credential-per-device-binding: true
@@ -36,4 +26,4 @@ backend:
     type: REMOTE
     remote:
       key-name: "032qukjd"
-      certificate: "classpath:032qukjd.cer"
+      certificate: "file:src/test/resources/032qukjd.cer"
