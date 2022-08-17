@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.RevokedCredential
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.encodeBase64
@@ -9,6 +11,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
+import java.lang.Long.max
 
 
 interface RevocationService {
@@ -75,6 +78,7 @@ interface RevocationService {
 
 class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
+    private val revokedCredentialRepo: RevokedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
     private val pkiService: PkiService,
@@ -84,10 +88,11 @@ class DefaultRevocationService(
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     /**
-     * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
+     * Checks whether a credential with [vcId] is revoked i.e. whether it exists or not
+     *
      */
-    override fun isRevoked(vcId: String, timePeriod: Int): Boolean? {
-        return credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId)?.revoked
+    override fun isRevoked(vcId: String, timePeriod: Int): Boolean {
+        return credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) == null
     }
 
     /**
@@ -119,7 +124,10 @@ class DefaultRevocationService(
                     revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
                 )
         }
-        val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
+        val revocationListIndex = max(
+            (credentialRepo.getMaxRevocationListIndex() ?: 0),
+            revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
+        ) + 1
         val attributeName = credentialSubject.javaClass.simpleName
         val issuedCredential = IssuedCredential(
             vcId,
@@ -148,7 +156,7 @@ class DefaultRevocationService(
      * Revokes all credentials for one pupil, specified by their [bpk].
      */
     override fun revokeCredentialsByBpk(bpk: String): Int {
-        val credentials = credentialRepo.findByRevokedFalseAndValidUntilAfterAndDeviceBinding_Bpk(
+        val credentials = credentialRepo.findByValidUntilAfterAndDeviceBinding_Bpk(
             clock.now().toJavaInstant(),
             bpk
         )
@@ -163,7 +171,7 @@ class DefaultRevocationService(
         if (deviceId == null)
             return revokeCredentialsByBpk(bpk)
         val credentials =
-            credentialRepo.findByRevokedFalseAndValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
+            credentialRepo.findByValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
                 clock.now().toJavaInstant(), bpk, deviceId
             )
         return revokeAllCredentials(credentials)
@@ -174,20 +182,17 @@ class DefaultRevocationService(
      * or specified by their [bpk] and [deviceId].
      * This will also revoke all issued credentials for that binding.
      */
-    override fun revokeBinding(bpk: String, deviceId: String?): Int {
-        val revokedBindings = deviceBindingStorageService.revoke(bpk, deviceId)
-        if (revokedBindings.isEmpty())
-            return 0
-        revokedBindings.forEach { pkiService.revokeCertificate(it.certificate) }
-        return revokeCredentialsByBpkAndDeviceId(bpk, deviceId)
-    }
+    override fun revokeBinding(bpk: String, deviceId: String?): Int =
+        deviceBindingStorageService.revoke(bpk, deviceId).map { it.value.count() }.sum()
 
-    private fun revokeAllCredentials(credentials: Collection<IssuedCredential>): Int {
-        if (credentials.isEmpty())
-            return 0
-        val toRevoke = credentials.filter { !it.revoked }
-        toRevoke.forEach { it.revoked = true }
-        credentialRepo.saveAllAndFlush(toRevoke)
+    private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>): Int {
+        revokedCredentialRepo.saveAll(toRevoke.map {
+            RevokedCredential(
+                it.timePeriod,
+                it.revocationListIndex
+            )
+        })
+        credentialRepo.deleteAllInBatch(toRevoke)
         return toRevoke.count()
     }
 
@@ -195,7 +200,7 @@ class DefaultRevocationService(
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
     override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int> {
-        return credentialRepo.getRevocationListIndexByRevokedTrueOrdered(timePeriod)
+        return revokedCredentialRepo.getRevocationListIndexByTimePeriod(timePeriod)
             .map { it.toInt() }
     }
 
@@ -203,7 +208,7 @@ class DefaultRevocationService(
      * Lists all non-revoked credentials that have been issued
      */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
-        return credentialRepo.findAllByRevokedFalseAndValidUntilAfter(clock.now().toJavaInstant())
+        return credentialRepo.findAllByValidUntilAfter(clock.now().toJavaInstant())
     }
 
     /**

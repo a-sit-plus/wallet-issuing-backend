@@ -1,11 +1,12 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.controller.RevocationController
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.DeviceListEntry
-import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.backend.data.DeviceBinding
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import java.util.UUID
+import java.util.*
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,9 +55,20 @@ class RevocationControllerLogicTest {
         whenever(bindingStorageService.lookupDevices(eq(bpk)))
             .thenReturn(listOf(DeviceListEntry(deviceName, deviceId)))
         val deviceBinding =
-            DeviceBinding(bpk, certificate, deviceName, deviceId, client.selfSignedCert.notAfter.toInstant())
+            DeviceBinding(
+                bpk,
+                certificate,
+                deviceName,
+                deviceId,
+                client.selfSignedCert.notAfter.toInstant()
+            )
         whenever(bindingStorageService.revoke(eq(bpk), eq(deviceId)))
-            .thenReturn(listOf(deviceBinding))
+            .thenReturn(mapOf(deviceBinding to deviceBinding.issuedCredentialList.map {
+                RevokedCredential(
+                    it.timePeriod,
+                    it.revocationListIndex
+                )
+            }))
         whenever(revocationService.revokeBinding(eq(bpk), eq(deviceId)))
             .thenReturn(1)
         whenever(revocationService.revokeBinding(eq(bpk), eq(null)))

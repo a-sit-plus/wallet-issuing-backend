@@ -1,16 +1,14 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.TestTimeSource.timePeriod
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.data.IssuedCredential
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
+import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -34,6 +32,9 @@ class RevocationServiceStatusListIndexTest {
 
     @Autowired
     private lateinit var credentialRepo: IssuedCredentialRepository
+
+    @Autowired
+    private lateinit var revokedCredentialRepo: RevokedCredentialRepository
 
     @Autowired
     private lateinit var deviceBindingRepository: DeviceBindingRepository
@@ -70,6 +71,7 @@ class RevocationServiceStatusListIndexTest {
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
         credentialRepo.deleteAll()
+        revokedCredentialRepo.deleteAll()
         deviceBindingRepository.deleteAll()
         deviceBinding = client.storeDeviceBinding(bpk, deviceBindingRepository)
         whenever(authenticationSupplier.getCurrentUserCertificate())
@@ -183,8 +185,9 @@ class RevocationServiceStatusListIndexTest {
         val expectedRevocationList = revokeRandomCredentials()
 
         val revocationList = revocationService.getRevokedStatusListIndexList(timePeriod)
-
-        revocationList shouldBe expectedRevocationList
+        withClue("is:  "+revocationList.joinToString { it.toString() } + "\nref: " + expectedRevocationList.joinToString { it.toString() }) {
+            revocationList shouldBe expectedRevocationList
+        }
     }
 
     private fun revokeRandomCredentials(): MutableList<Int> {

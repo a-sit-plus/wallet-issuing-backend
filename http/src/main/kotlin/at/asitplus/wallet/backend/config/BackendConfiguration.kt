@@ -11,6 +11,7 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
+import javax.annotation.PostConstruct
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -27,6 +29,36 @@ import kotlin.time.Duration.Companion.seconds
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
 @EnableScheduling
 class BackendConfiguration {
+
+    companion object {
+        //https://gist.github.com/bnorm/71c7973b4b3f928e855a183a3e56c791
+        private val logger = LoggerFactory.getLogger(BackendConfiguration::class.java)
+        fun String.toIndentString(): String = buildString(length) {
+            var indent = 0
+
+            fun line() {
+                appendLine()
+                repeat(2 * indent) { append(' ') }
+            }
+
+            this@toIndentString.filter { it != ' ' }.forEach { char ->
+                when (char) {
+                    ')', ']', '}' -> {
+                        indent--
+                        line()
+                        append(char)
+                    }
+                    '=' -> append(" = ")
+                    '(', '[', '{', ',' -> {
+                        append(char)
+                        if (char != ',') indent++
+                        line()
+                    }
+                    else -> append(char)
+                }
+            }
+        }
+    }
 
     @Autowired
     private lateinit var configurationProperties: BackendConfigurationProperties
@@ -45,6 +77,20 @@ class BackendConfiguration {
 
     init {
         Napier.base(AntilogSlf4jAdapter())
+    }
+
+    @PostConstruct
+    private fun logConfig() {
+        logger.info("******** Current Configuration ********")
+
+        logger.info(
+            "\n" +
+                    configurationProperties.toString()
+                        .replace(Regex("password=.*?,"), "password=***,")
+                        .replace(Regex("apiKey=.*?,"), "apiKey=***,")
+                        .replace(Regex("apiKeys=\\[.*?]"), "apiKeys=[***]").toIndentString()
+        )
+        logger.info("***************************************")
     }
 
     @Bean
@@ -168,10 +214,12 @@ class BackendConfiguration {
     @Bean
     fun deviceBindingStorageService(
         deviceBindingRepository: DeviceBindingRepository,
+        revokedCredentialRepo: RevokedCredentialRepository,
         authenticationSupplier: AuthenticationSupplier,
     ): DeviceBindingStorageService =
         DatabaseDeviceBindingStorageService(
             deviceBindingRepository,
+            revokedCredentialRepo,
             authenticationSupplier,
             clock = clock()
         )
@@ -185,10 +233,12 @@ class BackendConfiguration {
     @Bean
     fun revocationService(
         credentialRepo: IssuedCredentialRepository,
+        revokedCredentialRepo: RevokedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
         pkiService: PkiService,
     ): RevocationService = DefaultRevocationService(
         credentialRepo,
+        revokedCredentialRepo,
         deviceBindingStorageService,
         configurationProperties.credentials.oneCredentialPerDeviceBinding,
         pkiService,

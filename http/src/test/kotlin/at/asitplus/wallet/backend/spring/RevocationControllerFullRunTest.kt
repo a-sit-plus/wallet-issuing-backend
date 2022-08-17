@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.seconds
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser(authorities = ["REVOCATION"])
-@TestPropertySource(properties = ["backend.time-source=TEST"])
+@TestPropertySource(properties = ["backend.time-source=TEST","spring.jpa.show-sql=true","spring.jpa.properties.hibernate.format_sql=true"])
 class RevocationControllerFullRunTest {
 
     @Autowired
@@ -83,9 +83,9 @@ class RevocationControllerFullRunTest {
 
     @Test
     fun `revoking binding leads to revoked credential`() {
-        credentialRepo.findAllByRevokedFalseAndValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
             .shouldNotBeEmpty()
-        deviceBindingRepository.findAllByRevokedFalseAndValidUntilAfter(
+        deviceBindingRepository.findAllByValidUntilAfter(
             TestTimeSource.now().toJavaInstant()
         ).shouldNotBeEmpty()
 
@@ -100,9 +100,9 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        credentialRepo.findAllByRevokedFalseAndValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
             .shouldBeEmpty()
-        deviceBindingRepository.findAllByRevokedFalseAndValidUntilAfter(
+        deviceBindingRepository.findAllByValidUntilAfter(
             TestTimeSource.now().toJavaInstant()
         ).shouldBeEmpty()
     }
@@ -124,9 +124,9 @@ class RevocationControllerFullRunTest {
 
     @Test
     fun `revoking binding by bpk and deviceId leads to revoked credential`() {
-        credentialRepo.findAllByRevokedFalseAndValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
             .shouldNotBeEmpty()
-        deviceBindingRepository.findAllByRevokedFalseAndValidUntilAfter(
+        deviceBindingRepository.findAllByValidUntilAfter(
             TestTimeSource.now().toJavaInstant()
         ).shouldNotBeEmpty()
         val request = RevocationController.RevocationRequest(bpk, deviceId)
@@ -140,18 +140,18 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        credentialRepo.findAllByRevokedFalseAndValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
             .shouldBeEmpty()
-        deviceBindingRepository.findAllByRevokedFalseAndValidUntilAfter(
+        deviceBindingRepository.findAllByValidUntilAfter(
             TestTimeSource.now().toJavaInstant()
         ).shouldBeEmpty()
     }
 
     @Test
     fun `revoking pupilId by bpk does not lead to revoked binding`() {
-        credentialRepo.findAllByRevokedFalseAndValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
             .shouldNotBeEmpty()
-        deviceBindingRepository.findAllByRevokedFalseAndValidUntilAfter(
+        deviceBindingRepository.findAllByValidUntilAfter(
             TestTimeSource.now().toJavaInstant()
         ).shouldNotBeEmpty()
 
@@ -166,9 +166,9 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        credentialRepo.findAllByRevokedFalseAndValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
             .shouldBeEmpty()
-        deviceBindingRepository.findAllByRevokedFalseAndValidUntilAfter(
+        deviceBindingRepository.findAllByValidUntilAfter(
             TestTimeSource.now().toJavaInstant()
         ).shouldNotBeEmpty()
     }

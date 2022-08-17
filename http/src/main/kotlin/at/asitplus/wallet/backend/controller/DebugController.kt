@@ -1,13 +1,10 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.data.IssuedCredential
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
@@ -26,6 +23,7 @@ import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.lang.Long.max
 import java.util.*
 import javax.imageio.ImageIO
 import kotlin.random.Random
@@ -37,6 +35,7 @@ class DebugController(
     private val configurationProperties: BackendConfigurationProperties,
     private val revocationService: RevocationService,
     private val credentialRepo: IssuedCredentialRepository,
+    private val revokedCredentialRepo: RevokedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
     private val clock: Clock,
     private val timePeriodProvider: TimePeriodProvider,
@@ -132,7 +131,10 @@ class DebugController(
         )
             .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
-        val revocationListIndex = (credentialRepo.getMaxRevocationListIndex() ?: 0) + 1
+        val revocationListIndex = max(
+            (credentialRepo.getMaxRevocationListIndex() ?: 0),
+            revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
+        ) + 1
         IssuedCredential(
             vcId,
             credentialSubject.id,

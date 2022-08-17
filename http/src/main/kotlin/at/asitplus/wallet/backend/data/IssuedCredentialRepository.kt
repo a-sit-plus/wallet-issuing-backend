@@ -10,19 +10,14 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
     fun findBytimePeriodAndVcId(timePeriod: Int, vcId: String): IssuedCredential?
 
-    fun findAllByRevokedFalseAndValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>
+    fun findAllByValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>
 
-
-    @Query("select i.revocationListIndex from IssuedCredential i where i.revoked = true and i.timePeriod = ?1 order by i.revocationListIndex")
-    fun getRevocationListIndexByRevokedTrueOrdered(timePeriod: Int): Collection<Long>
-
-
-    fun findByRevokedFalseAndValidUntilAfterAndDeviceBinding_Bpk(
+    fun findByValidUntilAfterAndDeviceBinding_Bpk(
         validUntil: Instant,
         bpk: String
     ): Collection<IssuedCredential>
 
-    fun findByRevokedFalseAndValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
+    fun findByValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
         validUntil: Instant,
         bpk: String,
         deviceId: String

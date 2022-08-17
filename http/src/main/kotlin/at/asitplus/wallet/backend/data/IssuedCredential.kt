@@ -21,7 +21,6 @@ class IssuedCredential() {
         this.attributeName = attributeName
         this.validUntil = validUntil
         this.timePeriod = timePeriod
-        this.revoked = false
         this.deviceBinding = deviceBinding
         this.revocationListIndex = revocationListIndex
     }
@@ -67,10 +66,7 @@ class IssuedCredential() {
                 "attributeName='$attributeName', " +
                 "validUntil=$validUntil, " +
                 "timePeriod=$timePeriod, " +
-                "revoked=$revoked, " +
                 "deviceBinding=${deviceBinding.id}, " +
                 "revocationListIndex=$revocationListIndex)"
     }
-
-
 }

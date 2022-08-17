@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.RevokedCredential
 import kotlinx.datetime.Instant
 
 /**
@@ -17,7 +18,7 @@ interface DeviceBindingStorageService {
 
     fun getDeviceBindingForCurrentUser(): DeviceBinding?
 
-    fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding>
+    fun revoke(bpk: String, deviceId: String?): Map<DeviceBinding,Collection<RevokedCredential>>
 
     fun deleteExpiredBefore(cutoff: Instant): Int
 

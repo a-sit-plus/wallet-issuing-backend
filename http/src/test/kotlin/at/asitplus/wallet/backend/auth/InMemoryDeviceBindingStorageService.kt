@@ -1,8 +1,9 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.DeviceListEntry
-import at.asitplus.wallet.backend.data.DeviceBinding
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
@@ -18,7 +19,13 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
         deviceName: String,
         validUntil: Instant
     ) =
-        DeviceBinding(bpk, certificate, deviceName, UUID.randomUUID().toString(), validUntil.toJavaInstant()).also {
+        DeviceBinding(
+            bpk,
+            certificate,
+            deviceName,
+            UUID.randomUUID().toString(),
+            validUntil.toJavaInstant()
+        ).also {
             list += it
         }
 
@@ -30,12 +37,21 @@ class InMemoryDeviceBindingStorageService : DeviceBindingStorageService {
 
     override fun getDeviceBindingForCurrentUser() = list.firstOrNull()
 
-    override fun revoke(bpk: String, deviceId: String?): Collection<DeviceBinding> {
+    override fun revoke(
+        bpk: String,
+        deviceId: String?
+    ): Map<DeviceBinding, Collection<RevokedCredential>> {
         val toRevoke = list.filter { it.bpk == bpk }
             .filter { if (deviceId != null) it.deviceId == deviceId else true }
-            .filter { !it.revoked }
-        toRevoke.forEach { it.revoked = true }
-        return toRevoke.toList()
+        list.removeAll(toRevoke)
+        return toRevoke.associateWith { binding ->
+            binding.issuedCredentialList.map {
+                RevokedCredential(
+                    it.timePeriod,
+                    it.revocationListIndex
+                )
+            }.also { binding.issuedCredentialList.clear() }
+        }
     }
 
     override fun deleteExpiredBefore(cutoff: Instant): Int {

@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.wallet.lib.encodeBase64
 import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
@@ -23,7 +25,6 @@ class DeviceBinding() {
     ) : this() {
         this.bpk = bpk
         this.certificate = certificate
-        this.revoked = false
         this.deviceName = deviceName
         this.deviceId = deviceId
         this.validUntil = validUntil
@@ -48,15 +49,12 @@ class DeviceBinding() {
     lateinit var validUntil: Instant
 
     @Column
-    var revoked: Boolean = false
-
-    @Column
     lateinit var deviceName: String
 
     @Column
     lateinit var deviceId: String
 
-    @OneToMany(mappedBy = "deviceBinding", cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "deviceBinding", cascade = [CascadeType.ALL], orphanRemoval = true)
     val issuedCredentialList: MutableList<IssuedCredential> = mutableListOf()
 
     override fun toString(): String {
@@ -65,11 +63,8 @@ class DeviceBinding() {
                 "bpk='$bpk', " +
                 "certificate=${certificate.encodeBase64()}, " +
                 "validUntil=$validUntil, " +
-                "revoked=$revoked, " +
                 "deviceName='$deviceName', " +
                 "deviceId='$deviceId', " +
                 "issuedCredentialList=${issuedCredentialList.size})"
     }
-
-
 }
