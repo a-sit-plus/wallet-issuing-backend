@@ -8,7 +8,7 @@ pluginManagement {
 
 rootProject.name = "backend"
 
-include( "http")
+include( "http", "testrig")
 includeBuild("vclib"){
     dependencySubstitution {
         substitute(module("at.asitplus.wallet:vclib-jvm")).using(project(":vclib"))
