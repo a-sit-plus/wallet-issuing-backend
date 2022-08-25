@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -46,7 +47,7 @@ class BindingControllerErrorTest {
     fun setup() {
         nonce = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
-        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+        whenever( runBlocking {extNonceAuthnService.exchangeNonceForBpk(eq(nonce))}).thenReturn(bpk)
         exceptionMessage = UUID.randomUUID().toString()
     }
 

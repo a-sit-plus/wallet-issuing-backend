@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.logout.LogoutHandler
@@ -26,7 +27,7 @@ class ExtNonceLogoutHandler(
         if (credentials !is String)
             return
         log.info("Invalidating nonce '{}'", credentials)
-        extNonceAuthnService.invalidateNonce(credentials)
+        runBlocking { extNonceAuthnService.invalidateNonce(credentials) }
     }
 
 }

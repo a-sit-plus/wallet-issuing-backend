@@ -10,6 +10,7 @@ import at.asitplus.wallet.pupilid.BindingParamsResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -50,7 +51,7 @@ class BindingControllerFullRunTest {
         nonce = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
-        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+        whenever( runBlocking {extNonceAuthnService.exchangeNonceForBpk(eq(nonce))}).thenReturn(bpk)
         client = Client()
     }
 

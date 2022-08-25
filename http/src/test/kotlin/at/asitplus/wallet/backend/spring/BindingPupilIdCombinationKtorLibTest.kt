@@ -9,6 +9,7 @@ import at.asitplus.wallet.pupilid.*
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.engine.java.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -66,7 +67,7 @@ class BindingPupilIdCombinationKtorLibTest {
         nonce = UUID.randomUUID().toString()
         randomDeviceName = UUID.randomUUID().toString()
 
-        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+        whenever( runBlocking {extNonceAuthnService.exchangeNonceForBpk(eq(nonce))}).thenReturn(bpk)
     }
 
     @Test

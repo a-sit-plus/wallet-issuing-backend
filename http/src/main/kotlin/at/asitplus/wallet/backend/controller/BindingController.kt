@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -142,7 +143,7 @@ class BindingController(
         // and do not log out the client (previously, "request.logout()" has been called here)
         if (principal is ExtNonceAuthnToken) {
             val certificate = session.getAttribute("certificate").toString().decodeBase64ToArray()!!
-            extNonceAuthnService.invalidateNonce(principal.credentials.toString())
+         runBlocking {    extNonceAuthnService.invalidateNonce(principal.credentials.toString())}
             SecurityContextHolder.getContext().authentication =
                 DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
         }

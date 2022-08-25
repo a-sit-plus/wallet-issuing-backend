@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.service.SimpleChallengeService
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test
 
@@ -15,17 +16,17 @@ class SimpleChallengeServiceTest {
 
     @Test
     fun timeout() {
-        val challenge = service.generate()
+        val challenge = runBlocking {  service.generate()}
         Thread.sleep((timeoutSeconds + 1) * 1000L)
 
-        service.verifyAndRemove(challenge) shouldBe false
+        runBlocking {  service.verifyAndRemove(challenge) shouldBe false}
     }
 
     @Test
     fun noTimeout() {
-        val challenge = service.generate()
+        val challenge = runBlocking {  service.generate()}
 
-        service.verifyAndRemove(challenge) shouldBe true
+        runBlocking {  service.verifyAndRemove(challenge) shouldBe true}
     }
 
 }

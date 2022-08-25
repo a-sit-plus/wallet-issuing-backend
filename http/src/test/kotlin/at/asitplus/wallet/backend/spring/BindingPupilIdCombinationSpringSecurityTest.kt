@@ -13,6 +13,7 @@ import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import com.fasterxml.jackson.databind.ObjectMapper
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -75,29 +76,31 @@ class BindingPupilIdCombinationSpringSecurityTest {
 
     @BeforeEach
     fun beforeEach() {
-        bpk = UUID.randomUUID().toString()
-        challenge = Random.nextBytes(32)
-        nonce = UUID.randomUUID().toString()
-        csr = Random.nextBytes(32)
-        deviceName = UUID.randomUUID().toString()
-        certificate = Random.nextBytes(32)
-        startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
-        clientMessage = UUID.randomUUID().toString()
-        serverMessage = UUID.randomUUID().toString()
-        challengeResponse = UUID.randomUUID().toString()
-        val validUntil = TestTimeSource.now() + 60.seconds
+        runBlocking {
+            bpk = UUID.randomUUID().toString()
+            challenge = Random.nextBytes(32)
+            nonce = UUID.randomUUID().toString()
+            csr = Random.nextBytes(32)
+            deviceName = UUID.randomUUID().toString()
+            certificate = Random.nextBytes(32)
+            startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
+            clientMessage = UUID.randomUUID().toString()
+            serverMessage = UUID.randomUUID().toString()
+            challengeResponse = UUID.randomUUID().toString()
+            val validUntil = TestTimeSource.now() + 60.seconds
 
-        whenever(challengeService.generate()).thenReturn(challenge)
-        whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
-        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
-        val signedCertificate = SignedCertificate(certificate, validUntil)
-        whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
-        whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
-            .thenReturn(NextMessage.Send(serverMessage, null))
-        whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
-            .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-        whenever(authenticationSupplier.getCurrentUserCertificate())
-            .thenReturn(certificate)
+            whenever(challengeService.generate()).thenReturn(challenge)
+            whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
+            whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+            val signedCertificate = SignedCertificate(certificate, validUntil)
+            whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
+            whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
+                .thenReturn(NextMessage.Send(serverMessage, null))
+            whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
+                .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
+            whenever(authenticationSupplier.getCurrentUserCertificate())
+                .thenReturn(certificate)
+        }
     }
 
     @Test
@@ -129,7 +132,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
+        runBlocking {  verify(extNonceAuthnService).invalidateNonce(eq(nonce))}
 
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON

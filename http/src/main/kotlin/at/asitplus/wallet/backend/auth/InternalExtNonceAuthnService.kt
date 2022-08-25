@@ -16,21 +16,21 @@ class InternalExtNonceAuthnService(
 
     private val mapChallengeToBpk = mutableMapOf<String, String>()
 
-    override fun generateNonce(): ExtNonceAuthnService.NonceBpk {
+    override suspend fun generateNonce(): ExtNonceAuthnService.NonceBpk {
         val challenge = challengeService.generate().encodeBase16()
         val bpk = UUID.randomUUID().toString()
         mapChallengeToBpk[challenge] = bpk
         return ExtNonceAuthnService.NonceBpk(challenge, bpk)
     }
 
-    override fun exchangeNonceForBpk(nonce: String): String? {
+    override suspend fun exchangeNonceForBpk(nonce: String): String? {
         if (nonce.decodeBase16ToArray()?.let { challengeService.verify(it) } == true) {
             return mapChallengeToBpk.remove(nonce)
         }
         return null
     }
 
-    override fun invalidateNonce(nonce: String): Boolean {
+    override suspend fun invalidateNonce(nonce: String): Boolean {
         return nonce.decodeBase16ToArray()?.let { challengeService.remove(it) } == true
                 && mapChallengeToBpk.remove(nonce) != null
     }

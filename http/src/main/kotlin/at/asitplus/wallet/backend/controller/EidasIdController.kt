@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
@@ -127,7 +128,7 @@ class EidasIdController(
     @PreAuthorize("hasAuthority(\"EIDASID\")")
     fun initialize(model: ModelMap): ModelAndView {
         log.info("/eidasid/initialize called")
-        val nonceBpk = extNonceAuthnService.generateNonce()
+        val nonceBpk = runBlocking {  extNonceAuthnService.generateNonce()}
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)

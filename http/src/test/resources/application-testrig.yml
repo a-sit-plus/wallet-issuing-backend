@@ -1,0 +1,51 @@
+server:
+  port: 8443
+logging:
+  level:
+    at.asitplus: OFF
+backend:
+  public-context: "http://localhost:8443/"
+  pki:
+    cert-validity-days: 185
+    type: PERSISTENT
+    internal:
+      key:
+        type: KEYSTORE
+        keystore:
+          path: "file:src/test/resources/testrig.p12"
+          alias: "testrig-backend"
+          type: PKCS12
+          provider: BC
+          alias-password: "password"
+          password: "password"
+  credentials:
+    lifetime: P1D
+    one-credential-per-device-binding: true
+  issuer-key:
+    type: KEYSTORE
+    keystore:
+      path: "file:src/test/resources/testrig.p12"
+      type: PKCS12
+      provider: BC
+      alias: "testrig-backend"
+      alias-password: "password"
+      password: "password"
+  authn:
+    device-binding:
+      type: ECO
+      eco:
+        url: "http://localhost:8080"
+        server-tls: false
+        api-key: MASKED
+        http-basic:
+          username: foo
+          password: bar
+  attribute-source:
+    type: ECO
+    eco:
+      url: "http://localhost:8080"
+      server-tls: false
+      api-key: MASKED
+      http-basic:
+        username: foo
+        password: bar

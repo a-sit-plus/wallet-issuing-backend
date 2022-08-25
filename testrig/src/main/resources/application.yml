@@ -1,0 +1,7 @@
+testrig:
+  runs: 5000
+  parallelism: 14
+  host:
+    base-url: http://localhost:8443
+  fake-eco:
+    port: 8080

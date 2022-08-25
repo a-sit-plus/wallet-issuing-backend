@@ -14,6 +14,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
@@ -51,7 +52,7 @@ class DebugController(
     fun initialize(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/initialize called")
-        val nonceBpk = extNonceAuthnService.generateNonce()
+        val nonceBpk = runBlocking {  extNonceAuthnService.generateNonce()}
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)
@@ -70,7 +71,7 @@ class DebugController(
     @GetMapping("/debug/nonce")
     fun getNonce(): ResponseEntity<String> {
         if (!configurationProperties.debug.enabled) return ResponseEntity.notFound().build()
-        val nonce = extNonceAuthnService.generateNonce()?.nonce
+        val nonce = runBlocking {  extNonceAuthnService.generateNonce()?.nonce}
         log.info("/debug/nonce returns '{}'", nonce)
         return ResponseEntity.ok(nonce)
     }

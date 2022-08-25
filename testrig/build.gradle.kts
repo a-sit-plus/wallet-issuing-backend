@@ -7,7 +7,6 @@ plugins {
     id("io.spring.dependency-management") version "1.0.12.RELEASE"
     kotlin("jvm") version "1.7.10"
     kotlin("plugin.spring") version "1.7.10"
-    kotlin("plugin.jpa") version "1.7.10"
     kotlin("plugin.serialization") version "1.7.10"
 }
 
@@ -20,24 +19,29 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
-    all {
-        resolutionStrategy
-    }
 }
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.apache.httpcomponents:httpclient")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
     implementation("com.nimbusds:nimbus-jose-jwt:9.23")
     implementation("at.asitplus.wallet:vclib-jvm")
     implementation("at.asitplus.wallet:pupilidlib-jvm")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
-    implementation("io.github.aakira:napier:2.5.0")
-    implementation("com.google.iot.cbor:cbor:0.01.02")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.3.2")
+    implementation("io.github.aakira:napier:2.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("io.ktor:ktor-client-core:2.1.0")
+    implementation("io.ktor:ktor-client-cio:2.1.0")
+    implementation("io.ktor:ktor-server-core:2.1.0")
+    implementation("io.ktor:ktor-server-netty:2.1.0")
+    implementation("io.ktor:ktor-client-content-negotiation:2.1.0")
+    implementation("io.ktor:ktor-server-content-negotiation:2.1.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.1.0")
 }
 
 tasks.withType<KotlinCompile> {
@@ -55,10 +59,6 @@ tasks.withType<KotlinCompile> {
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     launchScript()
-}
-
-springBoot {
-    buildInfo()
 }
 
 Properties().apply {
