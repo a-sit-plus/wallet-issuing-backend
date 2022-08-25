@@ -7,7 +7,6 @@ backend:
   public-context: "http://localhost:8443/"
   pki:
     cert-validity-days: 185
-    type: PERSISTENT
     internal:
       key:
         type: KEYSTORE

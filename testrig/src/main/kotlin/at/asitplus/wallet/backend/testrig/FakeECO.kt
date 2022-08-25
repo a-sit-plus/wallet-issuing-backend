@@ -38,12 +38,15 @@ class FakeECO(private val port: Int) {
             routing {
                 get("/Student/{bpk}") {
                     val studentId = call.parameters["bpk"]
-                    val i = studentId!!.substring(PREFIX_FAKE_BPK.length+FAKE_NONCE.length).toInt()
-                    val rI = i.toRomanNumeral()
+                    val
+
+
+                            strI = studentId!!.substring(PREFIX_FAKE_BPK.length + FAKE_NONCE.length)
+                    val i = strI.toInt()
                     call.respond(
                         EcoStudentData(
                             firstname = "Mark",
-                            lastname = "Nesium $rI",
+                            lastname = "Nesium $strI",
                             dateOfBirth = "${1995 - (i%1990)}-10-10T00:00:00Z",
                             schoolName = "Hogwarts School of  Witchcraft adn Wizardry",
                             schoolCity = "Hogsmeade",

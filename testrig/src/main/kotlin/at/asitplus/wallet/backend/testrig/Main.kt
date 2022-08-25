@@ -142,16 +142,16 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
             var running = true
             val job = launch {
                 val spinner = listOf(
-                    "( ●    )",
-                    "(  ●   )",
-                    "(   ●  )",
-                    "(    ● )",
-                    "(     ●)",
-                    "(    ● )",
-                    "(   ●  )",
-                    "(  ●   )",
-                    "( ●    )",
-                    "(●     )"
+                    "( 🏐    )",
+                    "(  🏐   )",
+                    "(   🏐  )",
+                    "(    🏐 )",
+                    "(     🏐)",
+                    "(    🏐 )",
+                    "(   🏐  )",
+                    "(  🏐   )",
+                    "( 🏐    )",
+                    "(🏐     )"
                 )
                 println()
                 while (running) {
@@ -160,12 +160,8 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                         delay(100)
                     }
                 }
-                listOf(
-                    "●", "●", "✶", "✸", "✹", "✺", "✹", "✷", "·"
-                ).forEach {
-                    print("\r($it     ) All done")
+                    print("\r\uD83C\uDF8A\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF8A All done")
                     delay(100)
-                }
             }
             val result = jobs.awaitAll().flatten().toMap()
             val timeTaken = Clock.System.now() - before
