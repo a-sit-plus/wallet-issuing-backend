@@ -4,7 +4,7 @@ logging:
   level:
     at.asitplus: ERROR
     at.asitplus.wallet.backend.service.SimpleChallengeService: DEBUG
-    at.asitplus.wallet.backend.AttestationService: OFF
+    at.asitplus.wallet.backend.DefaultAttestationService: OFF
 backend:
   public-context: "http://localhost:8443/"
   pki:

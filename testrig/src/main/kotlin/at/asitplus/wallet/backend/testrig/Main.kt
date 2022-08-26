@@ -160,8 +160,6 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                         delay(100)
                     }
                 }
-                    print("\r\uD83C\uDF8A\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF8A All done")
-                    delay(100)
             }
             val result = jobs.awaitAll().flatten().toMap()
             val timeTaken = Clock.System.now() - before
@@ -170,6 +168,11 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
             val failed = result.count { (_, state) -> !state }
             val successRatio = ((succeeded - failed).toFloat() / (succeeded.toFloat()) * 100).roundToInt()
             job.join()
+            if(successRatio==100){
+                print("\r\uD83C\uDF8A\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF8A All done")
+            }else {
+                print("\r\uD83D\uDD25\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDD25 All done with errors")
+            }
             println("\nTotal Tests: ${result.size}\t success: $succeeded, failed: $failed\t(success ratio: ~$successRatio%)")
             println("Took ${timeTaken.inWholeSeconds} seconds to try and issue ${cfg.runs} credentials (=${cfg.runs.toDouble() / timeTaken.inWholeSeconds.toDouble()} requests per second)")
 

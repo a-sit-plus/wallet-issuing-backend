@@ -1,6 +1,6 @@
 testrig:
   runs: 4096
-  parallelism: 128
+  parallelism: 32
   host:
     base-url: http://localhost:8443
   fake-eco:
