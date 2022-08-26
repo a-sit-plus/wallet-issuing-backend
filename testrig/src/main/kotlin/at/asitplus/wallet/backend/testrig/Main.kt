@@ -36,7 +36,8 @@ data class TestRigConfProps(
     val runs: Int,
     val parallelism: Int,
     val host: Host,
-    val fakeEco: FakeEco
+    val fakeEco: FakeEco,
+    val printErrors: Boolean = false
 ) {
     init {
         if (parallelism > runs) throw RuntimeException()
@@ -127,7 +128,7 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                         when (res) {
                             is ServiceResult.Success -> res.xAuthToken
                             else -> {
-                                //    System.err.print(".")//run $i binding error: $res")
+                                if (cfg.printErrors) System.err.print("run $i binding error: $res")
                                 return@run i to false
                             }
                         }
@@ -214,9 +215,9 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
         if (message !is NextMessage.Send) TODO()
         val issueCredentials = issuingService.issueCredentials(message.message)
         return if (issueCredentials !is ServiceResult.Success)
-            i to false
+            i to false.also { if (cfg.printErrors) System.err.println("run $i issueCredentialError: $issueCredentials") }
         else
-            i to true
+            i to true.also { if (cfg.printErrors) println(issueCredentials.toString()) }
     }
 }
 
