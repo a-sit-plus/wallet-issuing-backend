@@ -6,6 +6,7 @@ logging:
     at.asitplus.wallet.backend.service.SimpleChallengeService: DEBUG
     at.asitplus.wallet.backend.DefaultAttestationService: OFF
     at.asitplus.wallet.lib.agent.ProtocolMessenger: ERROR
+    at.asitplus.wallet.lib.agent.IssueCredentialProtocol: ERROR
 backend:
   public-context: "http://localhost:8443/"
   pki:

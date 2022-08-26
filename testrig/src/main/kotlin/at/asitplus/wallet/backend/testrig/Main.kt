@@ -37,7 +37,8 @@ data class TestRigConfProps(
     val parallelism: Int,
     val host: Host,
     val fakeEco: FakeEco,
-    val printErrors: Boolean = false
+    val printErrors: Boolean = false,
+    val printCredentials: Boolean = false,
 ) {
     init {
         if (parallelism > runs) throw RuntimeException()
@@ -217,7 +218,7 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
         return if (issueCredentials !is ServiceResult.Success)
             i to false.also { if (cfg.printErrors) System.err.println("run $i issueCredentialError: $issueCredentials") }
         else
-            i to true.also { if (cfg.printErrors) println(issueCredentials.toString()) }
+            i to true.also { if (cfg.printCredentials) println(issueCredentials.toString()) }
     }
 }
 
