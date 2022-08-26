@@ -2,7 +2,9 @@ server:
   port: 8443
 logging:
   level:
-    at.asitplus: OFF
+    at.asitplus: ERROR
+    at.asitplus.wallet.backend.service.SimpleChallengeService: DEBUG
+    at.asitplus.wallet.backend.AttestationService: OFF
 backend:
   public-context: "http://localhost:8443/"
   pki:

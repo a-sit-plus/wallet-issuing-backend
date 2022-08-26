@@ -16,7 +16,7 @@ class SimpleChallengeServiceTest {
 
     @Test
     fun timeout() {
-        val challenge = runBlocking {  service.generate()}
+        val challenge = service.generate()
         Thread.sleep((timeoutSeconds + 1) * 1000L)
 
         runBlocking {  service.verifyAndRemove(challenge) shouldBe false}
@@ -24,7 +24,7 @@ class SimpleChallengeServiceTest {
 
     @Test
     fun noTimeout() {
-        val challenge = runBlocking {  service.generate()}
+        val challenge = service.generate()
 
         runBlocking {  service.verifyAndRemove(challenge) shouldBe true}
     }

@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.auth
 
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
@@ -28,7 +27,7 @@ class ExtNonceAuthnProvider(
         val credentials = principal.credentials
         if (credentials !is String)
             throw BadCredentialsException("not supported")
-        val bpk = runBlocking {  extNonceAuthnService.exchangeNonceForBpk(credentials)}
+        val bpk = extNonceAuthnService.exchangeNonceForBpk(credentials)
             ?: throw BadCredentialsException("Error")
                 .also { log.warn("Could not validate credentials: {}", credentials) }
         log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)

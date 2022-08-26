@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
@@ -128,7 +127,7 @@ class EidasIdController(
     @PreAuthorize("hasAuthority(\"EIDASID\")")
     fun initialize(model: ModelMap): ModelAndView {
         log.info("/eidasid/initialize called")
-        val nonceBpk = runBlocking {  extNonceAuthnService.generateNonce()}
+        val nonceBpk = extNonceAuthnService.generateNonce()
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)

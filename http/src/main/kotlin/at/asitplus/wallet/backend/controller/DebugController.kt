@@ -1,20 +1,19 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
@@ -52,7 +51,7 @@ class DebugController(
     fun initialize(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
         log.info("/debug/initialize called")
-        val nonceBpk = runBlocking {  extNonceAuthnService.generateNonce()}
+        val nonceBpk = extNonceAuthnService.generateNonce()
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
             return ModelAndView("initialize", model)
@@ -71,7 +70,7 @@ class DebugController(
     @GetMapping("/debug/nonce")
     fun getNonce(): ResponseEntity<String> {
         if (!configurationProperties.debug.enabled) return ResponseEntity.notFound().build()
-        val nonce = runBlocking {  extNonceAuthnService.generateNonce()?.nonce}
+        val nonce = extNonceAuthnService.generateNonce()?.nonce
         log.info("/debug/nonce returns '{}'", nonce)
         return ResponseEntity.ok(nonce)
     }

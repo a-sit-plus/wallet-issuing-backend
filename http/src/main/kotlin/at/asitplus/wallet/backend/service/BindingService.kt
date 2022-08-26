@@ -84,7 +84,7 @@ class DefaultBindingService(
         attestationCerts: List<ByteArray>,
         bpk: String
     ): BindingCertificate? {
-        if (!runBlocking {  challengeService.verifyAndRemove(challenge)})
+        if (!challengeService.verifyAndRemove(challenge))
             return null.also { log.warn("binding challenge invalid: {}", it) }
 
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))

@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.lib.encodeBase64
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -27,7 +26,7 @@ class DeviceBindingAuthnEntryPoint(
         authException: AuthenticationException
     ) {
 
-        val encodedChallenge = runBlocking { deviceBindingAuthnChallengeService.generate().encodeBase64() }
+        val encodedChallenge = deviceBindingAuthnChallengeService.generate().encodeBase64()
         response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Challenge $encodedChallenge")
         log.debug("Sending challenge '{}'", encodedChallenge)
         response.sendError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.reasonPhrase)

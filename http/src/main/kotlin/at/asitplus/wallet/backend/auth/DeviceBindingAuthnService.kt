@@ -6,7 +6,6 @@ import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.BadCredentialsException
 import java.security.cert.CertificateFactory
@@ -58,11 +57,7 @@ class SimpleDeviceBindingAuthnService(
             throw BadCredentialsException("challenge not found")
                 .also { log.warn("No challenge in JWS payload") }
         val decodedChallenge = payloadJsonObject["challenge"]?.toString()?.decodeBase64ToArray()
-        if (decodedChallenge == null || runBlocking {
-                !deviceBindingAuthnChallengeService.verifyAndRemove(
-                    decodedChallenge
-                )
-            })
+        if (decodedChallenge == null || !deviceBindingAuthnChallengeService.verifyAndRemove(decodedChallenge))
             throw BadCredentialsException("challenge not valid")
                 .also { log.warn("Challenge in JWS payload not valid") }
         val bpk = deviceBindingStorageService.lookupBpk(decodedCert)

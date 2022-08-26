@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -46,7 +45,7 @@ class AuthnController(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
         log.info("/authn/devicebinding/challenge called")
-        val challenge = runBlocking {  deviceBindingAuthnChallengeService.generate().encodeBase64()}
+        val challenge = deviceBindingAuthnChallengeService.generate().encodeBase64()
         return ResponseEntity.ok(challenge)
             .also { log.info("/authn/devicebinding/challenge returns '{}'", challenge) }
     }

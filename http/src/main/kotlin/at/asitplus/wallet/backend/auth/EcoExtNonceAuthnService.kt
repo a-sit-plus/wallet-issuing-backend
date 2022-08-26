@@ -21,11 +21,11 @@ class EcoExtNonceAuthnService(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    override suspend fun generateNonce(): ExtNonceAuthnService.NonceBpk? {
+    override fun generateNonce(): ExtNonceAuthnService.NonceBpk? {
         return null
     }
 
-    override suspend fun exchangeNonceForBpk(nonce: String): String? = kotlin.runCatching {
+    override fun exchangeNonceForBpk(nonce: String): String? = kotlin.runCatching {
         val entity = restTemplate.getForEntity<CardCreationCodeResolveResult>(
             "$url/CardCreationCode/{cardCode}",
             uriVariables = mapOf("cardCode" to nonce)
@@ -36,7 +36,7 @@ class EcoExtNonceAuthnService(
         null
     }
 
-    override suspend fun invalidateNonce(nonce: String): Boolean = kotlin.runCatching {
+    override fun invalidateNonce(nonce: String): Boolean = kotlin.runCatching {
         val entity = restTemplate.exchange<Any>(
             "$url/CardCreationCode/{cardCode}",
             HttpMethod.DELETE,

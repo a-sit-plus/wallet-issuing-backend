@@ -19,8 +19,6 @@ class DefaultIssueCredentialAdapter(
 ) : IssueCredentialAdapter {
 
     override fun parseMessage(it: String) =
-        runBlocking {
-            return@runBlocking issueCredentialMessenger.parseMessage(it)
-        }
+        runBlocking { issueCredentialMessenger.parseMessage(it) }
 
 }
