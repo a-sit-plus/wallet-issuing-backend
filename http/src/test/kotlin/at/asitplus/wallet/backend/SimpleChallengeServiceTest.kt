@@ -18,7 +18,7 @@ class SimpleChallengeServiceTest {
         val challenge = service.generate()
         Thread.sleep((timeoutSeconds + 1) * 1000L)
 
-        service.verifyAndRemove(challenge) shouldBe false
+          service.verifyAndRemove(challenge) shouldBe false
     }
 
     @Test

@@ -55,11 +55,11 @@ class EcoConnectionTest {
         // Get valid nonce manually from https://educard.quarto.at/educard.user/
         val nonce = "82b1979f-edde-48ca-9c74-d272842dd506"
 
-        val bpk = extNonceAuthnService.exchangeNonceForBpk(nonce)
+        val bpk =  extNonceAuthnService.exchangeNonceForBpk(nonce)
         bpk shouldHaveMinLength 8
         println(bpk)
 
-        val success = extNonceAuthnService.invalidateNonce(nonce)
+        val success =  extNonceAuthnService.invalidateNonce(nonce)
         success shouldBe true
     }
 

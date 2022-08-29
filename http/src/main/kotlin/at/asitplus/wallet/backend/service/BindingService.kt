@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.encodeBase16
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.JwkType
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
 interface BindingService {
@@ -67,7 +68,7 @@ class DefaultBindingService(
      * Issues new binding parameters.
      */
     override fun getBindingParams(deviceName: String): BindingParams {
-        val challenge = challengeService.generate()
+        val challenge = runBlocking {  challengeService.generate()}
         val subject = buildSubject(challenge)
         val keyType = JwkType.EC.text
         return BindingParams(challenge, subject, keyType)

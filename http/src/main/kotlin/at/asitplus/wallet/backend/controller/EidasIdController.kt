@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter

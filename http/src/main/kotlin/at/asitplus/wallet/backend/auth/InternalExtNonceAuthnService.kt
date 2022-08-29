@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.lib.decodeBase16ToArray
 import at.asitplus.wallet.lib.encodeBase16
-import java.util.UUID
+import java.util.*
 
 /**
  * Validates ext. nonce from [ExtNonceAuthnToken] internally,

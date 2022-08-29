@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -36,7 +38,7 @@ class SimpleChallengeService(
     private val clock:Clock
 ) : ChallengeService {
 
-    private val list = mutableListOf<Entry>()
+    private val list = ConcurrentLinkedDeque<Entry>()
 
     override fun generate(): ByteArray {
         removeExpiredChallenges()

@@ -2,11 +2,7 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
-import at.asitplus.wallet.pupilid.BindingCsrRequestJ
-import at.asitplus.wallet.pupilid.BindingCsrResponseJ
-import at.asitplus.wallet.pupilid.BindingParamsRequestJ
-import at.asitplus.wallet.pupilid.BindingParamsResponse
+import at.asitplus.wallet.pupilid.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.shouldBe
@@ -22,7 +18,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.security.cert.CertificateFactory
-import java.util.UUID
+import java.util.*
 
 /**
  * Simulates a full run of a client for using the [BindingController].

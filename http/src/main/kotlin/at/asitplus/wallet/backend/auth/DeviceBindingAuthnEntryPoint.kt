@@ -25,6 +25,7 @@ class DeviceBindingAuthnEntryPoint(
         response: HttpServletResponse,
         authException: AuthenticationException
     ) {
+
         val encodedChallenge = deviceBindingAuthnChallengeService.generate().encodeBase64()
         response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Challenge $encodedChallenge")
         log.debug("Sending challenge '{}'", encodedChallenge)

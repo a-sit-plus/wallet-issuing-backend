@@ -1,13 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.pupilid.Asn1Service
-import at.asitplus.wallet.pupilid.DeviceAdapter
-import at.asitplus.wallet.pupilid.DeviceBindingService
-import at.asitplus.wallet.pupilid.HashAlgorithm
-import at.asitplus.wallet.pupilid.KeyAlgorithm
-import at.asitplus.wallet.pupilid.KmmResult
-import at.asitplus.wallet.pupilid.ServiceResult
+import at.asitplus.wallet.pupilid.*
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +15,7 @@ import org.springframework.boot.web.server.LocalServerPort
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
-import java.util.UUID
+import java.util.*
 
 
 /**

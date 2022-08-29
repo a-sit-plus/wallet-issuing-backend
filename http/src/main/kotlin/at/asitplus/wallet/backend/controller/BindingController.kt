@@ -1,17 +1,12 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
+import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
-import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
-import at.asitplus.wallet.pupilid.BindingConfirmResponseJ
-import at.asitplus.wallet.pupilid.BindingCsrRequestJ
-import at.asitplus.wallet.pupilid.BindingCsrResponseJ
-import at.asitplus.wallet.pupilid.BindingParamsRequestJ
-import at.asitplus.wallet.pupilid.BindingParamsResponseJ
+import at.asitplus.wallet.pupilid.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject

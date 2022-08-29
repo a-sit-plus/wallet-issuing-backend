@@ -36,7 +36,7 @@ class SimpleDeviceBindingAuthnServiceTest {
 
     @BeforeEach
     fun beforeEach() {
-        challenge = challengeService.generate()
+        challenge =   challengeService.generate()
         deviceName = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
         client = Client()
