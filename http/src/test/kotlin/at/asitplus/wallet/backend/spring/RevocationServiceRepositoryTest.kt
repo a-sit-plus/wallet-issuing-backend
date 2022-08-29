@@ -70,37 +70,6 @@ class RevocationServiceRepositoryTest {
     }
 
     @Test
-    @Disabled("Remnant")
-    fun `expired credential should not be revoked`() {
-        createExpiredCredential()
-            .also { credentialRepo.save(it) }
-
-        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe false
-    }
-
-    @Test
-    @Disabled("Remnant")
-    fun `issued credential marked as revoked should be revoked`() {
-        createIssuedCredential().also {
-         //   it.revoked = true
-            credentialRepo.save(it)
-        }
-
-        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe true
-    }
-
-    @Test
-    @Disabled("Remnant")
-    fun `expired credential marked as revoked should be revoked`() {
-        createExpiredCredential().also {
-           // it.revoked = true
-            credentialRepo.save(it)
-        }
-
-        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe true
-    }
-
-    @Test
     fun `revoke credentials by vcId`() {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
