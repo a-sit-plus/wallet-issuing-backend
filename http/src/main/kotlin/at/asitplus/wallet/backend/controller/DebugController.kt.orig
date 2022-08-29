@@ -3,12 +3,15 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+<<<<<<< HEAD
 import at.asitplus.wallet.backend.data.*
-import at.asitplus.wallet.backend.service.RevocationService
+=======
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+>>>>>>> feature/testRig-oldBitSet
+import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64

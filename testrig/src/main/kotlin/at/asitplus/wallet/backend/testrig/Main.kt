@@ -73,7 +73,7 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
             val before = Clock.System.now()
             val jobs = runs.map { list ->
                 async {
-                    list.map { it to DefaultCryptoService(kp) }.map run@{ (i, cryptoService) ->
+                    list.map { it to DefaultCryptoService(kp) }.map singleRun@{ (i, cryptoService) ->
                         val certMut = Mutex(locked = true)
                         var cert: ByteArray? = null
                         val bindingService =
@@ -130,14 +130,14 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                             is ServiceResult.Success -> res.xAuthToken
                             else -> {
                                 if (cfg.printErrors) System.err.print("run $i binding error: $res")
-                                return@run i to false
+                                return@singleRun i to false
                             }
                         }
 
 
 
 
-                        return@run issueCredential(cryptoService, i, certMut.withLock { cert!! })
+                        return@singleRun issueCredential(cryptoService, i, certMut.withLock { cert!! })
                     }
                 }
             }
