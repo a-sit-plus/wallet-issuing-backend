@@ -9,7 +9,6 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -56,11 +55,11 @@ class EcoConnectionTest {
         // Get valid nonce manually from https://educard.quarto.at/educard.user/
         val nonce = "82b1979f-edde-48ca-9c74-d272842dd506"
 
-        val bpk =  runBlocking {extNonceAuthnService.exchangeNonceForBpk(nonce)}
+        val bpk =  extNonceAuthnService.exchangeNonceForBpk(nonce)
         bpk shouldHaveMinLength 8
         println(bpk)
 
-        val success =  runBlocking {extNonceAuthnService.invalidateNonce(nonce)}
+        val success =  extNonceAuthnService.invalidateNonce(nonce)
         success shouldBe true
     }
 

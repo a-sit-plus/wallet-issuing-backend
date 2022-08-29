@@ -14,7 +14,6 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,7 +36,7 @@ class SimpleDeviceBindingAuthnServiceTest {
 
     @BeforeEach
     fun beforeEach() {
-        challenge = runBlocking {  challengeService.generate()}
+        challenge =   challengeService.generate()
         deviceName = UUID.randomUUID().toString()
         bpk = UUID.randomUUID().toString()
         client = Client()

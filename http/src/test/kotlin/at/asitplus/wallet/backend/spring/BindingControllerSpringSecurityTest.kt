@@ -1,15 +1,14 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.service.ChallengeService
-import at.asitplus.wallet.backend.pki.PkiService
-import at.asitplus.wallet.backend.pki.SignedCertificate
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.pki.PkiService
+import at.asitplus.wallet.backend.pki.SignedCertificate
+import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -26,7 +25,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.util.UUID
+import java.util.*
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -63,7 +62,6 @@ abstract class BindingControllerSpringSecurityTest {
 
     @BeforeEach
     fun beforeEach() {
-        runBlocking {
             bpk = UUID.randomUUID().toString()
             challenge = Random.nextBytes(32)
             whenever(challengeService.generate()).thenReturn(challenge)
@@ -77,7 +75,6 @@ abstract class BindingControllerSpringSecurityTest {
             val signedCertificate = SignedCertificate(certificate, validUntil)
             whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
             startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
-        }
     }
 
     @Test
@@ -115,7 +112,7 @@ abstract class BindingControllerSpringSecurityTest {
 
     @Test
     fun start_nonceNotKnown_forbidden() {
-        whenever( runBlocking {extNonceAuthnService.exchangeNonceForBpk(eq(nonce))}).thenReturn(null)
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(null)
 
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
@@ -156,7 +153,8 @@ abstract class BindingControllerSpringSecurityTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-        runBlocking { verify(extNonceAuthnService).invalidateNonce(eq(nonce))}
+
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
     }
 
     @Test
@@ -233,7 +231,8 @@ abstract class BindingControllerSpringSecurityTest {
             status { isOk() }
             header { doesNotExist(X_AUTH_TOKEN) }
         }.andReturn()
-        runBlocking {  verify(extNonceAuthnService).invalidateNonce(eq(nonce))}
+
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
 
         mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON
@@ -276,7 +275,8 @@ abstract class BindingControllerSpringSecurityTest {
             status { isOk() }
             header { doesNotExist(X_AUTH_TOKEN) }
         }.andReturn()
-        runBlocking { verify(extNonceAuthnService).invalidateNonce(eq(nonce))}
+
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
 
         mockMvc.post("/binding/confirm") {
             contentType = MediaType.APPLICATION_JSON
