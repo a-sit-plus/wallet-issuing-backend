@@ -69,31 +69,33 @@ class DatabaseDeviceBindingStorageService(
         bpk: String,
         deviceId: String?
     ): Map<DeviceBinding, Collection<RevokedCredential>> {
-        val toRevoke = if (deviceId != null)
-            deviceBindingRepository
-                .findAllByBpkAndDeviceIdAndValidUntilAfter(
-                    bpk,
-                    deviceId,
-                    clock.now().toJavaInstant()
-                )
-        else
-            deviceBindingRepository
-                .findAllByBpkAndValidUntilAfter(bpk, clock.now().toJavaInstant())
+        synchronized(repoLock) {
+            val toRevoke = if (deviceId != null)
+                deviceBindingRepository
+                    .findAllByBpkAndDeviceIdAndValidUntilAfter(
+                        bpk,
+                        deviceId,
+                        clock.now().toJavaInstant()
+                    )
+            else
+                deviceBindingRepository
+                    .findAllByBpkAndValidUntilAfter(bpk, clock.now().toJavaInstant())
 
-        log.info("Revoking {} device bindings", toRevoke.size)
+            log.info("Revoking {} device bindings", toRevoke.size)
 
-        val revoked = toRevoke.associateWith { binding ->
-            binding.issuedCredentialList.map {
-                RevokedCredential(it.timePeriod, it.revocationListIndex)
-            }.also {
-                binding.issuedCredentialList.clear()
-                revokedCredentialRepo.saveAll(it)
+            val revoked = toRevoke.associateWith { binding ->
+                binding.issuedCredentialList.map {
+                    RevokedCredential(it.timePeriod, it.revocationListIndex)
+                }.also {
+                    binding.issuedCredentialList.clear()
+                    revokedCredentialRepo.saveAll(it)
+                }
             }
-        }
 
-        deviceBindingRepository.saveAll(toRevoke)
-        deviceBindingRepository.deleteAllInBatch(toRevoke)
-        return revoked
+            deviceBindingRepository.saveAll(toRevoke)
+            deviceBindingRepository.deleteAllInBatch(toRevoke)
+            return revoked
+        }
     }
 
     override fun deleteExpiredBefore(cutoff: Instant): Int {

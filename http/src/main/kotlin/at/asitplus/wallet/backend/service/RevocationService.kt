@@ -1,9 +1,6 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.backend.data.IssuedCredential
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.RevokedCredential
-import at.asitplus.wallet.backend.data.RevokedCredentialRepository
+import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.encodeBase64
@@ -108,38 +105,40 @@ class DefaultRevocationService(
         expirationDate: Instant,
         timePeriod: Int
     ): Int? {
-        if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
-            return null.also {
-                log.error("Tried to store a new credential for existing vcId '{}'", vcId)
+        synchronized(repoLock) {
+            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
+                return null.also {
+                    log.error("Tried to store a new credential for existing vcId '{}'", vcId)
+                }
+            val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+                ?: return null.also {
+                    log.error("Got no authenticated user when trying to store vcId '{}'", vcId)
+                }
+            if (oneCredentialPerDeviceBinding) {
+                val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
+                if (revokedCreds > 0)
+                    log.info(
+                        "Revoked {} already existing credentials for device binding certificate '{}' for bpk '{}'",
+                        revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
+                    )
             }
-        val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-            ?: return null.also {
-                log.error("Got no authenticated user when trying to store vcId '{}'", vcId)
-            }
-        if (oneCredentialPerDeviceBinding) {
-            val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
-            if (revokedCreds > 0)
-                log.info(
-                    "Revoked {} already existing credentials for device binding certificate '{}' for bpk '{}'",
-                    revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
-                )
+            val revocationListIndex = max(
+                (credentialRepo.getMaxRevocationListIndex() ?: 0),
+                revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
+            ) + 1
+            val attributeName = credentialSubject.javaClass.simpleName
+            val issuedCredential = IssuedCredential(
+                vcId,
+                credentialSubject.id,
+                expirationDate.toJavaInstant(),
+                timePeriod,
+                deviceBinding,
+                attributeName,
+                revocationListIndex
+            )
+            val savedCredential = credentialRepo.save(issuedCredential)
+            return savedCredential.revocationListIndex.toInt()
         }
-        val revocationListIndex = max(
-            (credentialRepo.getMaxRevocationListIndex() ?: 0),
-            revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
-        ) + 1
-        val attributeName = credentialSubject.javaClass.simpleName
-        val issuedCredential = IssuedCredential(
-            vcId,
-            credentialSubject.id,
-            expirationDate.toJavaInstant(),
-            timePeriod,
-            deviceBinding,
-            attributeName,
-            revocationListIndex
-        )
-        val savedCredential = credentialRepo.save(issuedCredential)
-        return savedCredential.revocationListIndex.toInt()
     }
 
     /**
@@ -186,14 +185,11 @@ class DefaultRevocationService(
         deviceBindingStorageService.revoke(bpk, deviceId).map { it.value.count() }.sum()
 
     private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>): Int {
-        revokedCredentialRepo.saveAll(toRevoke.map {
-            RevokedCredential(
-                it.timePeriod,
-                it.revocationListIndex
-            )
-        })
-        credentialRepo.deleteAllInBatch(toRevoke)
-        return toRevoke.count()
+        synchronized(repoLock) {
+            revokedCredentialRepo.saveAll(toRevoke.map { RevokedCredential(it.timePeriod, it.revocationListIndex) })
+            credentialRepo.deleteAllInBatch(toRevoke)
+            return toRevoke.count()
+        }
     }
 
     /**
