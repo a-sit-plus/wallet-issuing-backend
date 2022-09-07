@@ -24,6 +24,7 @@ interface RevokedCredentialRepository : JpaRepository<RevokedCredential, Long> {
 
 }
 
+internal object repoLock
 
 @Entity
 class RevokedCredential() {

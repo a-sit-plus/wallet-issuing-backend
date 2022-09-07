@@ -5,10 +5,6 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.data.IssuedCredential
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.encodeBase64
@@ -135,20 +131,22 @@ class DebugController(
         )
             .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
-        val revocationListIndex = max(
-            (credentialRepo.getMaxRevocationListIndex() ?: 0),
-            revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
-        ) + 1
-        IssuedCredential(
-            vcId,
-            credentialSubject.id,
-            exp.toJavaInstant(),
-            timePeriodProvider.getTimePeriodFor(clock.now()),
-            deviceBinding,
-            attributeName,
-            revocationListIndex
-        )
-            .also { credentialRepo.save(it) }
+        synchronized(repoLock) {
+            val revocationListIndex = max(
+                (credentialRepo.getMaxRevocationListIndex() ?: 0),
+                revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
+            ) + 1
+            IssuedCredential(
+                vcId,
+                credentialSubject.id,
+                exp.toJavaInstant(),
+                timePeriodProvider.getTimePeriodFor(clock.now()),
+                deviceBinding,
+                attributeName,
+                revocationListIndex
+            )
+                .also { credentialRepo.save(it) }
+        }
         return ModelAndView("redirect:/debug/credential/list")
     }
 
