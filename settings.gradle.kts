@@ -14,6 +14,7 @@ includeBuild("vclib"){
         substitute(module("at.asitplus.wallet:vclib-jvm")).using(project(":vclib"))
     }
 }
+
 includeBuild("pupilidlib"){
     dependencySubstitution {
         substitute(module("at.asitplus.wallet:pupilidlib-jvm")).using(project(":pupilidlib"))
