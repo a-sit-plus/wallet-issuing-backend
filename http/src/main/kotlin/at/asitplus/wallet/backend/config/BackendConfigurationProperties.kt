@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.TimeSource
 import at.asitplus.wallet.lib.agent.MonthAndDay
+import at.asitplus.wallet.lib.agent.RevocationListCache
 import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -87,6 +88,8 @@ data class CredentialConfigurationProperties(
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
 
+    val revocationListCache: RevocationListCacheProperties?=null,
+
     /**
      * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
      */
@@ -95,6 +98,14 @@ data class CredentialConfigurationProperties(
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
     val gracePeriodDuration = Duration.parse(gracePeriod)
+}
+
+@ConstructorBinding
+data class RevocationListCacheProperties(
+    private val min:String,
+    private val max:String,
+){
+    val cacheDuration: RevocationListCache = Duration.parse(min) to Duration.parse(max)
 }
 
 @ConstructorBinding

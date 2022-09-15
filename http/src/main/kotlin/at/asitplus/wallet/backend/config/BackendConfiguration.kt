@@ -357,7 +357,8 @@ class BackendConfiguration {
             "status"
         ),
         timePeriodProvider = timePeriodProvider(),
-        clock = clock()
+        clock = clock(),
+        cacheLimits = configurationProperties.credentials.revocationListCache?.cacheDuration
     )
 
     @Bean
