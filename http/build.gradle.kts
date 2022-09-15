@@ -60,7 +60,7 @@ dependencies {
     implementation("at.asitplus.hsmfacade:provider:0.8.3")
     implementation("at.asitplus.wallet:remotecrypto")
     runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql:42.4.0")
+    runtimeOnly("org.postgresql:postgresql:42.4.2")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
