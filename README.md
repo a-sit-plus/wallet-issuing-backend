@@ -629,3 +629,25 @@ and the application throws an exception like `IllegalArgumentException("foo")`, 
   "timestamp": "2022-05-18T08:24:17.239+00:00"
 }
 ```
+
+### Logging
+MDC-based assignemnt of unique transacion IDs for each incoming reaust is supported, but requires a customized `logback.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} [%X{txID:-00000000-0000-0000-0000-000000000000}] %-5level %-50logger{50}:%-4line - %msg%n
+            </pattern>
+        </layout>
+    </appender>
+    <logger name="com.oddblogger" level="debug" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <root level="error">
+        <appender-ref ref="Console"/>
+    </root>
+</configuration>
+```
