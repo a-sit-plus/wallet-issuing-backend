@@ -42,7 +42,7 @@ interface RevocationService {
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int
-    ): Int?
+    ): Long?
 
     /**
      * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
@@ -57,7 +57,7 @@ interface RevocationService {
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
-    fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int>
+    fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long>
 
     /**
      * Revoke one or more device bindings for a pupil, either specified by their [bpk]
@@ -104,7 +104,7 @@ class DefaultRevocationService(
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int
-    ): Int? {
+    ): Long? {
         synchronized(repoLock) {
             if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
                 return null.also {
@@ -137,7 +137,7 @@ class DefaultRevocationService(
                 revocationListIndex
             )
             val savedCredential = credentialRepo.save(issuedCredential)
-            return savedCredential.revocationListIndex.toInt()
+            return savedCredential.revocationListIndex
         }
     }
 
@@ -195,9 +195,9 @@ class DefaultRevocationService(
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
-    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int> {
+    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long> {
         return revokedCredentialRepo.getRevocationListIndexByTimePeriod(timePeriod)
-            .map { it.toInt() }
+            .map { it }
     }
 
     /**
