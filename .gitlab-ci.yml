@@ -37,7 +37,7 @@ assembleJdk11:
   except:
     - tags
   script: |
-    ./gradlew --continue clean assemble test build
+    ./gradlew --continue init clean assemble test build
   artifacts:
     when: always
     reports:
