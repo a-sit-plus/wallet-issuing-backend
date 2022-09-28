@@ -21,7 +21,7 @@ class IssuerCredentialStoreAdapter(
         issuanceDate: kotlinx.datetime.Instant,
         expirationDate: kotlinx.datetime.Instant,
         timePeriod: Int
-    ): Int? {
+    ): Long? {
         return revocationService.storeGetNextIndex(
             vcId,
             credentialSubject,
@@ -31,7 +31,7 @@ class IssuerCredentialStoreAdapter(
         )
     }
 
-    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Int> {
+    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long> {
         return revocationService.getRevokedStatusListIndexList(timePeriod)
     }
 

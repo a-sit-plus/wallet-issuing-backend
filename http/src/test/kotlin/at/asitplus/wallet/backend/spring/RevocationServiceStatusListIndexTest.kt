@@ -190,8 +190,8 @@ class RevocationServiceStatusListIndexTest {
         }
     }
 
-    private fun revokeRandomCredentials(): MutableList<Int> {
-        val expectedRevocationList = mutableListOf<Int>()
+    private fun revokeRandomCredentials(): MutableList<Long> {
+        val expectedRevocationList = mutableListOf<Long>()
         for (i in 1..256) {
             val vcId = UUID.randomUUID().toString()
             val revocationListIndex =
