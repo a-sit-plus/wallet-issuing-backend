@@ -25,3 +25,10 @@ includeBuild("remote-crypto-provider"){
         substitute(module("at.asitplus.wallet:remotecrypto")).using(project(":lib"))
     }
 }
+
+includeBuild("android-attestation"){
+    dependencySubstitution {
+        substitute(module("at.asitplus:android-attestation"))
+    }
+}
+

@@ -19,3 +19,8 @@ spring:
   cloud:
     config:
       enabled: false
+  authn:
+    deviceBinding:
+      attestation:
+        android:
+          signatureDigest: "DEADBEEF"

@@ -50,6 +50,7 @@ dependencies {
     implementation("de.codecentric:spring-boot-admin-starter-client:2.7.4")
     implementation("at.asitplus.wallet:vclib-jvm")
     implementation("at.asitplus.wallet:pupilidlib-jvm")
+    implementation("at.asitplus:android-attestation")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     implementation("org.springdoc:springdoc-openapi-ui:1.6.11")

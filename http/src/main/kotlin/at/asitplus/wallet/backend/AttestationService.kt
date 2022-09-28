@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.attestation.android.AndroidAttestationChecker
+import at.asitplus.attestation.android.AndroidAttestationConfiguration
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.fromJcaKey
 import at.asitplus.wallet.backend.service.joseType
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
-import java.util.Date
+import java.util.*
 
 interface AttestationService {
 
@@ -32,9 +34,14 @@ interface AttestationService {
 
 }
 
-class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter) : AttestationService {
+class DefaultAttestationService(
+    private val cryptoService: CryptoServiceAdapter,
+    androidAttestationConfiguration: AndroidAttestationConfiguration
+) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
+
+    private val androidAttestationChecker = AndroidAttestationChecker(androidAttestationConfiguration) { true }
 
     /**
      * Verifies the Android Key Attestation or Apple App Attestation
@@ -82,14 +89,12 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
         validityDate: Date = Date()
     ) = kotlin.runCatching {
         val certificates = attestationCerts.mapNotNull { it.parseToCertificate() }
-        // TODO Implement revocation check (custom REST JSON from Google)
-        if (!verifyCertificateChain(certificates, validityDate)) return false
-        val rootCertPublicKey = certificates.last().publicKey
-        if (!googleRootPublicKey.contentEquals(rootCertPublicKey?.encoded)) return false
+
+        if (!androidAttestationChecker.verifyCertificateChainAndAttestationProperties(certificates)) return false
+
         val bindingPublicKey = bindingCertificate.publicKey.encoded
         val attestationPublicKey = certificates.first().publicKey.encoded
-        if (!bindingPublicKey.contentEquals(attestationPublicKey)) return false
-        return true
+        return bindingPublicKey.contentEquals(attestationPublicKey)
     }.getOrElse { false }
 
     /**
@@ -130,25 +135,6 @@ class DefaultAttestationService(private val cryptoService: CryptoServiceAdapter)
     private fun ByteArray.parseToCertificate() = kotlin.runCatching {
         CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
     }.getOrNull()
-
-    /**
-     * Root of trust for Android's Key Attestation, from
-     * https://developer.android.com/training/articles/security-key-attestation
-     */
-    private val googleRootPublicKey = """
-        MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAr7bHgiuxpwHsK7Qui8xU
-        FmOr75gvMsd/dTEDDJdSSxtf6An7xyqpRR90PL2abxM1dEqlXnf2tqw1Ne4Xwl5j
-        lRfdnJLmN0pTy/4lj4/7tv0Sk3iiKkypnEUtR6WfMgH0QZfKHM1+di+y9TFRtv6y
-        //0rb+T+W8a9nsNL/ggjnar86461qO0rOs2cXjp3kOG1FEJ5MVmFmBGtnrKpa73X
-        pXyTqRxB/M0n1n/W9nGqC4FSYa04T6N5RIZGBN2z2MT5IKGbFlbC8UrW0DxW7AYI
-        mQQcHtGl/m00QLVWutHQoVJYnFPlXTcHYvASLu+RhhsbDmxMgJJ0mcDpvsC4PjvB
-        +TxywElgS70vE0XmLD+OJtvsBslHZvPBKCOdT0MS+tgSOIfga+z1Z1g7+DVagf7q
-        uvmag8jfPioyKvxnK/EgsTUVi2ghzq8wm27ud/mIM7AY2qEORR8Go3TVB4HzWQgp
-        Zrt3i5MIlCaY504LzSRiigHCzAPlHws+W0rB5N+er5/2pJKnfBSDiCiFAVtCLOZ7
-        gLiMm0jhO2B6tUXHI/+MRPjy02i59lINMRRev56GKtcd9qO/0kUJWdZTdA2XoS82
-        ixPvZtXQpUpuL12ab+9EaDK8Z4RHJYYfCT3Q5vNAXaiWQ+8PTWm2QgBR/bkwSWc+
-        NpUFgNPN9PvQi8WEg5UmAGMCAwEAAQ==
-    """.trimIndent().decodeBase64ToArray()!!
 
     /**
      * Root of trust for Apple's App Attestation, from

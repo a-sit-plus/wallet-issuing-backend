@@ -88,7 +88,7 @@ data class CredentialConfigurationProperties(
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
 
-    val revocationListCache: RevocationListCacheProperties?=null,
+    val revocationListCache: RevocationListCacheProperties? = null,
 
     /**
      * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
@@ -102,9 +102,9 @@ data class CredentialConfigurationProperties(
 
 @ConstructorBinding
 data class RevocationListCacheProperties(
-    private val min:String,
-    private val max:String,
-){
+    private val min: String,
+    private val max: String,
+) {
     val cacheDuration: RevocationListCache = Duration.parse(min) to Duration.parse(max)
 }
 
@@ -295,12 +295,32 @@ data class AeraPkiConfigurationProperties(
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
     val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties(),
+    val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties(null)
 )
 
 enum class DeviceBindingNonceType {
     INTERNAL,
     ECO
 }
+
+@ConstructorBinding
+data class AttestationConfigurationProperties(
+    val android: AndroidAttestationConfigurationProperties? = null
+)
+
+@ConstructorBinding
+data class AndroidAttestationConfigurationProperties(
+    val packageName: String,
+    val applicationVersion: Int? = null,
+    val androidVersion: Int? = 10000,
+    val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
+    val signatureDigest: String,
+    val requireStringBox: Boolean = false,
+    val requireRollbackResistance: Boolean = true,
+)
+
+@ConstructorBinding
+data class PatchLevelConfigurationProperties(val year: Int, val month: Int)
 
 @ConstructorBinding
 data class EcoDeviceBindingConfigurationProperties(

@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.attestation.android.AndroidAttestationConfiguration
+import at.asitplus.attestation.android.PatchLevel
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
@@ -8,11 +10,55 @@ import org.junit.jupiter.api.Test
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.time.Instant
-import java.util.Date
+import java.util.*
 
 class DefaultAttestationServiceTest {
-
-    private val service = DefaultAttestationService(DefaultCryptoServiceAdapter(RandomKeyAdapter()))
+    private val service = DefaultAttestationService(
+        DefaultCryptoServiceAdapter(RandomKeyAdapter()),
+        AndroidAttestationConfiguration(
+            packageName = "at.asitplus.digitalid.wallet.pupilid",
+            signatureDigest = byteArrayOf(
+                -27,
+                65,
+                -88,
+                -96,
+                52,
+                -74,
+                -11,
+                72,
+                94,
+                92,
+                -68,
+                -77,
+                -41,
+                106,
+                -27,
+                77,
+                -80,
+                119,
+                -22,
+                -1,
+                -9,
+                -9,
+                -87,
+                -89,
+                -82,
+                -100,
+                -100,
+                -92,
+                108,
+                116,
+                -86,
+                82
+            ),
+            appVersion = 1,
+            androidVersion = 10000,
+            patchLevel = PatchLevel(2021, 8),
+            requireStrongBox = false,
+            bootloaderUnlockAllowed = true,
+            requireRollbackResistance = false
+        )
+    )
 
     @Test
     fun `android attestation`() {
@@ -210,7 +256,7 @@ class DefaultAttestationServiceTest {
 
         val bindingCert = CertificateFactory.getInstance("X.509")
             .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
-        
+
         service.verifyAttestationClient(
             listOf(attestationStatement),
             bindingCert,
