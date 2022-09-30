@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.attestation.android.AndroidAttestationConfiguration
 import at.asitplus.attestation.android.PatchLevel
+import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
@@ -57,8 +58,16 @@ class DefaultAttestationServiceTest {
             requireStrongBox = false,
             bootloaderUnlockAllowed = true,
             requireRollbackResistance = false
+        ),
+        IOSAttestationConfigurationProperties(
+            "atasitplus",
+            "at.asitplus.digitalid.wallet.pupilid",
+            devStage = true,
+            nonce = "Lg==",
+            kid = "Lg=="
         )
     )
+
 
     @Test
     fun `android attestation`() {
