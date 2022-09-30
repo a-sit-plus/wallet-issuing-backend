@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.wallet.backend.TimeSource
 import at.asitplus.wallet.lib.agent.MonthAndDay
 import at.asitplus.wallet.lib.agent.RevocationListCache
+import at.asitplus.wallet.lib.decodeBase64ToArray
 import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -295,7 +296,7 @@ data class AeraPkiConfigurationProperties(
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
     val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties(),
-    val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties(null)
+    val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties()
 )
 
 enum class DeviceBindingNonceType {
@@ -305,19 +306,31 @@ enum class DeviceBindingNonceType {
 
 @ConstructorBinding
 data class AttestationConfigurationProperties(
-    val android: AndroidAttestationConfigurationProperties? = null
+    val android: AndroidAttestationConfigurationProperties = AndroidAttestationConfigurationProperties(),
+    val ios: IOSAttestationConfigurationProperties = IOSAttestationConfigurationProperties(),
 )
 
 @ConstructorBinding
 data class AndroidAttestationConfigurationProperties(
-    val packageName: String,
+    val packageName: String="com.apple.dollars",
     val applicationVersion: Int? = null,
     val androidVersion: Int? = 10000,
     val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
-    val signatureDigest: String,
+    val signatureDigest: String="DEADBEEF",
     val requireStringBox: Boolean = false,
     val requireRollbackResistance: Boolean = true,
 )
+
+@ConstructorBinding
+data class IOSAttestationConfigurationProperties(
+    val teamIdentifier: String="0000000000",
+    val bundleIdentifier: String="com.google.dollars",
+    val devStage: Boolean = false,
+    private val nonce: String="Lg==",
+    val kid: String="Lg=="
+) {
+    val challenge: ByteArray = nonce.decodeBase64ToArray() ?: throw RuntimeException("Could not b64-decode nonce")
+}
 
 @ConstructorBinding
 data class PatchLevelConfigurationProperties(val year: Int, val month: Int)

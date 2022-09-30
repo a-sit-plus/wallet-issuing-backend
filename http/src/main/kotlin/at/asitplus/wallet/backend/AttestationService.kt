@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.attestation.android.AndroidAttestationChecker
 import at.asitplus.attestation.android.AndroidAttestationConfiguration
+import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.fromJcaKey
 import at.asitplus.wallet.backend.service.joseType
@@ -10,6 +11,10 @@ import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.pupilid.AttestedPublicKey
+import ch.veehait.devicecheck.appattest.AppleAppAttest
+import ch.veehait.devicecheck.appattest.attestation.ValidatedAttestation
+import ch.veehait.devicecheck.appattest.common.App
+import ch.veehait.devicecheck.appattest.common.AppleAppAttestEnvironment
 import com.google.iot.cbor.CborArray
 import com.google.iot.cbor.CborByteString
 import com.google.iot.cbor.CborMap
@@ -36,12 +41,20 @@ interface AttestationService {
 
 class DefaultAttestationService(
     private val cryptoService: CryptoServiceAdapter,
-    androidAttestationConfiguration: AndroidAttestationConfiguration
+    androidAttestationConfiguration: AndroidAttestationConfiguration,
+    private val iosCfg: IOSAttestationConfigurationProperties,
 ) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val androidAttestationChecker = AndroidAttestationChecker(androidAttestationConfiguration) { true }
+
+    private val appleAppAttest = AppleAppAttest(
+        app = App(iosCfg.teamIdentifier, iosCfg.bundleIdentifier),
+        appleAppAttestEnvironment = if (iosCfg.devStage) AppleAppAttestEnvironment.DEVELOPMENT else AppleAppAttestEnvironment.PRODUCTION,
+    )
+    private val attestationValidator = appleAppAttest.createAttestationValidator()
+
 
     /**
      * Verifies the Android Key Attestation or Apple App Attestation
@@ -78,7 +91,7 @@ class DefaultAttestationService(
     ): Boolean = if (attestationCerts.size > 1)
         verifyAttestationAndroid(attestationCerts, bindingCertificate, validityDate)
     else
-        verifyAttestationApple(attestationCerts, validityDate)
+        verifyAttestationApple(attestationCerts.first(), validityDate)
 
     /**
      * Verifies Google Key Attestation structure by parsing certificates
@@ -101,10 +114,19 @@ class DefaultAttestationService(
      * Verifies Apple App Attestation structure by parsing CBOR and certificates.
      */
     private fun verifyAttestationApple(
-        attestationCerts: List<ByteArray>,
+        attestationCert: ByteArray,
         validityDate: Date = Date()
     ) = kotlin.runCatching {
-        val cborMap = CborMap.createFromCborByteArray(attestationCerts.first())
+
+      /*  val result: ValidatedAttestation = attestationValidator.validate(
+            attestationObject = attestationCert,
+            keyIdBase64 = iosCfg.kid,
+            serverChallenge = iosCfg.challenge,
+        )*/
+
+        //TODO what do with appattest result?
+
+        val cborMap = CborMap.createFromCborByteArray(attestationCert)
         val format = cborMap["fmt"].toJavaObject(String::class.java)
         if (format != "apple-appattest") return false
         val attestationStatement = cborMap["attStmt"] as CborMap

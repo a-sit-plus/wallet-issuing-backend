@@ -209,9 +209,14 @@ class BackendConfiguration {
 
     @Bean
     fun attestationService(
-        issuerCryptoService: CryptoServiceAdapter
+        issuerCryptoService: CryptoServiceAdapter,
     ): AttestationService =
-        DefaultAttestationService(issuerCryptoService, androidAttestationConfiguration())
+        DefaultAttestationService(
+            issuerCryptoService,
+            androidAttestationConfiguration(),
+            configurationProperties.authn.deviceBinding.attestation.ios
+                ?: throw RuntimeException("iOS attestation not configured")
+        )
 
     @Bean
     fun challengeService(): ChallengeService =
@@ -418,18 +423,18 @@ class BackendConfiguration {
         credentialScheme = ConstantIndex.Generic,
     )
 
-    fun androidAttestationConfiguration(): AndroidAttestationConfiguration {
+    private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {
         val aCfg = configurationProperties.authn.deviceBinding.attestation.android
         return AndroidAttestationConfiguration(
-            packageName = aCfg?.packageName ?: "",
-            signatureDigest = aCfg?.signatureDigest?.decodeBase16ToArray()
-                ?: byteArrayOf(),
-            appVersion = aCfg?.applicationVersion,
-            androidVersion = aCfg?.androidVersion,
-            patchLevel = aCfg?.patchLevel?.let { PatchLevel(it.year, it.month) },
-            requireStrongBox = aCfg?.requireStringBox ?: false,
+            packageName = aCfg.packageName,
+            signatureDigest = aCfg.signatureDigest.decodeBase16ToArray()
+                ?: throw RuntimeException("Could not hex decode Android attestation signature digest"),
+            appVersion = aCfg.applicationVersion,
+            androidVersion = aCfg.androidVersion,
+            patchLevel = aCfg.patchLevel?.let { PatchLevel(it.year, it.month) },
+            requireStrongBox = aCfg.requireStringBox ,
             bootloaderUnlockAllowed = false,
-            requireRollbackResistance = aCfg?.requireRollbackResistance ?: true
+            requireRollbackResistance = aCfg.requireRollbackResistance
         )
     }
 
