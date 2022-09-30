@@ -49,7 +49,7 @@ class PupilIdControllerFullRunTest {
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
         holderAgent = HolderAgent.newDefaultInstance(
             cryptoService = holderCryptoService,
-            clock= TestTimeSource.clock,
+            clock= TestTimeSource,
         )
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,

@@ -10,17 +10,20 @@ import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
+import at.asitplus.wallet.lib.toJavaClock
+import at.asitplus.wallet.lib.toJavaDate
 import at.asitplus.wallet.pupilid.AttestedPublicKey
 import ch.veehait.devicecheck.appattest.AppleAppAttest
+import ch.veehait.devicecheck.appattest.assertion.Assertion
+import ch.veehait.devicecheck.appattest.assertion.AssertionChallengeValidator
 import ch.veehait.devicecheck.appattest.attestation.ValidatedAttestation
 import ch.veehait.devicecheck.appattest.common.App
 import ch.veehait.devicecheck.appattest.common.AppleAppAttestEnvironment
-import com.google.iot.cbor.CborArray
-import com.google.iot.cbor.CborByteString
-import com.google.iot.cbor.CborMap
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
+import kotlinx.datetime.Clock
+import net.swiftzer.semver.SemVer
 import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -33,9 +36,13 @@ interface AttestationService {
      * Verifies the Android Key Attestation or Apple App Attestation
      * structures of the client (in [attestationCerts]),
      * creating a signed public key (with data from [bindingCertificate])
-     * if the device can be verified.
+     * if the device can be verified and [challenge] matches the attestation challenge.
      */
-    fun verifyAttestation(attestationCerts: List<ByteArray>, bindingCertificate: ByteArray): String?
+    fun verifyAttestation(
+        attestationCerts: List<ByteArray>,
+        bindingCertificate: ByteArray,
+        challenge: ByteArray
+    ): String?
 
 }
 
@@ -43,17 +50,30 @@ class DefaultAttestationService(
     private val cryptoService: CryptoServiceAdapter,
     androidAttestationConfiguration: AndroidAttestationConfiguration,
     private val iosCfg: IOSAttestationConfigurationProperties,
+    private val clock: Clock
 ) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val androidAttestationChecker = AndroidAttestationChecker(androidAttestationConfiguration) { true }
+    private val android =
+        AndroidAttestationChecker(androidAttestationConfiguration) { expected, actual -> expected contentEquals actual }
 
     private val appleAppAttest = AppleAppAttest(
         app = App(iosCfg.teamIdentifier, iosCfg.bundleIdentifier),
         appleAppAttestEnvironment = if (iosCfg.devStage) AppleAppAttestEnvironment.DEVELOPMENT else AppleAppAttestEnvironment.PRODUCTION,
     )
-    private val attestationValidator = appleAppAttest.createAttestationValidator()
+
+
+    private val iosNoopChallengeValidator = object : AssertionChallengeValidator {
+        override fun validate(
+            assertionObj: Assertion,
+            clientData: ByteArray,
+            attestationPublicKey: ECPublicKey,
+            challenge: ByteArray,
+        ): Boolean = TODO("Your application specific challenge validation routine")
+    }
+
+    private val attestationValidator = appleAppAttest.createAttestationValidator(clock = clock.toJavaClock())
 
 
     /**
@@ -62,11 +82,15 @@ class DefaultAttestationService(
      * creating a signed public key (with data from [bindingCertificate])
      * if the device can be verified.
      */
-    override fun verifyAttestation(attestationCerts: List<ByteArray>, bindingCertificate: ByteArray): String? {
+    override fun verifyAttestation(
+        attestationCerts: List<ByteArray>,
+        bindingCertificate: ByteArray,
+        challenge: ByteArray
+    ): String? {
         try {
             val certificate = CertificateFactory.getInstance("X.509")
                 .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
-            if (!verifyAttestationClient(attestationCerts, certificate))
+            if (!verifyAttestationClient(attestationCerts, certificate, challenge))
                 return null.also {
                     log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
                 }
@@ -87,11 +111,11 @@ class DefaultAttestationService(
     internal fun verifyAttestationClient(
         attestationCerts: List<ByteArray>,
         bindingCertificate: X509Certificate,
-        validityDate: Date = Date()
+        expectedChallenge: ByteArray
     ): Boolean = if (attestationCerts.size > 1)
-        verifyAttestationAndroid(attestationCerts, bindingCertificate, validityDate)
+        verifyAttestationAndroid(attestationCerts, bindingCertificate, expectedChallenge)
     else
-        verifyAttestationApple(attestationCerts.first(), validityDate)
+        verifyAttestationApple(attestationCerts.first(), expectedChallenge)
 
     /**
      * Verifies Google Key Attestation structure by parsing certificates
@@ -99,11 +123,11 @@ class DefaultAttestationService(
     private fun verifyAttestationAndroid(
         attestationCerts: List<ByteArray>,
         bindingCertificate: X509Certificate,
-        validityDate: Date = Date()
+        expectedChallenge: ByteArray
     ) = kotlin.runCatching {
         val certificates = attestationCerts.mapNotNull { it.parseToCertificate() }
 
-        if (!androidAttestationChecker.verifyCertificateChainAndAttestationProperties(certificates)) return false
+        if (!android.verifyAttestation(certificates, clock.now().toJavaDate(), expectedChallenge)) return false
 
         val bindingPublicKey = bindingCertificate.publicKey.encoded
         val attestationPublicKey = certificates.first().publicKey.encoded
@@ -115,28 +139,19 @@ class DefaultAttestationService(
      */
     private fun verifyAttestationApple(
         attestationCert: ByteArray,
-        validityDate: Date = Date()
+        expectedChallenge: ByteArray
     ) = kotlin.runCatching {
 
-      /*  val result: ValidatedAttestation = attestationValidator.validate(
+        val result: ValidatedAttestation = attestationValidator.validate(
             attestationObject = attestationCert,
             keyIdBase64 = iosCfg.kid,
-            serverChallenge = iosCfg.challenge,
-        )*/
+            serverChallenge = expectedChallenge,
+        )
 
-        //TODO what do with appattest result?
-
-        val cborMap = CborMap.createFromCborByteArray(attestationCert)
-        val format = cborMap["fmt"].toJavaObject(String::class.java)
-        if (format != "apple-appattest") return false
-        val attestationStatement = cborMap["attStmt"] as CborMap
-        val certArray = attestationStatement["x5c"] as CborArray
-        val certificates = certArray
-            .filterIsInstance<CborByteString>()
-            .map { it.byteArrayValue() }
-            .mapNotNull { it.parseToCertificate() }
-        // TODO revocation check? there is no CRL endpoint in the certificates ...
-        if (!verifyCertificateChain(certificates + appleRootCertificate, validityDate)) return false
+        iosCfg.iosVersion?.let {
+            if (SemVer.parse(result.iOSVersion ?: return false) < SemVer.parse(it))
+                return false
+        }
         return true
     }.getOrElse { false }
 

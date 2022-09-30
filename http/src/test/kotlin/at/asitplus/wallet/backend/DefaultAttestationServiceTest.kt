@@ -6,12 +6,14 @@ import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
+import at.asitplus.wallet.lib.toJavaDate
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.Test
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.time.Instant
 import java.util.*
+import kotlin.time.Duration.Companion.days
 
 class DefaultAttestationServiceTest {
     private val service = DefaultAttestationService(
@@ -60,12 +62,13 @@ class DefaultAttestationServiceTest {
             requireRollbackResistance = false
         ),
         IOSAttestationConfigurationProperties(
-            "atasitplus",
-            "at.asitplus.digitalid.wallet.pupilid",
+            "3YYPP4B36N",
+            "at.gv.bmbwf.eduDigicardWallet",
             devStage = true,
-            nonce = "Lg==",
-            kid = "Lg=="
-        )
+            kid = "9wtRIZUCOkkPioIdkvTp34FFcOp0FoeKL2Uv1ilJiMg=",
+            iosVersion = "14"
+        ),
+        TestTimeSource
     )
 
 
@@ -154,11 +157,12 @@ class DefaultAttestationServiceTest {
         val bindingCert = CertificateFactory.getInstance("X.509")
             .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
 
-        service.verifyAttestationClient(attestationChain, bindingCert) shouldBe true
+        val challenge = byteArrayOf(-93, -86, -28, -45, 69, -9, -4, 15, -118, -70, 4, -95, 121, 39, -1, 72, 88, 40, -16, -86, -98, -104, -1, -20, -33, 21, -38, 88, -107, -74, 31, -85)
+        service.verifyAttestationClient(attestationChain, bindingCert, challenge) shouldBe true
 
-        service.verifyAttestationClient(listOf(attestationChain[0]), bindingCert) shouldBe false
-        service.verifyAttestationClient(attestationChain.subList(0, 1), bindingCert) shouldBe false
-        service.verifyAttestationClient(attestationChain.subList(0, 2), bindingCert) shouldBe false
+        service.verifyAttestationClient(listOf(attestationChain[0]), bindingCert, challenge) shouldBe false
+        service.verifyAttestationClient(attestationChain.subList(0, 1), bindingCert, challenge) shouldBe false
+        service.verifyAttestationClient(attestationChain.subList(0, 2), bindingCert, challenge) shouldBe false
     }
 
     @Test
@@ -192,7 +196,7 @@ class DefaultAttestationServiceTest {
             vU9oR3GVGdMkUBZutL8VuFkERQGt6vQ2OCw0sV47VMkuYbacK/xyZFiRcrPJPb41zgbQj9XAEyLKCHex0SdDrx+tWUDqG8At2JHA==
             """.trimMargin()
         ).map { it.decodeBase64ToArray()!! }
-        val bindingCertificate ="""
+        val bindingCertificate = """
             MIICujCCAmCgAwIBAgIBATAKBggqhkjOPQQDAjA5MQwwCgYDVQQMDANURUUxKTAnBgNVBAUTIDg3ZWVkZjAzYjljZWNlMjIwYzgzMTJhMmI5ZDZiMjZlMB4XDTIy
             MDkyNzExMzY0OVoXDTQ4MDEwMTAwMDAwMFowFTETMBEGA1UEAxMKYmluZGluZ0tleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABItRPUbUcbA7u0reFB0FHMvDlN/Oc/Ez1DlFsaNX/QHHGr5sgX4rJj3g6BqvwDxFfdjR8VnrB2wVqnAd1vCMNnejggF7MIIBdzAOBgNVHQ8BAf8EBAMCB4AwggFjBgorBgEEAdZ5AgERBIIBUzCCAU8CAgDICgEBAgIAyAoBAQQgg
             NbnnEX4D8L1U7rt6XyzQNZ3WlN/e/H9wDjd/qXvHpsEADBlv4U9CAIGAYN+vD4Xv4VFVQRTMFExKzApBCRhdC5hc2l0cGx1cy5kaWdpdGFsaWQud2FsbGV0LnB1cGlsaWQCAQExIgQg5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlIwgbOhCDEGAgECAgEDogMCAQOjBAICAQClCzEJAgEAAgECAgEEqgMCAQG/g3gDAgEDv4N5BAICASy/hT4DAgEAv4VATD
@@ -200,105 +204,84 @@ class DefaultAttestationServiceTest {
             """.trimMargin().decodeBase64ToArray()!!
         val bindingCert = CertificateFactory.getInstance("X.509")
             .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
+        val challenge = byteArrayOf(-128, -42, -25, -100, 69, -8, 15, -62, -11, 83, -70, -19, -23, 124, -77, 64, -42, 119, 90, 83, 127, 123, -15, -3, -64, 56, -35, -2, -91, -17, 30, -101)
+        TestTimeSource.offset(365.days)
+        service.verifyAttestationClient(attestationChain, bindingCert, challenge) shouldBe true
 
-        service.verifyAttestationClient(attestationChain, bindingCert) shouldBe true
-
-        service.verifyAttestationClient(listOf(attestationChain[0]), bindingCert) shouldBe false
-        service.verifyAttestationClient(attestationChain.subList(0, 1), bindingCert) shouldBe false
-        service.verifyAttestationClient(attestationChain.subList(0, 2), bindingCert) shouldBe false
+        service.verifyAttestationClient(listOf(attestationChain[0]), bindingCert, challenge) shouldBe false
+        service.verifyAttestationClient(attestationChain.subList(0, 1), bindingCert, challenge) shouldBe false
+        service.verifyAttestationClient(attestationChain.subList(0, 2), bindingCert, challenge) shouldBe false
+        TestTimeSource.offset(-(365.days))
     }
 
     @Test
     fun `iOS attestation`() {
         val attestationStatement = """
-            o2NmbXRvYXBwbGUtYXBwYXR0ZXN0Z2F0dFN0bXSiY3g1Y4JZAu0wggLpMIICbqADAgECAgYBgJQ3rNkw
-            CgYIKoZIzj0EAwIwTzEjMCEGA1UEAwwaQXBwbGUgQXBwIEF0dGVzdGF0aW9uIENBIDExEzARBgNVBAoM
-            CkFwcGxlIEluYy4xEzARBgNVBAgMCkNhbGlmb3JuaWEwHhcNMjIwNTA0MTIzNTE4WhcNMjIwNTA3MTIz
-            NTE4WjCBkTFJMEcGA1UEAwxAZjcwYmViMTE5NjA5ZGI5MDgzZDdkNTEzOWFiNWQ5ZjA4NGNhNDczZmNl
-            ZTkyN2QyNGQ5YTRjNmQyNTc3ODEzNzEaMBgGA1UECwwRQUFBIENlcnRpZmljYXRpb24xEzARBgNVBAoM
-            CkFwcGxlIEluYy4xEzARBgNVBAgMCkNhbGlmb3JuaWEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATg
-            2lfAVwDPbgrFJmbz6DyJ7VegefNQvEOCgNlLnfgYOon/hZbWSVBqz3Hmer09HHimh+eSS6LkJYOAOeH5
-            s+6Io4HyMIHvMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgTwMH0GCSqGSIb3Y2QIBQRwMG6kAwIB
-            Cr+JMAMCAQG/iTEDAgEAv4kyAwIBAb+JMwMCAQG/iTQlBCM5Q1lISk5HNjQ0LmF0LmFzaXRwbHVzLmVk
-            dS1kaWdpY2FyZKUGBARza3Mgv4k2AwIBBb+JNwMCAQC/iTkDAgEAv4k6AwIBADAbBgkqhkiG92NkCAcE
-            DjAMv4p4CAQGMTUuNC4xMDMGCSqGSIb3Y2QIAgQmMCShIgQg6zFTIq+5SrxoEjF6+ZRr25LK1a8a6PTq
-            kKI0z2GawM8wCgYIKoZIzj0EAwIDaQAwZgIxAPVdRwFNrQY4xXSDQaXy6+3TLjbUBlnGloBrNzVcYhRK
-            wl+q0c0ZVY6Fy/NnK8LgSAIxAJC47fNUP/uk1E2JQzOg73XBEtiKWaRGsPS9O/r9QaaMWcjyDoCJfr6n
-            UvreaiLi6VkCRzCCAkMwggHIoAMCAQICEAm6xeG8QBrZ1FOVvDgaCFQwCgYIKoZIzj0EAwMwUjEmMCQG
-            A1UEAwwdQXBwbGUgQXBwIEF0dGVzdGF0aW9uIFJvb3QgQ0ExEzARBgNVBAoMCkFwcGxlIEluYy4xEzAR
-            BgNVBAgMCkNhbGlmb3JuaWEwHhcNMjAwMzE4MTgzOTU1WhcNMzAwMzEzMDAwMDAwWjBPMSMwIQYDVQQD
-            DBpBcHBsZSBBcHAgQXR0ZXN0YXRpb24gQ0EgMTETMBEGA1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwK
-            Q2FsaWZvcm5pYTB2MBAGByqGSM49AgEGBSuBBAAiA2IABK5bN6B3TXmyNY9A59HyJibxwl/vF4At6rOC
-            almHT/jSrRUleJqiZgQZEki2PLlnBp6Y02O9XjcPv6COMp6Ac6mF53Ruo1mi9m8p2zKvRV4hFljVZ6+e
-            Jn6yYU3CGmbOmaNmMGQwEgYDVR0TAQH/BAgwBgEB/wIBADAfBgNVHSMEGDAWgBSskRBTM72+aEH/pwyp
-            5frq5eWKoTAdBgNVHQ4EFgQUPuNdHAQZqcm0MfiEdNbh4Vdy45swDgYDVR0PAQH/BAQDAgEGMAoGCCqG
-            SM49BAMDA2kAMGYCMQC7voiNc40FAs+8/WZtCVdQNbzWhyw/hDBJJint0fkU6HmZHJrota7406hUM/e2
-            DQYCMQCrOO3QzIHtAKRSw7pE+ZNjZVP+zCl/LrTfn16+WkrKtplcS4IN+QQ4b3gHu1iUObdncmVjZWlw
-            dFkOXzCABgkqhkiG9w0BBwKggDCAAgEBMQ8wDQYJYIZIAWUDBAIBBQAwgAYJKoZIhvcNAQcBoIAkgASC
-            A+gxggQZMCsCAQICAQEEIzlDWUhKTkc2NDQuYXQuYXNpdHBsdXMuZWR1LWRpZ2ljYXJkMIIC9wIBAwIB
-            AQSCAu0wggLpMIICbqADAgECAgYBgJQ3rNkwCgYIKoZIzj0EAwIwTzEjMCEGA1UEAwwaQXBwbGUgQXBw
-            IEF0dGVzdGF0aW9uIENBIDExEzARBgNVBAoMCkFwcGxlIEluYy4xEzARBgNVBAgMCkNhbGlmb3JuaWEw
-            HhcNMjIwNTA0MTIzNTE4WhcNMjIwNTA3MTIzNTE4WjCBkTFJMEcGA1UEAwxAZjcwYmViMTE5NjA5ZGI5
-            MDgzZDdkNTEzOWFiNWQ5ZjA4NGNhNDczZmNlZTkyN2QyNGQ5YTRjNmQyNTc3ODEzNzEaMBgGA1UECwwR
-            QUFBIENlcnRpZmljYXRpb24xEzARBgNVBAoMCkFwcGxlIEluYy4xEzARBgNVBAgMCkNhbGlmb3JuaWEw
-            WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATg2lfAVwDPbgrFJmbz6DyJ7VegefNQvEOCgNlLnfgYOon/
-            hZbWSVBqz3Hmer09HHimh+eSS6LkJYOAOeH5s+6Io4HyMIHvMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/
-            BAQDAgTwMH0GCSqGSIb3Y2QIBQRwMG6kAwIBCr+JMAMCAQG/iTEDAgEAv4kyAwIBAb+JMwMCAQG/iTQl
-            BCM5Q1lISk5HNjQ0LmF0LmFzaXRwbHVzLmVkdS1kaWdpY2FyZKUGBARza3Mgv4k2AwIBBb+JNwMCAQC/
-            iTkDAgEAv4k6AwIBADAbBgkqhkiG92NkCAcEDjAMv4p4CAQGMTUuNC4xMDMGCSqGSIb3Y2QIAgQmMCSh
-            IgQg6zFTIq+5SrxoEjF6+ZRr25LK1a8a6PTqkKI0z2GawM8wCgYIKoZIzj0EAwIDaQAwZgIxAPVdRwFN
-            rQY4xXSDQaXy6+3TLjbUBlnGloBrNzVcYhRKwl+q0c0ZVY6Fy/NnK8LgSAIxAJC47fNUP/uk1E2JQzOg
-            73XBEtiKWaRGsPS9O/r9QaaMWcjyDoCJfr6nUvreaiLi6TAoAgEEAgEBBCC1QPhtL0fnlOw4FCEyx+T5
-            Cck7kGgycMw782HA7Yqu6jBgAgEFAgEBBFhvUmR5dVNqdVVFSEJQdlVhVmJkTW42aGdwTmpJc21lTm5X
-            dXB3d1EwNGpKWFJCc2dsN1ZHejJkNi8xZVEzYSsyV3paTlpGNXEwQVV4cFZZVjZPYmZqUT09MA4CAQYC
-            AQEEBkFUVEVTVDAPAgEHAgEBBAdzYW5kYm94MCACAQwCAQEEGDIwMjItBDUwNS0wNVQxMjozNToxOC4z
-            OTdaMCACARUCAQEEGDIwMjItMDgtMDNUMTI6MzU6MTguMzk3WgAAAAAAAKCAMIIDrjCCA1SgAwIBAgIQ
-            WmMk9bZy2t8fhb5kN6oU4jAKBggqhkjOPQQDAjB8MTAwLgYDVQQDDCdBcHBsZSBBcHBsaWNhdGlvbiBJ
-            bnRlZ3JhdGlvbiBDQSA1IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5
-            MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzAeFw0yMTA1MDUwNDA3NTJaFw0yMjA2MDQw
-            NDA3NTFaMFoxNjA0BgNVBAMMLUFwcGxpY2F0aW9uIEF0dGVzdGF0aW9uIEZyYXVkIFJlY2VpcHQgU2ln
-            bmluZzETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwWTATBgcqhkjOPQIBBggqhkjOPQMB
-            BwNCAAQuxd7WO5w3Khzo9lnUcL6ACgu+unY5hELa5TGVzRdO22mxERF16L2nYy81z756qHovUNWW7K0E
-            i23gk+v3rKwSo4IB2DCCAdQwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBTZF/5LZ5A4S5L0287VV4AU
-            C489yTBDBggrBgEFBQcBAQQ3MDUwMwYIKwYBBQUHMAGGJ2h0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3Nw
-            MDMtYWFpY2E1ZzEwMTCCARwGA1UdIASCARMwggEPMIIBCwYJKoZIhvdjZAUBMIH9MIHDBggrBgEFBQcC
-            AjCBtgyBs1JlbGlhbmNlIG9uIHRoaXMgY2VydGlmaWNhdGUgYnkgYW55IHBhcnR5IGFzc3VtZXMgYWNj
-            ZXB0YW5jZSBvZiB0aGUgdGhlbiBhcHBsaWNhYmxlIHN0YW5kYXJkIHRlcm1zIGFuZCBjb25kaXRpb25z
-            IG9mIHVzZSwgY2VydGlmaWNhdGUgcG9saWN5IGFuZCBjZXJ0aWZpY2F0aW9uIHByYWN0aWNlIHN0YXRl
-            bWVudHMuMDUGCCsGAQUFBwIBFilodHRwOi8vd3d3LmFwcGxlLmNvbS9jZXJ0aWZpY2F0ZWF1dGhvcml0
-            eTAdBgNVHQ4EFgQUgYIFHDboz52JHAUcf2be4RMg5VMwDgYDVR0PAQH/BAQDAgeAMA8GCSqGSIb3Y2QM
-            DwQCBQAwCgYIKoZIzj0EAwIDSAAwRQIgRuXoU1t+BUqff/GPKjPW4bIZKlFkENd7KR8Gq5yLqRMCIQC4
-            d5e0qEsxLnl9i1DjKNVBti3hl0GC8kfwlMbyis4LFjCCAvkwggJ/oAMCAQICEFb7g9Qr/43DN5kjtVqu
-            br0wCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBs
-            ZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMw
-            HhcNMTkwMzIyMTc1MzMzWhcNMzQwMzIyMDAwMDAwWjB8MTAwLgYDVQQDDCdBcHBsZSBBcHBsaWNhdGlv
-            biBJbnRlZ3JhdGlvbiBDQSA1IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9y
-            aXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzBZMBMGByqGSM49AgEGCCqGSM49AwEH
-            A0IABJLOY719hrGrKAo7HOGv+wSUgJGs9jHfpssoNW9ES+Eh5VfdEo2NuoJ8lb5J+r4zyq7NBBnxL0Ml
-            +vS+s8uDfrqjgfcwgfQwDwYDVR0TAQH/BAUwAwEB/zAfBgNVHSMEGDAWgBS7sN6hWDOImqSKmd6+veuv
-            2sskqzBGBggrBgEFBQcBAQQ6MDgwNgYIKwYBBQUHMAGGKmh0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3Nw
-            MDMtYXBwbGVyb290Y2FnMzA3BgNVHR8EMDAuMCygKqAohiZodHRwOi8vY3JsLmFwcGxlLmNvbS9hcHBs
-            ZXJvb3RjYWczLmNybDAdBgNVHQ4EFgQU2Rf+S2eQOEuS9NvO1VeAFAuPPckwDgYDVR0PAQH/BAQDAgEG
-            MBAGCiqGSIb3Y2QGAgMEAgUAMAoGCCqGSM49BAMDA2gAMGUCMQCNb6afoeDk7FtOc4qSfz14U5iP9Nof
-            WB7DdUr+OKhMKoMaGqoNpmRt4bmT6NFVTO0CMGc7LLTh6DcHd8vV7HaoGjpVOz81asjF5pKw4WG+gElp
-            5F8rqWzhEQKqzGHZOLdzSjCCAkMwggHJoAMCAQICCC3F/IjSxUuVMAoGCCqGSM49BAMDMGcxGzAZBgNV
-            BAMMEkFwcGxlIFJvb3QgQ0EgLSBHMzEmMCQGA1UECwwdQXBwbGUgQ2VydGlmaWNhdGlvbiBBdXRob3Jp
-            dHkxEzARBgNVBAoMCkFwcGxlIEluYy4xCzAJBgNVBAYTAlVTMB4XDTE0MDQzMDE4MTkwNloXDTM5MDQz
-            MDE4MTkwNlowZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0
-            aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwdjAQBgcq
-            hkjOPQIBBgUrgQQAIgNiAASY6S89QHKk7ZMicoETHN0QlfHFo05x3BQW2Q7lpgUqd2R7X04407scRLV/
-            9R+2MmJdyemEW08wTxFaAP1YWAyl9Q8sTQdHE3Xal5eXbzFc7SudeyA72LlU2V6ZpDpRCjGjQjBAMB0G
-            A1UdDgQWBBS7sN6hWDOImqSKmd6+veuv2sskqzAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIB
-            BjAKBggqhkjOPQQDAwNoADBlAjEAg+nBxBZeGl00GNnt7/RsDgBGS7jfskYRxQ/95nqMoaZrzsID1Jz1
-            k8Z0uGrfqiMVAjBtZooQytQN1E/NjUM+tIpjpTNu423aF7dkH8hTJvmIYnQ5Cxdby1GoDOgYA+eisigA
-            ADGB/TCB+gIBATCBkDB8MTAwLgYDVQQDDCdBcHBsZSBBcHBsaWNhdGlvbiBJbnRlZ3JhdGlvbiBDQSA1
-            IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBs
-            ZSBJbmMuMQswCQYDVQQGEwJVUwIQWmMk9bZy2t8fhb5kN6oU4jANBglghkgBZQMEAgEFADAKBggqhkjO
-            PQQDAgRHMEUCID0A97UNknMpHMGEEo6cCKcQbl1QZBomqpZ6wMskLLU3AiEApO6XCURGftyUFnCZAH7d
-            J0LdcZjHhFNjO4vKZBIfmKwAAAAAAABoYXV0aERhdGFYpICdH9z8dBnBH6acSbBIsoYGib1/EdgAnlk7
-            wecfGjBDQAAAAABhcHBhdHRlc3RkZXZlbG9wACD3C+sRlgnbkIPX1ROatdnwhMpHP87pJ9JNmkxtJXeB
-            N6UBAgMmIAEhWCDg2lfAVwDPbgrFJmbz6DyJ7VegefNQvEOCgNlLnfgYOiJYIIn/hZbWSVBqz3Hmer09
-            HHimh+eSS6LkJYOAOeH5s+6I
+            o2NmbXRvYXBwbGUtYXBwYXR0ZXN0Z2F0dFN0bXSiY3g1Y4JZAu8wggLrMIICcqADAgECAgYBg38k/xowCgYIKoZIzj0EAwIwTzEjMCEGA1UE
+            AwwaQXBwbGUgQXBwIEF0dGVzdGF0aW9uIENBIDExEzARBgNVBAoMCkFwcGxlIEluYy4xEzARBgNVBAgMCkNhbGlmb3JuaWEwHhcNMjIwOTI2
+            MTMzMTE0WhcNMjIwOTI5MTMzMTE0WjCBkTFJMEcGA1UEAwxAZjcwYjUxMjE5NTAyM2E0OTBmOGE4MjFkOTJmNGU5ZGY4MTQ1NzBlYTc0MTY4
+            NzhhMmY2NTJmZDYyOTQ5ODhjODEaMBgGA1UECwwRQUFBIENlcnRpZmljYXRpb24xEzARBgNVBAoMCkFwcGxlIEluYy4xEzARBgNVBAgMCkNh
+            bGlmb3JuaWEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAS+KWejP3kku7s2ixJCD816PFwnlt3g22N3tVqDywJ6FfoZSg8i0fBfjv2+oGsc
+            xG/YidHl8qsk6YTrZROiy6oLo4H2MIHzMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgTwMIGCBgkqhkiG92NkCAUEdTBzpAMCAQq/iTAD
+            AgEBv4kxAwIBAL+JMgMCAQG/iTMDAgEBv4k0KgQoM1lZUFA0QjM2Ti5hdC5ndi5ibWJ3Zi5lZHVEaWdpY2FyZFdhbGxldKUGBARza3Mgv4k2
+            AwIBBb+JNwMCAQC/iTkDAgEAv4k6AwIBADAZBgkqhkiG92NkCAcEDDAKv4p4BgQEMTUuNjAzBgkqhkiG92NkCAIEJjAkoSIEINrvj5D9dE8L
+            3sx8Lh9Qpj1npxr08YKzO8NUQxAbPiflMAoGCCqGSM49BAMCA2cAMGQCMGOKAo/9pQu4c+MauzyKniFVgPq1iRWlSW1vLi2CtK6cDJLnvApa
+            zg3I34ZJKrD/7wIwfv3Enn0/24HG+axNlRiJ9ytzpqXa3jiaCSqTSEfUN+vKZB87S4Cl9PLCJpnBdfZ3WQJHMIICQzCCAcigAwIBAgIQCbrF
+            4bxAGtnUU5W8OBoIVDAKBggqhkjOPQQDAzBSMSYwJAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwKQXBw
+            bGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODM5NTVaFw0zMDAzMTMwMDAwMDBaME8xIzAhBgNVBAMMGkFwcGxlIEFw
+            cCBBdHRlc3RhdGlvbiBDQSAxMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMHYwEAYHKoZIzj0CAQYFK4EEACID
+            YgAErls3oHdNebI1j0Dn0fImJvHCX+8XgC3qs4JqWYdP+NKtFSV4mqJmBBkSSLY8uWcGnpjTY71eNw+/oI4ynoBzqYXndG6jWaL2bynbMq9F
+            XiEWWNVnr54mfrJhTcIaZs6Zo2YwZDASBgNVHRMBAf8ECDAGAQH/AgEAMB8GA1UdIwQYMBaAFKyREFMzvb5oQf+nDKnl+url5YqhMB0GA1Ud
+            DgQWBBQ+410cBBmpybQx+IR01uHhV3LjmzAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDaQAwZgIxALu+iI1zjQUCz7z9Zm0JV1A1vNaHL
+            D+EMEkmKe3R+RToeZkcmui1rvjTqFQz97YNBgIxAKs47dDMge0ApFLDukT5k2NlU/7MKX8utN+fXr5aSsq2mVxLgg35BDhveAe7WJQ5t2dyZ
+            WNlaXB0WQ5nMIAGCSqGSIb3DQEHAqCAMIACAQExDzANBglghkgBZQMEAgEFADCABgkqhkiG9w0BBwGggCSABIID6DGCBCAwMAIBAgIBAQQoM
+            1lZUFA0QjM2Ti5hdC5ndi5ibWJ3Zi5lZHVEaWdpY2FyZFdhbGxldDCCAvkCAQMCAQEEggLvMIIC6zCCAnKgAwIBAgIGAYN/JP8aMAoGCCqGS
+            M49BAMCME8xIzAhBgNVBAMMGkFwcGxlIEFwcCBBdHRlc3RhdGlvbiBDQSAxMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZ
+            m9ybmlhMB4XDTIyMDkyNjEzMzExNFoXDTIyMDkyOTEzMzExNFowgZExSTBHBgNVBAMMQGY3MGI1MTIxOTUwMjNhNDkwZjhhODIxZDkyZjRlO
+            WRmODE0NTcwZWE3NDE2ODc4YTJmNjUyZmQ2Mjk0OTg4YzgxGjAYBgNVBAsMEUFBQSBDZXJ0aWZpY2F0aW9uMRMwEQYDVQQKDApBcHBsZSBJb
+            mMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvilnoz95JLu7NosSQg/NejxcJ5bd4Ntjd7Vag8sCe
+            hX6GUoPItHwX479vqBrHMRv2InR5fKrJOmE62UTosuqC6OB9jCB8zAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIE8DCBggYJKoZIhvdjZ
+            AgFBHUwc6QDAgEKv4kwAwIBAb+JMQMCAQC/iTIDAgEBv4kzAwIBAb+JNCoEKDNZWVBQNEIzNk4uYXQuZ3YuYm1id2YuZWR1RGlnaWNhcmRXY
+            WxsZXSlBgQEc2tzIL+JNgMCAQW/iTcDAgEAv4k5AwIBAL+JOgMCAQAwGQYJKoZIhvdjZAgHBAwwCr+KeAYEBDE1LjYwMwYJKoZIhvdjZAgCB
+            CYwJKEiBCDa74+Q/XRPC97MfC4fUKY9Z6ca9PGCszvDVEMQGz4n5TAKBggqhkjOPQQDAgNnADBkAjBjigKP/aULuHPjGrs8ip4hVYD6tYkVp
+            Ultby4tgrSunAyS57wKWs4NyN+GSSqw/+8CMH79xJ59P9uBxvmsTZUYifcrc6al2t44mgkqk0hH1DfrymQfO0uApfTywiaZwXX2dzAoAgEEA
+            gEBBCDo1AuW3jvSYQyW+RE7/ekSS0yZEdlMbCQlqGRuRTnm2jBgAgEFAgEBBFhzNjNaVFl2WXFhTThwWkhIZmVHbWdhd2Ntbk5WOVlSMTRxc
+            Cs2Q3lEa2VuOVE4SWkxVHlGMnkrMVo3UWoxSU1EaXBVV3R5VVc4dER1UnVFN2NaVU5NZz09MA4CAQYCAQEEBkFUVEVTVDAPAgEHAgEBBAdzY
+            W5kYm94MCACAQwCAQEEPAQYMjAyMi0wOS0yN1QxMzozMToxNC42MjdaMCACARUCAQEEGDIwMjItMTItMjZUMTM6MzE6MTQuNjI3WgAAAAAAA
+            KCAMIIDrjCCA1SgAwIBAgIQCTm0vOkMw6GBZTY3L2ZxQTAKBggqhkjOPQQDAjB8MTAwLgYDVQQDDCdBcHBsZSBBcHBsaWNhdGlvbiBJbnRlZ
+            3JhdGlvbiBDQSA1IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswC
+            QYDVQQGEwJVUzAeFw0yMjA0MTkxMzMzMDNaFw0yMzA1MTkxMzMzMDJaMFoxNjA0BgNVBAMMLUFwcGxpY2F0aW9uIEF0dGVzdGF0aW9uIEZyY
+            XVkIFJlY2VpcHQgU2lnbmluZzETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ51
+            PmqmxzERdZbphes8sCE7G8HCNWQFKDnbs897jmZqUxr+wFVEFVVZGzajiPgJgEUAtB+E7lUH9i01lfYLpN4o4IB2DCCAdQwDAYDVR0TAQH/B
+            AIwADAfBgNVHSMEGDAWgBTZF/5LZ5A4S5L0287VV4AUC489yTBDBggrBgEFBQcBAQQ3MDUwMwYIKwYBBQUHMAGGJ2h0dHA6Ly9vY3NwLmFwc
+            GxlLmNvbS9vY3NwMDMtYWFpY2E1ZzEwMTCCARwGA1UdIASCARMwggEPMIIBCwYJKoZIhvdjZAUBMIH9MIHDBggrBgEFBQcCAjCBtgyBs1Jlb
+            GlhbmNlIG9uIHRoaXMgY2VydGlmaWNhdGUgYnkgYW55IHBhcnR5IGFzc3VtZXMgYWNjZXB0YW5jZSBvZiB0aGUgdGhlbiBhcHBsaWNhYmxlI
+            HN0YW5kYXJkIHRlcm1zIGFuZCBjb25kaXRpb25zIG9mIHVzZSwgY2VydGlmaWNhdGUgcG9saWN5IGFuZCBjZXJ0aWZpY2F0aW9uIHByYWN0a
+            WNlIHN0YXRlbWVudHMuMDUGCCsGAQUFBwIBFilodHRwOi8vd3d3LmFwcGxlLmNvbS9jZXJ0aWZpY2F0ZWF1dGhvcml0eTAdBgNVHQ4EFgQU+
+            2fTDb9zt5KmJl1IjSzBHZXic/gwDgYDVR0PAQH/BAQDAgeAMA8GCSqGSIb3Y2QMDwQCBQAwCgYIKoZIzj0EAwIDSAAwRQIhAJSQoGc3c+cve
+            Ck2diO43VHXyJoJ6rsA45xuRQsFWAvQAiBHNBor0TzAVKgKOqrMPMFFfABUUxjqM419bdX2CyuHLjCCAvkwggJ/oAMCAQICEFb7g9Qr/43DN
+            5kjtVqubr0wCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uI
+            EF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcNMTkwMzIyMTc1MzMzWhcNMzQwMzIyMDAwMDAwWjB8MTAwL
+            gYDVQQDDCdBcHBsZSBBcHBsaWNhdGlvbiBJbnRlZ3JhdGlvbiBDQSA1IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0a
+            G9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJLOY719hrGrKAo7HOGv+
+            wSUgJGs9jHfpssoNW9ES+Eh5VfdEo2NuoJ8lb5J+r4zyq7NBBnxL0Ml+vS+s8uDfrqjgfcwgfQwDwYDVR0TAQH/BAUwAwEB/zAfBgNVHSMEG
+            DAWgBS7sN6hWDOImqSKmd6+veuv2sskqzBGBggrBgEFBQcBAQQ6MDgwNgYIKwYBBQUHMAGGKmh0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3NwM
+            DMtYXBwbGVyb290Y2FnMzA3BgNVHR8EMDAuMCygKqAohiZodHRwOi8vY3JsLmFwcGxlLmNvbS9hcHBsZXJvb3RjYWczLmNybDAdBgNVHQ4EF
+            gQU2Rf+S2eQOEuS9NvO1VeAFAuPPckwDgYDVR0PAQH/BAQDAgEGMBAGCiqGSIb3Y2QGAgMEAgUAMAoGCCqGSM49BAMDA2gAMGUCMQCNb6afo
+            eDk7FtOc4qSfz14U5iP9NofWB7DdUr+OKhMKoMaGqoNpmRt4bmT6NFVTO0CMGc7LLTh6DcHd8vV7HaoGjpVOz81asjF5pKw4WG+gElp5F8rq
+            WzhEQKqzGHZOLdzSjCCAkMwggHJoAMCAQICCC3F/IjSxUuVMAoGCCqGSM49BAMDMGcxGzAZBgNVBAMMEkFwcGxlIFJvb3QgQ0EgLSBHMzEmM
+            CQGA1UECwwdQXBwbGUgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkxEzARBgNVBAoMCkFwcGxlIEluYy4xCzAJBgNVBAYTAlVTMB4XDTE0MDQzM
+            DE4MTkwNloXDTM5MDQzMDE4MTkwNlowZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0a
+            W9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAASY6S89QHKk7ZMic
+            oETHN0QlfHFo05x3BQW2Q7lpgUqd2R7X04407scRLV/9R+2MmJdyemEW08wTxFaAP1YWAyl9Q8sTQdHE3Xal5eXbzFc7SudeyA72LlU2V6Zp
+            DpRCjGjQjBAMB0GA1UdDgQWBBS7sN6hWDOImqSKmd6+veuv2sskqzAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOP
+            QQDAwNoADBlAjEAg+nBxBZeGl00GNnt7/RsDgBGS7jfskYRxQ/95nqMoaZrzsID1Jz1k8Z0uGrfqiMVAjBtZooQytQN1E/NjUM+tIpjpTNu4
+            23aF7dkH8hTJvmIYnQ5Cxdby1GoDOgYA+eisigAADGB/jCB+wIBATCBkDB8MTAwLgYDVQQDDCdBcHBsZSBBcHBsaWNhdGlvbiBJbnRlZ3Jhd
+            GlvbiBDQSA1IC0gRzExJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDV
+            QQGEwJVUwIQCTm0vOkMw6GBZTY3L2ZxQTANBglghkgBZQMEAgEFADAKBggqhkjOPQQDAgRIMEYCIQDtHiAO1eGNYjvJSMR6J53y0IvIE119w
+            Q1Fr4yI9dJEXQIhAI4cKGPsQSFPtLYkYes5IySkx3LK22S7S0EkGvWrSViJAAAAAAAAaGF1dGhEYXRhWKRrYIb/2QrUnc/R9hI32hsnDb8u4
+            S49ud6V8ZtpYot2x0AAAAAAYXBwYXR0ZXN0ZGV2ZWxvcAAg9wtRIZUCOkkPioIdkvTp34FFcOp0FoeKL2Uv1ilJiMilAQIDJiABIVggvilno
+            z95JLu7NosSQg/NejxcJ5bd4Ntjd7Vag8sCehUiWCD6GUoPItHwX479vqBrHMRv2InR5fKrJOmE62UTosuqCw==
         """.trimMargin().decodeBase64ToArray()!!
 
         val bindingCertificate = """
@@ -313,11 +296,15 @@ class DefaultAttestationServiceTest {
         val bindingCert = CertificateFactory.getInstance("X.509")
             .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
 
-        service.verifyAttestationClient(
+        TestTimeSource.offset(351.days)
+        val attestationResult = service.verifyAttestationClient(
             listOf(attestationStatement),
             bindingCert,
-            Date.from(Instant.parse("2022-05-05T12:37:00Z"))
-        ) shouldBe true
+            "d6KTUbpAHHsMpQ4x5rEuOqkiGSKTZzkHawXVfU03XIE=".decodeBase64ToArray()!!
+        )
+        TestTimeSource.offset(-(351.days))
+        attestationResult shouldBe true
+
     }
 
 }

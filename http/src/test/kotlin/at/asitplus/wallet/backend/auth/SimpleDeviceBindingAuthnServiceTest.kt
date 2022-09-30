@@ -22,7 +22,7 @@ import java.util.UUID
 
 class SimpleDeviceBindingAuthnServiceTest {
 
-    private val challengeService = SimpleChallengeService(        clock = TestTimeSource.clock)
+    private val challengeService = SimpleChallengeService(clock = TestTimeSource)
     private val deviceBindingStorageService = InMemoryDeviceBindingStorageService()
     private val service = SimpleDeviceBindingAuthnService(
         deviceBindingStorageService = deviceBindingStorageService,

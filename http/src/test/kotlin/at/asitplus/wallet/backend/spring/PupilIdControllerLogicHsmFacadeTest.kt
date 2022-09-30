@@ -63,7 +63,7 @@ class PupilIdControllerLogicHsmFacadeTest {
     private val holderAgent = HolderAgent.newDefaultInstance(
         subjectCredentialStore = subjectCredentialStore,
         cryptoService = holderCryptoService,
-        clock = TestTimeSource.clock
+        clock = TestTimeSource
     )
     private val messageWrapper = MessageWrapper(holderCryptoService)
     private val holderMessenger = IssueCredentialMessenger.newHolderInstance(

@@ -68,7 +68,7 @@ class DefaultBindingService(
      * Issues new binding parameters.
      */
     override fun getBindingParams(deviceName: String): BindingParams {
-        val challenge = runBlocking {  challengeService.generate()}
+        val challenge = runBlocking { challengeService.generate() }
         val subject = buildSubject(challenge)
         val keyType = JwkType.EC.text
         return BindingParams(challenge, subject, keyType)
@@ -91,7 +91,12 @@ class DefaultBindingService(
             ?: return null.also { log.warn("CSR invalid: {}", it) }
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
-        val signedPublicKey = attestationService.verifyAttestation(attestationCerts, certificate.encoded)
+
+        val signedPublicKey = attestationService.verifyAttestation(
+            attestationCerts,
+            certificate.encoded,
+            challenge /*already verified by challengeService*/
+        )
         log.info("Created new device binding for '{}': {}", bpk, certificate.encoded.encodeBase64())
 
         return BindingCertificate(certificate.encoded, signedPublicKey)
