@@ -214,8 +214,8 @@ class BackendConfiguration {
         DefaultAttestationService(
             issuerCryptoService,
             androidAttestationConfiguration(),
-            configurationProperties.authn.deviceBinding.attestation.ios
-                ?: throw RuntimeException("iOS attestation not configured")
+            configurationProperties.authn.deviceBinding.attestation.ios,
+            clock()
         )
 
     @Bean
@@ -265,7 +265,7 @@ class BackendConfiguration {
     @Bean
     fun clock(): Clock = when (configurationProperties.timeSource) {
         TimeSource.SYSTEM -> Clock.System
-        TimeSource.TEST -> TestTimeSource.clock
+        TimeSource.TEST -> TestTimeSource
     }
 
     @Bean
@@ -432,7 +432,7 @@ class BackendConfiguration {
             appVersion = aCfg.applicationVersion,
             androidVersion = aCfg.androidVersion,
             patchLevel = aCfg.patchLevel?.let { PatchLevel(it.year, it.month) },
-            requireStrongBox = aCfg.requireStringBox ,
+            requireStrongBox = aCfg.requireStrongBox ,
             bootloaderUnlockAllowed = false,
             requireRollbackResistance = aCfg.requireRollbackResistance
         )

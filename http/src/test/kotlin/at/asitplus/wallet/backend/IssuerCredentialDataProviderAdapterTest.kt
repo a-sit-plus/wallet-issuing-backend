@@ -54,7 +54,7 @@ class IssuerCredentialDataProviderAdapterTest {
             credentialDataProvider,
             deviceBindingStorageService,
             gracePeriod = Duration.ZERO,
-            clock = TestTimeSource.clock
+            clock = TestTimeSource
         )
     }
 
@@ -101,7 +101,7 @@ class IssuerCredentialDataProviderAdapterTest {
             credentialDataProvider,
             deviceBindingStorageService,
             gracePeriod = gracePeriod,
-            clock = TestTimeSource.clock
+            clock = TestTimeSource
         )
 
         val credential = adapter.getCredential(client.keyId, ConstantIndex.PupilId.vcType)
