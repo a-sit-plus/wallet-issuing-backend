@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.data
 
-import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -10,17 +10,11 @@ import javax.persistence.Id
 
 @Repository
 interface RevokedCredentialRepository : JpaRepository<RevokedCredential, Long> {
+    @Query("select i.revocationListIndex from RevokedCredential i where i.timePeriod = :timePeriod order by i.revocationListIndex")
+    fun getRevocationListIndexByTimePeriod(@Param("timePeriod") timePeriod: Int): Collection<Long>
 
-    fun findByTimePeriodOrderByRevocationListIndexAsc(
-        timePeriod: Int
-    ): MutableCollection<RevokedCredential>
-
-
-    @Query("select i.revocationListIndex from RevokedCredential i where i.timePeriod = ?1 order by i.revocationListIndex")
-    fun getRevocationListIndexByTimePeriod(timePeriod: Int): Collection<Long>
-
-    @Query("select max(i.revocationListIndex) from RevokedCredential i")
-    fun getMaxRevocationListIndex(): Long?
+    @Query("select max(i.revocationListIndex) from RevokedCredential i where i.timePeriod = :timePeriod")
+    fun getMaxRevocationListIndex(@Param("timePeriod") timePeriod: Int): Long?
 
 }
 

@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.data
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
@@ -23,11 +24,10 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
         deviceId: String
     ): Collection<IssuedCredential>
 
-    @Query("select max(i.revocationListIndex) from IssuedCredential i")
-    fun getMaxRevocationListIndex(): Long?
+    @Query("select max(i.revocationListIndex) from IssuedCredential i where i.timePeriod = :timePeriod")
+    fun getMaxRevocationListIndex(@Param("timePeriod") timePeriod: Int): Long?
 
     fun findAllByValidUntilBefore(cutoff: Instant): Collection<IssuedCredential>
-
 
 
 }

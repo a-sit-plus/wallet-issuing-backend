@@ -123,8 +123,8 @@ class DefaultRevocationService(
                     )
             }
             val revocationListIndex = max(
-                (credentialRepo.getMaxRevocationListIndex() ?: 0),
-                revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
+                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
+                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
             ) + 1
             val attributeName = credentialSubject.javaClass.simpleName
             val issuedCredential = IssuedCredential(

@@ -132,15 +132,16 @@ class DebugController(
             .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
         synchronized(repoLock) {
+            val timePeriod = timePeriodProvider.getTimePeriodFor(clock.now())
             val revocationListIndex = max(
-                (credentialRepo.getMaxRevocationListIndex() ?: 0),
-                revokedCredentialRepo.getMaxRevocationListIndex() ?: 0
+                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
+                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
             ) + 1
             IssuedCredential(
                 vcId,
                 credentialSubject.id,
                 exp.toJavaInstant(),
-                timePeriodProvider.getTimePeriodFor(clock.now()),
+                timePeriod,
                 deviceBinding,
                 attributeName,
                 revocationListIndex
