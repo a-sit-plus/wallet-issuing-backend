@@ -44,7 +44,7 @@ class BackendConfiguration {
                 repeat(2 * indent) { append(' ') }
             }
 
-            this@toIndentString.filter { it != ' ' }.forEachIndexed { i, char ->
+            this@toIndentString.filter { it != ' ' }.forEach { char ->
                 when (char) {
                     ')', ']', '}' -> {
                         indent--
@@ -432,7 +432,7 @@ class BackendConfiguration {
             appVersion = aCfg.applicationVersion,
             androidVersion = aCfg.androidVersion,
             patchLevel = aCfg.patchLevel?.let { PatchLevel(it.year, it.month) },
-            requireStrongBox = aCfg.requireStrongBox ,
+            requireStrongBox = aCfg.requireStrongBox,
             bootloaderUnlockAllowed = false,
             requireRollbackResistance = aCfg.requireRollbackResistance
         )

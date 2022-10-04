@@ -14,8 +14,6 @@ import at.asitplus.wallet.lib.toJavaClock
 import at.asitplus.wallet.lib.toJavaDate
 import at.asitplus.wallet.pupilid.AttestedPublicKey
 import ch.veehait.devicecheck.appattest.AppleAppAttest
-import ch.veehait.devicecheck.appattest.assertion.Assertion
-import ch.veehait.devicecheck.appattest.assertion.AssertionChallengeValidator
 import ch.veehait.devicecheck.appattest.attestation.ValidatedAttestation
 import ch.veehait.devicecheck.appattest.common.App
 import ch.veehait.devicecheck.appattest.common.AppleAppAttestEnvironment
@@ -62,16 +60,6 @@ class DefaultAttestationService(
         app = App(iosCfg.teamIdentifier, iosCfg.bundleIdentifier),
         appleAppAttestEnvironment = if (iosCfg.devStage) AppleAppAttestEnvironment.DEVELOPMENT else AppleAppAttestEnvironment.PRODUCTION,
     )
-
-
-    private val iosNoopChallengeValidator = object : AssertionChallengeValidator {
-        override fun validate(
-            assertionObj: Assertion,
-            clientData: ByteArray,
-            attestationPublicKey: ECPublicKey,
-            challenge: ByteArray,
-        ): Boolean = TODO("Your application specific challenge validation routine")
-    }
 
     private val attestationValidator = appleAppAttest.createAttestationValidator(clock = clock.toJavaClock())
 
@@ -155,41 +143,8 @@ class DefaultAttestationService(
         return true
     }.getOrElse { false }
 
-    private fun verifyCertificateChain(certificates: List<X509Certificate>, validityDate: Date = Date()): Boolean {
-        certificates.chunked(2).forEach {
-            val leafCert = it.first()
-            val intermediateCert = it.last()
-            val signatureValid = kotlin.runCatching { leafCert.verify(intermediateCert.publicKey) }.isSuccess
-            if (!signatureValid)
-                return false
-            val timeValid = kotlin.runCatching { leafCert.checkValidity(validityDate) }.isSuccess
-            if (!timeValid)
-                return false
-        }
-        return true
-    }
-
     private fun ByteArray.parseToCertificate() = kotlin.runCatching {
         CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
     }.getOrNull()
-
-    /**
-     * Root of trust for Apple's App Attestation, from
-     * https://www.apple.com/certificateauthority/private/
-     */
-    private val appleRootCertificate = """
-        MIICITCCAaegAwIBAgIQC/O+DvHN0uD7jG5yH2IXmDAKBggqhkjOPQQDAzBSMSYw
-        JAYDVQQDDB1BcHBsZSBBcHAgQXR0ZXN0YXRpb24gUm9vdCBDQTETMBEGA1UECgwK
-        QXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yMDAzMTgxODMyNTNa
-        Fw00NTAzMTUwMDAwMDBaMFIxJjAkBgNVBAMMHUFwcGxlIEFwcCBBdHRlc3RhdGlv
-        biBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJbmMuMRMwEQYDVQQIDApDYWxpZm9y
-        bmlhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAERTHhmLW07ATaFQIEVwTtT4dyctdh
-        NbJhFs/Ii2FdCgAHGbpphY3+d8qjuDngIN3WVhQUBHAoMeQ/cLiP1sOUtgjqK9au
-        Yen1mMEvRq9Sk3Jm5X8U62H+xTD3FE9TgS41o0IwQDAPBgNVHRMBAf8EBTADAQH/
-        MB0GA1UdDgQWBBSskRBTM72+aEH/pwyp5frq5eWKoTAOBgNVHQ8BAf8EBAMCAQYw
-        CgYIKoZIzj0EAwMDaAAwZQIwQgFGnByvsiVbpTKwSga0kP0e8EeDS4+sQmTvb7vn
-        53O5+FRXgeLhpJ06ysC5PrOyAjEAp5U4xDgEgllF7En3VcE3iexZZtKeYnpqtijV
-        oyFraWVIyd/dganmrduC1bmTBGwD
-    """.trimIndent().decodeBase64ToArray()!!.parseToCertificate()!!
 
 }

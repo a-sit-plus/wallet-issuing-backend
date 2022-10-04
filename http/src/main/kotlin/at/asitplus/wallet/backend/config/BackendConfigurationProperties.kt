@@ -311,22 +311,22 @@ data class AttestationConfigurationProperties(
 
 @ConstructorBinding
 data class AndroidAttestationConfigurationProperties(
-    val packageName: String="com.apple.dollars",
+    val packageName: String = "com.apple.dollars",
     val applicationVersion: Int? = null,
     val androidVersion: Int? = 10000,
     val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
-    val signatureDigest: String="DEADBEEF",
+    val signatureDigest: String = "DEADBEEF",
     val requireStrongBox: Boolean = false,
     val requireRollbackResistance: Boolean = true,
 )
 
 @ConstructorBinding
 data class IOSAttestationConfigurationProperties(
-    val teamIdentifier: String="0000000000",
-    val bundleIdentifier: String="com.google.dollars",
+    val teamIdentifier: String = "0000000000",
+    val bundleIdentifier: String = "com.google.dollars",
     val devStage: Boolean = false,
-    val kid: String="Lg==",
-    val iosVersion: String?=null,
+    val kid: String = "Lg==",
+    val iosVersion: String? = null,
 )
 
 @ConstructorBinding

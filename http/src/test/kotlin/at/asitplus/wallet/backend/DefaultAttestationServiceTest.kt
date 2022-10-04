@@ -6,13 +6,10 @@ import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.toJavaDate
 import io.kotest.matchers.shouldBe
-import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.Test
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.util.*
 import kotlin.time.Duration.Companion.days
 
 class DefaultAttestationServiceTest {
@@ -20,40 +17,7 @@ class DefaultAttestationServiceTest {
         DefaultCryptoServiceAdapter(RandomKeyAdapter()),
         AndroidAttestationConfiguration(
             packageName = "at.asitplus.digitalid.wallet.pupilid",
-            signatureDigest = byteArrayOf(
-                -27,
-                65,
-                -88,
-                -96,
-                52,
-                -74,
-                -11,
-                72,
-                94,
-                92,
-                -68,
-                -77,
-                -41,
-                106,
-                -27,
-                77,
-                -80,
-                119,
-                -22,
-                -1,
-                -9,
-                -9,
-                -87,
-                -89,
-                -82,
-                -100,
-                -100,
-                -92,
-                108,
-                116,
-                -86,
-                82
-            ),
+            signatureDigest = "5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!,
             appVersion = 1,
             androidVersion = 10000,
             patchLevel = PatchLevel(2021, 8),
@@ -157,7 +121,7 @@ class DefaultAttestationServiceTest {
         val bindingCert = CertificateFactory.getInstance("X.509")
             .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
 
-        val challenge = byteArrayOf(-93, -86, -28, -45, 69, -9, -4, 15, -118, -70, 4, -95, 121, 39, -1, 72, 88, 40, -16, -86, -98, -104, -1, -20, -33, 21, -38, 88, -107, -74, 31, -85)
+        val challenge = "o6rk00X3/A+KugSheSf/SFgo8KqemP/s3xXaWJW2H6s=".decodeBase64ToArray()!!
         service.verifyAttestationClient(attestationChain, bindingCert, challenge) shouldBe true
 
         service.verifyAttestationClient(listOf(attestationChain[0]), bindingCert, challenge) shouldBe false
@@ -204,7 +168,7 @@ class DefaultAttestationServiceTest {
             """.trimMargin().decodeBase64ToArray()!!
         val bindingCert = CertificateFactory.getInstance("X.509")
             .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
-        val challenge = byteArrayOf(-128, -42, -25, -100, 69, -8, 15, -62, -11, 83, -70, -19, -23, 124, -77, 64, -42, 119, 90, 83, 127, 123, -15, -3, -64, 56, -35, -2, -91, -17, 30, -101)
+        val challenge = "gNbnnEX4D8L1U7rt6XyzQNZ3WlN/e/H9wDjd/qXvHps=".decodeBase64ToArray()!!
         TestTimeSource.offset(365.days)
         service.verifyAttestationClient(attestationChain, bindingCert, challenge) shouldBe true
 
