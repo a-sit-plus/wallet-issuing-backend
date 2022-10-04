@@ -197,7 +197,6 @@ class DefaultRevocationService(
      */
     override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long> {
         return revokedCredentialRepo.getRevocationListIndexByTimePeriod(timePeriod)
-            .map { it }
     }
 
     /**

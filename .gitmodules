@@ -9,3 +9,6 @@
 [submodule "remote-crypto-provider"]
 	path = remote-crypto-provider
 	url = ../remote-crypto-provider.git
+[submodule "android-attestation"]
+	path = android-attestation
+	url = ../android-attestation.git
