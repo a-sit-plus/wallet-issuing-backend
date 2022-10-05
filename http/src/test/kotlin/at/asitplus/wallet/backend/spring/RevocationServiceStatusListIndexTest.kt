@@ -93,6 +93,79 @@ class RevocationServiceStatusListIndexTest {
         revocationService.isRevoked(vcId, timePeriod) shouldBe true
     }
 
+
+    @Test
+    @Transactional
+    fun `revocation list indexes should be groupd by time period`() {
+        val index2021 = revocationService.storeGetNextIndex(
+            vcId,
+            credentialSubject,
+            issuanceDate,
+            expirationDate,
+            timePeriod
+        )
+        revocationService.isRevoked(vcId, timePeriod) shouldBe false
+        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
+        revocationService.isRevoked(vcId, timePeriod) shouldBe true
+
+        index2021 shouldBe 1L
+        vcId = UUID.randomUUID().toString()
+
+        revocationService.storeGetNextIndex(
+            vcId,
+            credentialSubject,
+            issuanceDate,
+            expirationDate,
+            timePeriod
+        ) shouldBe 2L
+
+        vcId = UUID.randomUUID().toString()
+
+        val index2022 = revocationService.storeGetNextIndex(
+            vcId,
+            credentialSubject,
+            issuanceDate,
+            expirationDate,
+            timePeriod + 1 //TODO testTimeSource is rather fixed
+        )
+
+        index2022 shouldBe 1L
+
+        vcId = UUID.randomUUID().toString()
+
+        revocationService.storeGetNextIndex(
+            vcId,
+            credentialSubject,
+            issuanceDate,
+            expirationDate,
+            timePeriod + 1 //TODO testTimeSource is rather fixed
+        ) shouldBe 2L
+
+
+        vcId = UUID.randomUUID().toString()
+
+        revocationService.storeGetNextIndex(
+            vcId,
+            credentialSubject,
+            issuanceDate,
+            expirationDate,
+            timePeriod + 1 //TODO testTimeSource is rather fixed
+        ) shouldBe 3L
+
+
+        vcId = UUID.randomUUID().toString()
+
+        revocationService.storeGetNextIndex(
+            vcId,
+            credentialSubject,
+            issuanceDate,
+            expirationDate,
+            timePeriod
+        ) shouldBe 3L
+
+    }
+
+
     @Test
     @Transactional
     fun otherCredentialsForSameDeviceBindingGetRevoked() {
@@ -185,7 +258,7 @@ class RevocationServiceStatusListIndexTest {
         val expectedRevocationList = revokeRandomCredentials()
 
         val revocationList = revocationService.getRevokedStatusListIndexList(timePeriod)
-        withClue("is:  "+revocationList.joinToString { it.toString() } + "\nref: " + expectedRevocationList.joinToString { it.toString() }) {
+        withClue("is:  " + revocationList.joinToString { it.toString() } + "\nref: " + expectedRevocationList.joinToString { it.toString() }) {
             revocationList shouldBe expectedRevocationList
         }
     }
