@@ -1,12 +1,23 @@
+spring:
+  task:
+    execution:
+      pool:
+        max-size: 512
+        queue-capacity: 1024
 server:
   port: 8443
+  tomcat:
+    threads:
+      max: 512
+      min-spare: 128
 logging:
   level:
-    at.asitplus: WARN
+    at.asitplus: INFO
     at.asitplus.wallet.backend.service.SimpleChallengeService: DEBUG
     at.asitplus.wallet.backend.DefaultAttestationService: OFF
     at.asitplus.wallet.lib.agent.ProtocolMessenger: ERROR
     at.asitplus.wallet.lib.agent.IssueCredentialProtocol: ERROR
+    at.asitplus.wallet.backend.config: DEBUG
 backend:
   public-context: "http://localhost:8443/"
   pki:
