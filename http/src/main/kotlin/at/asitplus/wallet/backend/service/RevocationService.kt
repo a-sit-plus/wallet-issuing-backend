@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.*
-import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.encodeBase64
 import kotlinx.datetime.Clock
@@ -78,7 +77,6 @@ class DefaultRevocationService(
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
-    private val pkiService: PkiService,
     private val clock: Clock
 ) : RevocationService {
 

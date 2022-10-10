@@ -258,7 +258,6 @@ class BackendConfiguration {
         revokedCredentialRepo,
         deviceBindingStorageService,
         configurationProperties.credentials.oneCredentialPerDeviceBinding,
-        pkiService,
         clock()
     )
 
