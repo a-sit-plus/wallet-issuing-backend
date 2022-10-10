@@ -208,6 +208,7 @@ class DefaultRevocationService(
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
      */
     override fun deleteExpiredCredentialsBefore(cutoff: Instant): Int {
+        // TODO Use synchronized(CredentialRepositoriesLock) here?
         val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             log.info(

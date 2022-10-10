@@ -6,6 +6,9 @@ import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
+/**
+ * Be sure to use [CredentialRepositoriesLock] when executing modifying statements
+ */
 @Suppress("FunctionName")
 @Repository
 interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {

@@ -8,6 +8,9 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 
+/**
+ * Be sure to use [CredentialRepositoriesLock] when executing modifying statements
+ */
 @Repository
 interface RevokedCredentialRepository : JpaRepository<RevokedCredential, Long> {
     @Query("select i.revocationListIndex from RevokedCredential i where i.timePeriod = :timePeriod order by i.revocationListIndex")
