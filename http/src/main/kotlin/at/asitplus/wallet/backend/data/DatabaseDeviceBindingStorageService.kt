@@ -69,7 +69,7 @@ class DatabaseDeviceBindingStorageService(
         bpk: String,
         deviceId: String?
     ): Map<DeviceBinding, Collection<RevokedCredential>> {
-        synchronized(repoLock) {
+        synchronized(CredentialRepositoriesLock) {
             val toRevoke = if (deviceId != null)
                 deviceBindingRepository
                     .findAllByBpkAndDeviceIdAndValidUntilAfter(

@@ -103,7 +103,7 @@ class DefaultRevocationService(
         expirationDate: Instant,
         timePeriod: Int
     ): Long? {
-        synchronized(repoLock) {
+        synchronized(CredentialRepositoriesLock) {
             if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
                 return null.also {
                     log.error("Tried to store a new credential for existing vcId '{}'", vcId)
@@ -183,7 +183,7 @@ class DefaultRevocationService(
         deviceBindingStorageService.revoke(bpk, deviceId).map { it.value.count() }.sum()
 
     private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>): Int {
-        synchronized(repoLock) {
+        synchronized(CredentialRepositoriesLock) {
             revokedCredentialRepo.saveAll(toRevoke.map { RevokedCredential(it.timePeriod, it.revocationListIndex) })
             credentialRepo.deleteAllInBatch(toRevoke)
             return toRevoke.count()
