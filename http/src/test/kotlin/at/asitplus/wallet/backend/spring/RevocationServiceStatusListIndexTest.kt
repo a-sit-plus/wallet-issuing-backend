@@ -4,7 +4,11 @@ import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.TestTimeSource.timePeriod
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
+import at.asitplus.wallet.backend.data.IssuedCredential
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
@@ -21,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
-import java.util.*
+import java.util.UUID
 import javax.transaction.Transactional
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
@@ -81,13 +85,7 @@ class RevocationServiceStatusListIndexTest {
     @Test
     @Transactional
     fun `simple positive add and revoke vcId should work`() {
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        )
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
         revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
         revocationService.isRevoked(vcId, timePeriod) shouldBe true
@@ -96,75 +94,22 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     @Transactional
-    fun `revocation list indexes should be groupd by time period`() {
-        val index2021 = revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        )
-        revocationService.isRevoked(vcId, timePeriod) shouldBe false
-        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
-        revocationService.isRevoked(vcId, timePeriod) shouldBe true
+    fun `revocation list indexes should be grouped by time period`() {
+        storeNewCredential(timePeriod) shouldBe 1L
+        storeNewCredential(timePeriod) shouldBe 2L
+        
+        //TODO testTimeSource is rather fixed
+        storeNewCredential(timePeriod + 1) shouldBe 1L
+        storeNewCredential(timePeriod + 1) shouldBe 2L
+        storeNewCredential(timePeriod + 1) shouldBe 3L
 
-        index2021 shouldBe 1L
-        vcId = UUID.randomUUID().toString()
-
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        ) shouldBe 2L
-
-        vcId = UUID.randomUUID().toString()
-
-        val index2022 = revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod + 1 //TODO testTimeSource is rather fixed
-        )
-
-        index2022 shouldBe 1L
-
-        vcId = UUID.randomUUID().toString()
-
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod + 1 //TODO testTimeSource is rather fixed
-        ) shouldBe 2L
-
-
-        vcId = UUID.randomUUID().toString()
-
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod + 1 //TODO testTimeSource is rather fixed
-        ) shouldBe 3L
-
-
-        vcId = UUID.randomUUID().toString()
-
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        ) shouldBe 3L
-
+        storeNewCredential(timePeriod) shouldBe 3L
     }
 
+    private fun storeNewCredential(i: Int): Long? {
+        vcId = UUID.randomUUID().toString()
+        return revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, i)
+    }
 
     @Test
     @Transactional
@@ -173,7 +118,7 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            timePeriod,
             deviceBinding,
             attributeName,
             2
@@ -185,7 +130,7 @@ class RevocationServiceStatusListIndexTest {
             vcId.reversed(),
             subjectId.reversed(),
             validUntil.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            timePeriod,
             deviceBinding,
             attributeName,
             1
@@ -216,40 +161,25 @@ class RevocationServiceStatusListIndexTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            timePeriod,
             deviceBinding,
             attributeName,
             3
-        )
-            .also { credentialRepo.save(it) }
+        ).also {
+            credentialRepo.save(it)
+        }
 
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        )
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
             .shouldBeNull()
     }
 
     @Test
     @Transactional
     fun `double adding vcId should return null`() {
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        ).shouldNotBeNull()
-        revocationService.storeGetNextIndex(
-            vcId,
-            credentialSubject,
-            issuanceDate,
-            expirationDate,
-            timePeriod
-        ).shouldBeNull()
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
+            .shouldNotBeNull()
+        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
+            .shouldBeNull()
     }
 
     @Test
