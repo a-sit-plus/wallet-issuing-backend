@@ -324,7 +324,7 @@ data class AndroidAttestationConfigurationProperties(
 data class IOSAttestationConfigurationProperties(
     val teamIdentifier: String = "0000000000",
     val bundleIdentifier: String = "com.google.dollars",
-    val devStage: Boolean = false,
+    val sandbox: Boolean = false,
     val kid: String = "Lg==",
     val iosVersion: String? = null,
 )

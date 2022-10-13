@@ -6,7 +6,6 @@ import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.fromJcaKey
 import at.asitplus.wallet.backend.service.joseType
-import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
-import java.util.*
 
 interface AttestationService {
 
@@ -58,7 +56,7 @@ class DefaultAttestationService(
 
     private val appleAppAttest = AppleAppAttest(
         app = App(iosCfg.teamIdentifier, iosCfg.bundleIdentifier),
-        appleAppAttestEnvironment = if (iosCfg.devStage) AppleAppAttestEnvironment.DEVELOPMENT else AppleAppAttestEnvironment.PRODUCTION,
+        appleAppAttestEnvironment = if (iosCfg.sandbox) AppleAppAttestEnvironment.DEVELOPMENT else AppleAppAttestEnvironment.PRODUCTION,
     )
 
     private val attestationValidator = appleAppAttest.createAttestationValidator(clock = clock.toJavaClock())
