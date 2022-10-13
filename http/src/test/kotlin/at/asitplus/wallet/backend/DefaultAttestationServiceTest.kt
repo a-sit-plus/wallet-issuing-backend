@@ -256,6 +256,17 @@ class DefaultAttestationServiceTest {
 
     }
 
+
+    @Test
+    fun `iOS fail -- time of verification`() {
+        val attestationResult = service.verifyAttestationClient(
+            listOf(iosAttestationStmt),
+            iosBindingCert,
+            iosChallenge
+        )
+        attestationResult shouldBe false
+    }
+
     @Test
     fun `iOS ok -- noVersion`() {
         service = attestationService(iosVersion = null)
