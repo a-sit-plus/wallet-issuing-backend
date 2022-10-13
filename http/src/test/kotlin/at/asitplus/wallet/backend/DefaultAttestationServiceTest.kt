@@ -235,7 +235,7 @@ class DefaultAttestationServiceTest {
     }
 
     @Test
-    fun `Pixel 6 attestation`() {
+    fun `Pixel 6 attestation ok -- base case`() {
         service = attestationService(unlockedBootloaderAllowed = false)
 
         TestTimeSource.offset(365.days)
@@ -256,6 +256,96 @@ class DefaultAttestationServiceTest {
             pixelBindingCert,
             pixelChallenge
         ) shouldBe false
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation ok -- allow unlocked bootloader`() {
+        service = attestationService(unlockedBootloaderAllowed = true)
+
+        TestTimeSource.offset(365.days)
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation ok -- requre StrongBox`() {
+        service = attestationService(requireStrongBox = true)
+        TestTimeSource.offset(365.days)
+
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation ok -- no version check`() {
+        service = attestationService(androidVersion = null)
+
+        TestTimeSource.offset(365.days)
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation ok -- no patch level`() {
+        service = attestationService(androidPatchLevel = null)
+
+        TestTimeSource.offset(365.days)
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- time of verification`() {
+        service = attestationService(unlockedBootloaderAllowed = false)
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- package name`() {
+        service = attestationService(androidPackageName = "org.wrong.package.name")
+        TestTimeSource.offset(365.days)
+
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- signature digest`() {
+        service = attestationService(androidAppSignatureDigest = byteArrayOf(0, 32, 55, 29, 120, 22, 0))
+        TestTimeSource.offset(365.days)
+
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- app version`() {
+        service = attestationService(androidVersion = 200000)
+        TestTimeSource.offset(365.days)
+
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- patch level`() {
+        service = attestationService(androidPatchLevel = PatchLevel(2030, 1))
+        TestTimeSource.offset(365.days)
+
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- rollback resistance`() {
+        service = attestationService(requireRollbackResistance = true)
+        TestTimeSource.offset(365.days)
+
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
     }
 
