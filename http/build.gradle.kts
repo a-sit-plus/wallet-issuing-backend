@@ -52,6 +52,7 @@ dependencies {
     implementation("at.asitplus.wallet:pupilidlib-jvm")
     implementation("at.asitplus:android-attestation")
     implementation("ch.veehait.devicecheck:devicecheck-appattest:0.9.4")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.13.4")
     implementation("net.swiftzer.semver:semver:1.1.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.70")

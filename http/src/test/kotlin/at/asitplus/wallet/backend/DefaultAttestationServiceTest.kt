@@ -433,20 +433,6 @@ class DefaultAttestationServiceTest {
     }
 
     @Test
-    fun `iOS fail -- KID`() {
-        service = attestationService(iosKid = byteArrayOf(1, 2, 3, 4).encodeBase64())
-
-        TestTimeSource.offset(351.days)
-        val attestationResult = service.verifyAttestationClient(
-            listOf(iosAttestationStmt),
-            iosBindingCert,
-            iosChallenge
-        )
-        TestTimeSource.offset(-(351.days))
-        attestationResult shouldBe false
-    }
-
-    @Test
     fun `iOS fail -- Team ID`() {
         service = attestationService(iosTeamIdentifier = "7AAXX0B00M")
 
@@ -502,7 +488,6 @@ fun attestationService(
     requireRollbackResistance: Boolean = false,
     iosTeamIdentifier: String = "3YYPP4B36N",
     iosBundleIdentifier: String = "at.gv.bmbwf.eduDigicardWallet",
-    iosKid: String = "9wtRIZUCOkkPioIdkvTp34FFcOp0FoeKL2Uv1ilJiMg=",
     iosVersion: String? = "14",
     iosSandbox: Boolean = true,
     timeSource: Clock = TestTimeSource,
@@ -523,7 +508,6 @@ fun attestationService(
             iosTeamIdentifier,
             iosBundleIdentifier,
             sandbox = iosSandbox,
-            kid = iosKid,
             iosVersion = iosVersion
         ),
         timeSource

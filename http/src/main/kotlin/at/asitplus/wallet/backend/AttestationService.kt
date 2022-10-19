@@ -16,12 +16,18 @@ import ch.veehait.devicecheck.appattest.AppleAppAttest
 import ch.veehait.devicecheck.appattest.attestation.ValidatedAttestation
 import ch.veehait.devicecheck.appattest.common.App
 import ch.veehait.devicecheck.appattest.common.AppleAppAttestEnvironment
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import kotlinx.datetime.Clock
 import net.swiftzer.semver.SemVer
+import org.bouncycastle.cert.X509CertificateHolder
 import org.slf4j.LoggerFactory
+import java.security.MessageDigest
+import java.security.cert.CertificateEncodingException
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
@@ -59,6 +65,10 @@ class DefaultAttestationService(
         appleAppAttestEnvironment = if (iosCfg.sandbox) AppleAppAttestEnvironment.DEVELOPMENT else AppleAppAttestEnvironment.PRODUCTION,
     )
 
+
+    private val appAttestReader = ObjectMapper(CBORFactory())
+        .registerKotlinModule()
+        .readerFor(AttestationObject::class.java)
     private val attestationValidator = appleAppAttest.createAttestationValidator(clock = clock.toJavaClock())
 
 
@@ -74,8 +84,8 @@ class DefaultAttestationService(
         challenge: ByteArray
     ): String? {
         try {
-            val certificate = CertificateFactory.getInstance("X.509")
-                .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
+            val certificate = bindingCertificate.parseToCertificate()
+                ?: throw CertificateEncodingException("Could not parse binding cert")
             log.debug("attestation certificate chain length: ${attestationCerts.size}")
             if (!verifyAttestationClient(attestationCerts, certificate, challenge))
                 return null.also {
@@ -132,13 +142,19 @@ class DefaultAttestationService(
      * Verifies Apple App Attestation structure by parsing CBOR and certificates.
      */
     private fun verifyAttestationApple(
-        attestationCert: ByteArray,
+        attestationObject: ByteArray,
         expectedChallenge: ByteArray
     ) = kotlin.runCatching {
         log.debug("Verifying iOS attestation")
+
+        val parsedAttestationCert =
+            X509CertificateHolder(appAttestReader.readValue<AttestationObject>(attestationObject).attStmt.x5c.first())
+
         val result: ValidatedAttestation = attestationValidator.validate(
-            attestationObject = attestationCert,
-            keyIdBase64 = iosCfg.kid,
+            attestationObject = attestationObject,
+            keyIdBase64 = MessageDigest.getInstance("SHA-256")
+                .digest(parsedAttestationCert.subjectPublicKeyInfo.publicKeyData.bytes)
+                .encodeBase64(),
             serverChallenge = expectedChallenge,
         )
 
@@ -159,4 +175,16 @@ class DefaultAttestationService(
         CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
     }.getOrNull()
 
+}
+
+data class AttestationObject(
+    val fmt: String,
+    val attStmt: AttestationStatement,
+    val authData: ByteArray
+) {
+    data class AttestationStatement(
+        val x5c: List<ByteArray>,
+        val receipt: ByteArray
+    ) {
+    }
 }
