@@ -3,13 +3,13 @@ import java.io.FileInputStream
 import java.util.*
 
 plugins {
-    id("org.springframework.boot") version "2.7.2"
-    id("io.spring.dependency-management") version "1.0.12.RELEASE"
+    id("org.springframework.boot") version Versions.spring.boot
+    id("io.spring.dependency-management") version Versions.spring.`dependency-management`
     id("maven-publish")
-    kotlin("jvm") version "1.7.10"
-    kotlin("plugin.spring") version "1.7.10"
-    kotlin("plugin.jpa") version "1.7.10"
-    kotlin("plugin.serialization") version "1.7.10"
+    kotlin("jvm") version Versions.kotlin
+    kotlin("plugin.spring") version Versions.kotlin
+    kotlin("plugin.jpa") version Versions.kotlin
+    kotlin("plugin.serialization") version Versions.kotlin
 }
 
 val artifactVersion: String by extra
@@ -33,47 +33,47 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.cloud:spring-cloud-config-client:3.1.4")
+    implementation("org.springframework.cloud:spring-cloud-config-client:${Versions.spring.`cloud-config-client`}")
     implementation("org.springframework.session:spring-session-core")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.apache.httpcomponents:httpclient")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
-    implementation("com.nimbusds:nimbus-jose-jwt:9.24.4")
-    implementation("com.google.zxing:core:3.5.0")
-    implementation("org.webjars:webjars-locator:0.45")
-    implementation("org.webjars:bootstrap:5.2.0")
-    implementation("org.webjars:jquery:3.6.1")
-    implementation("org.webjars:datatables:1.12.1")
-    implementation("de.codecentric:spring-boot-admin-starter-client:2.7.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization.json}")
+    implementation("com.nimbusds:nimbus-jose-jwt:${Versions.jose}")
+    implementation("com.google.zxing:core:${Versions.zxing}")
+    implementation("org.webjars:webjars-locator:${Versions.webjars.locator}")
+    implementation("org.webjars:bootstrap:${Versions.webjars.bootstrap}")
+    implementation("org.webjars:jquery:${Versions.webjars.jquery}")
+    implementation("org.webjars:datatables:${Versions.webjars.datatables}")
+    implementation("de.codecentric:spring-boot-admin-starter-client:${Versions.spring.`admin-starter-client`}")
     implementation("at.asitplus.wallet:vclib-jvm")
     implementation("at.asitplus.wallet:pupilidlib-jvm")
     implementation("at.asitplus:android-attestation")
-    implementation("ch.veehait.devicecheck:devicecheck-appattest:0.9.4")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.13.4")
-    implementation("net.swiftzer.semver:semver:1.1.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
-    implementation("org.springdoc:springdoc-openapi-ui:1.6.11")
-    implementation("org.springdoc:springdoc-openapi-kotlin:1.6.11")
-    implementation("org.springdoc:springdoc-openapi-security:1.6.11")
-    implementation("io.github.aakira:napier:2.6.1")
-    implementation("com.google.iot.cbor:cbor:0.01.02")
-    implementation("at.asitplus.hsmfacade:provider:0.8.3")
+    implementation("ch.veehait.devicecheck:devicecheck-appattest:${Versions.deviceCheck}")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:${Versions.`jackson-cbor`}")
+    implementation("net.swiftzer.semver:semver:${Versions.semver}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+    implementation("org.bouncycastle:bcpkix-jdk15on:${Versions.bouncycastle}")
+    implementation("org.springdoc:springdoc-openapi-ui:${Versions.spring.doc}")
+    implementation("org.springdoc:springdoc-openapi-kotlin:${Versions.spring.doc}")
+    implementation("org.springdoc:springdoc-openapi-security:${Versions.spring.doc}")
+    implementation("io.github.aakira:napier:${Versions.napier}")
+    implementation("com.google.iot.cbor:cbor:${Versions.`google-cbor`}")
+    implementation("at.asitplus.hsmfacade:provider:${Versions.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")
     runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql:42.5.0")
+    runtimeOnly("org.postgresql:postgresql:${Versions.pgsql}")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
-    testImplementation("io.ktor:ktor-client-java:2.1.1")
-    testImplementation("io.kotest:kotest-assertions-core:5.4.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockito}")
+    testImplementation("io.ktor:ktor-client-java:${Versions.ktor}")
+    testImplementation("io.kotest:kotest-assertions-core:${Versions.kotest}")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:${Versions.datetime}")
 }
 
 tasks.withType<KotlinCompile> {
