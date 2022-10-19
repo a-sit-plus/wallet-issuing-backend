@@ -76,12 +76,14 @@ class DefaultAttestationService(
         try {
             val certificate = CertificateFactory.getInstance("X.509")
                 .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
+            log.debug("attestation certificate chain length: ${attestationCerts.size}")
             if (!verifyAttestationClient(attestationCerts, certificate, challenge))
                 return null.also {
                     log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
                 }
             val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
             val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!)
+            log.debug("attested public key: ${publicKey.serialize()}")
             return JWSObject(
                 JWSHeader(cryptoService.jwsAlgorithm.joseType),
                 Payload(attestedPublicKey.serialize().encodeToByteArray())
@@ -111,14 +113,20 @@ class DefaultAttestationService(
         bindingCertificate: X509Certificate,
         expectedChallenge: ByteArray
     ) = kotlin.runCatching {
+        log.debug("Verifying Android attestation")
         val certificates = attestationCerts.mapNotNull { it.parseToCertificate() }
 
-        if (!android.verifyAttestation(certificates, clock.now().toJavaDate(), expectedChallenge)) return false
+        //throws exception on fail
+        android.verifyAttestation(certificates, clock.now().toJavaDate(), expectedChallenge)
 
         val bindingPublicKey = bindingCertificate.publicKey.encoded
         val attestationPublicKey = certificates.first().publicKey.encoded
         return bindingPublicKey.contentEquals(attestationPublicKey)
-    }.getOrElse { false }
+            .also { if (!it) log.warn("binding public key does not equal attestation public key from certificate") }
+    }.getOrElse {
+        log.warn("Android attestation error", it)
+        false
+    }
 
     /**
      * Verifies Apple App Attestation structure by parsing CBOR and certificates.
@@ -127,7 +135,7 @@ class DefaultAttestationService(
         attestationCert: ByteArray,
         expectedChallenge: ByteArray
     ) = kotlin.runCatching {
-
+        log.debug("Verifying iOS attestation")
         val result: ValidatedAttestation = attestationValidator.validate(
             attestationObject = attestationCert,
             keyIdBase64 = iosCfg.kid,
@@ -135,11 +143,17 @@ class DefaultAttestationService(
         )
 
         iosCfg.iosVersion?.let {
-            if (SemVer.parse(result.iOSVersion ?: return false) < SemVer.parse(it))
-                return false
+            val parsedVersion = SemVer.parse(
+                result.iOSVersion ?: return false.also { log.warn("Could not parse iOS version from AppAttest") })
+            val configuredVersion = SemVer.parse(it)
+            if (parsedVersion < configuredVersion)
+                return false.also { log.warn("iOS version  $parsedVersion <$configuredVersion") }
         }
         return true
-    }.getOrElse { false }
+    }.getOrElse {
+        log.warn("iOS Attestation error", it)
+        false
+    }
 
     private fun ByteArray.parseToCertificate() = kotlin.runCatching {
         CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
