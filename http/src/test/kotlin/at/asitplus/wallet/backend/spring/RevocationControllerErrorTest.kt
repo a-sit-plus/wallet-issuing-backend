@@ -1,9 +1,9 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.service.DeviceBindingStorageService
-import at.asitplus.wallet.backend.controller.RevocationController
-import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
+import at.asitplus.wallet.backend.controller.RevocationController
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.service.RevocationService
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,14 +15,14 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.HttpRequestMethodNotSupportedException
-import java.util.UUID
+import java.util.*
 
 /**
  * This is no MockMVC test, because that test setup would not create the error documents
  */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["server.error.include-exception=true", "server.error.include-message=always"]
+    properties = ["server.error.include-exception=true", "server.error.include-message=always", "backend.authn.device-binding.attestation.noop=true"]
 )
 @AutoConfigureWebTestClient(timeout = "PT1M")
 class RevocationControllerErrorTest {

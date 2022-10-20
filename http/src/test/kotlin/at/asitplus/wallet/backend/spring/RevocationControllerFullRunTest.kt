@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.TestTimeSource
+import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.seconds
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser(authorities = ["REVOCATION"])
-@TestPropertySource(properties = ["backend.time-source=TEST","spring.jpa.show-sql=true","spring.jpa.properties.hibernate.format_sql=true"])
+@TestPropertySource(properties = ["backend.time-source=TEST", "spring.jpa.show-sql=true", "spring.jpa.properties.hibernate.format_sql=true", "backend.authn.device-binding.attestation.noop=true"])
 class RevocationControllerFullRunTest {
 
     @Autowired

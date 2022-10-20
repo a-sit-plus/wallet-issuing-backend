@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 
-@SpringBootTest
+@SpringBootTest(properties=["backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 class PublicControllerTest {
 

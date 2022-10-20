@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import kotlin.time.Duration.Companion.days
 
-@SpringBootTest(properties = ["backend.cleanup.enabled=true"])
+@SpringBootTest(properties = ["backend.cleanup.enabled=true", "backend.authn.device-binding.attestation.noop=true"])
 class AutomaticCleanupTest {
 
     @SpyBean

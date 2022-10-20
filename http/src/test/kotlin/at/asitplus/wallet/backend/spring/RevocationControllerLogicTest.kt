@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import java.util.*
 
-@SpringBootTest
+@SpringBootTest(properties = ["backend.time-source=TEST", "backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 @WithMockUser(authorities = ["REVOCATION"])
 class RevocationControllerLogicTest {

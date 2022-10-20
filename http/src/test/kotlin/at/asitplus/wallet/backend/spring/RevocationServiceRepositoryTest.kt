@@ -21,7 +21,7 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
-@TestPropertySource(properties = ["backend.time-source=TEST"])
+@TestPropertySource(properties = ["backend.time-source=TEST", "backend.authn.device-binding.attestation.noop=true"])
 class RevocationServiceRepositoryTest {
 
     @Autowired

@@ -20,7 +20,7 @@ import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 
 
-@SpringBootTest
+@SpringBootTest(properties =  ["backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 @ActiveProfiles("eidasid")
 class EidasIdControllerTest {

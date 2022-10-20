@@ -26,7 +26,7 @@ import java.util.*
 /**
  * Simulates a full run of a client using the [PupilIdController].
  */
-@SpringBootTest
+@SpringBootTest(properties=["backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 class PupilIdControllerFullRunTest {
 

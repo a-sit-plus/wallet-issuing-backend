@@ -9,11 +9,11 @@ import at.asitplus.wallet.backend.pki.SignedCertificate
 import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -27,6 +27,8 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.*
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
@@ -35,7 +37,7 @@ import kotlin.time.Duration.Companion.seconds
  * Tests the Spring Security parts of the authentication for [DeviceBinding] and [PupilIdController]
  * used in succession, i.e. to get a device binding and pupilid in one session for clients.
  */
-@SpringBootTest
+@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 class BindingPupilIdCombinationSpringSecurityTest {
 
@@ -68,7 +70,15 @@ class BindingPupilIdCombinationSpringSecurityTest {
     private lateinit var nonce: String
     private lateinit var csr: ByteArray
     private lateinit var deviceName: String
-    private lateinit var certificate: ByteArray
+    private val certificate: ByteArray = (CertificateFactory.getInstance("X.509")
+        .generateCertificate(
+            """
+            MIICujCCAmCgAwIBAgIBATAKBggqhkjOPQQDAjA5MQwwCgYDVQQMDANURUUxKTAnBgNVBAUTIDg3ZWVkZjAzYjljZWNlMjIwYzgzMTJhMmI5ZDZiMjZlMB4XDTIy
+            MDkyNzExMzY0OVoXDTQ4MDEwMTAwMDAwMFowFTETMBEGA1UEAxMKYmluZGluZ0tleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABItRPUbUcbA7u0reFB0FHMvDlN/Oc/Ez1DlFsaNX/QHHGr5sgX4rJj3g6BqvwDxFfdjR8VnrB2wVqnAd1vCMNnejggF7MIIBdzAOBgNVHQ8BAf8EBAMCB4AwggFjBgorBgEEAdZ5AgERBIIBUzCCAU8CAgDICgEBAgIAyAoBAQQgg
+            NbnnEX4D8L1U7rt6XyzQNZ3WlN/e/H9wDjd/qXvHpsEADBlv4U9CAIGAYN+vD4Xv4VFVQRTMFExKzApBCRhdC5hc2l0cGx1cy5kaWdpdGFsaWQud2FsbGV0LnB1cGlsaWQCAQExIgQg5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlIwgbOhCDEGAgECAgEDogMCAQOjBAICAQClCzEJAgEAAgECAgEEqgMCAQG/g3gDAgEDv4N5BAICASy/hT4DAgEAv4VATD
+            BKBCAPbnXIAYO13sB0sAVNQnHpk4nr5LE2sIGd4fFQug/51wEB/woBAAQgXOGC1inSwG9tTnpx1AflWgKWqTRrXBhScS9NTK0DMlS/hUEFAgMB+9C/hUIFAgMDFeG/hU4GAgQBNIvpv4VPBgIEATSL6TAKBggqhkjOPQQDAgNIADBFAiEA493XrIO83zpV6iMnPvLb9yzyZcp0nRS8PZIvAOdnkBYCIFM4RykcJJ8U984j03Wyb554OWJpBvDenwKKG4MAN/LH
+            """.trimMargin().decodeBase64ToArray()!!.inputStream()
+        ) as X509Certificate).encoded
     private lateinit var startRequest: BindingParamsRequestJ
     private lateinit var clientMessage: String
     private lateinit var serverMessage: String
@@ -76,29 +86,28 @@ class BindingPupilIdCombinationSpringSecurityTest {
 
     @BeforeEach
     fun beforeEach() {
-            bpk = UUID.randomUUID().toString()
-            challenge = Random.nextBytes(32)
-            nonce = UUID.randomUUID().toString()
-            csr = Random.nextBytes(32)
-            deviceName = UUID.randomUUID().toString()
-            certificate = Random.nextBytes(32)
-            startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
-            clientMessage = UUID.randomUUID().toString()
-            serverMessage = UUID.randomUUID().toString()
-            challengeResponse = UUID.randomUUID().toString()
-            val validUntil = TestTimeSource.now() + 60.seconds
+        bpk = UUID.randomUUID().toString()
+        challenge = Random.nextBytes(32)
+        nonce = UUID.randomUUID().toString()
+        csr = Random.nextBytes(32)
+        deviceName = UUID.randomUUID().toString()
+        startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
+        clientMessage = UUID.randomUUID().toString()
+        serverMessage = UUID.randomUUID().toString()
+        challengeResponse = UUID.randomUUID().toString()
+        val validUntil = TestTimeSource.now() + 60.seconds
 
-            whenever(challengeService.generate()).thenReturn(challenge)
-            whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
-            whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
-            val signedCertificate = SignedCertificate(certificate, validUntil)
-            whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
-            whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
-                .thenReturn(NextMessage.Send(serverMessage, null))
-            whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
-                .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
-            whenever(authenticationSupplier.getCurrentUserCertificate())
-                .thenReturn(certificate)
+        whenever(challengeService.generate()).thenReturn(challenge)
+        whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+        val signedCertificate = SignedCertificate(certificate, validUntil)
+        whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)
+        whenever(issueCredentialAdapter.parseMessage(eq(clientMessage)))
+            .thenReturn(NextMessage.Send(serverMessage, null))
+        whenever(deviceBindingAuthnService.validate(eq(challengeResponse)))
+            .thenReturn(DeviceBindingAuthnResult(bpk, certificate))
+        whenever(authenticationSupplier.getCurrentUserCertificate())
+            .thenReturn(certificate)
     }
 
     @Test
@@ -130,7 +139,7 @@ class BindingPupilIdCombinationSpringSecurityTest {
         }.andExpect {
             status { isOk() }
         }.andReturn()
-          verify(extNonceAuthnService).invalidateNonce(eq(nonce))
+        verify(extNonceAuthnService).invalidateNonce(eq(nonce))
 
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON

@@ -210,13 +210,55 @@ class BackendConfiguration {
     @Bean
     fun attestationService(
         issuerCryptoService: CryptoServiceAdapter,
-    ): AttestationService =
+    ): AttestationService = if (configurationProperties.authn.deviceBinding.attestation.noop != true)
         DefaultAttestationService(
             issuerCryptoService,
             androidAttestationConfiguration(),
-            configurationProperties.authn.deviceBinding.attestation.ios,
+            configurationProperties.authn.deviceBinding.attestation.ios
+                ?: throw RuntimeException("no iOS Attestation configured"),
             clock()
         )
+    else {
+        if (configurationProperties.authn.deviceBinding.attestation.ios != null || configurationProperties.authn.deviceBinding.attestation.android != null)
+            throw RuntimeException("As precautionary measure, attestation can only be disabled if neither Android nor iOS attestation are configured!")
+        logger.warn("""
+
+
+
+.o. .o. .o. oooooo   oooooo     oooo       .o.       ooooooooo.   ooooo      ooo ooooo ooooo      ooo   .oooooo.    .o. .o. .o. 
+888 888 888  `888.    `888.     .8'       .888.      `888   `Y88. `888b.     `8' `888' `888b.     `8'  d8P'  `Y8b   888 888 888 
+888 888 888   `888.   .8888.   .8'       .8"888.      888   .d88'  8 `88b.    8   888   8 `88b.    8  888           888 888 888 
+Y8P Y8P Y8P    `888  .8'`888. .8'       .8' `888.     888ooo88P'   8   `88b.  8   888   8   `88b.  8  888           Y8P Y8P Y8P 
+`8' `8' `8'     `888.8'  `888.8'       .88ooo8888.    888`88b.     8     `88b.8   888   8     `88b.8  888     ooooo `8' `8' `8' 
+.o. .o. .o.      `888'    `888'       .8'     `888.   888  `88b.   8       `888   888   8       `888  `88.    .88'  .o. .o. .o. 
+Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8  o888o o8o        `8   `Y8bood8P'   Y8P Y8P Y8P 
+
+
+
+                .o.           .       .                          .                 .    o8o                                     
+               .888.        .o8     .o8                        .o8               .o8    `"'                                     
+              .8"888.     .o888oo .o888oo  .ooooo.   .oooo.o .o888oo  .oooo.   .o888oo oooo   .ooooo.  ooo. .oo.                
+             .8' `888.      888     888   d88' `88b d88(  "8   888   `P  )88b    888   `888  d88' `88b `888P"Y88b               
+            .88ooo8888.     888     888   888ooo888 `"Y88b.    888    .oP"888    888    888  888   888  888   888               
+           .8'     `888.    888 .   888 . 888    .o o.  )88b   888 . d8(  888    888 .  888  888   888  888   888               
+          o88o     o8888o   "888"   "888" `Y8bod8P' 8""888P'   "888" `Y888""8o   "888" o888o `Y8bod8P' o888o o888o              
+
+
+
+                          .o8   o8o                      .o8       oooo                  .o8  .o.                               
+                         "888   `"'                     "888       `888                 "888  888                               
+                     .oooo888  oooo   .oooo.o  .oooo.    888oooo.   888   .ooooo.   .oooo888  888                               
+                    d88' `888  `888  d88(  "8 `P  )88b   d88' `88b  888  d88' `88b d88' `888  Y8P                               
+                    888   888   888  `"Y88b.   .oP"888   888   888  888  888ooo888 888   888  `8'                               
+                    888   888   888  o.  )88b d8(  888   888   888  888  888    .o 888   888  .o.                               
+                    `Y8bod88P" o888o 8""888P' `Y888""8o  `Y8bod8P' o888o `Y8bod8P' `Y8bod88P" Y8P
+
+
+
+""")
+        NoopAttestationService(issuerCryptoService)
+    }
+
 
     @Bean
     fun challengeService(): ChallengeService =
@@ -424,6 +466,7 @@ class BackendConfiguration {
 
     private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {
         val aCfg = configurationProperties.authn.deviceBinding.attestation.android
+            ?: throw RuntimeException("No Android attestation configured")
         return AndroidAttestationConfiguration(
             packageName = aCfg.packageName,
             signatureDigest = aCfg.signatureDigest.decodeBase16ToArray()

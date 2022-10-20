@@ -17,7 +17,7 @@ import org.springframework.util.Base64Utils
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 
-@SpringBootTest(properties = ["backend.debug.enabled=true"])
+@SpringBootTest(properties = ["backend.debug.enabled=true", "backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 @ActiveProfiles("pupilid")
 class PupilIdDebugControllerTest {

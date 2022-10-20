@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.backend.pki.SignedCertificate
 import at.asitplus.wallet.backend.service.ChallengeService
+import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
@@ -25,6 +26,8 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.*
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
@@ -33,7 +36,7 @@ import kotlin.time.Duration.Companion.seconds
  * Tests the Spring Security parts of the authentication for [BindingController],
  * i.e. it tests the filter, authentication provider, token and so on.
  */
-@SpringBootTest
+@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
 abstract class BindingControllerSpringSecurityTest {
 
@@ -57,20 +60,27 @@ abstract class BindingControllerSpringSecurityTest {
     private lateinit var nonce: String
     private lateinit var csr: ByteArray
     private lateinit var deviceName: String
-    private lateinit var certificate: ByteArray
+    private val certificate: ByteArray = (CertificateFactory.getInstance("X.509")
+        .generateCertificate(
+            """
+            MIICujCCAmCgAwIBAgIBATAKBggqhkjOPQQDAjA5MQwwCgYDVQQMDANURUUxKTAnBgNVBAUTIDg3ZWVkZjAzYjljZWNlMjIwYzgzMTJhMmI5ZDZiMjZlMB4XDTIy
+            MDkyNzExMzY0OVoXDTQ4MDEwMTAwMDAwMFowFTETMBEGA1UEAxMKYmluZGluZ0tleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABItRPUbUcbA7u0reFB0FHMvDlN/Oc/Ez1DlFsaNX/QHHGr5sgX4rJj3g6BqvwDxFfdjR8VnrB2wVqnAd1vCMNnejggF7MIIBdzAOBgNVHQ8BAf8EBAMCB4AwggFjBgorBgEEAdZ5AgERBIIBUzCCAU8CAgDICgEBAgIAyAoBAQQgg
+            NbnnEX4D8L1U7rt6XyzQNZ3WlN/e/H9wDjd/qXvHpsEADBlv4U9CAIGAYN+vD4Xv4VFVQRTMFExKzApBCRhdC5hc2l0cGx1cy5kaWdpdGFsaWQud2FsbGV0LnB1cGlsaWQCAQExIgQg5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlIwgbOhCDEGAgECAgEDogMCAQOjBAICAQClCzEJAgEAAgECAgEEqgMCAQG/g3gDAgEDv4N5BAICASy/hT4DAgEAv4VATD
+            BKBCAPbnXIAYO13sB0sAVNQnHpk4nr5LE2sIGd4fFQug/51wEB/woBAAQgXOGC1inSwG9tTnpx1AflWgKWqTRrXBhScS9NTK0DMlS/hUEFAgMB+9C/hUIFAgMDFeG/hU4GAgQBNIvpv4VPBgIEATSL6TAKBggqhkjOPQQDAgNIADBFAiEA493XrIO83zpV6iMnPvLb9yzyZcp0nRS8PZIvAOdnkBYCIFM4RykcJJ8U984j03Wyb554OWJpBvDenwKKG4MAN/LH
+            """.trimMargin().decodeBase64ToArray()!!.inputStream()
+        ) as X509Certificate).encoded
     private lateinit var startRequest: BindingParamsRequestJ
 
     @BeforeEach
     fun beforeEach() {
-            bpk = UUID.randomUUID().toString()
-            challenge = Random.nextBytes(32)
-            whenever(challengeService.generate()).thenReturn(challenge)
-            whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
-            nonce = UUID.randomUUID().toString()
-            whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
+        bpk = UUID.randomUUID().toString()
+        challenge = Random.nextBytes(32)
+        whenever(challengeService.generate()).thenReturn(challenge)
+        whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
+        nonce = UUID.randomUUID().toString()
+        whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
             csr = Random.nextBytes(32)
             deviceName = UUID.randomUUID().toString()
-            certificate = Random.nextBytes(32)
             val validUntil = TestTimeSource.now() + 60.seconds
             val signedCertificate = SignedCertificate(certificate, validUntil)
             whenever(pkiService.verifyAndSign(eq(csr), any())).thenReturn(signedCertificate)

@@ -38,9 +38,8 @@ import java.util.UUID
  * Tests the logic (the process) part of the [PupilIdController],
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
-@SpringBootTest
+@SpringBootTest(properties = ["backend.time-source=TEST", "backend.authn.device-binding.attestation.noop=true"])
 @AutoConfigureMockMvc
-@TestPropertySource(properties = ["backend.time-source=TEST"])
 @WithMockUser(authorities = ["DEVICE_BINDING"])
 class PupilIdControllerLogicTest {
 

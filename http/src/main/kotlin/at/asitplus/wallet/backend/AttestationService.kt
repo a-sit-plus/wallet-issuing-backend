@@ -48,6 +48,30 @@ interface AttestationService {
 
 }
 
+
+class NoopAttestationService(
+    private val cryptoService: CryptoServiceAdapter,
+) : AttestationService {
+
+    private val log = LoggerFactory.getLogger(this.javaClass)
+    override fun verifyAttestation(
+        attestationCerts: List<ByteArray>,
+        bindingCertificate: ByteArray,
+        challenge: ByteArray
+    ): String? = try {
+        val certificate = bindingCertificate.parseToCertificate()
+            ?: throw CertificateEncodingException("Could not parse binding cert")
+        log.debug("attestation certificate chain length: ${attestationCerts.size}")
+
+        cryptoService.wrapInJws(certificate)
+    } catch (e: Throwable) {
+        log.warn("verifyAttestation: error", e)
+        null
+    }
+
+
+}
+
 class DefaultAttestationService(
     private val cryptoService: CryptoServiceAdapter,
     androidAttestationConfiguration: AndroidAttestationConfiguration,
@@ -83,7 +107,7 @@ class DefaultAttestationService(
         bindingCertificate: ByteArray,
         challenge: ByteArray
     ): String? {
-        try {
+        return try {
             val certificate = bindingCertificate.parseToCertificate()
                 ?: throw CertificateEncodingException("Could not parse binding cert")
             log.debug("attestation certificate chain length: ${attestationCerts.size}")
@@ -91,18 +115,10 @@ class DefaultAttestationService(
                 return null.also {
                     log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
                 }
-            val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
-            val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!)
-            log.debug("attested public key: ${publicKey.serialize()}")
-            return JWSObject(
-                JWSHeader(cryptoService.jwsAlgorithm.joseType),
-                Payload(attestedPublicKey.serialize().encodeToByteArray())
-            ).also {
-                it.sign(cryptoService.jwsContentSigner)
-            }.serialize()
+            cryptoService.wrapInJws(certificate)
         } catch (e: Throwable) {
             log.warn("verifyAttestation: error", e)
-            return null
+            null
         }
     }
 
@@ -170,11 +186,21 @@ class DefaultAttestationService(
         log.warn("iOS Attestation error", it)
         false
     }
+}
 
-    private fun ByteArray.parseToCertificate() = kotlin.runCatching {
-        CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
-    }.getOrNull()
+private fun ByteArray.parseToCertificate() = kotlin.runCatching {
+    CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
+}.getOrNull()
 
+private fun CryptoServiceAdapter.wrapInJws(certificate: X509Certificate): String {
+    val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
+    val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!)
+    return JWSObject(
+        JWSHeader(jwsAlgorithm.joseType),
+        Payload(attestedPublicKey.serialize().encodeToByteArray())
+    ).also {
+        it.sign(jwsContentSigner)
+    }.serialize()
 }
 
 data class AttestationObject(

@@ -295,7 +295,7 @@ data class AeraPkiConfigurationProperties(
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
     val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties(),
-    val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties()
+    val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties(),
 )
 
 enum class DeviceBindingNonceType {
@@ -305,8 +305,9 @@ enum class DeviceBindingNonceType {
 
 @ConstructorBinding
 data class AttestationConfigurationProperties(
-    val android: AndroidAttestationConfigurationProperties = AndroidAttestationConfigurationProperties(),
-    val ios: IOSAttestationConfigurationProperties = IOSAttestationConfigurationProperties(),
+    val android: AndroidAttestationConfigurationProperties? = null,
+    val ios: IOSAttestationConfigurationProperties? = null,
+    val noop: Boolean? = null
 )
 
 @ConstructorBinding

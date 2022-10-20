@@ -38,11 +38,10 @@ import java.util.UUID
  * where the issuer-key is stored at a remote HSM Facade service
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
-@SpringBootTest
+@SpringBootTest(properties = ["backend.time-source=TEST", "backend.authn.device-binding.attestation.noop=true"])
 @ActiveProfiles("hsmfacade", "pupilid")
 @AutoConfigureMockMvc
 @WithMockUser(authorities = ["DEVICE_BINDING"])
-@TestPropertySource(properties = ["backend.time-source=TEST"])
 class PupilIdControllerLogicHsmFacadeTest {
 
     @Autowired

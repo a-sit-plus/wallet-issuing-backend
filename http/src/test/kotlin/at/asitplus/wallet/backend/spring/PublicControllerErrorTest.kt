@@ -20,7 +20,7 @@ import java.util.UUID
  */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["server.error.include-exception=true", "server.error.include-message=always"]
+    properties = ["server.error.include-exception=true", "server.error.include-message=always", "backend.authn.device-binding.attestation.noop=true"]
 )
 @AutoConfigureWebTestClient(timeout = "PT1M")
 class PublicControllerErrorTest {
