@@ -55,7 +55,7 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:${VersionsBackend.`jackson-cbor`}")
     implementation("net.swiftzer.semver:semver:${VersionsBackend.semver}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${VersionsBackend.coroutines}")
-    implementation("org.bouncycastle:bcpkix-jdk15on:${VersionsBackend.bouncycastle}")
+    implementation("org.bouncycastle:bcpkix-jdk18on:${VersionsBackend.bouncycastle}")
     implementation("org.springdoc:springdoc-openapi-ui:${VersionsBackend.spring.doc}")
     implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
     implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
