@@ -96,7 +96,8 @@ class DefaultBindingService(
             attestationCerts,
             certificate.encoded,
             challenge /*already verified by challengeService*/
-        )
+        ) ?: return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+
         log.info("Created new device binding for '{}': {}", bpk, certificate.encoded.encodeBase64())
 
         return BindingCertificate(certificate.encoded, signedPublicKey)
