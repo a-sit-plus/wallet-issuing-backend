@@ -3,13 +3,13 @@ import java.io.FileInputStream
 import java.util.*
 
 plugins {
-    id("org.springframework.boot") version Versions.spring.boot
-    id("io.spring.dependency-management") version Versions.spring.`dependency-management`
+    id("org.springframework.boot") version VersionsBackend.spring.boot
+    id("io.spring.dependency-management") version VersionsBackend.spring.`dependency-management`
     id("maven-publish")
-    kotlin("jvm") version Versions.kotlin
-    kotlin("plugin.spring") version Versions.kotlin
-    kotlin("plugin.jpa") version Versions.kotlin
-    kotlin("plugin.serialization") version Versions.kotlin
+    kotlin("jvm") version VersionsBackend.kotlin
+    kotlin("plugin.spring") version VersionsBackend.kotlin
+    kotlin("plugin.jpa") version VersionsBackend.kotlin
+    kotlin("plugin.serialization") version VersionsBackend.kotlin
 }
 
 val artifactVersion: String by extra
@@ -33,47 +33,47 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.cloud:spring-cloud-config-client:${Versions.spring.`cloud-config-client`}")
+    implementation("org.springframework.cloud:spring-cloud-config-client:${VersionsBackend.spring.`cloud-config-client`}")
     implementation("org.springframework.session:spring-session-core")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.apache.httpcomponents:httpclient")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.serialization.json}")
-    implementation("com.nimbusds:nimbus-jose-jwt:${Versions.jose}")
-    implementation("com.google.zxing:core:${Versions.zxing}")
-    implementation("org.webjars:webjars-locator:${Versions.webjars.locator}")
-    implementation("org.webjars:bootstrap:${Versions.webjars.bootstrap}")
-    implementation("org.webjars:jquery:${Versions.webjars.jquery}")
-    implementation("org.webjars:datatables:${Versions.webjars.datatables}")
-    implementation("de.codecentric:spring-boot-admin-starter-client:${Versions.spring.`admin-starter-client`}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${VersionsBackend.serialization.json}")
+    implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.jose}")
+    implementation("com.google.zxing:core:${VersionsBackend.zxing}")
+    implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
+    implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")
+    implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
+    implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
+    implementation("de.codecentric:spring-boot-admin-starter-client:${VersionsBackend.spring.`admin-starter-client`}")
     implementation("at.asitplus.wallet:vclib-jvm")
     implementation("at.asitplus.wallet:pupilidlib-jvm")
     implementation("at.asitplus:android-attestation")
-    implementation("ch.veehait.devicecheck:devicecheck-appattest:${Versions.deviceCheck}")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:${Versions.`jackson-cbor`}")
-    implementation("net.swiftzer.semver:semver:${Versions.semver}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
-    implementation("org.bouncycastle:bcpkix-jdk15on:${Versions.bouncycastle}")
-    implementation("org.springdoc:springdoc-openapi-ui:${Versions.spring.doc}")
-    implementation("org.springdoc:springdoc-openapi-kotlin:${Versions.spring.doc}")
-    implementation("org.springdoc:springdoc-openapi-security:${Versions.spring.doc}")
-    implementation("io.github.aakira:napier:${Versions.napier}")
-    implementation("com.google.iot.cbor:cbor:${Versions.`google-cbor`}")
-    implementation("at.asitplus.hsmfacade:provider:${Versions.hsmf}")
+    implementation("ch.veehait.devicecheck:devicecheck-appattest:${VersionsBackend.deviceCheck}")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:${VersionsBackend.`jackson-cbor`}")
+    implementation("net.swiftzer.semver:semver:${VersionsBackend.semver}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${VersionsBackend.coroutines}")
+    implementation("org.bouncycastle:bcpkix-jdk15on:${VersionsBackend.bouncycastle}")
+    implementation("org.springdoc:springdoc-openapi-ui:${VersionsBackend.spring.doc}")
+    implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
+    implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
+    implementation("io.github.aakira:napier:${VersionsBackend.napier}")
+    implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
+    implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")
     runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql:${Versions.pgsql}")
+    runtimeOnly("org.postgresql:postgresql:${VersionsBackend.pgsql}")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:${Versions.mockito}")
-    testImplementation("io.ktor:ktor-client-java:${Versions.ktor}")
-    testImplementation("io.kotest:kotest-assertions-core:${Versions.kotest}")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:${Versions.datetime}")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${VersionsBackend.coroutines}")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:${VersionsBackend.mockito}")
+    testImplementation("io.ktor:ktor-client-java:${VersionsBackend.ktor}")
+    testImplementation("io.kotest:kotest-assertions-core:${VersionsBackend.kotest}")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:${VersionsBackend.datetime}")
 }
 
 tasks.withType<KotlinCompile> {
