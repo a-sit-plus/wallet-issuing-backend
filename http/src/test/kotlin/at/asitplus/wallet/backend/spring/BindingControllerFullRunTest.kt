@@ -23,7 +23,7 @@ import java.util.*
 /**
  * Simulates a full run of a client for using the [BindingController].
  */
-@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
+@SpringBootTest
 @AutoConfigureMockMvc
 class BindingControllerFullRunTest {
 

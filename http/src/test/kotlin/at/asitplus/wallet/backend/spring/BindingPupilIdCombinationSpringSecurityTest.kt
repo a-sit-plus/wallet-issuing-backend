@@ -37,7 +37,7 @@ import kotlin.time.Duration.Companion.seconds
  * Tests the Spring Security parts of the authentication for [DeviceBinding] and [PupilIdController]
  * used in succession, i.e. to get a device binding and pupilid in one session for clients.
  */
-@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
+@SpringBootTest
 @AutoConfigureMockMvc
 class BindingPupilIdCombinationSpringSecurityTest {
 

@@ -36,7 +36,7 @@ import kotlin.time.Duration.Companion.seconds
  * Tests the Spring Security parts of the authentication for [BindingController],
  * i.e. it tests the filter, authentication provider, token and so on.
  */
-@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
+@SpringBootTest
 @AutoConfigureMockMvc
 abstract class BindingControllerSpringSecurityTest {
 

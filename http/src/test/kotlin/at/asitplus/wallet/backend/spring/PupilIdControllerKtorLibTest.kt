@@ -27,10 +27,7 @@ import java.util.*
  *
  * Uses the KMM library with ktor to simulate the client.
  */
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["backend.authn.device-binding.attestation.noop=true"]
-)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 class PupilIdControllerKtorLibTest {
 

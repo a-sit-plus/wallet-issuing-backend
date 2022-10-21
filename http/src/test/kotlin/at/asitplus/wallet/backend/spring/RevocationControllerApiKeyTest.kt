@@ -23,7 +23,7 @@ import java.util.UUID
  * Tests the Spring Security parts of the authentication for [RevocationController],
  * i.e. it tests the filter, authentication provider, token and so on.
  */
-@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
+@SpringBootTest
 @ActiveProfiles(profiles = ["pupilid", "apikey"])
 @AutoConfigureMockMvc
 class RevocationControllerApiKeyTest {

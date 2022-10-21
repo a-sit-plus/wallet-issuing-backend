@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.web.server.LocalServerPort
+import org.springframework.test.context.TestPropertySource
 import java.security.KeyPair
 import java.security.Signature
 import java.util.*
@@ -28,10 +29,8 @@ import java.util.*
  *
  * Uses the KMM library with ktor to simulate the client.
  */
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["backend.time-source=TEST", "backend.authn.device-binding.attestation.noop=true"]
-)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(properties = ["backend.time-source=TEST"])
 @AutoConfigureMockMvc
 class BindingPupilIdCombinationKtorLibTest {
 

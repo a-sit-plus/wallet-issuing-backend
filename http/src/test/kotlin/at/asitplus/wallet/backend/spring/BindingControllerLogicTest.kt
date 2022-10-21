@@ -1,7 +1,11 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.pupilid.*
+import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrRequestJ
+import at.asitplus.wallet.pupilid.BindingCsrResponseJ
+import at.asitplus.wallet.pupilid.BindingParamsRequestJ
+import at.asitplus.wallet.pupilid.BindingParamsResponseJ
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.shouldBe
@@ -14,13 +18,13 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.security.cert.CertificateFactory
-import java.util.*
+import java.util.UUID
 
 /**
  * Tests the logic (the process) part of the [BindingController],
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
-@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
+@SpringBootTest
 @AutoConfigureMockMvc
 class BindingControllerLogicTest {
 

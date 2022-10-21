@@ -19,3 +19,8 @@ spring:
   cloud:
     config:
       enabled: false
+backend:
+  authn:
+    device-binding:
+      attestation:
+        noop: true

@@ -3,9 +3,9 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
+import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
-import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,14 +20,14 @@ import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.HttpRequestMethodNotSupportedException
-import java.util.*
+import java.util.UUID
 
 /**
  * This is no MockMVC test, because that test setup would not create the error documents
  */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["server.error.include-exception=true", "server.error.include-message=always", "backend.authn.device-binding.attestation.noop=true"]
+    properties = ["server.error.include-exception=true", "server.error.include-message=always"]
 )
 @ActiveProfiles("eidasid")
 @AutoConfigureWebTestClient(timeout = "PT1M")

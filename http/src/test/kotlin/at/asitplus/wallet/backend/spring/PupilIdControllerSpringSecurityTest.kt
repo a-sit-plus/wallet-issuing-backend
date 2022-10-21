@@ -27,7 +27,7 @@ import java.util.UUID
  * Tests the Spring Security parts of the authentication for [PupilIdController],
  * i.e. it tests the filter, authentication provider, token and so on.
  */
-@SpringBootTest(properties = ["backend.authn.device-binding.attestation.noop=true"])
+@SpringBootTest
 @AutoConfigureMockMvc
 class PupilIdControllerSpringSecurityTest {
 
