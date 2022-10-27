@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test
@@ -315,12 +316,22 @@ class DefaultAttestationServiceTest {
 
     @Test
     fun `Pixel 6 attestation fail -- signature digest`() {
-        service = attestationService(androidAppSignatureDigest = listOf(byteArrayOf(0, 32, 55, 29, 120, 22, 0),
-            /*this one's an invalid digest and must not affect the tests*/ "LvfTC77F/uSecSfJDeLdxQ3gZrVLHX8+NNBp7AiUO0E=".decodeBase64ToArray()!!))
+        service = attestationService(
+            androidAppSignatureDigest = listOf(
+                byteArrayOf(0, 32, 55, 29, 120, 22, 0),
+                /*this one's an invalid digest and must not affect the tests*/
+                "LvfTC77F/uSecSfJDeLdxQ3gZrVLHX8+NNBp7AiUO0E=".decodeBase64ToArray()!!
+            )
+        )
         TestTimeSource.offset(365.days)
 
         service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
+    }
+
+    @Test
+    fun `Pixel 6 attestation fail -- no digests`() {
+        shouldThrow <Throwable> { attestationService(androidAppSignatureDigest = listOf()) }
     }
 
     @Test
