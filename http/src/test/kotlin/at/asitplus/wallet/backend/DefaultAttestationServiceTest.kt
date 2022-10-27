@@ -5,14 +5,18 @@ import at.asitplus.attestation.android.PatchLevel
 import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.lib.agent.FixedTimeClock
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Test
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class DefaultAttestationServiceTest {
@@ -306,6 +310,61 @@ class DefaultAttestationServiceTest {
     }
 
     @Test
+    fun `Pixel 6 attestation fail -- time of verification - leeway`() {
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:48Z"))
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:49Z"))
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:50Z"))
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:48Z")),
+            leeway = 1.seconds
+
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:48Z")),
+            leeway = 1.days
+
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:31:00Z")),
+            leeway = 10.minutes
+
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+
+        service = attestationService(
+            unlockedBootloaderAllowed = false,
+            timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:31:00Z")),
+            leeway = (-10).minutes
+
+        )
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+
+    }
+
+    @Test
     fun `Pixel 6 attestation fail -- package name`() {
         service = attestationService(androidPackageName = "org.wrong.package.name")
         TestTimeSource.offset(365.days)
@@ -491,8 +550,11 @@ class DefaultAttestationServiceTest {
 
 fun attestationService(
     androidPackageName: String = "at.asitplus.digitalid.wallet.pupilid",
-    androidAppSignatureDigest: List<ByteArray> = listOf("5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!,
-        /*this one's an invalid digest and must not affect the tests*/ "LvfTC77F/uSecSfJDeLdxQ3gZrVLHX8+NNBp7AiUO0E=".decodeBase64ToArray()!!),
+    androidAppSignatureDigest: List<ByteArray> = listOf(
+        "5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!,
+        /*this one's an invalid digest and must not affect the tests*/
+        "LvfTC77F/uSecSfJDeLdxQ3gZrVLHX8+NNBp7AiUO0E=".decodeBase64ToArray()!!
+    ),
     androidVersion: Int? = 10000,
     androidAppVersion: Int? = 1,
     androidPatchLevel: PatchLevel? = PatchLevel(2021, 8),
@@ -504,6 +566,7 @@ fun attestationService(
     iosVersion: String? = "14",
     iosSandbox: Boolean = true,
     timeSource: Clock = TestTimeSource,
+    leeway: Duration = 0.seconds,
 ) =
     DefaultAttestationService(
         DefaultCryptoServiceAdapter(RandomKeyAdapter()),
@@ -524,7 +587,7 @@ fun attestationService(
             iosVersion = iosVersion
         ),
         timeSource,
-        0.seconds
+        leeway
     )
 
 
