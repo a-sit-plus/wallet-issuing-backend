@@ -7,7 +7,6 @@ import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.kotest.matchers.shouldBe
-import io.ktor.util.*
 import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test
 import java.security.cert.CertificateFactory
@@ -315,7 +314,7 @@ class DefaultAttestationServiceTest {
 
     @Test
     fun `Pixel 6 attestation fail -- signature digest`() {
-        service = attestationService(androidAppSignatureDigest = byteArrayOf(0, 32, 55, 29, 120, 22, 0))
+        service = attestationService(androidAppSignatureDigest = listOf(byteArrayOf(0, 32, 55, 29, 120, 22, 0)))
         TestTimeSource.offset(365.days)
 
         service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
@@ -479,7 +478,7 @@ class DefaultAttestationServiceTest {
 
 fun attestationService(
     androidPackageName: String = "at.asitplus.digitalid.wallet.pupilid",
-    androidAppSignatureDigest: ByteArray = "5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!,
+    androidAppSignatureDigest: List<ByteArray> = listOf("5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!),
     androidVersion: Int? = 10000,
     androidAppVersion: Int? = 1,
     androidPatchLevel: PatchLevel? = PatchLevel(2021, 8),
@@ -496,7 +495,7 @@ fun attestationService(
         DefaultCryptoServiceAdapter(RandomKeyAdapter()),
         AndroidAttestationConfiguration(
             packageName = androidPackageName,
-            signatureDigest = androidAppSignatureDigest,
+            signatureDigests = androidAppSignatureDigest,
             appVersion = androidAppVersion,
             androidVersion = androidVersion,
             patchLevel = androidPatchLevel,

@@ -316,7 +316,7 @@ data class AndroidAttestationConfigurationProperties(
     val applicationVersion: Int? = null,
     val androidVersion: Int? = 10000,
     val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
-    val signatureDigest: String,
+    val signatureDigests: Array<String>,
     val requireStrongBox: Boolean = false,
     val requireRollbackResistance: Boolean = true,
 )

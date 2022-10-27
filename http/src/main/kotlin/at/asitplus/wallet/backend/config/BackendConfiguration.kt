@@ -469,8 +469,10 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             ?: throw RuntimeException("No Android attestation configured")
         return AndroidAttestationConfiguration(
             packageName = aCfg.packageName,
-            signatureDigest = aCfg.signatureDigest.decodeBase16ToArray()
-                ?: throw RuntimeException("Could not hex decode Android attestation signature digest"),
+            signatureDigests = aCfg.signatureDigests.map {
+                it.decodeBase16ToArray()
+                    ?: throw RuntimeException("Could not hex decode Android attestation signature digest $it")
+            },
             appVersion = aCfg.applicationVersion,
             androidVersion = aCfg.androidVersion,
             patchLevel = aCfg.patchLevel?.let { PatchLevel(it.year, it.month) },

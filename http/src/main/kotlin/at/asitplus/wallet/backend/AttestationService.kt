@@ -31,6 +31,8 @@ import java.security.cert.CertificateEncodingException
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 
 interface AttestationService {
 
@@ -76,7 +78,8 @@ class DefaultAttestationService(
     private val cryptoService: CryptoServiceAdapter,
     androidAttestationConfiguration: AndroidAttestationConfiguration,
     private val iosCfg: IOSAttestationConfigurationProperties,
-    private val clock: Clock
+    private val clock: Clock,
+    private val verificationTimeOffset: Duration
 ) : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -93,7 +96,12 @@ class DefaultAttestationService(
     private val appAttestReader = ObjectMapper(CBORFactory())
         .registerKotlinModule()
         .readerFor(AttestationObject::class.java)
-    private val attestationValidator = appleAppAttest.createAttestationValidator(clock = clock.toJavaClock())
+    private val attestationValidator = appleAppAttest.createAttestationValidator(
+        clock = java.time.Clock.offset(
+            clock.toJavaClock(),
+            verificationTimeOffset.toJavaDuration()
+        )
+    )
 
 
     /**
@@ -143,7 +151,7 @@ class DefaultAttestationService(
         val certificates = attestationCerts.mapNotNull { it.parseToCertificate() }
 
         //throws exception on fail
-        android.verifyAttestation(certificates, clock.now().toJavaDate(), expectedChallenge)
+        android.verifyAttestation(certificates, (clock.now() + verificationTimeOffset).toJavaDate(), expectedChallenge)
 
         val bindingPublicKey = bindingCertificate.publicKey.encoded
         val attestationPublicKey = certificates.first().publicKey.encoded
