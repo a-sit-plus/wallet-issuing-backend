@@ -216,7 +216,8 @@ class BackendConfiguration {
             androidAttestationConfiguration(),
             configurationProperties.authn.deviceBinding.attestation.ios
                 ?: throw RuntimeException("no iOS Attestation configured"),
-            clock()
+            clock(),
+            configurationProperties.authn.deviceBinding.attestation.verificationOffSetDuration
         )
     else {
         if (configurationProperties.authn.deviceBinding.attestation.ios != null || configurationProperties.authn.deviceBinding.attestation.android != null)

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 class DefaultAttestationServiceTest {
     private var service = attestationService()
@@ -314,7 +315,8 @@ class DefaultAttestationServiceTest {
 
     @Test
     fun `Pixel 6 attestation fail -- signature digest`() {
-        service = attestationService(androidAppSignatureDigest = listOf(byteArrayOf(0, 32, 55, 29, 120, 22, 0)))
+        service = attestationService(androidAppSignatureDigest = listOf(byteArrayOf(0, 32, 55, 29, 120, 22, 0),
+            /*this one's an invalid digest and must not affect the tests*/ "LvfTC77F/uSecSfJDeLdxQ3gZrVLHX8+NNBp7AiUO0E=".decodeBase64ToArray()!!))
         TestTimeSource.offset(365.days)
 
         service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
@@ -478,7 +480,8 @@ class DefaultAttestationServiceTest {
 
 fun attestationService(
     androidPackageName: String = "at.asitplus.digitalid.wallet.pupilid",
-    androidAppSignatureDigest: List<ByteArray> = listOf("5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!),
+    androidAppSignatureDigest: List<ByteArray> = listOf("5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlI=".decodeBase64ToArray()!!,
+        /*this one's an invalid digest and must not affect the tests*/ "LvfTC77F/uSecSfJDeLdxQ3gZrVLHX8+NNBp7AiUO0E=".decodeBase64ToArray()!!),
     androidVersion: Int? = 10000,
     androidAppVersion: Int? = 1,
     androidPatchLevel: PatchLevel? = PatchLevel(2021, 8),
@@ -509,7 +512,8 @@ fun attestationService(
             sandbox = iosSandbox,
             iosVersion = iosVersion
         ),
-        timeSource
+        timeSource,
+        0.seconds
     )
 
 

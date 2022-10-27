@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 import java.net.URI
 import kotlin.time.Duration
+import kotlin.time.seconds
 
 @ConfigurationProperties(prefix = "backend")
 @ConstructorBinding
@@ -307,8 +308,11 @@ enum class DeviceBindingNonceType {
 data class AttestationConfigurationProperties(
     val android: AndroidAttestationConfigurationProperties? = null,
     val ios: IOSAttestationConfigurationProperties? = null,
-    val noop: Boolean? = null
-)
+    val noop: Boolean? = null,
+    private val verificationOffset: String? = null,
+) {
+    val verificationOffSetDuration = verificationOffset?.let { Duration.parse(it) } ?: 0.seconds
+}
 
 @ConstructorBinding
 data class AndroidAttestationConfigurationProperties(
