@@ -3,15 +3,9 @@ package at.asitplus.wallet.backend
 import at.asitplus.attestation.android.AndroidAttestationChecker
 import at.asitplus.attestation.android.AndroidAttestationConfiguration
 import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
-import at.asitplus.wallet.backend.service.CryptoServiceAdapter
-import at.asitplus.wallet.backend.service.fromJcaKey
-import at.asitplus.wallet.backend.service.joseType
 import at.asitplus.wallet.lib.encodeBase64
-import at.asitplus.wallet.lib.jws.EcCurve
-import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.toJavaClock
 import at.asitplus.wallet.lib.toJavaDate
-import at.asitplus.wallet.pupilid.AttestedPublicKey
 import ch.veehait.devicecheck.appattest.AppleAppAttest
 import ch.veehait.devicecheck.appattest.attestation.ValidatedAttestation
 import ch.veehait.devicecheck.appattest.common.App
@@ -19,18 +13,13 @@ import ch.veehait.devicecheck.appattest.common.AppleAppAttestEnvironment
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.nimbusds.jose.JWSHeader
-import com.nimbusds.jose.JWSObject
-import com.nimbusds.jose.Payload
 import kotlinx.datetime.Clock
 import net.swiftzer.semver.SemVer
 import org.bouncycastle.cert.X509CertificateHolder
 import org.slf4j.LoggerFactory
 import java.security.MessageDigest
-import java.security.cert.CertificateEncodingException
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.security.interfaces.ECPublicKey
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
@@ -44,38 +33,26 @@ interface AttestationService {
      */
     fun verifyAttestation(
         attestationCerts: List<ByteArray>,
-        bindingCertificate: ByteArray,
+        bindingPublicKey: ByteArray,
         challenge: ByteArray
-    ): String?
+    ): Boolean
 
 }
 
 
-class NoopAttestationService(
-    private val cryptoService: CryptoServiceAdapter,
-) : AttestationService {
+object NoopAttestationService : AttestationService {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
     override fun verifyAttestation(
         attestationCerts: List<ByteArray>,
-        bindingCertificate: ByteArray,
+        bindingPublicKey: ByteArray,
         challenge: ByteArray
-    ): String? = try {
-        val certificate = bindingCertificate.parseToCertificate()
-            ?: throw CertificateEncodingException("Could not parse binding cert")
-        log.debug("attestation certificate chain length: ${attestationCerts.size}")
-
-        cryptoService.wrapInJws(certificate)
-    } catch (e: Throwable) {
-        log.warn("verifyAttestation: error", e)
-        null
-    }
+    ) = true
 
 
 }
 
 class DefaultAttestationService(
-    private val cryptoService: CryptoServiceAdapter,
     androidAttestationConfiguration: AndroidAttestationConfiguration,
     private val iosCfg: IOSAttestationConfigurationProperties,
     private val clock: Clock,
@@ -112,30 +89,26 @@ class DefaultAttestationService(
      */
     override fun verifyAttestation(
         attestationCerts: List<ByteArray>,
-        bindingCertificate: ByteArray,
+        bindingPublicKey: ByteArray,
         challenge: ByteArray
-    ): String? {
+    ): Boolean {
         return try {
-            val certificate = bindingCertificate.parseToCertificate()
-                ?: throw CertificateEncodingException("Could not parse binding cert")
             log.debug("attestation certificate chain length: ${attestationCerts.size}")
-            if (!verifyAttestationClient(attestationCerts, certificate, challenge))
-                return null.also {
-                    log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
-                }
-            cryptoService.wrapInJws(certificate)
+
+            verifyAttestationClient(attestationCerts, bindingPublicKey, challenge).also {
+                if (!it) log.error("Could not verify attestation chain: {}", attestationCerts.map { it.encodeBase64() })
+            }
         } catch (e: Throwable) {
-            log.warn("verifyAttestation: error", e)
-            null
+            false.also { log.warn("verifyAttestation: error", e) }
         }
     }
 
     internal fun verifyAttestationClient(
         attestationCerts: List<ByteArray>,
-        bindingCertificate: X509Certificate,
+        bindingPublicKey: ByteArray,
         expectedChallenge: ByteArray
     ): Boolean = if (attestationCerts.size > 1)
-        verifyAttestationAndroid(attestationCerts, bindingCertificate, expectedChallenge)
+        verifyAttestationAndroid(attestationCerts, bindingPublicKey, expectedChallenge)
     else
         verifyAttestationApple(attestationCerts.first(), expectedChallenge)
 
@@ -144,19 +117,20 @@ class DefaultAttestationService(
      */
     private fun verifyAttestationAndroid(
         attestationCerts: List<ByteArray>,
-        bindingCertificate: X509Certificate,
+        bindingPublicKey: ByteArray,
         expectedChallenge: ByteArray
     ) = kotlin.runCatching {
         log.debug("Verifying Android attestation")
         val certificates = attestationCerts.mapNotNull { it.parseToCertificate() }
 
+        if (certificates.size != attestationCerts.size) return false.also { log.warn("Could not parse attestation chain") }
+
         //throws exception on fail
         android.verifyAttestation(certificates, (clock.now() + verificationTimeOffset).toJavaDate(), expectedChallenge)
 
-        val bindingPublicKey = bindingCertificate.publicKey.encoded
         val attestationPublicKey = certificates.first().publicKey.encoded
         return bindingPublicKey.contentEquals(attestationPublicKey)
-            .also { if (!it) log.warn("binding public key does not equal attestation public key from certificate") }
+            .also { if (!it) log.warn("binding public key ${bindingPublicKey.encodeBase64()} does not equal attestation public key ${attestationPublicKey.encodeBase64()} from certificate") }
     }.getOrElse {
         log.warn("Android attestation error", it)
         false
@@ -196,20 +170,11 @@ class DefaultAttestationService(
     }
 }
 
-private fun ByteArray.parseToCertificate() = kotlin.runCatching {
-    CertificateFactory.getInstance("X.509").generateCertificate(this.inputStream()) as X509Certificate
+//copied from AppAttest Library
+private val certificateFactory = CertificateFactory.getInstance("X.509")
+fun ByteArray.parseToCertificate(): X509Certificate? = kotlin.runCatching {
+    certificateFactory.generateCertificate(this.inputStream()) as X509Certificate
 }.getOrNull()
-
-private fun CryptoServiceAdapter.wrapInJws(certificate: X509Certificate): String {
-    val publicKey = JsonWebKey.fromJcaKey(certificate.publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!
-    val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!)
-    return JWSObject(
-        JWSHeader(jwsAlgorithm.joseType),
-        Payload(attestedPublicKey.serialize().encodeToByteArray())
-    ).also {
-        it.sign(jwsContentSigner)
-    }.serialize()
-}
 
 data class AttestationObject(
     val fmt: String,

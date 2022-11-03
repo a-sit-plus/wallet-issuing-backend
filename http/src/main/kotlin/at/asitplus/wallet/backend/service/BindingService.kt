@@ -4,9 +4,18 @@ import at.asitplus.wallet.backend.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.encodeBase16
 import at.asitplus.wallet.lib.encodeBase64
+import at.asitplus.wallet.lib.jws.EcCurve
+import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwkType
+import at.asitplus.wallet.pupilid.AttestedPublicKey
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.JWSObject
+import com.nimbusds.jose.Payload
 import kotlinx.coroutines.runBlocking
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
+import java.security.interfaces.ECPublicKey
 
 interface BindingService {
 
@@ -96,6 +105,7 @@ data class BindingCertificate(
 class DefaultBindingService(
     private val challengeService: ChallengeService,
     private val pkiService: PkiService,
+    private val cryptoService: CryptoServiceAdapter,
     private val attestationService: AttestationService,
     private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : BindingService {
@@ -125,14 +135,24 @@ class DefaultBindingService(
         if (!challengeService.verifyAndRemove(challenge))
             return null.also { log.warn("binding challenge invalid: {}", it) }
 
+        val bindingPublicKey =
+            kotlin.runCatching { BouncyCastleProvider.getPublicKey(PKCS10CertificationRequest(csr).subjectPublicKeyInfo) }
+                .getOrElse { error ->
+                    return null.also { log.warn("Could not parse public key from CSR", error) }
+                }
+
+        if (!attestationService.verifyAttestation(
+                attestationCerts,
+                bindingPublicKey.encoded,
+                challenge /*already verified by challengeService*/
+            )
+        ) return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+
+
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
             ?: return null.also { log.warn("CSR invalid: {}", it) }
 
-        val signedPublicKey = attestationService.verifyAttestation(
-            attestationCerts,
-            certificate.encoded,
-            challenge /*already verified by challengeService*/
-        ) ?: return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+        val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey as ECPublicKey)
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
@@ -150,5 +170,16 @@ class DefaultBindingService(
         if (!success)
             return null
         return true
+    }
+
+    private fun CryptoServiceAdapter.wrapInJws(pubKey: ECPublicKey): String {
+        val publicKey = JsonWebKey.fromJcaKey(pubKey, EcCurve.SECP_256_R_1)!!
+        val attestedPublicKey = AttestedPublicKey(publicKey.keyId!!)
+        return JWSObject(
+            JWSHeader(jwsAlgorithm.joseType),
+            Payload(attestedPublicKey.serialize().encodeToByteArray())
+        ).also {
+            it.sign(jwsContentSigner)
+        }.serialize()
     }
 }

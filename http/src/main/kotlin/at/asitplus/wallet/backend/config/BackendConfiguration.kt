@@ -128,12 +128,14 @@ class BackendConfiguration {
     fun bindingService(
         challengeService: ChallengeService,
         pkiService: PkiService,
+        issuerCryptoService: CryptoServiceAdapter,
         attestationService: AttestationService,
         deviceBindingStorageService: DeviceBindingStorageService
     ): BindingService =
         DefaultBindingService(
             challengeService,
             pkiService,
+            issuerCryptoService,
             attestationService,
             deviceBindingStorageService
         )
@@ -209,10 +211,8 @@ class BackendConfiguration {
 
     @Bean
     fun attestationService(
-        issuerCryptoService: CryptoServiceAdapter,
     ): AttestationService = if (configurationProperties.authn.deviceBinding.attestation.noop != true)
         DefaultAttestationService(
-            issuerCryptoService,
             androidAttestationConfiguration(),
             configurationProperties.authn.deviceBinding.attestation.ios
                 ?: throw RuntimeException("no iOS Attestation configured"),
@@ -257,7 +257,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
 
 
 """)
-        NoopAttestationService(issuerCryptoService)
+        NoopAttestationService
     }
 
 

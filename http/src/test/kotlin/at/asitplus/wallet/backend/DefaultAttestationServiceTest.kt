@@ -3,8 +3,6 @@ package at.asitplus.wallet.backend
 import at.asitplus.attestation.android.AndroidAttestationConfiguration
 import at.asitplus.attestation.android.PatchLevel
 import at.asitplus.wallet.backend.config.IOSAttestationConfigurationProperties
-import at.asitplus.wallet.backend.pki.RandomKeyAdapter
-import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.lib.agent.FixedTimeClock
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.kotest.assertions.throwables.shouldThrow
@@ -23,7 +21,7 @@ class DefaultAttestationServiceTest {
     private var service = attestationService()
 
     private val iosChallenge = "d6KTUbpAHHsMpQ4x5rEuOqkiGSKTZzkHawXVfU03XIE=".decodeBase64ToArray()!!
-    private val iosBindingCert = CertificateFactory.getInstance("X.509")
+    private val iosBindingPublicKey = (CertificateFactory.getInstance("X.509")
         .generateCertificate(
             """
             MIIBVTCB/aADAgECAgjzE8vxhgUZnDAKBggqhkjOPQQDAjBLMUkwRwYDVQQDDEBGQTc0OEY4MDc1NERE
@@ -33,7 +31,7 @@ class DefaultAttestationServiceTest {
             35155jv7q+zn0puI8wxEacT1o6cwCgYIKoZIzj0EAwIDRwAwRAIgb+1T1tKzM7ev3gaG104/OwiCRlQZ
             58FGXfQa3hzx6esCIGmroKWno+R0Ist640lkO0oDsr+TcWpM93GKZPDO7WUc
         """.trimMargin().decodeBase64ToArray()!!.inputStream()
-        ) as X509Certificate
+        ) as X509Certificate).publicKey.encoded
 
     private val iosAttestationStmt = """
             o2NmbXRvYXBwbGUtYXBwYXR0ZXN0Z2F0dFN0bXSiY3g1Y4JZAu8wggLrMIICcqADAgECAgYBg38k/xowCgYIKoZIzj0EAwIwTzEjMCEGA1UE
@@ -133,7 +131,7 @@ class DefaultAttestationServiceTest {
             vU9oR3GVGdMkUBZutL8VuFkERQGt6vQ2OCw0sV47VMkuYbacK/xyZFiRcrPJPb41zgbQj9XAEyLKCHex0SdDrx+tWUDqG8At2JHA==
             """.trimMargin()
     ).map { it.decodeBase64ToArray()!! }
-    private val pixelBindingCert = CertificateFactory.getInstance("X.509")
+    private val pixelBindingPublicKey = (CertificateFactory.getInstance("X.509")
         .generateCertificate(
             """
             MIICujCCAmCgAwIBAgIBATAKBggqhkjOPQQDAjA5MQwwCgYDVQQMDANURUUxKTAnBgNVBAUTIDg3ZWVkZjAzYjljZWNlMjIwYzgzMTJhMmI5ZDZiMjZlMB4XDTIy
@@ -141,7 +139,7 @@ class DefaultAttestationServiceTest {
             NbnnEX4D8L1U7rt6XyzQNZ3WlN/e/H9wDjd/qXvHpsEADBlv4U9CAIGAYN+vD4Xv4VFVQRTMFExKzApBCRhdC5hc2l0cGx1cy5kaWdpdGFsaWQud2FsbGV0LnB1cGlsaWQCAQExIgQg5UGooDS29UheXLyz12rlTbB36v/396mnrpycpGx0qlIwgbOhCDEGAgECAgEDogMCAQOjBAICAQClCzEJAgEAAgECAgEEqgMCAQG/g3gDAgEDv4N5BAICASy/hT4DAgEAv4VATD
             BKBCAPbnXIAYO13sB0sAVNQnHpk4nr5LE2sIGd4fFQug/51wEB/woBAAQgXOGC1inSwG9tTnpx1AflWgKWqTRrXBhScS9NTK0DMlS/hUEFAgMB+9C/hUIFAgMDFeG/hU4GAgQBNIvpv4VPBgIEATSL6TAKBggqhkjOPQQDAgNIADBFAiEA493XrIO83zpV6iMnPvLb9yzyZcp0nRS8PZIvAOdnkBYCIFM4RykcJJ8U984j03Wyb554OWJpBvDenwKKG4MAN/LH
             """.trimMargin().decodeBase64ToArray()!!.inputStream()
-        ) as X509Certificate
+        ) as X509Certificate).publicKey.encoded
     private val pixelChallenge = "gNbnnEX4D8L1U7rt6XyzQNZ3WlN/e/H9wDjd/qXvHps=".decodeBase64ToArray()!!
 
 
@@ -228,15 +226,15 @@ class DefaultAttestationServiceTest {
             GOi6mXT8oW40VhpJRzAKBggqhkjOPQQDAgNJADBGAiEAjt3ybXoWAp17Iv6OhnaMHtmm1p1BcOVYNUy7
             gU32LxsCIQCR8NMd59KnNhZ78bRCppjpANX1Gu5a3hZovB5j62xACQ==
         """.trimMargin().decodeBase64ToArray()!!
-        val bindingCert = CertificateFactory.getInstance("X.509")
-            .generateCertificate(bindingCertificate.inputStream()) as X509Certificate
+        val bindingPublicKey = (CertificateFactory.getInstance("X.509")
+            .generateCertificate(bindingCertificate.inputStream()) as X509Certificate).publicKey.encoded
 
         val challenge = "o6rk00X3/A+KugSheSf/SFgo8KqemP/s3xXaWJW2H6s=".decodeBase64ToArray()!!
-        service.verifyAttestationClient(attestationChain, bindingCert, challenge) shouldBe true
+        service.verifyAttestationClient(attestationChain, bindingPublicKey, challenge) shouldBe true
 
-        service.verifyAttestationClient(listOf(attestationChain[0]), bindingCert, challenge) shouldBe false
-        service.verifyAttestationClient(attestationChain.subList(0, 1), bindingCert, challenge) shouldBe false
-        service.verifyAttestationClient(attestationChain.subList(0, 2), bindingCert, challenge) shouldBe false
+        service.verifyAttestationClient(listOf(attestationChain[0]), bindingPublicKey, challenge) shouldBe false
+        service.verifyAttestationClient(attestationChain.subList(0, 1), bindingPublicKey, challenge) shouldBe false
+        service.verifyAttestationClient(attestationChain.subList(0, 2), bindingPublicKey, challenge) shouldBe false
     }
 
     @Test
@@ -244,21 +242,21 @@ class DefaultAttestationServiceTest {
         service = attestationService(unlockedBootloaderAllowed = false)
 
         TestTimeSource.offset(365.days)
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         service.verifyAttestationClient(
             listOf(pixelAttestationChain[0]),
-            pixelBindingCert,
+            pixelBindingPublicKey,
             pixelChallenge
         ) shouldBe false
         service.verifyAttestationClient(
             pixelAttestationChain.subList(0, 1),
-            pixelBindingCert,
+            pixelBindingPublicKey,
             pixelChallenge
         ) shouldBe false
         service.verifyAttestationClient(
             pixelAttestationChain.subList(0, 2),
-            pixelBindingCert,
+            pixelBindingPublicKey,
             pixelChallenge
         ) shouldBe false
         TestTimeSource.offset(-(365.days))
@@ -269,7 +267,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(unlockedBootloaderAllowed = true)
 
         TestTimeSource.offset(365.days)
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         TestTimeSource.offset(-(365.days))
     }
@@ -279,7 +277,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(requireStrongBox = true)
         TestTimeSource.offset(365.days)
 
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
         TestTimeSource.offset(-(365.days))
     }
 
@@ -288,7 +286,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(androidVersion = null)
 
         TestTimeSource.offset(365.days)
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         TestTimeSource.offset(-(365.days))
     }
@@ -298,7 +296,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(androidPatchLevel = null)
 
         TestTimeSource.offset(365.days)
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         TestTimeSource.offset(-(365.days))
     }
@@ -306,7 +304,7 @@ class DefaultAttestationServiceTest {
     @Test
     fun `Pixel 6 attestation fail -- time of verification`() {
         service = attestationService(unlockedBootloaderAllowed = false)
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
     }
 
     @Test
@@ -315,20 +313,20 @@ class DefaultAttestationServiceTest {
             unlockedBootloaderAllowed = false,
             timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:48Z"))
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
 
         service = attestationService(
             unlockedBootloaderAllowed = false,
             timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:49Z"))
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
 
         service = attestationService(
             unlockedBootloaderAllowed = false,
             timeSource = FixedTimeClock(Instant.parse("2022-09-27T11:36:50Z"))
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         service = attestationService(
             unlockedBootloaderAllowed = false,
@@ -336,7 +334,7 @@ class DefaultAttestationServiceTest {
             leeway = 1.seconds
 
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         service = attestationService(
             unlockedBootloaderAllowed = false,
@@ -344,7 +342,7 @@ class DefaultAttestationServiceTest {
             leeway = 1.days
 
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         service = attestationService(
             unlockedBootloaderAllowed = false,
@@ -352,7 +350,7 @@ class DefaultAttestationServiceTest {
             leeway = 10.minutes
 
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe true
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe true
 
         service = attestationService(
             unlockedBootloaderAllowed = false,
@@ -360,7 +358,7 @@ class DefaultAttestationServiceTest {
             leeway = (-10).minutes
 
         )
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
 
     }
 
@@ -369,7 +367,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(androidPackageName = "org.wrong.package.name")
         TestTimeSource.offset(365.days)
 
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
     }
 
@@ -384,7 +382,7 @@ class DefaultAttestationServiceTest {
         )
         TestTimeSource.offset(365.days)
 
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
     }
 
@@ -398,7 +396,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(androidVersion = 200000)
         TestTimeSource.offset(365.days)
 
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
     }
 
@@ -407,7 +405,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(androidPatchLevel = PatchLevel(2030, 1))
         TestTimeSource.offset(365.days)
 
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
     }
 
@@ -416,7 +414,7 @@ class DefaultAttestationServiceTest {
         service = attestationService(requireRollbackResistance = true)
         TestTimeSource.offset(365.days)
 
-        service.verifyAttestationClient(pixelAttestationChain, pixelBindingCert, pixelChallenge) shouldBe false
+        service.verifyAttestationClient(pixelAttestationChain, pixelBindingPublicKey, pixelChallenge) shouldBe false
         TestTimeSource.offset(-(365.days))
     }
 
@@ -426,7 +424,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -439,7 +437,7 @@ class DefaultAttestationServiceTest {
     fun `iOS fail -- time of verification`() {
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         attestationResult shouldBe false
@@ -452,7 +450,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -467,7 +465,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -482,7 +480,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -496,7 +494,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             byteArrayOf(0, 1, 3, 5, 67, 4, 3, 2, 35, 0)
         )
         TestTimeSource.offset(-(351.days))
@@ -510,7 +508,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -524,7 +522,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -538,7 +536,7 @@ class DefaultAttestationServiceTest {
         TestTimeSource.offset(351.days)
         val attestationResult = service.verifyAttestationClient(
             listOf(iosAttestationStmt),
-            iosBindingCert,
+            iosBindingPublicKey,
             iosChallenge
         )
         TestTimeSource.offset(-(351.days))
@@ -569,7 +567,6 @@ fun attestationService(
     leeway: Duration = 0.seconds,
 ) =
     DefaultAttestationService(
-        DefaultCryptoServiceAdapter(RandomKeyAdapter()),
         AndroidAttestationConfiguration(
             packageName = androidPackageName,
             signatureDigests = androidAppSignatureDigest,

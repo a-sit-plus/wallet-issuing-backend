@@ -58,8 +58,15 @@ abstract class BindingControllerSpringSecurityTest {
     private lateinit var bpk: String
     private lateinit var challenge: ByteArray
     private lateinit var nonce: String
-    private lateinit var csr: ByteArray
+    private val csr = """
+        MIHGMG4CAQAwDDEKMAgGA1UEAwwBLjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAoTFPKbA4/4
+        VE6c+HPVU/KK8pW2c8oXeEUzxoylFJyCmGf2x7ZiVrSs1140AJvbAqDEiiziOE8ngMMuDf6y9P2g
+        ADAKBggqhkjOPQQDAgNIADBFAiAN/VZeV9lUYWmjnAZstsopfWbdA/L2FP84SAX1X9mJrwIhAN3Z
+        vFQDG6sjaZ8aho16EdlV53Q4FQIlwUIYcGjAbZbj"""
+        .trimMargin().decodeBase64ToArray()!!
+
     private lateinit var deviceName: String
+
     private val certificate: ByteArray = (CertificateFactory.getInstance("X.509")
         .generateCertificate(
             """
@@ -79,7 +86,6 @@ abstract class BindingControllerSpringSecurityTest {
         whenever(challengeService.verifyAndRemove(eq(challenge))).thenReturn(true)
         nonce = UUID.randomUUID().toString()
         whenever(extNonceAuthnService.exchangeNonceForBpk(eq(nonce))).thenReturn(bpk)
-            csr = Random.nextBytes(32)
             deviceName = UUID.randomUUID().toString()
             val validUntil = TestTimeSource.now() + 60.seconds
             val signedCertificate = SignedCertificate(certificate, validUntil)
