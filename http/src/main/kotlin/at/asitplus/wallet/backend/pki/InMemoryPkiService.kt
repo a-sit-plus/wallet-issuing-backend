@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.pki
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
+import at.asitplus.wallet.lib.toJavaDate
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
@@ -69,7 +70,7 @@ class InMemoryPkiService(
         X509v3CertificateBuilder(
             /* issuer = */ issuer,
             /* serial = */ BigInteger.valueOf(Random.nextLong()),
-            /* notBefore = */ Date(),
+            /* notBefore = */ clock.now().toJavaDate(),
             /* notAfter = */ Date.from((clock.now() + certValidity).toJavaInstant()),
             /* subject = */ subject,
             /* publicKeyInfo = */ subjectPublicKeyInfo

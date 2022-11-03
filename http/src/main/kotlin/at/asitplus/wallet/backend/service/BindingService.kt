@@ -39,7 +39,27 @@ data class BindingParams(
     val challenge: ByteArray,
     val subject: String,
     val keyType: String,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BindingParams
+
+        if (!challenge.contentEquals(other.challenge)) return false
+        if (subject != other.subject) return false
+        if (keyType != other.keyType) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = challenge.contentHashCode()
+        result = 31 * result + subject.hashCode()
+        result = 31 * result + keyType.hashCode()
+        return result
+    }
+}
 
 /**
  * Core result of the device binding process.
@@ -53,7 +73,25 @@ data class BindingCertificate(
      * Serialized [AttestedPublicKey].
      */
     val attestedPublicKey: String?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BindingCertificate
+
+        if (!certificate.contentEquals(other.certificate)) return false
+        if (attestedPublicKey != other.attestedPublicKey) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = certificate.contentHashCode()
+        result = 31 * result + (attestedPublicKey?.hashCode() ?: 0)
+        return result
+    }
+}
 
 class DefaultBindingService(
     private val challengeService: ChallengeService,
@@ -90,13 +128,13 @@ class DefaultBindingService(
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
             ?: return null.also { log.warn("CSR invalid: {}", it) }
 
-        deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
-
         val signedPublicKey = attestationService.verifyAttestation(
             attestationCerts,
             certificate.encoded,
             challenge /*already verified by challengeService*/
         ) ?: return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+
+        deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
         log.info("Created new device binding for '{}': {}", bpk, certificate.encoded.encodeBase64())
 

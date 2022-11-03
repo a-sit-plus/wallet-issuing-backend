@@ -51,4 +51,22 @@ object PkiUtils {
 data class SignedCertificate(
     val encoded: ByteArray,
     val validUntil: Instant,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SignedCertificate
+
+        if (!encoded.contentEquals(other.encoded)) return false
+        if (validUntil != other.validUntil) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = encoded.contentHashCode()
+        result = 31 * result + validUntil.hashCode()
+        return result
+    }
+}
