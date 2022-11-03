@@ -1,5 +1,8 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.attestation.AttestationService
+import at.asitplus.attestation.DefaultAttestationService
+import at.asitplus.attestation.NoopAttestationService
 import at.asitplus.attestation.android.AndroidAttestationConfiguration
 import at.asitplus.attestation.android.PatchLevel
 import at.asitplus.wallet.backend.*
@@ -214,8 +217,8 @@ class BackendConfiguration {
     ): AttestationService = if (configurationProperties.authn.deviceBinding.attestation.noop != true)
         DefaultAttestationService(
             androidAttestationConfiguration(),
-            configurationProperties.authn.deviceBinding.attestation.ios
-                ?: throw RuntimeException("no iOS Attestation configured"),
+            (configurationProperties.authn.deviceBinding.attestation.ios
+                ?: throw RuntimeException("no iOS Attestation configured")).toIosAttestationConfiguration(),
             clock(),
             configurationProperties.authn.deviceBinding.attestation.verificationOffSetDuration
         )

@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.attestation.IOSAttestationConfiguration
 import at.asitplus.wallet.backend.TimeSource
 import at.asitplus.wallet.lib.agent.MonthAndDay
 import at.asitplus.wallet.lib.agent.RevocationListCache
@@ -331,7 +332,9 @@ data class IOSAttestationConfigurationProperties(
     val bundleIdentifier: String,
     val sandbox: Boolean = false,
     val iosVersion: String? = null,
-)
+) {
+    fun toIosAttestationConfiguration() = IOSAttestationConfiguration(teamIdentifier, bundleIdentifier, sandbox, iosVersion)
+}
 
 @ConstructorBinding
 data class PatchLevelConfigurationProperties(val year: Int, val month: Int)

@@ -26,9 +26,9 @@ includeBuild("remote-crypto-provider"){
     }
 }
 
-includeBuild("android-attestation"){
+includeBuild("attestation-service"){
     dependencySubstitution {
-        substitute(module("at.asitplus:android-attestation"))
+        substitute(module("at.asitplus:attestation-service"))
     }
 }
 

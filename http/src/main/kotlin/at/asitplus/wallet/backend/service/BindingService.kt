@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.backend.AttestationService
+import at.asitplus.attestation.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.encodeBase16
 import at.asitplus.wallet.lib.encodeBase64
