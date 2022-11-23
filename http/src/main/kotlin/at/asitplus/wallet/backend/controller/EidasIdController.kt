@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
@@ -82,7 +83,7 @@ class EidasIdController(
         ]
     )
     @PostMapping("/eidasid/issue")
-    @PreAuthorize("hasAuthority(\"DEVICE_BINDING\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_DEVICE_BINDING\")")
     fun issueCredential(
         @RequestBody body: String,
         authentication: Authentication,

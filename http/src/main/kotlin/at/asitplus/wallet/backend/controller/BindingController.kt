@@ -3,6 +3,9 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
 import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
@@ -25,6 +28,8 @@ import java.security.Principal
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpSession
 
+private const val SESSION_ATTR_CERTIFICATE = "certificate"
+
 @RestController
 class BindingController(
     private val extNonceAuthnService: ExtNonceAuthnService,
@@ -41,14 +46,14 @@ class BindingController(
             ApiResponse(responseCode = "200", description = "Binding parameters have been created"),
             ApiResponse(
                 responseCode = "403",
-                description = "Client is not authenticated, i.e. it needs to send ext. nonce in header `X-Auth-ExtNonce`",
+                description = "Client is not authenticated, i.e. it needs to send ext. nonce in header `$X_AUTH_EXT_NONCE`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/binding/start")
-    @PreAuthorize("hasAuthority(\"PUPIL\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
     fun requestBindingParams(
         @RequestBody body: BindingParamsRequestJ,
         principal: Principal
@@ -72,14 +77,14 @@ class BindingController(
             ),
             ApiResponse(
                 responseCode = "403",
-                description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
+                description = "Client is not authenticated, i.e. it needs to send sessionId in header `$X_AUTH_TOKEN`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/binding/create")
-    @PreAuthorize("hasAuthority(\"PUPIL\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
     fun postBindingCsr(
         @RequestBody body: BindingCsrRequestJ,
         principal: Principal,
@@ -95,7 +100,7 @@ class BindingController(
             principal.name
         ) ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
             .also { log.warn("/binding/create returns HTTP 400") }
-        session.setAttribute("certificate", response.certificate.encodeBase64())
+        session.setAttribute(SESSION_ATTR_CERTIFICATE, response.certificate.encodeBase64())
         return ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
             .also { log.info("/binding/create returns HTTP 200: {}", it) }
     }
@@ -113,19 +118,18 @@ class BindingController(
             ),
             ApiResponse(
                 responseCode = "403",
-                description = "Client is not authenticated, i.e. it needs to send sessionId in header `X-Auth-Token`",
+                description = "Client is not authenticated, i.e. it needs to send sessionId in header `$X_AUTH_TOKEN`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(responseCode = "500", ref = "errorResponse"),
         ],
     )
     @PostMapping("/binding/confirm")
-    @PreAuthorize("hasAuthority(\"PUPIL\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
     fun confirmBinding(
         @RequestBody body: BindingConfirmRequestJ,
         principal: Principal,
         session: HttpSession,
-        request: HttpServletRequest,
     ): ResponseEntity<BindingConfirmResponseJ> {
         log.info("/binding/confirm called for {} with {}", principal, body)
         val confirmed = bindingService.confirm(body.success)
@@ -136,7 +140,7 @@ class BindingController(
         // so we'll set the expected authentication token into the current security context
         // and do not log out the client (previously, "request.logout()" has been called here)
         if (principal is ExtNonceAuthnToken) {
-            val certificate = session.getAttribute("certificate").toString().decodeBase64ToArray()!!
+            val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
             extNonceAuthnService.invalidateNonce(principal.credentials.toString())
             SecurityContextHolder.getContext().authentication =
                 DeviceBindingAuthnToken("", principal.principal.toString(), certificate)

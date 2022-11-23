@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
@@ -15,11 +16,11 @@ class ExtNonceAuthnFilter : RequestHeaderAuthenticationFilter() {
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     init {
-        setRequiresAuthenticationRequestMatcher(RequestHeaderRequestMatcher("X-Auth-ExtNonce"))
+        setRequiresAuthenticationRequestMatcher(RequestHeaderRequestMatcher(X_AUTH_EXT_NONCE))
     }
 
     override fun getPreAuthenticatedPrincipal(request: HttpServletRequest): Any? {
-        val headerValue = request.getHeader("X-Auth-ExtNonce") ?: return null
+        val headerValue = request.getHeader(X_AUTH_EXT_NONCE) ?: return null
         log.debug("Reading nonce '{}'", headerValue)
         return ExtNonceAuthnToken(headerValue)
     }

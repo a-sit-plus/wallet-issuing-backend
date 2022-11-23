@@ -5,6 +5,9 @@ import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.NextMessage
 import org.junit.jupiter.api.BeforeEach
@@ -81,7 +84,7 @@ class PupilIdControllerSpringSecurityTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["DEVICE_BINDING"])
+    @WithMockUser(authorities = [AUTHORITY_DEVICE_BINDING])
     fun issue_withMockUser_ok() {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
@@ -104,7 +107,7 @@ class PupilIdControllerSpringSecurityTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
         }.andExpect {
             status { isOk() }
             header { exists(X_AUTH_TOKEN) }
@@ -122,7 +125,7 @@ class PupilIdControllerSpringSecurityTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
         }.andExpect {
             status { isOk() }
             header { exists(X_AUTH_TOKEN) }
@@ -144,7 +147,7 @@ class PupilIdControllerSpringSecurityTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }
@@ -176,7 +179,7 @@ class PupilIdControllerSpringSecurityTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = clientMessage
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
         }.andExpect {
             status { isUnauthorized() }
             header { exists(HttpHeaders.WWW_AUTHENTICATE) }

@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.TestTimeSource
+import at.asitplus.wallet.backend.TimeSource
 import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
@@ -17,8 +19,8 @@ class PublicControllerTest {
     private lateinit var mockMvc: MockMvc
 
     @Test
-    fun `GET VC status list`() {
-        mockMvc.get("/credentials/status/2021") {
+    fun `GET VC status list with period`() {
+        mockMvc.get("/credentials/status/${TestTimeSource.timePeriod}") {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }
@@ -26,18 +28,11 @@ class PublicControllerTest {
     }
 
     @Test
-    fun `GET PKI CRL`() {
-        mockMvc.get("/crl/1") {
+    fun `GET list of currently active VC status lists`() {
+        mockMvc.get("/credentials/status/current") {
         }.andExpect {
             status { isOk() }
-        }.andReturn()
-    }
-
-    @Test
-    fun `GET PKI CA`() {
-        mockMvc.get("/ca/1") {
-        }.andExpect {
-            status { isOk() }
+            content { string(not(emptyString())) }
         }.andReturn()
     }
 

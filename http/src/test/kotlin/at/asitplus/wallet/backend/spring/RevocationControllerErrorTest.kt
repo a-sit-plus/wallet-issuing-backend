@@ -4,6 +4,8 @@ import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -61,7 +63,7 @@ class RevocationControllerErrorTest {
 
         webClient.post().uri("/revoke/binding")
             .bodyValue(RevocationController.RevocationRequest(bpk, deviceId))
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
@@ -77,7 +79,7 @@ class RevocationControllerErrorTest {
 
         webClient.post().uri("/revoke/binding")
             .bodyValue(RevocationController.RevocationRequest(bpk, deviceId))
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().isNotFound
             .expectBody().jsonPath("status").isEqualTo(404)
@@ -112,7 +114,7 @@ class RevocationControllerErrorTest {
 
         webClient.post().uri("/revoke/pupilid")
             .bodyValue(RevocationController.RevocationRequest(bpk))
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
@@ -125,7 +127,7 @@ class RevocationControllerErrorTest {
     fun `revoke pupilid returns error document for wrong request`() {
         webClient.post().uri("/revoke/pupilid")
             .bodyValue(RevocationController.RevocationRequest(bpk, deviceId))
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody().jsonPath("status").isEqualTo(400)
@@ -140,7 +142,7 @@ class RevocationControllerErrorTest {
 
         webClient.post().uri("/revoke/pupilid")
             .bodyValue(RevocationController.RevocationRequest(bpk))
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().isNotFound
             .expectBody().jsonPath("status").isEqualTo(404)
@@ -174,7 +176,7 @@ class RevocationControllerErrorTest {
             .thenThrow(IllegalArgumentException(exceptionMessage))
 
         webClient.get().uri("/revoke/devices?bpk={bpk}", bpk)
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
@@ -186,7 +188,7 @@ class RevocationControllerErrorTest {
     @Test
     fun `devices returns error document for missing bpk`() {
         webClient.get().uri("/revoke/devices")
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody().jsonPath("status").isEqualTo(400)
@@ -196,7 +198,7 @@ class RevocationControllerErrorTest {
     @Test
     fun `devices returns error document for blank bpk`() {
         webClient.get().uri("/revoke/devices?bpk={bpk}", " ")
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().isBadRequest
             .expectBody().jsonPath("status").isEqualTo(400)
@@ -210,7 +212,7 @@ class RevocationControllerErrorTest {
             .thenReturn(listOf())
 
         webClient.get().uri("/revoke/devices?bpk={bpk}", bpk)
-            .header("X-API-Key", apiKey)
+            .header(X_API_KEY, apiKey)
             .exchange()
             .expectStatus().isNotFound
             .expectBody().jsonPath("status").isEqualTo(404)

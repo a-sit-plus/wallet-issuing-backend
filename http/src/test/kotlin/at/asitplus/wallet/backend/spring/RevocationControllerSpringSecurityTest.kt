@@ -3,6 +3,9 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -70,7 +73,7 @@ class RevocationControllerSpringSecurityTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["REVOCATION"])
+    @WithMockUser(authorities = [AUTHORITY_REVOCATION])
     fun start_withMockUser_ok() {
         mockMvc.post("/revoke/binding") {
             contentType = MediaType.APPLICATION_JSON
@@ -105,7 +108,4 @@ class RevocationControllerSpringSecurityTest {
         }.andReturn()
     }
 
-    companion object {
-        private const val X_API_KEY = "X-API-Key"
-    }
 }

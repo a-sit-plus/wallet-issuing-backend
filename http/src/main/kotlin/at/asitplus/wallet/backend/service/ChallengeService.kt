@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.service
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,7 +34,7 @@ interface ChallengeService {
 class SimpleChallengeService(
     private val challengeLength: Int = 32,
     private val lifetimeSeconds: Int = 60,
-    private val clock:Clock
+    private val clock: Clock
 ) : ChallengeService {
 
     private val list = ConcurrentLinkedDeque<Entry>()
@@ -68,5 +67,23 @@ class SimpleChallengeService(
     data class Entry(
         val challenge: ByteArray,
         val creation: Instant,
-    )
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Entry
+
+            if (!challenge.contentEquals(other.challenge)) return false
+            if (creation != other.creation) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = challenge.contentHashCode()
+            result = 31 * result + creation.hashCode()
+            return result
+        }
+    }
 }

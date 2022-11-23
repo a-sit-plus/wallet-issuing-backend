@@ -3,6 +3,8 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
@@ -41,7 +43,7 @@ import java.util.UUID
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = ["backend.time-source=TEST"])
-@WithMockUser(authorities = ["DEVICE_BINDING"])
+@WithMockUser(authorities = [AUTHORITY_DEVICE_BINDING])
 class PupilIdControllerLogicTest {
 
     @Autowired

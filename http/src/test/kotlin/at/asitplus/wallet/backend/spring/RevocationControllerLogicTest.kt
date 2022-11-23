@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
 import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.RevokedCredential
@@ -25,7 +27,7 @@ import java.util.*
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser(authorities = ["REVOCATION"])
+@WithMockUser(authorities = [AUTHORITY_REVOCATION])
 class RevocationControllerLogicTest {
 
     @Autowired

@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.service.RevocationService
@@ -79,7 +80,4 @@ class RevocationControllerApiKeyTest {
         }.andReturn()
     }
 
-    companion object {
-        private const val X_API_KEY = "X-API-Key"
-    }
 }

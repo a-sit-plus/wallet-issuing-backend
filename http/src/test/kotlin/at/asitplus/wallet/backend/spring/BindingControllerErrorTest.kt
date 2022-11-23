@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
@@ -58,7 +59,7 @@ class BindingControllerErrorTest {
 
         webClient.post().uri("/binding/start")
             .bodyValue(BindingParamsRequestJ("deviceName"))
-            .header("X-Auth-ExtNonce", nonce)
+            .header(X_AUTH_EXT_NONCE, nonce)
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
@@ -95,7 +96,7 @@ class BindingControllerErrorTest {
 
         webClient.post().uri("/binding/create")
             .bodyValue(BindingCsrRequestJ(byteArrayOf(), byteArrayOf(), "deviceName", listOf()))
-            .header("X-Auth-ExtNonce", nonce)
+            .header(X_AUTH_EXT_NONCE, nonce)
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
@@ -111,7 +112,7 @@ class BindingControllerErrorTest {
 
         webClient.post().uri("/binding/create")
             .bodyValue(BindingCsrRequestJ(byteArrayOf(), byteArrayOf(), "deviceName", listOf()))
-            .header("X-Auth-ExtNonce", nonce)
+            .header(X_AUTH_EXT_NONCE, nonce)
             .exchange()
             .expectStatus().is4xxClientError
             .expectBody().jsonPath("status").isEqualTo(400)
@@ -146,7 +147,7 @@ class BindingControllerErrorTest {
 
         webClient.post().uri("/binding/confirm")
             .bodyValue(BindingConfirmRequestJ(true))
-            .header("X-Auth-ExtNonce", nonce)
+            .header(X_AUTH_EXT_NONCE, nonce)
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
@@ -162,7 +163,7 @@ class BindingControllerErrorTest {
 
         webClient.post().uri("/binding/confirm")
             .bodyValue(BindingConfirmRequestJ(false))
-            .header("X-Auth-ExtNonce", nonce)
+            .header(X_AUTH_EXT_NONCE, nonce)
             .exchange()
             .expectStatus().is4xxClientError
             .expectBody().jsonPath("status").isEqualTo(400)

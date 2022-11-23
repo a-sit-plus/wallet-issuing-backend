@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 
@@ -21,7 +22,7 @@ class ExtNonceAuthnToken : AbstractAuthenticationToken {
      * Called from [ExtNonceAuthnProvider]
      * after successful authentication.
      */
-    constructor(nonce: String, bpk: String) : super(listOf(SimpleGrantedAuthority("PUPIL"))) {
+    constructor(nonce: String, bpk: String) : super(listOf(SimpleGrantedAuthority(AUTHORITY_PUPIL))) {
         this.credentials = nonce
         this.principal = bpk
         this.isAuthenticated = true

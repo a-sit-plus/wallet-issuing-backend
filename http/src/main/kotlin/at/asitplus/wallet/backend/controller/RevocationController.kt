@@ -1,5 +1,8 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.RevocationService
 import io.swagger.v3.oas.annotations.Operation
@@ -44,7 +47,7 @@ class RevocationController(
             ),
             ApiResponse(
                 responseCode = "403",
-                description = "Client is not authenticated, i.e. it needs to send API-Key in header `X-API-Key`",
+                description = "Client is not authenticated, i.e. it needs to send API-Key in header `$X_API_KEY`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(
@@ -56,7 +59,7 @@ class RevocationController(
         ],
     )
     @PostMapping("/revoke/binding")
-    @PreAuthorize("hasAuthority(\"REVOCATION\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_REVOCATION\")")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/binding called with {}", body)
         val count = revocationService.revokeBinding(body.bpk, body.deviceId)
@@ -88,7 +91,7 @@ class RevocationController(
             ),
             ApiResponse(
                 responseCode = "403",
-                description = "Client is not authenticated, i.e. it needs to send API-Key in header `X-API-Key`",
+                description = "Client is not authenticated, i.e. it needs to send API-Key in header `$X_API_KEY`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(
@@ -100,7 +103,7 @@ class RevocationController(
         ],
     )
     @PostMapping("/revoke/pupilid")
-    @PreAuthorize("hasAuthority(\"REVOCATION\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_REVOCATION\")")
     fun revokePupilId(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
         log.info("/revoke/pupilid called with {}", body)
         if (body.deviceId != null)
@@ -130,7 +133,7 @@ class RevocationController(
             ),
             ApiResponse(
                 responseCode = "403",
-                description = "Client is not authenticated, i.e. it needs to send API-Key in header `X-API-Key`",
+                description = "Client is not authenticated, i.e. it needs to send API-Key in header `$X_API_KEY`",
                 content = [Content(examples = [ExampleObject(value = "")])]
             ),
             ApiResponse(
@@ -142,7 +145,7 @@ class RevocationController(
         ],
     )
     @GetMapping("/revoke/devices")
-    @PreAuthorize("hasAuthority(\"REVOCATION\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_REVOCATION\")")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
         log.info("/revoke/devices called for bpk '{}'", bpk)
         if (bpk.isBlank())

@@ -1,15 +1,13 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
-import at.asitplus.wallet.backend.config.KeyType
-import at.asitplus.wallet.backend.pki.PkiService
-import at.asitplus.wallet.backend.pki.SignedCertificate
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
 import at.asitplus.wallet.backend.service.BindingCertificate
 import at.asitplus.wallet.backend.service.BindingParams
 import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.service.ChallengeService
-import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
@@ -31,11 +29,8 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import java.util.*
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Tests the Spring Security parts of the authentication for [BindingController],
@@ -99,7 +94,7 @@ abstract class BindingControllerSpringSecurityTest {
     }
 
     @Test
-    @WithMockUser(authorities = ["PUPIL"])
+    @WithMockUser(authorities = [AUTHORITY_PUPIL])
     fun start_withMockUser_ok() {
         mockMvc.post("/binding/start") {
             contentType = MediaType.APPLICATION_JSON
@@ -296,11 +291,6 @@ abstract class BindingControllerSpringSecurityTest {
             status { isForbidden() }
             header { doesNotExist(HttpHeaders.WWW_AUTHENTICATE) }
         }.andReturn()
-    }
-
-    companion object {
-        private const val X_AUTH_TOKEN = "X-Auth-Token"
-        private const val X_AUTH_EXT_NONCE = "X-Auth-ExtNonce"
     }
 }
 

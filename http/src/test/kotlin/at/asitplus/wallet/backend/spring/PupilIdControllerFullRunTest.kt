@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.TestTimeSource
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.*
@@ -78,7 +80,7 @@ class PupilIdControllerFullRunTest {
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = request.message
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -103,7 +105,7 @@ class PupilIdControllerFullRunTest {
         val response = mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = request.message
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
         }.andExpect {
             status { isOk() }
         }.andReturn()
@@ -140,7 +142,7 @@ class PupilIdControllerFullRunTest {
         mockMvc.post("/pupilid/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = request.message
-            header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
         }.andExpect {
             status { isUnauthorized() }
             header { exists(HttpHeaders.WWW_AUTHENTICATE) }

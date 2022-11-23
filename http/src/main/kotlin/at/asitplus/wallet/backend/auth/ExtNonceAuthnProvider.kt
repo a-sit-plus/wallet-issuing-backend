@@ -18,6 +18,7 @@ class ExtNonceAuthnProvider(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
+    @Throws(BadCredentialsException::class)
     override fun authenticate(authentication: Authentication?): Authentication {
         if (authentication !is PreAuthenticatedAuthenticationToken)
             throw BadCredentialsException("not supported")

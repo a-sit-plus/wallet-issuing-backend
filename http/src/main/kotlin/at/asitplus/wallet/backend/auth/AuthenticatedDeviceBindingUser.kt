@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.lib.encodeBase64
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -11,7 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails
 class AuthenticatedDeviceBindingUser(val bpk: String, val certificate: ByteArray) :
     UserDetails {
     override fun getAuthorities(): List<SimpleGrantedAuthority> {
-        return listOf(SimpleGrantedAuthority("DEVICE_BINDING"))
+        return listOf(SimpleGrantedAuthority(AUTHORITY_DEVICE_BINDING))
     }
 
     override fun getPassword(): String? {

@@ -5,6 +5,8 @@ import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
@@ -74,7 +76,7 @@ class EidasIdControllerErrorTest {
 
         webClient.post().uri("/eidasid/issue")
             .bodyValue("foo")
-            .header(HttpHeaders.AUTHORIZATION, "Response $challengeResponse")
+            .header(HttpHeaders.AUTHORIZATION, "$PREFIX_RESPONSE$challengeResponse")
             .exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)

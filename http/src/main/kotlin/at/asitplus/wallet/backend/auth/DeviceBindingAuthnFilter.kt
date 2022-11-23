@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.AuthenticationManager
@@ -21,8 +22,8 @@ class DeviceBindingAuthnFilter : RequestHeaderAuthenticationFilter() {
 
     override fun getPreAuthenticatedPrincipal(request: HttpServletRequest): Any? {
         val headerValue = request.getHeader(HttpHeaders.AUTHORIZATION) ?: return null
-        if (!headerValue.startsWith("Response ")) return null
-        val stripped = headerValue.removePrefix("Response ")
+        if (!headerValue.startsWith(PREFIX_RESPONSE)) return null
+        val stripped = headerValue.removePrefix(PREFIX_RESPONSE).trim()
         log.debug("Reading response '{}'", stripped)
         return DeviceBindingAuthnToken(stripped)
     }

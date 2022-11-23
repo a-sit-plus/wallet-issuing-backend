@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.config.*
 import at.asitplus.wallet.lib.encodeBase64
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
@@ -69,7 +71,7 @@ class RestTemplateConfigurationService constructor(
         }
         if (config.apiKey != null) {
             log.info("Setting api key 'MASKED' for {}", config.url)
-            httpClientBuilder.setDefaultHeaders(listOf(BasicHeader("X-API-Key", config.apiKey)))
+            httpClientBuilder.setDefaultHeaders(listOf(BasicHeader(X_API_KEY, config.apiKey)))
         }
         val sslContext = sslContextBuilder.build()
         return httpClientBuilder.setSSLSocketFactory(SSLConnectionSocketFactory(sslContext)).build()

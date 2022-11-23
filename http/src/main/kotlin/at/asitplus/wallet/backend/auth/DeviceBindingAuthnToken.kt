@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -31,7 +32,7 @@ class DeviceBindingAuthnToken : AbstractAuthenticationToken {
         response: String,
         bpk: String,
         certificate: ByteArray
-    ) : super(listOf(SimpleGrantedAuthority("DEVICE_BINDING"))) {
+    ) : super(listOf(SimpleGrantedAuthority(AUTHORITY_DEVICE_BINDING))) {
         this.response = response
         this.principal = AuthenticatedDeviceBindingUser(bpk, certificate)
         this.isAuthenticated = true

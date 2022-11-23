@@ -12,11 +12,16 @@ import at.asitplus.wallet.backend.service.ChallengeService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.ProviderManager
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.session.MapSessionRepository
@@ -24,7 +29,6 @@ import org.springframework.session.config.annotation.web.http.EnableSpringHttpSe
 import org.springframework.session.web.http.HeaderHttpSessionIdResolver
 import org.springframework.session.web.http.HttpSessionIdResolver
 import java.util.concurrent.ConcurrentHashMap
-
 
 /**
  * Web security configuration for the PupilId deployment:
@@ -42,14 +46,15 @@ class WebSecurityConfigPupilId(
     private val deviceBindingAuthnChallengeService: ChallengeService,
     private val apiKeyAuthnProvider: ApiKeyAuthnProvider,
     private val extNonceLogoutHandler: ExtNonceLogoutHandler,
-) : WebSecurityConfigurerAdapter() {
+) {
 
-    override fun configure(http: HttpSecurity) {
+    @Bean
+    fun filterChain(http: HttpSecurity, authenticationManager: AuthenticationManager): SecurityFilterChain? {
         http.csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
-            .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
-            .addFilter(ExtNonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
-            .addFilter(ApiKeyAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
+            .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager) })
+            .addFilter(ExtNonceAuthnFilter().apply { setAuthenticationManager(authenticationManager) })
+            .addFilter(ApiKeyAuthnFilter().apply { setAuthenticationManager(authenticationManager) })
             .exceptionHandling()
             .defaultAuthenticationEntryPointFor(
                 DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService),
@@ -59,12 +64,12 @@ class WebSecurityConfigPupilId(
             .and().logout().invalidateHttpSession(true).clearAuthentication(true)
             .addLogoutHandler(extNonceLogoutHandler)
             .and().headers().frameOptions().sameOrigin()
+        return http.build()
     }
 
-    override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.authenticationProvider(deviceBindingAuthnProvider)
-            .authenticationProvider(extNonceAuthnProvider)
-            .authenticationProvider(apiKeyAuthnProvider)
+    @Bean
+    fun authenticationManager(): AuthenticationManager {
+        return ProviderManager(deviceBindingAuthnProvider, extNonceAuthnProvider, apiKeyAuthnProvider)
     }
 
     @Bean

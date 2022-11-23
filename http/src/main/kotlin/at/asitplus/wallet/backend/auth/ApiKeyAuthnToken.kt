@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 
@@ -24,7 +25,7 @@ class ApiKeyAuthnToken : AbstractAuthenticationToken {
      * Called from [ApiKeyAuthnProvider]
      * after successful authentication.
      */
-    constructor(apiKey: String, username: String) : super(listOf(SimpleGrantedAuthority("REVOCATION"))) {
+    constructor(apiKey: String, username: String) : super(listOf(SimpleGrantedAuthority(AUTHORITY_REVOCATION))) {
         this.credentials = apiKey
         this.principal = username
         this.isAuthenticated = true
@@ -39,7 +40,7 @@ class ApiKeyAuthnToken : AbstractAuthenticationToken {
     }
 
     override fun toString(): String {
-        return "ApiKeyAuthnToken(principal='$principal', credentials='$credentials')"
+        return "ApiKeyAuthnToken(principal='$principal', credentials='<redacted>')"
     }
 
 

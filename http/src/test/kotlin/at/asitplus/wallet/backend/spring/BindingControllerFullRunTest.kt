@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
 import at.asitplus.wallet.pupilid.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -92,8 +94,4 @@ class BindingControllerFullRunTest {
         }.andReturn()
     }
 
-    companion object {
-        private const val X_AUTH_TOKEN = "X-Auth-Token"
-        private const val X_AUTH_EXT_NONCE = "X-Auth-ExtNonce"
-    }
 }

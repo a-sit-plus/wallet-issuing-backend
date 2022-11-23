@@ -13,6 +13,9 @@ import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.OneToMany
 
+/**
+ * A non-revoked binding certificate
+ */
 @Entity
 class DeviceBinding() {
 

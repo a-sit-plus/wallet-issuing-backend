@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
 import io.swagger.v3.oas.annotations.Operation
@@ -58,7 +60,7 @@ class PupilIdController(
         ]
     )
     @PostMapping("/pupilid/issue")
-    @PreAuthorize("hasAuthority(\"DEVICE_BINDING\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_DEVICE_BINDING\")")
     fun issueCredential(
         @RequestBody body: String,
         authentication: Authentication,
