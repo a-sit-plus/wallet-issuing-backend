@@ -631,7 +631,7 @@ and the application throws an exception like `IllegalArgumentException("foo")`, 
 ```
 
 ### Logging
-MDC-based assignemnt of unique transacion IDs for each incoming reaust is supported, but requires a customized `logback.xml`:
+MDC-based assigment of unique transaction IDs for each incoming request is supported (into the variable `txID`), but requires a customized `logback.xml`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
