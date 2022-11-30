@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
+import io.github.aakira.napier.Napier
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
@@ -13,7 +14,6 @@ import javax.servlet.http.HttpServletRequest
  */
 class ExtNonceAuthnFilter : RequestHeaderAuthenticationFilter() {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     init {
         setRequiresAuthenticationRequestMatcher(RequestHeaderRequestMatcher(X_AUTH_EXT_NONCE))
@@ -21,7 +21,7 @@ class ExtNonceAuthnFilter : RequestHeaderAuthenticationFilter() {
 
     override fun getPreAuthenticatedPrincipal(request: HttpServletRequest): Any? {
         val headerValue = request.getHeader(X_AUTH_EXT_NONCE) ?: return null
-        log.debug("Reading nonce '{}'", headerValue)
+        Napier.v("Reading nonce '$headerValue'")
         return ExtNonceAuthnToken(headerValue)
     }
 

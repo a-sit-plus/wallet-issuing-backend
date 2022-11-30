@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import io.github.aakira.napier.Napier
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.logout.LogoutHandler
@@ -17,7 +18,6 @@ class ExtNonceLogoutHandler(
     private val extNonceAuthnService: ExtNonceAuthnService
 ) : LogoutHandler {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun logout(request: HttpServletRequest?, response: HttpServletResponse?, authentication: Authentication?) {
         if (authentication !is ExtNonceAuthnToken)
@@ -25,7 +25,8 @@ class ExtNonceLogoutHandler(
         val credentials = authentication.credentials
         if (credentials !is String)
             return
-        log.info("Invalidating nonce '{}'", credentials)
+        Napier.i("Invalidating nonce")
+        Napier.v("nonce: $credentials")
         extNonceAuthnService.invalidateNonce(credentials)
     }
 

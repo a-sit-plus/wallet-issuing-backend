@@ -4,6 +4,7 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
+import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -30,7 +31,6 @@ class PupilIdController(
     private val issueCredentialAdapter: IssueCredentialAdapter,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Issue credentials",
@@ -66,20 +66,33 @@ class PupilIdController(
         authentication: Authentication,
         request: HttpServletRequest,
     ): ResponseEntity<String> {
-        log.info("/pupilid/issue called for {} with '{}'", authentication, body)
+        Napier.i("/pupilid/issue called")
+        Napier.v("/pupilid/issue called for $authentication with '$body'")
         return when (val result = issueCredentialAdapter.parseMessage(body)) {
             is NextMessage.Result<*> -> ResponseEntity.ok().build<String>()
-                .also { log.info("/pupilid/issue returns HTTP 200: Finished") }
+                .also { Napier.i("/pupilid/issue returns HTTP 200: Finished") }
             is NextMessage.Send -> ResponseEntity.ok(result.message)
-                .also { log.info("/pupilid/issue returns HTTP 200: {}...", result.message.take(128)) }
+                .also {
+                    Napier.i("/pupilid/issue returns HTTP 200")
+                    Napier.v("/pupilid/issue returns HTTP 200: ${result.message.take(128)}...")
+                }
             is NextMessage.Error -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
-                .also { log.warn("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
+                .also { Napier.i("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
             is NextMessage.SendProblemReport -> ResponseEntity.ok(result.message)
-                .also { log.info("/pupilid/issue returns HTTP 200: Problem Report {}", result.message) }
+                .also {
+                    Napier.i("/pupilid/issue returns HTTP 200: Problem Report")
+                    Napier.v("Problem Report ${result.message}")
+                }
             is NextMessage.ReceivedProblemReport -> ResponseEntity.ok().build<String>()
-                .also { log.info("/pupilid/issue returns HTTP 200: Received Problem Report {}", result.message) }
+                .also {
+                    Napier.i("/pupilid/issue returns HTTP 200: Received Problem Report")
+                    Napier.v("Received Problem Report ${result.message}")
+                }
             else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
-                .also { log.warn("/pupilid/issue returns HTTP 500: Internal error {}", result) }
+                .also {
+                    Napier.w("/pupilid/issue returns HTTP 500: Internal error")
+                    Napier.v("Internal error $result")
+                }
         }.also { request.logout() }
     }
 

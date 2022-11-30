@@ -7,7 +7,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import org.slf4j.LoggerFactory
+import io.github.aakira.napier.Napier
 import java.util.*
 
 
@@ -18,7 +18,6 @@ class DatabaseDeviceBindingStorageService(
     private val clock: Clock
 ) : DeviceBindingStorageService {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun store(
         bpk: String,
@@ -26,7 +25,8 @@ class DatabaseDeviceBindingStorageService(
         deviceName: String,
         validUntil: Instant
     ): DeviceBinding {
-        log.info("Storing device binding for '{}' and '{}'", bpk, deviceName)
+        Napier.i("Storing device binding")
+        Napier.v("bpk: $bpk, deviceName: $deviceName")
         return DeviceBinding(
             bpk = bpk,
             certificate = certificate,
@@ -52,16 +52,14 @@ class DatabaseDeviceBindingStorageService(
     override fun getDeviceBindingForCurrentUser(): DeviceBinding? {
         val certificate = authenticationSupplier.getCurrentUserCertificate()
             ?: return null.also {
-                log.error("Got no authenticated user when trying to store vc")
+                Napier.e("Got no authenticated user when trying to store vc")
             }
         val now = clock.now().toJavaInstant()
         return deviceBindingRepository
             .findByCertificateAndValidUntilAfter(certificate, now)
             ?: return null.also {
-                log.error(
-                    "Found no authenticated user at $now for certificate '{}",
-                    certificate.encodeBase64()
-                )
+                Napier.e("Found no authenticated user at $now for given certificate")
+                Napier.v("Certificate: ${certificate.encodeBase64()}")
             }
     }
 
@@ -81,7 +79,7 @@ class DatabaseDeviceBindingStorageService(
                 deviceBindingRepository
                     .findAllByBpkAndValidUntilAfter(bpk, clock.now().toJavaInstant())
 
-            log.info("Revoking {} device bindings", toRevoke.size)
+            Napier.i("Revoking ${toRevoke.size} device bindings")
 
             val revoked = toRevoke.associateWith { binding ->
                 binding.issuedCredentialList.map {
@@ -101,7 +99,8 @@ class DatabaseDeviceBindingStorageService(
     override fun deleteExpiredBefore(cutoff: Instant): Int {
         val list = deviceBindingRepository.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
-            log.info("Deleting device binding: '{}' for '{}'", it.deviceName, it.bpk)
+            Napier.i("Deleting device binding")
+            Napier.v("DeviceName: ${it.deviceName}, bpk: ${it.bpk}")
             deviceBindingRepository.delete(it)
         }
         return list.size

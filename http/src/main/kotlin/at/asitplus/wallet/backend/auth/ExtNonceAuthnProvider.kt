@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import io.github.aakira.napier.Napier
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
@@ -16,7 +17,6 @@ class ExtNonceAuthnProvider(
     private val extNonceAuthnService: ExtNonceAuthnService
 ) : AuthenticationProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Throws(BadCredentialsException::class)
     override fun authenticate(authentication: Authentication?): Authentication {
@@ -30,8 +30,11 @@ class ExtNonceAuthnProvider(
             throw BadCredentialsException("not supported")
         val bpk = extNonceAuthnService.exchangeNonceForBpk(credentials)
             ?: throw BadCredentialsException("Error")
-                .also { log.warn("Could not validate credentials: {}", credentials) }
-        log.info("Exchanged nonce '{}' for bpk '{}'", credentials, bpk)
+                .also {
+                    Napier.w("Could not validate credentials")
+                    Napier.v("credentials: $credentials")
+                }
+        Napier.v("Exchanged nonce '$credentials' for bpk '$bpk'")
         return ExtNonceAuthnToken(credentials, bpk)
     }
 

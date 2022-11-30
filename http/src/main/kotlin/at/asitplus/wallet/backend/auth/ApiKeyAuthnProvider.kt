@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
+import io.github.aakira.napier.Napier
 import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
@@ -16,7 +17,6 @@ class ApiKeyAuthnProvider(
     private val apiKeyAuthnService: ApiKeyAuthnService
 ) : AuthenticationProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Throws(BadCredentialsException::class)
     override fun authenticate(authentication: Authentication?): Authentication {
@@ -30,8 +30,12 @@ class ApiKeyAuthnProvider(
             throw BadCredentialsException("not supported")
         val username = apiKeyAuthnService.validate(credentials)
             ?: throw BadCredentialsException("Error")
-                .also { log.warn("Could not validate credentials: {}", credentials) }
-        log.info("Exchanged apiKey '{}' for user '{}'", credentials, username)
+                .also {
+                    Napier.w("Could not validate credentials")
+                    Napier.v("credentials: $credentials")
+                }
+        Napier.i("Exchanged apiKey for user")
+        Napier.i("apiKey '$credentials', user '$username'")
         return ApiKeyAuthnToken(credentials, username)
     }
 

@@ -11,6 +11,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
@@ -41,7 +42,6 @@ class DebugController(
     private val timePeriodProvider: TimePeriodProvider,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     /**
      * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
@@ -49,7 +49,7 @@ class DebugController(
     @GetMapping("/debug/initialize")
     fun initialize(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        log.info("/debug/initialize called")
+        Napier.i("/debug/initialize called")
         val nonceBpk = extNonceAuthnService.generateNonce()
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
@@ -70,7 +70,8 @@ class DebugController(
     fun getNonce(): ResponseEntity<String> {
         if (!configurationProperties.debug.enabled) return ResponseEntity.notFound().build()
         val nonce = extNonceAuthnService.generateNonce()?.nonce
-        log.info("/debug/nonce returns '{}'", nonce)
+        Napier.i("/debug/nonce called")
+        Napier.v("/debug/nonce returns '$nonce'")
         return ResponseEntity.ok(nonce)
     }
 
@@ -79,7 +80,7 @@ class DebugController(
      */
     @GetMapping("/help/wallet")
     fun helpWallet(model: ModelMap): ModelAndView {
-        log.info("/help/wallet called")
+        Napier.i("/help/wallet called")
         return ModelAndView("help_wallet", model)
     }
 
@@ -88,21 +89,22 @@ class DebugController(
      */
     @GetMapping("/help/verify")
     fun inviteVerify(model: ModelMap): ModelAndView {
-        log.info("/help/verify called")
+        Napier.i("/help/verify called")
         return ModelAndView("help_verify", model)
     }
 
     @GetMapping("/debug/credential/list")
     fun revokeList(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        log.info("/debug/credential/list called")
+        Napier.i("/debug/credential/list called")
         return buildCredentialList(model)
     }
 
     @GetMapping("/debug/credential/revoke")
     fun revokeByVcId(model: ModelMap, @RequestParam("vcId") vcId: String): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        log.info("/debug/credential/revoke called with vcId='{}'", vcId)
+        Napier.i("/debug/credential/revoke called with vcId='{}'")
+        Napier.v("vcId='$vcId'")
         revocationService.revokeCredentialsByVcId(
             vcId,
             timePeriodProvider.getTimePeriodFor(clock.now())
@@ -113,7 +115,7 @@ class DebugController(
     @GetMapping("/debug/credential/create")
     fun createCredential(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        log.info("/debug/credential/create called")
+        Napier.i("/debug/credential/create called")
         val attributeName = UUID.randomUUID().toString()
         val attributeValue = UUID.randomUUID().toString()
         val credentialSubject =

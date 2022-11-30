@@ -17,7 +17,6 @@ import at.asitplus.wallet.lib.decodeBase16ToArray
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
@@ -38,7 +37,6 @@ class BackendConfiguration {
 
     companion object {
         //https://gist.github.com/bnorm/71c7973b4b3f928e855a183a3e56c791
-        private val logger = LoggerFactory.getLogger(BackendConfiguration::class.java)
         fun String.toIndentString(): String = buildString(length) {
             var indent = 0
 
@@ -89,16 +87,16 @@ class BackendConfiguration {
 
     @PostConstruct
     private fun logConfig() {
-        logger.info("******** Current Configuration ********")
+        Napier.i("******** Current Configuration ********")
 
-        logger.info(
+        Napier.i(
             "\n" +
                     configurationProperties.toString()
                         .replace(Regex("password=.*?,"), "password=***,")
                         .replace(Regex("apiKey=.*?,"), "apiKey=***,")
                         .replace(Regex("apiKeys=\\[.*?]"), "apiKeys=[***]").toIndentString()
         )
-        logger.info("***************************************")
+        Napier.i("***************************************")
     }
 
     @Bean
@@ -225,7 +223,7 @@ class BackendConfiguration {
     else {
         if (configurationProperties.authn.deviceBinding.attestation.ios != null || configurationProperties.authn.deviceBinding.attestation.android != null)
             throw RuntimeException("As precautionary measure, attestation can only be disabled if neither Android nor iOS attestation are configured!")
-        logger.warn("""
+        Napier.w("""
 
 
 

@@ -11,6 +11,7 @@ import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.remotecrypto.EcRemoteKeyParameterSpec
+import io.github.aakira.napier.Napier
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -18,7 +19,6 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
-import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
 import java.io.StringReader
@@ -47,7 +47,6 @@ class KeyFileAdapter(
     securityProviderBean: SecurityProviderBean
 ) : KeyAdapter {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val certificate: X509Certificate?
@@ -70,7 +69,7 @@ class KeyFileAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
+        Napier.i("Loaded public key: '${publicKey.encoded.encodeBase64()}'")
     }
 
 }
@@ -91,7 +90,6 @@ class KeyStoreAdapter(
     ) : this(config.provider?.let { Security.getProvider(it) } ?: securityProviderBean.provider,
         config.path.toURL(), config.type, config.password, config.alias, config.aliasPassword)
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
@@ -116,7 +114,7 @@ class KeyStoreAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
+        Napier.i("Loaded public key: '${publicKey.encoded.encodeBase64()}'")
     }
 
 }
@@ -126,7 +124,6 @@ class HsmFacadeAdapter(
     securityProviderBean: SecurityProviderBean,
 ) : KeyAdapter {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
@@ -145,7 +142,7 @@ class HsmFacadeAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded public key: '{}'", publicKey.encoded.encodeBase64())
+        Napier.i("Loaded public key: '${publicKey.encoded.encodeBase64()}'")
     }
 
 }
@@ -156,7 +153,6 @@ class RemoteKeyAdapter(
     securityProviderBean: SecurityProviderBean,
 ) : KeyAdapter {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val certificate: X509Certificate?
@@ -181,14 +177,13 @@ class RemoteKeyAdapter(
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        log.info("Loaded remote public key: '{}'", publicKey.encoded.encodeBase64())
+        Napier.i("Loaded remote public key: '${publicKey.encoded.encodeBase64()}'")
     }
 
 }
 
 class RandomKeyAdapter : KeyAdapter {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
@@ -205,10 +200,7 @@ class RandomKeyAdapter : KeyAdapter {
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve)!!
-        log.info(
-            "Generated new key pair with public key: '{}'",
-            keyPair.public.encoded.encodeBase64()
-        )
+        Napier.i("Generated new key pair with public key: '${keyPair.public.encoded.encodeBase64()}'")
     }
 }
 

@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.RevocationService
+import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -34,7 +35,6 @@ class RevocationController(
     private val revocationService: RevocationService,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Revoke one or more device bindings for a pupil",
@@ -61,13 +61,17 @@ class RevocationController(
     @PostMapping("/revoke/binding")
     @PreAuthorize("hasAuthority(\"$AUTHORITY_REVOCATION\")")
     fun revokeBinding(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
-        log.info("/revoke/binding called with {}", body)
+        Napier.i("/revoke/binding called")
+        Napier.v("body: $body")
         val count = revocationService.revokeBinding(body.bpk, body.deviceId)
         if (count == 0)
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { log.warn("/revoke/binding returns HTTP 404") }
+                .also { Napier.w("/revoke/binding returns HTTP 404") }
         return ResponseEntity.ok(RevocationResponse(count))
-            .also { log.info("/revoke/binding returns HTTP 200: {}", it) }
+            .also {
+                Napier.i("/revoke/binding returns HTTP 200")
+                Napier.v("message: $it")
+            }
     }
 
     @Operation(
@@ -105,16 +109,20 @@ class RevocationController(
     @PostMapping("/revoke/pupilid")
     @PreAuthorize("hasAuthority(\"$AUTHORITY_REVOCATION\")")
     fun revokePupilId(@RequestBody body: RevocationRequest): ResponseEntity<RevocationResponse> {
-        log.info("/revoke/pupilid called with {}", body)
+        Napier.i("/revoke/pupilid called")
+        Napier.v("body: $body")
         if (body.deviceId != null)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "deviceId set")
-                .also { log.warn("/revoke/pupilid returns HTTP 400: deviceId set") }
+                .also { Napier.w("/revoke/pupilid returns HTTP 400: deviceId set") }
         val count = revocationService.revokeCredentialsByBpk(body.bpk)
         if (count == 0)
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { log.warn("/revoke/pupilid returns HTTP 404") }
+                .also { Napier.w("/revoke/pupilid returns HTTP 404") }
         return ResponseEntity.ok(RevocationResponse(count))
-            .also { log.info("/revoke/pupilid returns HTTP 200: {}", it) }
+            .also {
+                Napier.i("/revoke/pupilid returns HTTP 200")
+                Napier.i("message: $it")
+            }
     }
 
     @Operation(
@@ -147,17 +155,21 @@ class RevocationController(
     @GetMapping("/revoke/devices")
     @PreAuthorize("hasAuthority(\"$AUTHORITY_REVOCATION\")")
     fun readDevice(@RequestParam("bpk") bpk: String): ResponseEntity<DeviceListResponse> {
-        log.info("/revoke/devices called for bpk '{}'", bpk)
+        Napier.i("/revoke/devices called")
+        Napier.v("bpk: '$bpk'")
         if (bpk.isBlank())
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "bpk not set")
-                .also { log.warn("/revoke/devices returns HTTP 400: bpk not set") }
+                .also { Napier.w("/revoke/devices returns HTTP 400: bpk not set") }
         val list = bindingStorageService.lookupDevices(bpk)
         if (list.isEmpty())
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { log.warn("/revoke/devices returns HTTP 404") }
+                .also { Napier.w("/revoke/devices returns HTTP 404") }
         return ResponseEntity.ok(
             DeviceListResponse(list.map { DeviceListResponseEntry(it.deviceId, it.deviceName) })
-        ).also { log.info("/revoke/devices returns HTTP 200: {}", it) }
+        ).also {
+            Napier.i("/revoke/devices returns HTTP 200")
+            Napier.v("message: $it")
+        }
     }
 
     @Schema(description = "List of registered mobile devices")

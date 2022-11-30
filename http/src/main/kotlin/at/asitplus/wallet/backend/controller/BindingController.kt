@@ -10,6 +10,7 @@ import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.pupilid.*
+import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -36,7 +37,6 @@ class BindingController(
     private val bindingService: BindingService,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Initiate binding",
@@ -58,10 +58,11 @@ class BindingController(
         @RequestBody body: BindingParamsRequestJ,
         principal: Principal
     ): ResponseEntity<BindingParamsResponseJ> {
-        log.info("/binding/start called for {} with {}", principal, body)
+        Napier.i("/binding/start called")
+        Napier.v("principal: $principal, body: $body")
         val response = bindingService.getBindingParams(body.deviceName)
         return ResponseEntity.ok(BindingParamsResponseJ(response.challenge, response.subject, response.keyType))
-            .also { log.info("/binding/start returns HTTP 200: {}", it) }
+            .also { Napier.i("/binding/start returns HTTP 200: $it") /* this is fine, no personal data */}
     }
 
     @Operation(
@@ -91,7 +92,8 @@ class BindingController(
         session: HttpSession,
         request: HttpServletRequest,
     ): ResponseEntity<BindingCsrResponseJ> {
-        log.info("/binding/create called for {} with {}", principal, body)
+        Napier.i("/binding/create called")
+        Napier.v("principal: $principal, body: $body")
         val response = bindingService.signCertificate(
             body.csr,
             body.challenge,
@@ -99,10 +101,13 @@ class BindingController(
             body.attestationCerts,
             principal.name
         ) ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
-            .also { log.warn("/binding/create returns HTTP 400") }
+            .also { Napier.w("/binding/create returns HTTP 400") }
         session.setAttribute(SESSION_ATTR_CERTIFICATE, response.certificate.encodeBase64())
         return ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
-            .also { log.info("/binding/create returns HTTP 200: {}", it) }
+            .also {
+                Napier.i("/binding/create returns HTTP 200")
+                Napier.v("Returns $it")
+            }
     }
 
     @Operation(
@@ -131,10 +136,11 @@ class BindingController(
         principal: Principal,
         session: HttpSession,
     ): ResponseEntity<BindingConfirmResponseJ> {
-        log.info("/binding/confirm called for {} with {}", principal, body)
+        Napier.i("/binding/confirm called")
+        Napier.v("principal: $principal, body: $body")
         val confirmed = bindingService.confirm(body.success)
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "success not set")
-                .also { log.warn("/binding/confirm returns HTTP 400: success not set") }
+                .also { Napier.w("/binding/confirm returns HTTP 400: success not set") }
 
         // We want the client to not need to authenticate again when using the PupilIdController,
         // so we'll set the expected authentication token into the current security context
@@ -146,7 +152,7 @@ class BindingController(
                 DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
         }
         return ResponseEntity.ok(BindingConfirmResponseJ(confirmed))
-            .also { log.info("/binding/confirm returns HTTP 200: {}", it) }
+            .also { Napier.i("/binding/confirm returns HTTP 200: $it") }
     }
 
 }

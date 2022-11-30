@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
-import org.slf4j.LoggerFactory
+import io.github.aakira.napier.Napier
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.Authentication
@@ -17,7 +17,6 @@ class DeviceBindingAuthnProvider(
     private val deviceBindingAuthnService: DeviceBindingAuthnService,
 ) : AuthenticationProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Throws(BadCredentialsException::class)
     override fun authenticate(authentication: Authentication?): Authentication {
@@ -27,12 +26,16 @@ class DeviceBindingAuthnProvider(
         if (principal !is DeviceBindingAuthnToken)
             throw BadCredentialsException("not supported")
         val credentials = principal.credentials
-        log.info("Trying to authenticate '{}'", credentials)
+        Napier.i("Trying to authenticate user")
+        Napier.v("user: $credentials")
         if (credentials !is String)
             throw BadCredentialsException("not supported")
         val result = deviceBindingAuthnService.validate(credentials)
             ?: throw BadCredentialsException("bpk not found")
-                .also { log.warn("Could not validate credentials: {}", credentials) }
+                .also {
+                    Napier.w("Could not validate credentials")
+                    Napier.v("credentials: $credentials")
+                }
         return DeviceBindingAuthnToken(credentials, result.bpk, result.certificate)
     }
 

@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.service
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.encodeBase64
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -80,8 +81,6 @@ class DefaultRevocationService(
     private val clock: Clock
 ) : RevocationService {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
-
     /**
      * Checks whether a credential with [vcId] is revoked i.e. whether it exists or not
      *
@@ -106,19 +105,22 @@ class DefaultRevocationService(
         synchronized(CredentialRepositoriesLock) {
             if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
                 return null.also {
-                    log.error("Tried to store a new credential for existing vcId '{}'", vcId)
+                    // TODO: Educated guess that VCs are identifiers
+                    Napier.e("Tried to store a new credential for existing vcId")
+                    Napier.v("vcId: '$vcId'")
                 }
             val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
                 ?: return null.also {
-                    log.error("Got no authenticated user when trying to store vcId '{}'", vcId)
+                    Napier.e("Got no authenticated user when trying to store vcId")
+                    Napier.v("vcId: '$vcId'")
                 }
             if (oneCredentialPerDeviceBinding) {
                 val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
-                if (revokedCreds > 0)
-                    log.info(
-                        "Revoked {} already existing credentials for device binding certificate '{}' for bpk '{}'",
-                        revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
-                    )
+                if (revokedCreds > 0) {
+                    Napier.i("Revoked $revokedCreds already existing credentials")
+                    Napier.v("device binding certificate: '${deviceBinding.certificate.encodeBase64()}', bpk: '${deviceBinding.bpk}'",)
+                }
+
             }
             val revocationListIndex = max(
                 (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
@@ -211,12 +213,8 @@ class DefaultRevocationService(
         // TODO Use synchronized(CredentialRepositoriesLock) here?
         val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
-            log.info(
-                "Deleting credential: {} for {} (bpk '{}')",
-                it.vcId,
-                it.subjectId,
-                it.deviceBinding.bpk
-            )
+            Napier.i("Deleting credential")
+            Napier.v("vcId: ${it.vcId}, subjectId: ${it.subjectId}, bpk: ${it.deviceBinding.bpk}")
             credentialRepo.delete(it)
         }
         return list.size

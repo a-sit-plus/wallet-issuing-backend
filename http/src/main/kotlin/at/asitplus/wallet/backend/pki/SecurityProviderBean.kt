@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.pki
 import at.asitplus.hsmfacade.provider.HsmFacadeProvider
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.remotecrypto.RemoteCryptoProvider
+import io.github.aakira.napier.Napier
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
@@ -21,13 +22,12 @@ class SecurityProviderBean(
     resourceLoader: ResourceLoader,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     val provider: Provider
 
     init {
         if (configurationProperties.hsmfacade.enabled) {
-            log.info("Loading HSM Facade Provider")
+            Napier.i("Loading HSM Facade Provider")
             val config = configurationProperties.hsmfacade
             val hsmFacadeProvider = HsmFacadeProvider.instance
             if (!hsmFacadeProvider.isInitialized) {
@@ -47,7 +47,7 @@ class SecurityProviderBean(
                 Security.addProvider(it)
             }
         } else if (configurationProperties.remoteCrypto.enabled) {
-            log.info("Loading Remote Crypto Provider")
+            Napier.i("Loading Remote Crypto Provider")
             val config = configurationProperties.remoteCrypto
             val remoteCryptoProvider = RemoteCryptoProvider.instance
             if (!remoteCryptoProvider.isInitialized) {
@@ -61,7 +61,7 @@ class SecurityProviderBean(
                 Security.addProvider(it)
             }
         } else {
-            log.info("Loading Bouncycastle Provider")
+            Napier.i("Loading Bouncycastle Provider")
             provider = BouncyCastleProvider().also {
                 Security.addProvider(it)
             }

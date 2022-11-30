@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.encodeBase64
+import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -28,7 +29,6 @@ class PublicController(
     private val pkiService: PkiService,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Get currently valid VC revocation lists",
@@ -44,9 +44,9 @@ class PublicController(
     )
     @GetMapping("/credentials/status/current")
     fun getCurrentVcRevocationLists() = runBlocking {
-        log.info("/credentials/status/current called")
+        Napier.i("/credentials/status/current called")
         val rl = issuer.compileCurrentRevocationLists()
-        log.info("/credentials/status/current returns {}", rl)
+        Napier.i("/credentials/status/current returns $rl") // public anyways
         ResponseEntity.ok(rl)
     }
 
@@ -63,9 +63,9 @@ class PublicController(
     )
     @GetMapping("/credentials/status/{timePeriod}")
     fun getVcRevocationList(@PathVariable timePeriod:Int) = runBlocking {
-        log.info("/credentials/status/$timePeriod called")
+        Napier.i("/credentials/status/$timePeriod called")
         val rl = issuer.issueRevocationListCredential(timePeriod)
-        log.info("/credentials/status/$timePeriod returns {}", rl)
+        Napier.i("/credentials/status/$timePeriod returns $rl") // TODO: should be fine?
         ResponseEntity.ok(rl)
     }
 
@@ -87,11 +87,11 @@ class PublicController(
     )
     @GetMapping("/crl/1")
     fun getCertificateRevocationList(): ResponseEntity<ByteArray> {
-        log.info("/crl/1 called")
+        Napier.i("/crl/1 called")
         val crl = pkiService.getCrl()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { log.warn("/crl/1 returns 404, not found") }
-        log.info("/crl/1 returns {}", crl.encodeBase64())
+                .also { Napier.w("/crl/1 returns 404, not found") }
+        Napier.i("/crl/1 returns ${crl.encodeBase64()}")
         return ResponseEntity.ok(crl)
     }
 
@@ -113,11 +113,11 @@ class PublicController(
     )
     @GetMapping("/ca/1")
     fun getCaCertificate(): ResponseEntity<ByteArray> {
-        log.info("/ca/1 called")
+        Napier.i("/ca/1 called")
         val caCertificate = pkiService.getCaCertificate()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { log.warn("/ca/1 returns 404, not found") }
-        log.info("/ca/1 returns {}", caCertificate.encodeBase64())
+                .also { Napier.w("/ca/1 returns 404, not found") }
+        Napier.i("/ca/1 returns ${caCertificate.encodeBase64()}")
         return ResponseEntity.ok(caCertificate)
     }
 

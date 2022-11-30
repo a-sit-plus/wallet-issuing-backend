@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.pki
 
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -34,15 +35,14 @@ interface PkiService {
 
 object PkiUtils {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     fun verifyCsr(csrEncoded: ByteArray, expectedSubject: String): PKCS10CertificationRequest? {
         val csr = PKCS10CertificationRequest(csrEncoded)
         val publicKey = BouncyCastleProvider.getPublicKey(csr.subjectPublicKeyInfo)
         if (!csr.isSignatureValid(JcaContentVerifierProviderBuilder().build(publicKey)))
-            return null.also { log.warn("CSR signature invalid") }
+            return null.also { Napier.w("CSR signature invalid") }
         if (X500Name(expectedSubject) != csr.subject)
-            return null.also { log.warn("CSR subject not correct") }
+            return null.also { Napier.w("CSR subject not correct") }
         return csr
     }
 

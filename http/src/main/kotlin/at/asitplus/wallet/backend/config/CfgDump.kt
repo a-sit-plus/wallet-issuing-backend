@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import io.github.aakira.napier.Napier
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener
@@ -9,9 +10,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class AppContextEventListener {
-    companion object {
-        private val logger = LoggerFactory.getLogger(AppContextEventListener::class.java)
-    }
 
     @EventListener
     fun handleContextRefreshed(event: ContextRefreshedEvent) {
@@ -19,7 +17,7 @@ class AppContextEventListener {
     }
 
     fun printActiveProperties(env: ConfigurableEnvironment) {
-        logger.info("************************* ACTIVE APP PROPERTIES ******************************")
+        Napier.i("************************* ACTIVE APP PROPERTIES ******************************")
         env.propertySources
             .asSequence()
             .filter { it.name.contains("application") }
@@ -32,15 +30,15 @@ class AppContextEventListener {
             .forEach {
                 try {
                     if (it.contains("password", ignoreCase = true)||it.contains("api-key", ignoreCase = true)) {
-                        logger.info("$it=***")
+                        Napier.i("$it=***")
                     } else {
-                        logger.info("$it=${env.getProperty(it)}")
+                        Napier.i("$it=${env.getProperty(it)}")
                     }
 
                 } catch (e: Exception) {
-                    logger.warn("$it -> ${e.message}")
+                    Napier.w("$it -> ${e.message}")
                 }
             }
-        logger.info("******************************************************************************")
+        Napier.i("******************************************************************************")
     }
 }

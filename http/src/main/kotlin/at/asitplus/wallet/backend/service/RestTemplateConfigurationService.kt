@@ -4,6 +4,7 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.config.*
 import at.asitplus.wallet.lib.encodeBase64
+import io.github.aakira.napier.Napier
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
@@ -30,7 +31,6 @@ class RestTemplateConfigurationService constructor(
     restTemplateBuilder: RestTemplateBuilder,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     val restTemplate: RestTemplate
 
@@ -48,10 +48,9 @@ class RestTemplateConfigurationService constructor(
 
     inner class LoggingErrorHandler : DefaultResponseErrorHandler() {
         override fun handleError(url: URI, method: HttpMethod, response: ClientHttpResponse) {
-            log.error(
-                "URL '{}', method '{}' got response statusCode '{}': {}",
-                url, method, response.statusCode, response.statusText
-            )
+            Napier.e(
+                //TODO: Check if URL or statustext can leak something here
+                "URL '${url}', method '${method}' got response statusCode '${response.statusCode}': ${response.statusText}")
             super.handleError(url, method, response)
         }
     }
@@ -70,7 +69,8 @@ class RestTemplateConfigurationService constructor(
             }
         }
         if (config.apiKey != null) {
-            log.info("Setting api key 'MASKED' for {}", config.url)
+            // TODO check if URL leaks something
+            Napier.i("Setting api key 'MASKED' for ${config.url}")
             httpClientBuilder.setDefaultHeaders(listOf(BasicHeader(X_API_KEY, config.apiKey)))
         }
         val sslContext = sslContextBuilder.build()
@@ -78,7 +78,8 @@ class RestTemplateConfigurationService constructor(
     }
 
     private fun loadKeyStore(sslContextBuilder: SSLContextBuilder, config: KeyStoreConfiguration, url: URI?) {
-        log.info("Loading key store from {} for {}", config.path, url)
+        // TODO another url...
+        Napier.i("Loading key store from ${config.path} for $url")
         val keyStore = KeyStore.getInstance(config.type, config.provider).also {
             it.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
         }
@@ -86,7 +87,8 @@ class RestTemplateConfigurationService constructor(
     }
 
     private fun loadTrustStore(sslContextBuilder: SSLContextBuilder, config: TrustStoreConfiguration, url: URI?) {
-        log.info("Loading trust store from {} for {}", config.path, url)
+        // TODO: url...
+        Napier.i("Loading trust store from ${config.path} for $url")
         val trustStore = KeyStore.getInstance(config.type, config.provider).also {
             it.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
         }
@@ -97,9 +99,10 @@ class RestTemplateConfigurationService constructor(
         config: HttpBasicAuthnConfigurationProperties,
         url: URI?
     ): CloseableHttpClient {
-        log.info("Loading HTTP basic authn with '{}' for {}", config.username, url)
+        // TODO: No idea if this username is related to something else...
+        Napier.i("Loading HTTP basic authn with '${config.username}' for $url")
         val auth = "${config.username}:${config.password}".encodeToByteArray().encodeBase64()
-        val headers = listOf(BasicHeader("Authorization", "Basic ${auth}"))
+        val headers = listOf(BasicHeader("Authorization", "Basic $auth"))
         return HttpClients.custom().setDefaultHeaders(headers).build()
     }
 

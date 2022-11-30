@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.decodeBase64ToArray
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
@@ -19,7 +20,6 @@ class EcoCredentialDataProvider(
     private val restTemplate: RestTemplate,
 ) : CredentialDataProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun getClaim(
         subjectId: String,
@@ -40,29 +40,30 @@ class EcoCredentialDataProvider(
         val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
             uriVariables = mapOf("bpk" to bpk)
-        ).also { log.debug("getCredential for '{}' got {}", bpk, it) }
+        ).also { Napier.v("getCredential for '$bpk' got $it") }
         val body = entity.body
-            ?: return null.also { log.info("getCredential for '{}' returns null: {}", bpk, entity) }
+            ?: return null.also {
+                Napier.i("getCredential for returns null")
+                Napier.v("getCredential for '$bpk' returns null: $entity")
+            }
         val (expString, parsedExpiration) = (kotlin.runCatching {
             body.validUntil to Instant.parse(
                 body.validUntil
             )
         }.getOrNull()
             ?: kotlin.run {
-                log.warn("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
+                // TODO: This should be fine I guess?
+                Napier.w("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
                 "${body.validUntil}Z".let { it to Instant.parse(it) }
             }).let { (str, instant) ->
             str.substring(0, 10) to instant
         }
-        log.debug("Using validUntil String $expString")
+        Napier.d("Using validUntil String $expString") // TODO: is expiration safe?
         val cappedExpiration =
             if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
         if (cappedExpiration != maxExpiration)
-            log.info(
-                "Capping expiration to '{}', max expiration would be '{}'",
-                cappedExpiration,
-                maxExpiration
-            )
+            Napier.i("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'") // should be fine?
+
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = body.firstname,
@@ -80,10 +81,11 @@ class EcoCredentialDataProvider(
             validUntil = expString
         )
         CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
-            log.info("getCredential for '{}' returns {}", bpk, it)
+            Napier.v("getCredential for '$bpk' returns $it")
         }
     }.getOrElse {
-        log.error("getCredential for '$bpk' got error", it)
+        Napier.e("getCredential got error", it) // TODO: check if error is safe
+        Napier.v("getCredential for '$bpk' got error", it)
         null
     }
 

@@ -11,6 +11,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -53,7 +54,6 @@ class EidasIdController(
     private val clock: Clock
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Issue credentials",
@@ -89,35 +89,33 @@ class EidasIdController(
         authentication: Authentication,
         request: HttpServletRequest,
     ): ResponseEntity<String> {
-        log.info("/eidasid/issue called for {} with '{}'", authentication, body)
+        Napier.i("/eidasid/issue called")
+        Napier.v("/eidasid/issue called for $authentication with '$body'")
         return when (val result = issueCredentialAdapter.parseMessage(body)) {
             is NextMessage.Result<*> -> ResponseEntity.ok().build<String>()
-                .also { log.info("/eidasid/issue returns HTTP 200: Finished") }
+                .also { Napier.i("/eidasid/issue returns HTTP 200: Finished") }
             is NextMessage.Send -> ResponseEntity.ok(result.message)
                 .also {
-                    log.info(
-                        "/eidasid/issue returns HTTP 200: {}...",
-                        result.message.take(128)
-                    )
+                    // TODO: No idea what data is sent around here... For now I treat it as critical
+                    Napier.i("/eidasid/issue returns HTTP 200")
+                    Napier.v("message: ${result.message.take(128)}...")
                 }
             is NextMessage.Error -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
-                .also { log.warn("/eidasid/issue returns HTTP 400: Incorrect protocol state") }
+                .also { Napier.w("/eidasid/issue returns HTTP 400: Incorrect protocol state") }
             is NextMessage.SendProblemReport -> ResponseEntity.ok(result.message)
                 .also {
-                    log.info(
-                        "/eidasid/issue returns HTTP 200: Problem Report {}",
-                        result.message
-                    )
+                    Napier.i("/eidasid/issue returns HTTP 200: Problem Report")
+                    Napier.v("Problem report: ${result.message}")
                 }
             is NextMessage.ReceivedProblemReport -> ResponseEntity.ok().build<String>()
                 .also {
-                    log.info(
-                        "/eidasid/issue returns HTTP 200: Received Problem Report {}",
-                        result.message
-                    )
+                    Napier.i("/eidasid/issue returns HTTP 200: Received Problem Report")
+                    Napier.v("Received Problem Report ${result.message}")
                 }
             else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
-                .also { log.warn("/eidasid/issue returns HTTP 500: Internal error {}", result) }
+                .also {
+                    Napier.w("/eidasid/issue returns HTTP 500: Internal error $result") // TODO: Check if error contains data
+                }
         }.also { request.logout() }
     }
 
@@ -127,7 +125,7 @@ class EidasIdController(
     @GetMapping("/eidasid/initialize")
     @PreAuthorize("hasAuthority(\"EIDASID\")")
     fun initialize(model: ModelMap): ModelAndView {
-        log.info("/eidasid/initialize called")
+        Napier.i("/eidasid/initialize called")
         val nonceBpk = extNonceAuthnService.generateNonce()
         if (nonceBpk == null) {
             model["error"] = "Internal error: Could not generate nonce"
@@ -149,7 +147,8 @@ class EidasIdController(
             principal.getAttribute<String>("family_name")!! // "XXXMusterfrau Erwachsen"
         val eidasClaim =
             EidasCredentialDataProvider.EidasClaim(subject, birthdate, givenName, familyName)
-        log.info("Storing EIDAS claims for '{}': {}", nonceBpk.bpk, eidasClaim)
+        Napier.i("Storing EIDAS claims")
+        Napier.v("Storing EIDAS claims for '${nonceBpk.bpk}': $eidasClaim")
         credentialDataProvider.storeClaims(eidasClaim, nonceBpk.bpk)
 
         val content = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)

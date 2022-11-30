@@ -19,6 +19,7 @@ import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSSigner
 import com.nimbusds.jose.crypto.ECDSASigner
+import io.github.aakira.napier.Napier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
@@ -56,7 +57,7 @@ class DefaultCryptoServiceAdapter(
     keyAdapter: KeyAdapter,
 ) : CryptoServiceAdapter {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
+
 
     private val privateKey: PrivateKey = keyAdapter.privateKey
     private val publicKey: PublicKey = keyAdapter.publicKey
@@ -67,7 +68,7 @@ class DefaultCryptoServiceAdapter(
     override val certificate =keyAdapter.certificate
 
     init {
-        log.info("Loaded public key with keyId {}", keyId)
+        Napier.i("Loaded public key with keyId $keyId")
     }
 
     override fun toJsonWebKey() = jsonWebKey

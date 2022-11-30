@@ -4,6 +4,7 @@ import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
 import at.asitplus.wallet.lib.toJavaDate
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
@@ -15,7 +16,6 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
-import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.util.*
 import javax.security.auth.x500.X500Principal
@@ -34,7 +34,6 @@ class InMemoryPkiService(
     private val clock: Clock
 ) : PkiService {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val crlEntryList = mutableListOf<CrlEntry>()
     private val issuer = cryptoService.certificate?.let {
@@ -58,7 +57,7 @@ class InMemoryPkiService(
             val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
             return SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
         } catch (e: Throwable) {
-            log.warn("verifyAndSign: error", e)
+            Napier.e("verifyAndSign: error", e) // TODO: Check if this error is safe
             return null
         }
     }

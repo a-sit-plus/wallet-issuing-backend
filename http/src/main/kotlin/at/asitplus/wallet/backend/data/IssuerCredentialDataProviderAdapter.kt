@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.keyId
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import org.slf4j.LoggerFactory
@@ -20,7 +21,6 @@ class IssuerCredentialDataProviderAdapter(
     private val clock: Clock
 ) : IssuerCredentialDataProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun getClaim(
         subjectId: String,
@@ -73,15 +73,13 @@ class IssuerCredentialDataProviderAdapter(
     private fun getVerifiedDeviceBinding(subjectId: String): DeviceBinding? {
         val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
             ?: return null.also {
-                log.error("Got no authenticated user when trying to issue credentials")
+                Napier.e("Got no authenticated user when trying to issue credentials")
             }
 
         if (deviceBinding.keyId != subjectId)
             return null.also {
-                log.error(
-                    "Got invalid keyId ('{}') from authenticated user when trying to issue credentials for ('{}')",
-                    deviceBinding.keyId, subjectId
-                )
+                Napier.e("Got invalid keyId from authenticated user when trying to issue credentials")
+                Napier.v("keyId: '${deviceBinding.keyId}', subjectId: '$subjectId'")
             }
         return deviceBinding
     }

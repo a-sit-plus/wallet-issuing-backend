@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import org.slf4j.LoggerFactory
+import io.github.aakira.napier.Napier
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -21,7 +21,6 @@ class AuthnController(
     private val deviceBindingAuthnChallengeService: ChallengeService,
 ) {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     @Operation(
         summary = "Get a challenge",
@@ -44,10 +43,10 @@ class AuthnController(
     fun deviceBindingAuthnChallenge(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
-        log.info("/authn/devicebinding/challenge called")
+        Napier.i("/authn/devicebinding/challenge called")
         val challenge = deviceBindingAuthnChallengeService.generate().encodeBase64()
         return ResponseEntity.ok(challenge)
-            .also { log.info("/authn/devicebinding/challenge returns '{}'", challenge) }
+            .also { Napier.i("/authn/devicebinding/challenge returns '$challenge'") }
     }
 
 }

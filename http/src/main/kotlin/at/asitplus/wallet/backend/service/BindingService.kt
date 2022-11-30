@@ -11,6 +11,7 @@ import at.asitplus.wallet.pupilid.AttestedPublicKey
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -110,7 +111,6 @@ class DefaultBindingService(
     private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : BindingService {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     /**
      * Issues new binding parameters.
@@ -133,12 +133,12 @@ class DefaultBindingService(
         bpk: String
     ): BindingCertificate? {
         if (!challengeService.verifyAndRemove(challenge))
-            return null.also { log.warn("binding challenge invalid: {}", it) }
+            return null.also { Napier.w("binding challenge null") }
 
         val bindingPublicKey =
             kotlin.runCatching { BouncyCastleProvider.getPublicKey(PKCS10CertificationRequest(csr).subjectPublicKeyInfo) }
                 .getOrElse { error ->
-                    return null.also { log.warn("Could not parse public key from CSR", error) }
+                    return null.also { Napier.w("Could not parse public key from CSR", error) } // TODO: check error
                 }
 
         if (!attestationService.verifyAttestation(
@@ -146,17 +146,19 @@ class DefaultBindingService(
                 bindingPublicKey.encoded,
                 challenge /*already verified by challengeService*/
             )
-        ) return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+        ) return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
+
 
 
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
-            ?: return null.also { log.warn("CSR invalid: {}", it) }
+            ?: return null.also { Napier.w("CSR invalid") }
 
         val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey as ECPublicKey)
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
-        log.info("Created new device binding for '{}': {}", bpk, certificate.encoded.encodeBase64())
+        Napier.i("Created new device binding")
+        Napier.v("bpk: $bpk, binding certificate: ${certificate.encoded.encodeBase64()}")
 
         return BindingCertificate(certificate.encoded, signedPublicKey)
     }

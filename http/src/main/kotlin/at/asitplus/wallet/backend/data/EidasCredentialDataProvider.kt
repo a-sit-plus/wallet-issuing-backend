@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
@@ -16,7 +17,6 @@ import kotlin.time.Duration
 class EidasCredentialDataProvider(private val timeout: Duration, private val clock: Clock) :
     CredentialDataProvider {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val list = mutableListOf<EidasClaimHolder>()
 
@@ -40,7 +40,8 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
 
         val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
             ?: return null.also {
-                log.error("Found no stored EIDAS claim for bpk '{}'", bpk)
+                Napier.e("Found no stored EIDAS claim")
+                Napier.v("bpk: '$bpk'")
             }
 
         val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
@@ -61,7 +62,7 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
             )
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
             else -> return null.also {
-                log.warn("Requested attribute '{}' could not be issued", attributeName)
+                Napier.w("Requested attribute '$attributeName' could not be issued")
             }
         }
         return CredentialDataProvider.CredentialToBeIssued(

@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import io.github.aakira.napier.Napier
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.web.client.RestTemplate
@@ -19,7 +20,6 @@ class EcoExtNonceAuthnService(
     private val restTemplate: RestTemplate
 ) : ExtNonceAuthnService {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     override fun generateNonce(): ExtNonceAuthnService.NonceBpk? {
         return null
@@ -29,10 +29,10 @@ class EcoExtNonceAuthnService(
         val entity = restTemplate.getForEntity<CardCreationCodeResolveResult>(
             "$url/CardCreationCode/{cardCode}",
             uriVariables = mapOf("cardCode" to nonce)
-        ).also { log.debug("exchangeNonceForBpk('{}') got {}", nonce, it) }
+        ).also { Napier.v("exchangeNonceForBpk('$nonce') got $it") }
         entity.body?.bpk
     }.getOrElse {
-        log.error("exchangeNonceForBpk('{}') got error", nonce, it)
+        Napier.e("exchangeNonceForBpk('$nonce') got error") // TODO: is this ok? couldn' find a bpk
         null
     }
 
@@ -41,7 +41,7 @@ class EcoExtNonceAuthnService(
             "$url/CardCreationCode/{cardCode}",
             HttpMethod.DELETE,
             uriVariables = mapOf("cardCode" to nonce)
-        ).also { log.debug("invalidateNonce('{}') got {}", nonce, it) }
+        ).also { Napier.v("invalidateNonce('$nonce') got $it") }
         entity.statusCode.is2xxSuccessful
     }.getOrDefault(false)
 

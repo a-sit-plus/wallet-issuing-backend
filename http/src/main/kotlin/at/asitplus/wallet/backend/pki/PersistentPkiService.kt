@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificate
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
@@ -33,7 +34,6 @@ class PersistentPkiService(
     private val clock: Clock
 ) : PkiService {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val caCertificate =
         cryptoService.certificate ?: throw RuntimeException("No certificate provided")
@@ -46,7 +46,7 @@ class PersistentPkiService(
             val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
             return SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
         } catch (e: Throwable) {
-            log.warn("verifyAndSign: error", e)
+            Napier.e("verifyAndSign: error", e) // TODO: Check error
             return null
         }
     }
