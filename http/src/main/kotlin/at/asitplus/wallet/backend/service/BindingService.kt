@@ -7,6 +7,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwkType
+import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import at.asitplus.wallet.pupilid.AttestedPublicKey
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -143,7 +144,11 @@ class DefaultBindingService(
 
         if (!attestationService.verifyAttestation(
                 attestationCerts,
-                bindingPublicKey.encoded,
+                bindingPublicKey.let{
+                    val xFromBc = (it as ECPublicKey).w.affineX.toByteArray().ensureSize(32)
+                    val yFromBc = it.w.affineY.toByteArray().ensureSize(32)
+                    byteArrayOf(0x04) + xFromBc + yFromBc
+                },
                 challenge /*already verified by challengeService*/
             )
         ) return null.also { log.warn("Attestation failed! Could not verify device integrity") }
