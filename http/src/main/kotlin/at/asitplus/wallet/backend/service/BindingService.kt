@@ -141,26 +141,25 @@ class DefaultBindingService(
             kotlin.runCatching { BouncyCastleProvider.getPublicKey(PKCS10CertificationRequest(csr).subjectPublicKeyInfo) }
                 .getOrElse { error ->
                     return null.also { log.warn("Could not parse public key from CSR", error) }
-                }
+                } as ECPublicKey
 
         val attestedPublicKey = when (val attestationResult = attestationService.verifyAttestation(
             attestationCerts,
             challenge, /*already verified by challengeService*/
-            bindingPublicKey.let {
-                val xFromBc = (it as ECPublicKey).w.affineX.toByteArray().ensureSize(32)
-                val yFromBc = it.w.affineY.toByteArray().ensureSize(32)
-                byteArrayOf(0x04) + xFromBc + yFromBc
-            },
+            bindingPublicKey.toAnsi(),
         )) {
             is AttestationResult.Error -> return null.also { log.warn("Attestation failed! Could not verify device integrity") }
-            is AttestationResult.Android -> attestationResult.attestationCertificate.publicKey.encoded
+            is AttestationResult.Android -> (attestationResult.attestationCertificate.publicKey as ECPublicKey).toAnsi()
+
             is AttestationResult.IOS -> attestationResult.clientData
         }
 
-        if (!bindingPublicKey.encoded.contentEquals(attestedPublicKey)) {
+        if (!bindingPublicKey.toAnsi().contentEquals(attestedPublicKey)) {
             return null.also {
                 log.warn(
-                    "Binding public key ${bindingPublicKey.encoded.encodeBase64()} does not equal attestation public key " +
+                    "Binding public key ${
+                        bindingPublicKey.toAnsi().encodeBase64()
+                    } does not equal attestation public key " +
                             "${attestedPublicKey?.encodeBase64()}"
                 )
             }
@@ -170,7 +169,7 @@ class DefaultBindingService(
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
             ?: return null.also { log.warn("CSR invalid: {}", it) }
 
-        val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey as ECPublicKey)
+        val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey)
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
@@ -199,5 +198,11 @@ class DefaultBindingService(
         ).also {
             it.sign(jwsContentSigner)
         }.serialize()
+    }
+
+    private fun ECPublicKey.toAnsi() = let {
+        val xFromBc = it.w.affineX.toByteArray().ensureSize(32)
+        val yFromBc = it.w.affineY.toByteArray().ensureSize(32)
+        byteArrayOf(0x04) + xFromBc + yFromBc
     }
 }
