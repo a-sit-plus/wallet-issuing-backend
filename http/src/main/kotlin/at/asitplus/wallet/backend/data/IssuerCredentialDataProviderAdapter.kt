@@ -1,7 +1,10 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.map
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.keyId
+import at.asitplus.wallet.lib.AuthenticationError
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
@@ -25,8 +28,10 @@ class IssuerCredentialDataProviderAdapter(
     override fun getClaim(
         subjectId: String,
         attributeName: String
-    ): IssuerCredentialDataProvider.CredentialToBeIssued? {
-        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
+    ): KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued> {
+        val deviceBinding = getVerifiedDeviceBinding(subjectId)
+            ?: return KmmResult.failure(AuthenticationError("No device binding present"))
+
         val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
         val maxExpiration = clock.now() + lifetime
         val cappedExpiration =
@@ -37,7 +42,7 @@ class IssuerCredentialDataProviderAdapter(
             deviceBinding.bpk,
             cappedExpiration
         )
-        return credential?.let {
+        return credential.map {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
                 it.expiration,
@@ -49,8 +54,13 @@ class IssuerCredentialDataProviderAdapter(
     override fun getCredential(
         subjectId: String,
         attributeType: String
-    ): IssuerCredentialDataProvider.CredentialToBeIssued? {
-        val deviceBinding = getVerifiedDeviceBinding(subjectId) ?: return null
+    ): KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued> {
+        val deviceBinding = getVerifiedDeviceBinding(subjectId)
+            ?: return KmmResult.failure(
+                AuthenticationError(
+                    "No device binding present",
+                )
+            )
         val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
         val maxExpiration = clock.now() + lifetime
         val cappedExpiration =
@@ -61,7 +71,7 @@ class IssuerCredentialDataProviderAdapter(
             deviceBinding.bpk,
             cappedExpiration
         )
-        return credential?.let {
+        return credential.map {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
                 it.expiration + gracePeriod,

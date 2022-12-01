@@ -425,7 +425,8 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         ),
         timePeriodProvider = timePeriodProvider(),
         clock = clock(),
-        cacheLimits = configurationProperties.credentials.revocationListCache?.cacheDuration
+        cacheLimits = configurationProperties.credentials.revocationListCache?.cacheDuration,
+        validator =  Validator.newDefaultInstance(DefaultVerifierCryptoService())
     )
 
     @Bean

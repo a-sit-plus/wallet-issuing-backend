@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.attestation.AttestationResult
 import at.asitplus.attestation.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.encodeBase16
@@ -141,12 +142,24 @@ class DefaultBindingService(
                     return null.also { log.warn("Could not parse public key from CSR", error) }
                 }
 
-        if (!attestationService.verifyAttestation(
-                attestationCerts,
-                bindingPublicKey.encoded,
-                challenge /*already verified by challengeService*/
-            )
-        ) return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+        val attestedPublicKey = when (val attestationResult = attestationService.verifyAttestation(
+            attestationCerts,
+            challenge, /*already verified by challengeService*/
+            bindingPublicKey.encoded,
+        )) {
+            is AttestationResult.Error -> return null.also { log.warn("Attestation failed! Could not verify device integrity") }
+            is AttestationResult.Android -> attestationResult.attestationCertificate.publicKey.encoded
+            is AttestationResult.IOS -> attestationResult.clientData
+        }
+
+        if (!bindingPublicKey.encoded.contentEquals(attestedPublicKey)) {
+            return null.also {
+                log.warn(
+                    "Binding public key ${bindingPublicKey.encoded.encodeBase64()} does not equal attestation public key " +
+                            "${attestedPublicKey?.encodeBase64()}"
+                )
+            }
+        }
 
 
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))

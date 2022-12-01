@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
@@ -8,10 +9,11 @@ import at.asitplus.wallet.lib.decodeBase64ToArray
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Random
-internal const val RND_MONTH="09"
-internal const val RND_DAY="01"
-internal const val RND_YEAR="2023"
+import java.util.*
+
+internal const val RND_MONTH = "09"
+internal const val RND_DAY = "01"
+internal const val RND_YEAR = "2023"
 internal const val EXP = "$RND_YEAR-$RND_MONTH-$RND_DAY"
 
 /**
@@ -68,23 +70,25 @@ class RandomCredentialDataProvider constructor(
         attributeName: String,
         bpk: String,
         maxExpiration: Instant
-    ): CredentialDataProvider.CredentialToBeIssued? {
+    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> {
         val it = randomAttributeCache[bpk]
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX)) {
-            return null
+            return KmmResult.failure(UnsupportedOperationException("Claim '$attributeName' is not supported"))
         }
-        val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
+        val subject = when (val name = attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
             "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilId)
-            else -> return null
+            else -> return KmmResult.failure(UnsupportedOperationException("Claim '$name' is not supported"))
         }
-        return CredentialDataProvider.CredentialToBeIssued(
-            subject,
-            maxExpiration,
-            ConstantIndex.Generic.vcType
+        return KmmResult.success(
+            CredentialDataProvider.CredentialToBeIssued(
+                subject,
+                maxExpiration,
+                ConstantIndex.Generic.vcType
+            )
         )
     }
 
@@ -93,11 +97,11 @@ class RandomCredentialDataProvider constructor(
         attributeType: String,
         bpk: String,
         maxExpiration: Instant
-    ): CredentialDataProvider.CredentialToBeIssued? {
+    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> {
         val it = randomAttributeCache[bpk]
             ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
         if (attributeType != ConstantIndex.PupilId.vcType) {
-            return null
+            return KmmResult.failure(UnsupportedOperationException("Credential '$attributeType' is not supported"))
         }
         val subject = PupilIdCredential(
             id = subjectId,
@@ -115,11 +119,11 @@ class RandomCredentialDataProvider constructor(
             picture = it.encodedPhoto,
             validUntil = EXP,
         )
-        return CredentialDataProvider.CredentialToBeIssued(
+        return KmmResult.success(CredentialDataProvider.CredentialToBeIssued(
             subject,
             maxExpiration,
             ConstantIndex.Generic.vcType
-        )
+        ))
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

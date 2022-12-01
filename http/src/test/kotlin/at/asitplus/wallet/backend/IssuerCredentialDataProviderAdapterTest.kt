@@ -1,15 +1,18 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.auth.InMemoryDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
 import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex.ATTR_GENERIC_PREFIX
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
@@ -62,8 +65,8 @@ class IssuerCredentialDataProviderAdapterTest {
     fun `credential lifetime should be capped with binding lifetime`() {
         val credential = adapter.getCredential(client.keyId, ConstantIndex.PupilId.vcType)
 
-        credential.shouldNotBeNull()
-        (credential.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
+        credential.isSuccess shouldBe true
+        (credential.value!!.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
     }
 
     @Test
@@ -91,8 +94,8 @@ class IssuerCredentialDataProviderAdapterTest {
     fun `claim lifetime should be capped with binding lifetime`() {
         val credential = adapter.getClaim(client.keyId, "$ATTR_GENERIC_PREFIX/given-name")
 
-        credential.shouldNotBeNull()
-        (credential.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
+        credential.isSuccess shouldBe true
+        (credential.value!!.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
     }
 
     fun testGracePeriod(gracePeriod: Duration) {
@@ -106,11 +109,11 @@ class IssuerCredentialDataProviderAdapterTest {
 
         val credential = adapter.getCredential(client.keyId, ConstantIndex.PupilId.vcType)
 
-        credential.shouldNotBeNull()
-        (credential.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
+        credential.shouldBeInstanceOf<KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued>>()
+        (credential.value!!.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
 
         val expectedInstant = TestTimeSource.now() + lifetime + gracePeriod
-        credential.expiration shouldBe expectedInstant
+        credential.value!!.expiration shouldBe expectedInstant
     }
 
 }

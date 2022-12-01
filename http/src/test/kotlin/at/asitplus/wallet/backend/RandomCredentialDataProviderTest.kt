@@ -1,8 +1,11 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -18,6 +21,7 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
+import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssued
 
 class RandomCredentialDataProviderTest {
 
@@ -51,8 +55,8 @@ class RandomCredentialDataProviderTest {
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
                 .thenReturn(deviceBindingWithBpk(bpk1))
             dataProvider.getClaim(subjectId1, attribute, bpk1, expiration).let {
-                it.shouldNotBeNull()
-                val subject = it.subject
+                it.shouldBeInstanceOf<KmmResult<CredentialToBeIssued>>()
+                val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
                 firstSetOfValues += subject.value
@@ -61,7 +65,7 @@ class RandomCredentialDataProviderTest {
                 .thenReturn(deviceBindingWithBpk(bpk2))
             dataProvider.getClaim(subjectId2, attribute, bpk2, expiration).let {
                 it.shouldNotBeNull()
-                val subject = it.subject
+                val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
                 secondSetOfValues += subject.value
@@ -78,15 +82,15 @@ class RandomCredentialDataProviderTest {
         val secondSetOfValues = mutableListOf<String>()
         for (attribute in AttributeIndex.genericAttributes) {
             dataProvider.getClaim(subjectId1, attribute, bpk1, expiration).let {
-                it.shouldNotBeNull()
-                val subject = it.subject
+                it.shouldBeInstanceOf<KmmResult<CredentialToBeIssued>>()
+                val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
                 firstSetOfValues += subject.value
             }
             dataProvider.getClaim(subjectId2, attribute, bpk1, expiration).let {
-                it.shouldNotBeNull()
-                val subject = it.subject
+                it.shouldBeInstanceOf<KmmResult<CredentialToBeIssued>>()
+                val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
                 secondSetOfValues += subject.value

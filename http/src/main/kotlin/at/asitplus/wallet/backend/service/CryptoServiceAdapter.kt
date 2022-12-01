@@ -2,7 +2,7 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.pki.KeyAdapter
 import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.lib.KmmResult
+import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.Digest

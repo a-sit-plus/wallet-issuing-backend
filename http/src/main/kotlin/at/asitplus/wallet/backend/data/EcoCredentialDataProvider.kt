@@ -1,10 +1,15 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
 
@@ -21,13 +26,15 @@ class EcoCredentialDataProvider(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
+    private val json = Json { ignoreUnknownKeys = true }
+
     override fun getClaim(
         subjectId: String,
         attributeName: String,
         bpk: String,
         maxExpiration: Instant
     ) =
-        null // not supported for ECO
+        KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(UnsupportedOperationException("ECO does not support claims"))
 
     override fun getCredential(
         subjectId: String,
@@ -36,13 +43,14 @@ class EcoCredentialDataProvider(
         maxExpiration: Instant
     ) = kotlin.runCatching {
         if (attributeType != ConstantIndex.PupilId.vcType)
-            return null
+            return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(UnsupportedOperationException("Unsupported attribute type '$attributeType"))
         val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
             uriVariables = mapOf("bpk" to bpk)
         ).also { log.debug("getCredential for '{}' got {}", bpk, it) }
+
         val body = entity.body
-            ?: return null.also { log.info("getCredential for '{}' returns null: {}", bpk, entity) }
+            ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(NullPointerException("getCredential for '$bpk' returns null: $entity"))
         val (expString, parsedExpiration) = (kotlin.runCatching {
             body.validUntil to Instant.parse(
                 body.validUntil
@@ -79,12 +87,20 @@ class EcoCredentialDataProvider(
             picture = body.photo.decodeBase64ToArray() ?: byteArrayOf(),
             validUntil = expString
         )
-        CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
+        KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
             log.info("getCredential for '{}' returns {}", bpk, it)
-        }
+        })
     }.getOrElse {
         log.error("getCredential for '$bpk' got error", it)
-        null
+
+        if (it is HttpStatusCodeException) {
+            val problem = kotlin.runCatching { json.decodeFromString<Rfc7807Problem>(it.responseBodyAsString) }
+                .getOrElse { _ -> return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it) }
+            return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it)
+
+        }
+
+        return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it)
     }
 
     data class EcoStudentData(
@@ -101,6 +117,15 @@ class EcoCredentialDataProvider(
         val studentId: String?,
         val photo: String,
         val validUntil: String,
+    )
+
+    @Serializable
+    private class Rfc7807Problem(
+        val type: String? = null,
+        val title: String? = null,
+        val status: Int? = null,
+        val instance: String? = null,
+        val detail: String? = null,
     )
 
 }
