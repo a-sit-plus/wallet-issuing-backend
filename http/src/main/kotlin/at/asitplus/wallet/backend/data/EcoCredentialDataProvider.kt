@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.decodeBase64ToArray
@@ -51,6 +52,8 @@ class EcoCredentialDataProvider(
 
         val body = entity.body
             ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(NullPointerException("getCredential for '$bpk' returns null: $entity"))
+
+        //TODO rework
         val (expString, parsedExpiration) = (kotlin.runCatching {
             body.validUntil to Instant.parse(
                 body.validUntil
@@ -84,7 +87,10 @@ class EcoCredentialDataProvider(
             pupilCity = body.studentCity,
             pupilZip = body.studentZip,
             pupilId = body.studentId,
-            picture = body.photo.decodeBase64ToArray() ?: byteArrayOf(),
+            picture = body.photo.decodeBase64ToArray()
+                ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
+                    DataSourceProblem("Photo could not be decoded")
+                ),
             validUntil = expString
         )
         KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
@@ -96,7 +102,13 @@ class EcoCredentialDataProvider(
         if (it is HttpStatusCodeException) {
             val problem = kotlin.runCatching { json.decodeFromString<Rfc7807Problem>(it.responseBodyAsString) }
                 .getOrElse { _ -> return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it) }
-            return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it)
+            return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
+                DataSourceProblem(
+                    problem.title,
+                    problem.detail,
+                    it
+                )
+            )
 
         }
 
@@ -122,7 +134,7 @@ class EcoCredentialDataProvider(
     @Serializable
     private class Rfc7807Problem(
         val type: String? = null,
-        val title: String? = null,
+        val title: String,
         val status: Int? = null,
         val instance: String? = null,
         val detail: String? = null,

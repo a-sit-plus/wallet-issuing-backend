@@ -102,42 +102,44 @@ class DefaultRevocationService(
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int
-    ): Long? {
-        synchronized(CredentialRepositoriesLock) {
-            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
-                return null.also {
-                    log.error("Tried to store a new credential for existing vcId '{}'", vcId)
+    ): Long? =
+        runCatching {
+            synchronized(CredentialRepositoriesLock) {
+                if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
+                    return@runCatching null.also {
+                        log.error("Tried to store a new credential for existing vcId '{}'", vcId)
+                    }
+                val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+                    ?: return@runCatching null.also {
+                        log.error("Got no authenticated user when trying to store vcId '{}'", vcId)
+                    }
+                if (oneCredentialPerDeviceBinding) {
+                    val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
+                    if (revokedCreds > 0)
+                        log.info(
+                            "Revoked {} already existing credentials for device binding certificate '{}' for bpk '{}'",
+                            revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
+                        )
                 }
-            val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-                ?: return null.also {
-                    log.error("Got no authenticated user when trying to store vcId '{}'", vcId)
-                }
-            if (oneCredentialPerDeviceBinding) {
-                val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
-                if (revokedCreds > 0)
-                    log.info(
-                        "Revoked {} already existing credentials for device binding certificate '{}' for bpk '{}'",
-                        revokedCreds, deviceBinding.certificate.encodeBase64(), deviceBinding.bpk
-                    )
+                val revocationListIndex = max(
+                    (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
+                    revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
+                ) + 1
+                val attributeName = credentialSubject.javaClass.simpleName
+                val issuedCredential = IssuedCredential(
+                    vcId,
+                    credentialSubject.id,
+                    expirationDate.toJavaInstant(),
+                    timePeriod,
+                    deviceBinding,
+                    attributeName,
+                    revocationListIndex
+                )
+                val savedCredential = credentialRepo.save(issuedCredential)
+                return@runCatching savedCredential.revocationListIndex
             }
-            val revocationListIndex = max(
-                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
-                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-            ) + 1
-            val attributeName = credentialSubject.javaClass.simpleName
-            val issuedCredential = IssuedCredential(
-                vcId,
-                credentialSubject.id,
-                expirationDate.toJavaInstant(),
-                timePeriod,
-                deviceBinding,
-                attributeName,
-                revocationListIndex
-            )
-            val savedCredential = credentialRepo.save(issuedCredential)
-            return savedCredential.revocationListIndex
-        }
-    }
+        }.getOrElse { null.also { _ -> log.error("Database error", it) } }
+
 
     /**
      * Revokes one credential, specified by its [vcId] (which is a unique identifier

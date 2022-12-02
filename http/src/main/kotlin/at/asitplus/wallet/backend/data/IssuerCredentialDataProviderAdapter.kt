@@ -74,7 +74,7 @@ class IssuerCredentialDataProviderAdapter(
         return credential.map {
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
-                it.expiration + gracePeriod,
+                it.expiration + gracePeriod /*TODO move to data provider*/,
                 it.attributeType
             )
         }
