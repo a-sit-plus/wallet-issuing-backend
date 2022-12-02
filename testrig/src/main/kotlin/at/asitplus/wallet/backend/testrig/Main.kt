@@ -82,7 +82,10 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                                 cfg.host.baseURL.toString(),
                                 "$FAKE_NONCE$i",
                                 object : DeviceAdapter {
-                                    override suspend fun loadAttestationCerts(): KmmResult<List<ByteArray>> {
+                                    override suspend fun loadAttestationCerts(
+                                        challenge: ByteArray,
+                                        clientData: ByteArray
+                                    ): KmmResult<List<ByteArray>> {
                                         return KmmResult.success(listOf(byteArrayOf()))
                                     }
 

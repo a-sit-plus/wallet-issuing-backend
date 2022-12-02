@@ -86,7 +86,9 @@ class BindingPupilIdCombinationKtorLibTest {
             override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) =
                 KmmResult.success(true)
 
-            override suspend fun loadAttestationCerts() = KmmResult.success(listOf<ByteArray>())
+            override suspend fun loadAttestationCerts(challenge: ByteArray, clientData: ByteArray) =
+                KmmResult.success(listOf<ByteArray>())
+
             override fun storeCertificate(certificate: ByteArray, attestedPublicKey: String?) =
                 KmmResult.success(true)
 
