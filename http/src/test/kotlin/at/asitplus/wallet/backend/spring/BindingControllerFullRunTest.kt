@@ -53,7 +53,7 @@ class BindingControllerFullRunTest {
     }
 
     @Test
-    fun start_create_ok() {
+    fun start_create_ok_android() {
         val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
 
         val startResponse = mockMvc.post("/binding/start") {
@@ -69,7 +69,61 @@ class BindingControllerFullRunTest {
         val subject = bindingParamsResponse.subject
 
         val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
-        val csrRequest = BindingCsrRequestJ(challenge, client.generateCsr(subject), deviceName, listOf())
+        val csrRequest = BindingCsrRequestJ(
+            challenge,
+            client.generateCsr(subject),
+            deviceName,
+            //make sure NOOPAttestationService uses the Android Branch!
+            listOf(client.selfSignedCert.encoded, client.selfSignedCert.encoded, client.selfSignedCert.encoded)
+        )
+
+        val createResponse = mockMvc.post("/binding/create") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(csrRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val certBytes = mapper.readValue<BindingCsrResponseJ>(createResponse.response.contentAsString).certificate
+        val certificate = CertificateFactory.getInstance("X.509").generateCertificate(certBytes.inputStream())
+        client.keyPair.public.encoded shouldBe certificate.publicKey.encoded
+
+        val confirmRequest = BindingConfirmRequestJ(true)
+
+        mockMvc.post("/binding/confirm") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(confirmRequest)
+            header(X_AUTH_TOKEN, xAuthToken)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+    }
+
+
+    @Test
+    fun start_create_ok_ios() {
+        val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
+
+        val startResponse = mockMvc.post("/binding/start") {
+            contentType = MediaType.APPLICATION_JSON
+            content = mapper.writeValueAsString(startRequest)
+            header(X_AUTH_EXT_NONCE, nonce)
+        }.andExpect {
+            status { isOk() }
+        }.andReturn()
+
+        val bindingParamsResponse = mapper.readValue<BindingParamsResponse>(startResponse.response.contentAsString)
+        val challenge = bindingParamsResponse.challenge
+        val subject = bindingParamsResponse.subject
+
+        val xAuthToken = startResponse.response.getHeaderValue(X_AUTH_TOKEN)!!
+        val csrRequest = BindingCsrRequestJ(
+            challenge,
+            client.generateCsr(subject),
+            deviceName,
+            listOf()
+        )
 
         val createResponse = mockMvc.post("/binding/create") {
             contentType = MediaType.APPLICATION_JSON

@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService

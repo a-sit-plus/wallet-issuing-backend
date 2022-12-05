@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.KmmResult
+import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.SchemaIndex
@@ -33,15 +35,14 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
         attributeName: String,
         bpk: String,
         maxExpiration: Instant
-    ): CredentialDataProvider.CredentialToBeIssued? {
+    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> {
         if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
-            return null // other attribute names are not supported
+            return KmmResult.failure(UnsupportedOperationException("$attributeName is not supported")) // other attribute names are not supported
 
         val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
-            ?: return null.also {
-                Napier.e("Found no stored EIDAS claim")
-                Napier.v("bpk: '$bpk'")
-            }
+            ?: return KmmResult.failure(DataSourceProblem("Found no stored EIDAS claim for bpk").also {
+                Napier.v("bpk: '$bpk'") // TODO: This is out-of-order, as the NPE is only caught later
+            })
 
         val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
             "given-name" -> AtomicAttributeCredential(
@@ -54,20 +55,23 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
                 attributeName,
                 eidasClaim.familyName
             )
+
             "date-of-birth" -> AtomicAttributeCredential(
                 subjectId,
                 attributeName,
                 eidasClaim.birthdate
             )
+
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
-            else -> return null.also {
-                Napier.w("Requested attribute '$attributeName' could not be issued")
-            }
+            else -> return KmmResult.failure(DataSourceProblem("Requested attribute '$attributeName' could not be issued"))
         }
-        return CredentialDataProvider.CredentialToBeIssued(
-            subject,
-            maxExpiration,
-            ConstantIndex.Generic.vcType
+
+        return KmmResult.success(
+            CredentialDataProvider.CredentialToBeIssued(
+                subject,
+                maxExpiration,
+                ConstantIndex.Generic.vcType
+            )
         )
     }
 
@@ -77,7 +81,7 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
         bpk: String,
         maxExpiration: Instant
     ) =
-        null // not supported for EIDAS
+        KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(UnsupportedOperationException("not supported for EIDAS"))
 
 
     data class EidasClaim(

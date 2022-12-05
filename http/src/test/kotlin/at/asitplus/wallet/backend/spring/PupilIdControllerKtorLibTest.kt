@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -7,7 +8,6 @@ import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.jws.JwsHeader
-import at.asitplus.wallet.pupilid.KmmResult
 import at.asitplus.wallet.pupilid.PupilIdIssuingService
 import at.asitplus.wallet.pupilid.ServiceResult
 import io.kotest.matchers.nulls.shouldNotBeNull

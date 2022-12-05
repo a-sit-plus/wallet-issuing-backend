@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.attestation.AttestationResult
 import at.asitplus.attestation.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.encodeBase16
@@ -7,6 +8,7 @@ import at.asitplus.wallet.lib.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwkType
+import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import at.asitplus.wallet.pupilid.AttestedPublicKey
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -140,21 +142,34 @@ class DefaultBindingService(
                     // TODO: Cursory look over thrown exceptions shows that it may leak some stuff, but only if data
                     // is malformed anyways. Is this fine?
                     return null.also { Napier.w("Could not parse public key from CSR", error) }
-                }
+                } as ECPublicKey
 
-        if (!attestationService.verifyAttestation(
-                attestationCerts,
-                bindingPublicKey.encoded,
-                challenge /*already verified by challengeService*/
-            )
-        ) return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
+        val attestedPublicKey = when (val attestationResult = attestationService.verifyAttestation(
+            attestationCerts,
+            challenge, /*already verified by challengeService*/
+            bindingPublicKey.toAnsi(),
+        )) {
+            is AttestationResult.Error -> return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
+            is AttestationResult.Android -> (attestationResult.attestationCertificate.publicKey as ECPublicKey).toAnsi()
 
+            is AttestationResult.IOS -> attestationResult.clientData
+        }
+
+        if (!bindingPublicKey.toAnsi().contentEquals(attestedPublicKey)) {
+            return null.also {
+
+                Napier.w("Binding public key does not equal attestation public key")
+                Napier.v("Binding public key: ${bindingPublicKey.toAnsi().encodeBase64()}" +
+                        ", attestation public key: ${attestedPublicKey?.encodeBase64()}"
+                )
+            }
+        }
 
 
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
             ?: return null.also { Napier.w("CSR invalid") }
 
-        val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey as ECPublicKey)
+        val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey)
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
@@ -184,5 +199,11 @@ class DefaultBindingService(
         ).also {
             it.sign(jwsContentSigner)
         }.serialize()
+    }
+
+    private fun ECPublicKey.toAnsi() = let {
+        val xFromBc = it.w.affineX.toByteArray().ensureSize(32)
+        val yFromBc = it.w.affineY.toByteArray().ensureSize(32)
+        byteArrayOf(0x04) + xFromBc + yFromBc
     }
 }
