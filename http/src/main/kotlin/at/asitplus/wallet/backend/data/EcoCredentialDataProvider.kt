@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.DataSourceProblem
+import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import io.github.aakira.napier.Napier
@@ -88,7 +89,13 @@ class EcoCredentialDataProvider(
         )
         val limit = parsedExpiration + gracePeriod
         val capped = if (maxExpiration > limit) limit else maxExpiration
-        KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, capped, attributeType))
+        val attachments = listOf(
+            CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", picture),
+            CredentialToBeIssuedAttachment("scaledPicture.webp", "image/webp", scaledPicture),
+        )
+        val result = CredentialDataProvider.CredentialToBeIssued(subject, capped, attributeType, attachments)
+
+        KmmResult.success(result)
             .also { Napier.v("getCredential for '$bpk' returns $it.value") }
             .also { Napier.i("getCredential success") }
     }.getOrElse {

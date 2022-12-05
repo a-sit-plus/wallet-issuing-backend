@@ -1,18 +1,19 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.backend.data.CredentialDataProvider
+import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssued
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
+import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.datetime.Clock
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -21,8 +22,6 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
-import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssued
-import kotlinx.datetime.Clock
 
 class RandomCredentialDataProviderTest {
 
@@ -60,6 +59,7 @@ class RandomCredentialDataProviderTest {
                 val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
+                it.getOrThrow().attachments.shouldNotBeEmpty()
                 firstSetOfValues += subject.value
             }
             whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
@@ -69,6 +69,7 @@ class RandomCredentialDataProviderTest {
                 val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
+                it.getOrThrow().attachments.shouldNotBeEmpty()
                 secondSetOfValues += subject.value
             }
         }
@@ -87,6 +88,7 @@ class RandomCredentialDataProviderTest {
                 val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
+                it.getOrThrow().attachments.shouldNotBeEmpty()
                 firstSetOfValues += subject.value
             }
             dataProvider.getClaim(subjectId2, attribute, bpk1, expiration).let {
@@ -94,6 +96,7 @@ class RandomCredentialDataProviderTest {
                 val subject = it.getOrThrow().subject
                 subject.shouldBeInstanceOf<AtomicAttributeCredential>()
                 assertClaim(subject, attribute)
+                it.getOrThrow().attachments.shouldNotBeEmpty()
                 secondSetOfValues += subject.value
             }
         }

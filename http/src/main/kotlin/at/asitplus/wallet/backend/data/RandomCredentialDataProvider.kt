@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
@@ -8,6 +9,7 @@ import at.asitplus.wallet.lib.data.SchemaIndex
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
+import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
@@ -76,14 +78,18 @@ class RandomCredentialDataProvider(
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.cardId)
-            "picture" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto.encodeBase64())
+            "picture" -> AtomicAttributeCredential(subjectId, attributeName, hash(it.encodedPhoto).encodeBase64())
             else -> return KmmResult.failure(UnsupportedOperationException("Claim '$name' is not supported"))
         }
+        val attachments = listOf(
+            CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", it.encodedPhoto)
+        )
         return KmmResult.success(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
                 maxExpiration,
-                ConstantIndex.Generic.vcType
+                ConstantIndex.Generic.vcType,
+                attachments,
             )
         )
     }
@@ -120,16 +126,21 @@ class RandomCredentialDataProvider(
             scaledPictureHash = scaledPictureHash,
             validUntil = maxExpiration.toString().substring(0..9),
         )
+        val attachments = listOf(
+            CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", picture),
+            CredentialToBeIssuedAttachment("scaledPicture.webp", "image/webp", scaledPicture),
+        )
         return KmmResult.success(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
                 maxExpiration,
-                ConstantIndex.Generic.vcType
+                ConstantIndex.Generic.vcType,
+                attachments,
             )
         )
     }
 
-    private fun hash(it: ByteArray): ByteArray = java.security.MessageDigest.getInstance("SHA-256").digest(it)
+    private fun hash(it: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(it)
 
     val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
             "AQEAAAIgbGNtcwQwAABtbnRyR1JBWVhZWiAH5QAIAAUACwAdABxhY3NwQVBQTAAAAAAAAAAAAAAA\n" +

@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.CredentialSubject
 import kotlinx.datetime.Instant
 
@@ -16,5 +18,34 @@ interface CredentialDataProvider {
         val subject: CredentialSubject,
         val expiration: Instant,
         val attributeType: String,
+        val attachments: List<CredentialToBeIssuedAttachment> = listOf(),
     )
+
+    data class CredentialToBeIssuedAttachment(
+        val name: String,
+        val mediaType: String,
+        val data: ByteArray,
+    ) {
+        fun toIssuerCredentialDataProviderFormat() = Issuer.Attachment(name, mediaType, data)
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as CredentialToBeIssuedAttachment
+
+            if (name != other.name) return false
+            if (mediaType != other.mediaType) return false
+            if (!data.contentEquals(other.data)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = name.hashCode()
+            result = 31 * result + mediaType.hashCode()
+            result = 31 * result + data.contentHashCode()
+            return result
+        }
+    }
 }
