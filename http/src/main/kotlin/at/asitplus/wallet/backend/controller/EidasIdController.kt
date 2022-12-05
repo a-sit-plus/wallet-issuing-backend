@@ -114,7 +114,7 @@ class EidasIdController(
                 }
             else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
                 .also {
-                    Napier.w("/eidasid/issue returns HTTP 500: Internal error $result") // TODO: Check if error contains data
+                    Napier.w("/eidasid/issue returns HTTP 500: Internal error $result") // TODO This should never happen, no idea what result would be, but probably garbage
                 }
         }.also { request.logout() }
     }

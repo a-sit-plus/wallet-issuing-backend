@@ -57,7 +57,7 @@ class InMemoryPkiService(
             val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
             return SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
         } catch (e: Throwable) {
-            Napier.e("verifyAndSign: error", e) // TODO: Check if this error is safe
+            Napier.e("verifyAndSign: error", e) // TODO I think bouncycastle exceptions are fine?
             return null
         }
     }

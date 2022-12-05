@@ -49,7 +49,7 @@ class RestTemplateConfigurationService constructor(
     inner class LoggingErrorHandler : DefaultResponseErrorHandler() {
         override fun handleError(url: URI, method: HttpMethod, response: ClientHttpResponse) {
             Napier.e(
-                //TODO: Check if URL or statustext can leak something here
+                //TODO: From what I see, only FakeEco has URLs with parameters, so this should be fine.
                 "URL '${url}', method '${method}' got response statusCode '${response.statusCode}': ${response.statusText}")
             super.handleError(url, method, response)
         }
@@ -69,7 +69,7 @@ class RestTemplateConfigurationService constructor(
             }
         }
         if (config.apiKey != null) {
-            // TODO check if URL leaks something
+            // TODO URL _should_ be fine here
             Napier.i("Setting api key 'MASKED' for ${config.url}")
             httpClientBuilder.setDefaultHeaders(listOf(BasicHeader(X_API_KEY, config.apiKey)))
         }
@@ -78,7 +78,7 @@ class RestTemplateConfigurationService constructor(
     }
 
     private fun loadKeyStore(sslContextBuilder: SSLContextBuilder, config: KeyStoreConfiguration, url: URI?) {
-        // TODO another url...
+        // TODO should be fine
         Napier.i("Loading key store from ${config.path} for $url")
         val keyStore = KeyStore.getInstance(config.type, config.provider).also {
             it.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
@@ -87,7 +87,7 @@ class RestTemplateConfigurationService constructor(
     }
 
     private fun loadTrustStore(sslContextBuilder: SSLContextBuilder, config: TrustStoreConfiguration, url: URI?) {
-        // TODO: url...
+        // TODO should be fine.
         Napier.i("Loading trust store from ${config.path} for $url")
         val trustStore = KeyStore.getInstance(config.type, config.provider).also {
             it.load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
@@ -99,7 +99,7 @@ class RestTemplateConfigurationService constructor(
         config: HttpBasicAuthnConfigurationProperties,
         url: URI?
     ): CloseableHttpClient {
-        // TODO: No idea if this username is related to something else...
+        // TODO: This is just the http client, all credentials are not related to people... right?
         Napier.i("Loading HTTP basic authn with '${config.username}' for $url")
         val auth = "${config.username}:${config.password}".encodeToByteArray().encodeBase64()
         val headers = listOf(BasicHeader("Authorization", "Basic $auth"))

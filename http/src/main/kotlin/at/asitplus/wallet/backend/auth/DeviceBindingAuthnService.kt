@@ -37,7 +37,7 @@ class SimpleDeviceBindingAuthnService(
         val jwsObject = try {
             JWSObject.parse(response)
         } catch (e: Throwable) {
-            Napier.w("JWS not parsed", e) // TODO: Check error for personal data
+            Napier.w("JWS not parsed", e) // TODO error looks fine to me
             throw BadCredentialsException("jws not parsed", e)
         }
         val decodedCert = jwsObject.header.x509CertChain?.firstOrNull()?.decode()

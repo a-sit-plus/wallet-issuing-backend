@@ -138,7 +138,9 @@ class DefaultBindingService(
         val bindingPublicKey =
             kotlin.runCatching { BouncyCastleProvider.getPublicKey(PKCS10CertificationRequest(csr).subjectPublicKeyInfo) }
                 .getOrElse { error ->
-                    return null.also { Napier.w("Could not parse public key from CSR", error) } // TODO: check error
+                    // TODO: Cursory look over thrown exceptions shows that it may leak some stuff, but only if data
+                    // is malformed anyways. Is this fine?
+                    return null.also { Napier.w("Could not parse public key from CSR", error) }
                 }
 
         if (!attestationService.verifyAttestation(

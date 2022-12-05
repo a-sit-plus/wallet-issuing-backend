@@ -52,17 +52,17 @@ class EcoCredentialDataProvider(
             )
         }.getOrNull()
             ?: kotlin.run {
-                // TODO: This should be fine I guess?
+                // TODO: This should be fine, data is corrupted anyways
                 Napier.w("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
                 "${body.validUntil}Z".let { it to Instant.parse(it) }
             }).let { (str, instant) ->
             str.substring(0, 10) to instant
         }
-        Napier.d("Using validUntil String $expString") // TODO: is expiration safe?
+        Napier.d("Using validUntil String $expString") // TODO: is expiration safe? could deduct user from that
         val cappedExpiration =
             if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
         if (cappedExpiration != maxExpiration)
-            Napier.i("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'") // should be fine?
+            Napier.i("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'") // TODO: is expiration ok?
 
         val subject = PupilIdCredential(
             id = subjectId,
@@ -84,7 +84,7 @@ class EcoCredentialDataProvider(
             Napier.v("getCredential for '$bpk' returns $it")
         }
     }.getOrElse {
-        Napier.e("getCredential got error", it) // TODO: check if error is safe
+        Napier.e("getCredential got error", it) // TODO Error can leak URL, but should be fine
         Napier.v("getCredential for '$bpk' got error", it)
         null
     }
