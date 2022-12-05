@@ -5,7 +5,6 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.remotecrypto.RemoteCryptoProvider
 import io.github.aakira.napier.Napier
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.slf4j.LoggerFactory
 import org.springframework.core.io.ResourceLoader
 import java.security.Provider
 import java.security.Security

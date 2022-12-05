@@ -6,7 +6,6 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
-import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 
 

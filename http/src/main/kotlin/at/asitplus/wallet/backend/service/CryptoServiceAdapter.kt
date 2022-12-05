@@ -27,7 +27,6 @@ import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
-import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.PrivateKey

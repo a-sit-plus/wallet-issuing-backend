@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.auth
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import io.github.aakira.napier.Napier
-import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.exchange
@@ -32,7 +31,7 @@ class EcoExtNonceAuthnService(
         ).also { Napier.v("exchangeNonceForBpk('$nonce') got $it") }
         entity.body?.bpk
     }.getOrElse {
-        Napier.e("exchangeNonceForBpk('$nonce') got error") // TODO: is this ok? couldn' find a bpk
+        Napier.e("exchangeNonceForBpk('$nonce') got error") // TODO: is this ok? apparently it isnt related to a bpk
         null
     }
 

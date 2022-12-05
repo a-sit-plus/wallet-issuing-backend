@@ -15,7 +15,6 @@ import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import org.slf4j.LoggerFactory
 import java.security.interfaces.ECPublicKey
 
 interface BindingService {

@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.config
 
 import io.github.aakira.napier.Napier
-import org.slf4j.LoggerFactory
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.core.env.ConfigurableEnvironment

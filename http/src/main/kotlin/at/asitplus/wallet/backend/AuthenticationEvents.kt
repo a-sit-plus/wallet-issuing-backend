@@ -1,10 +1,10 @@
 package at.asitplus.wallet.backend
 
-import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent
 import org.springframework.stereotype.Component
+import io.github.aakira.napier.Napier
 
 /**
  * Logs authentication events: Success and failures
@@ -12,19 +12,17 @@ import org.springframework.stereotype.Component
 @Component
 class AuthenticationEvents {
 
-    private val log = LoggerFactory.getLogger(this.javaClass)
-
     @EventListener
     fun onSuccess(success: AuthenticationSuccessEvent?) {
         success?.let {
-            log.info("Authentication success: {}", it)
+            Napier.i("Authentication success: $it")
         }
     }
 
     @EventListener
     fun onFailure(failure: AbstractAuthenticationFailureEvent?) {
         failure?.let {
-            log.error("Authentication failure: {}", it)
+            Napier.e("Authentication failure: $it")
         }
     }
 }

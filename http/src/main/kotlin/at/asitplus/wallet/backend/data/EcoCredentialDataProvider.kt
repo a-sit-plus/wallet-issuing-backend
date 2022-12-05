@@ -5,7 +5,6 @@ import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
-import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
 

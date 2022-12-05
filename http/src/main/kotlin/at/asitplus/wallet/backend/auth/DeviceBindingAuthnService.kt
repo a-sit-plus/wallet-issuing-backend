@@ -7,7 +7,6 @@ import at.asitplus.wallet.lib.encodeBase64
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
 import io.github.aakira.napier.Napier
-import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.BadCredentialsException
 import java.security.cert.CertificateFactory
 

@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
 import io.github.aakira.napier.Napier
-import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.logout.LogoutHandler
 import org.springframework.stereotype.Component

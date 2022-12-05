@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
 import io.github.aakira.napier.Napier
-import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.core.Authentication
@@ -35,7 +34,7 @@ class ApiKeyAuthnProvider(
                     Napier.v("credentials: $credentials")
                 }
         Napier.i("Exchanged apiKey for user")
-        Napier.i("apiKey '$credentials', user '$username'")
+        Napier.v("apiKey '$credentials', user '$username'")
         return ApiKeyAuthnToken(credentials, username)
     }
 

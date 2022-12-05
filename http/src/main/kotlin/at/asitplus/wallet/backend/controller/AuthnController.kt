@@ -46,7 +46,7 @@ class AuthnController(
         Napier.i("/authn/devicebinding/challenge called")
         val challenge = deviceBindingAuthnChallengeService.generate().encodeBase64()
         return ResponseEntity.ok(challenge)
-            .also { Napier.i("/authn/devicebinding/challenge returns '$challenge'") }
+            .also { Napier.i("/authn/devicebinding/challenge returns '$challenge'") } // This has no relation to user, possible bug?
     }
 
 }
