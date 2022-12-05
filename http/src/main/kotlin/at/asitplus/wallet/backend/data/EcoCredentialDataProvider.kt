@@ -67,7 +67,7 @@ class EcoCredentialDataProvider(
             Napier.v("No photo from ECO, return failure, for bpk '$bpk'")
         }.run { return KmmResult.failure(DataSourceProblem("Photo could not be decoded")) }
         val pictureHash = hash(picture)
-        val scaledPicture = scalePicture(picture)
+        val scaledPicture = WebpAdapter.scalePicture(picture)
         val scaledPictureHash = hash(scaledPicture)
         val subject = PupilIdCredential(
             id = subjectId,
@@ -101,11 +101,6 @@ class EcoCredentialDataProvider(
             return KmmResult.failure(DataSourceProblem(problem.title, problem.detail, it))
         }
         return KmmResult.failure(it)
-    }
-
-    private fun scalePicture(it: ByteArray): ByteArray {
-        // TODO use webp
-        return it
     }
 
     private fun hash(it: ByteArray): ByteArray = java.security.MessageDigest.getInstance("SHA-256").digest(it)

@@ -10,7 +10,7 @@ import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Random
+import kotlin.random.Random
 
 /**
  * Provides random credential data for the currently logged-in user
@@ -36,10 +36,9 @@ class RandomCredentialDataProvider(
         val cardId =  // e.g. 00200000/00000004
             (1..2).joinToString("/") { (1..8).map { "0123456789".random() }.joinToString("") }
         val dateOfBirth: String = run {
-            val maxAge = 18 * 12 * 31
-            val minAge = 6 * 12 * 31
-            val upperBound = maxAge - minAge + 1
-            LocalDate.now().minusDays(minAge + Random().nextInt(upperBound).toLong())
+            val maxAge = 18 * 12 * 31L
+            val minAge = 6 * 12 * 31L
+            LocalDate.now().minusDays(Random.nextLong(minAge, maxAge))
                 .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
         }
         val firstName = if (randomGender == "male") {
@@ -102,7 +101,7 @@ class RandomCredentialDataProvider(
         }
         val picture = it.encodedPhoto
         val pictureHash = hash(picture)
-        val scaledPicture = scalePicture(picture)
+        val scaledPicture = WebpAdapter.scalePicture(picture)
         val scaledPictureHash = hash(scaledPicture)
         val subject = PupilIdCredential(
             id = subjectId,
@@ -130,14 +129,9 @@ class RandomCredentialDataProvider(
         )
     }
 
-    private fun scalePicture(it: ByteArray): ByteArray {
-        // TODO use webp
-        return it
-    }
-
     private fun hash(it: ByteArray): ByteArray = java.security.MessageDigest.getInstance("SHA-256").digest(it)
 
-    private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
+    val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
             "AQEAAAIgbGNtcwQwAABtbnRyR1JBWVhZWiAH5QAIAAUACwAdABxhY3NwQVBQTAAAAAAAAAAAAAAA\n" +
             "AAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWxjbXMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" +
             "AAAAAAAAAAAAAAAAAAAAAAAAAAZkZXNjAAAAzAAAAG5jcHJ0AAABPAAAADZ3dHB0AAABdAAAABRr\n" +
