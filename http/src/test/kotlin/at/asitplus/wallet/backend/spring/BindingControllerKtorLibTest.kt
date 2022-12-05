@@ -71,7 +71,9 @@ class BindingControllerKtorLibTest {
     private fun createService(keyPair: KeyPair): DeviceBindingService {
         val deviceAdapter = object : DeviceAdapter {
             override suspend fun createKey(key: KeyAlgorithm, challenge: ByteArray) = KmmResult.success(true)
-            override suspend fun loadAttestationCerts(challenge: ByteArray, clientData: ByteArray): KmmResult<List<ByteArray>> = KmmResult.success(listOf<ByteArray>())
+            override suspend fun loadAttestationCerts(challenge: ByteArray, clientData: ByteArray) =
+                KmmResult.success(listOf<ByteArray>())
+
             override fun storeCertificate(certificate: ByteArray, attestedPublicKey: String?) = KmmResult.success(true)
             override fun getPublicKeyEncoded() = KmmResult.success(keyPair.public.encoded)
             override val deviceName: String = randomDeviceName

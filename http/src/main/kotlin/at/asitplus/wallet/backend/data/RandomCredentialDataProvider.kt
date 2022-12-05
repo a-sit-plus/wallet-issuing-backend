@@ -6,6 +6,7 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -32,7 +33,7 @@ class RandomCredentialDataProvider(
         ).random()
         val schoolName = "$randomSchoolPrefix $randomSchoolSuffix"
         val schoolId = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
-        val pupilId =  // e.g. 00200000/00000004
+        val cardId =  // e.g. 00200000/00000004
             (1..2).joinToString("/") { (1..8).map { "0123456789".random() }.joinToString("") }
         val dateOfBirth: String = run {
             val maxAge = 18 * 12 * 31
@@ -75,7 +76,8 @@ class RandomCredentialDataProvider(
             "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
-            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.pupilId)
+            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.cardId)
+            "picture" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto.encodeBase64())
             else -> return KmmResult.failure(UnsupportedOperationException("Claim '$name' is not supported"))
         }
         return KmmResult.success(
@@ -98,6 +100,10 @@ class RandomCredentialDataProvider(
         if (attributeType != ConstantIndex.PupilId.vcType) {
             return KmmResult.failure(UnsupportedOperationException("Credential '$attributeType' is not supported"))
         }
+        val picture = it.encodedPhoto
+        val pictureHash = hash(picture)
+        val scaledPicture = scalePicture(picture)
+        val scaledPictureHash = hash(scaledPicture)
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = it.firstName,
@@ -110,8 +116,9 @@ class RandomCredentialDataProvider(
             schoolId = it.schoolId,
             pupilCity = it.city,
             pupilZip = it.zip,
-            pupilId = it.pupilId,
-            picture = it.encodedPhoto,
+            cardId = it.cardId,
+            pictureHash = pictureHash,
+            scaledPictureHash = scaledPictureHash,
             validUntil = maxExpiration.toString().substring(0..9),
         )
         return KmmResult.success(
@@ -122,6 +129,13 @@ class RandomCredentialDataProvider(
             )
         )
     }
+
+    private fun scalePicture(it: ByteArray): ByteArray {
+        // TODO use webp
+        return it
+    }
+
+    private fun hash(it: ByteArray): ByteArray = java.security.MessageDigest.getInstance("SHA-256").digest(it)
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
             "AQEAAAIgbGNtcwQwAABtbnRyR1JBWVhZWiAH5QAIAAUACwAdABxhY3NwQVBQTAAAAAAAAAAAAAAA\n" +

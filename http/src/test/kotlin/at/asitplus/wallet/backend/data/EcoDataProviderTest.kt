@@ -29,7 +29,6 @@ import kotlin.time.Duration.Companion.seconds
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EcoDataProviderTest {
 
-
     @Autowired
     private lateinit var restTemplateBuilder: RestTemplateBuilder
 

@@ -10,7 +10,7 @@ interface CredentialDataProvider {
             : KmmResult<CredentialToBeIssued>
 
     fun getCredential(subjectId: String, attributeType: String, bpk: String, maxExpiration: Instant)
-            :  KmmResult<CredentialToBeIssued>
+            : KmmResult<CredentialToBeIssued>
 
     data class CredentialToBeIssued(
         val subject: CredentialSubject,

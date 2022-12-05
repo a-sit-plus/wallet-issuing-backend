@@ -21,11 +21,7 @@ class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDat
 
     fun storeClaims(eidasClaim: EidasClaim, bpk: String) {
         list.removeAll { it.expiration < Clock.System.now() }
-        list += EidasClaimHolder(
-            expiration = Clock.System.now() + timeout,
-            bpk = bpk,
-            claim = eidasClaim,
-        )
+        list += EidasClaimHolder(expiration = Clock.System.now() + timeout, bpk = bpk, claim = eidasClaim)
     }
 
     override fun getClaim(
@@ -43,33 +39,15 @@ class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDat
             })
 
         val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
-            "given-name" -> AtomicAttributeCredential(
-                subjectId,
-                attributeName,
-                eidasClaim.givenName
-            )
-            "family-name" -> AtomicAttributeCredential(
-                subjectId,
-                attributeName,
-                eidasClaim.familyName
-            )
-
-            "date-of-birth" -> AtomicAttributeCredential(
-                subjectId,
-                attributeName,
-                eidasClaim.birthdate
-            )
-
+            "given-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.givenName)
+            "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
+            "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
             else -> return KmmResult.failure(DataSourceProblem("Requested attribute '$attributeName' could not be issued"))
         }
 
         return KmmResult.success(
-            CredentialDataProvider.CredentialToBeIssued(
-                subject,
-                maxExpiration,
-                ConstantIndex.Generic.vcType
-            )
+            CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
         )
     }
 
@@ -78,7 +56,8 @@ class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDat
         attributeType: String,
         bpk: String,
         maxExpiration: Instant
-    ) = KmmResult.failure(UnsupportedOperationException("not supported for EIDAS"))
+    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> =
+        KmmResult.failure(UnsupportedOperationException("not supported for EIDAS"))
 
 
     data class EidasClaim(

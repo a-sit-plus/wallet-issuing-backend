@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class EcoStudentData(
+    val validUntil: String,
+    val cardId: String,
     val firstname: String,
     val lastname: String,
     val dateOfBirth: String,
@@ -15,9 +17,7 @@ data class EcoStudentData(
     val schoolId: String,
     val studentCity: String?,
     val studentZip: String?,
-    val studentId: String?,
     val photo: String,
-    val validUntil: String,
 )
 
 @Serializable

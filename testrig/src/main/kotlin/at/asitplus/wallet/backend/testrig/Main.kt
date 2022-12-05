@@ -166,9 +166,9 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
             val failed = result.count { (_, state) -> !state }
             val successRatio = ((succeeded - failed).toFloat() / (succeeded.toFloat()) * 100).roundToInt()
             job.join()
-            if(successRatio==100){
+            if (successRatio == 100) {
                 print("\r\uD83C\uDF8A\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF89\uD83C\uDF8A All done")
-            }else {
+            } else {
                 print("\r\uD83D\uDD25\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDCA5\uD83D\uDD25 All done with errors")
             }
             println("\nTotal Tests: ${result.size}\t success: $succeeded, failed: $failed\t(success ratio: ~$successRatio%)")

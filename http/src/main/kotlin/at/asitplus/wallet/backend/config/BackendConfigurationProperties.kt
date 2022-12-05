@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.attestation.IOSAttestationConfiguration
 import at.asitplus.wallet.lib.agent.MonthAndDay
-import at.asitplus.wallet.lib.agent.RevocationListCache
 import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -84,21 +83,9 @@ data class CredentialConfigurationProperties(
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
-
-    val revocationListCache: RevocationListCacheProperties? = null,
-
-
-    ) {
+) {
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
-}
-
-@ConstructorBinding
-data class RevocationListCacheProperties(
-    private val min: String,
-    private val max: String,
-) {
-    val cacheDuration: RevocationListCache = Duration.parse(min) to Duration.parse(max)
 }
 
 @ConstructorBinding
