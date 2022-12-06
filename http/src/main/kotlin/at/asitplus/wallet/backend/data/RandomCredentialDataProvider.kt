@@ -19,7 +19,7 @@ import kotlin.random.Random
  */
 class RandomCredentialDataProvider(
     private val listOfPhotos: Map<String, ByteArray>,
-    private val pictureService: PictureService,
+    private val pictureService: PictureService = NoopPictureService,
 ) : CredentialDataProvider {
 
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
@@ -108,7 +108,7 @@ class RandomCredentialDataProvider(
         }
         val picture = it.encodedPhoto
         val pictureHash = hash(picture)
-        val scaledPicture = pictureService.scalePicture(picture)
+        val scaledPicture = pictureService.convertPicture(picture)
         val scaledPictureHash = hash(scaledPicture)
         val subject = PupilIdCredential(
             id = subjectId,
@@ -127,10 +127,13 @@ class RandomCredentialDataProvider(
             scaledPictureHash = scaledPictureHash,
             validUntil = maxExpiration.toString().substring(0..9),
         )
-        val format = pictureService.format
         val attachments = listOf(
             CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", picture),
-            CredentialToBeIssuedAttachment("scaledPicture.$format", "image/$format", scaledPicture),
+            CredentialToBeIssuedAttachment(
+                "scaledPicture.${pictureService.extension}",
+                pictureService.mediaType,
+                scaledPicture
+            ),
         )
         return KmmResult.success(
             CredentialDataProvider.CredentialToBeIssued(

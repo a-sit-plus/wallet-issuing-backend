@@ -69,7 +69,7 @@ class EcoCredentialDataProvider(
             Napier.v("No photo from ECO, return failure, for bpk '$bpk'")
         }.run { return KmmResult.failure(DataSourceProblem("Photo could not be decoded")) }
         val pictureHash = hash(picture)
-        val scaledPicture = pictureService.scalePicture(picture)
+        val scaledPicture = pictureService.convertPicture(picture)
         val scaledPictureHash = hash(scaledPicture)
         val subject = PupilIdCredential(
             id = subjectId,
@@ -90,10 +90,13 @@ class EcoCredentialDataProvider(
         )
         val limit = parsedExpiration + gracePeriod
         val capped = if (maxExpiration > limit) limit else maxExpiration
-        val format = pictureService.format
         val attachments = listOf(
             CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", picture),
-            CredentialToBeIssuedAttachment("scaledPicture.$format", "image/$format", scaledPicture),
+            CredentialToBeIssuedAttachment(
+                "scaledPicture.${pictureService.extension}",
+                pictureService.mediaType,
+                scaledPicture
+            ),
         )
         val result = CredentialDataProvider.CredentialToBeIssued(subject, capped, attributeType, attachments)
 

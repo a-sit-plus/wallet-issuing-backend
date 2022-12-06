@@ -22,9 +22,7 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssued
-import at.asitplus.wallet.backend.data.PictureService
 import io.kotest.matchers.collections.shouldNotBeEmpty
-import kotlin.time.Duration
 
 class RandomCredentialDataProviderTest {
 
@@ -32,14 +30,12 @@ class RandomCredentialDataProviderTest {
     private lateinit var subjectId2: String
     private lateinit var bpk1: String
     private lateinit var bpk2: String
-    private lateinit var pictureService: PictureService
     private lateinit var dataProvider: RandomCredentialDataProvider
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
     private val expiration = Clock.System.now() + 5.seconds
 
     @BeforeEach
     fun setup() {
-        pictureService = PictureService(true, "webp", 30, false, 0, 0)
         val listOfPhotos = (1..10).associate { UUID.randomUUID().toString() to Random.Default.nextBytes(32) }
         bpk1 = UUID.randomUUID().toString()
         bpk2 = UUID.randomUUID().toString()
@@ -48,9 +44,8 @@ class RandomCredentialDataProviderTest {
         deviceBindingStorageService = mock()
         whenever(deviceBindingStorageService.getDeviceBindingForCurrentUser())
             .thenReturn(deviceBindingWithBpk(bpk1))
-        dataProvider = RandomCredentialDataProvider(listOfPhotos, pictureService)
+        dataProvider = RandomCredentialDataProvider(listOfPhotos)
     }
-
 
     @Test
     fun `claims for different bpks should be different on successive calls`() {

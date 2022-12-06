@@ -36,7 +36,6 @@ class EcoDataProviderTest {
     private lateinit var url: HttpUrl
     private lateinit var restTemplate: RestTemplate
     private lateinit var config: EcoAttributeSourceConfigurationProperties
-    private lateinit var pictureService: PictureService
 
     @BeforeAll
     fun setup() {
@@ -53,7 +52,6 @@ class EcoDataProviderTest {
             config,
             restTemplateBuilder
         ).restTemplate
-        pictureService = PictureService(true, "webp", 30, false, 0, 0)
     }
 
     @Test
@@ -164,7 +162,7 @@ class EcoDataProviderTest {
         validUntil shouldBe instant.toString().substring(0 until 10)
 
     private fun setupEcoDateProvider(gracePeriod: Duration): EcoCredentialDataProvider =
-        EcoCredentialDataProvider(config.url.toString(), restTemplate, gracePeriod, pictureService)
+        EcoCredentialDataProvider(config.url.toString(), restTemplate, gracePeriod, NoopPictureService)
 
     private fun prepareEcoResponse(validUntil: Instant) {
         val fakeStudentData = """
