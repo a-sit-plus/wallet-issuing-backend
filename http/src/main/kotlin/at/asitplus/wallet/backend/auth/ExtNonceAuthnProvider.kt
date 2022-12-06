@@ -33,6 +33,7 @@ class ExtNonceAuthnProvider(
                     Napier.w("Could not validate credentials")
                     Napier.v("credentials: $credentials")
                 }
+        Napier.d("Exchanged nonce for bpk")
         Napier.v("Exchanged nonce '$credentials' for bpk '$bpk'")
         return ExtNonceAuthnToken(credentials, bpk)
     }

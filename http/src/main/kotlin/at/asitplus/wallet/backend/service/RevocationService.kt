@@ -104,7 +104,6 @@ class DefaultRevocationService(
         synchronized(CredentialRepositoriesLock) {
             if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
                 return null.also {
-                    // TODO: Educated guess that VCs are identifiers
                     Napier.e("Tried to store a new credential for existing vcId")
                     Napier.v("vcId: '$vcId'")
                 }

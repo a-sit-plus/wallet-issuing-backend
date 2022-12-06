@@ -36,7 +36,7 @@ class SimpleDeviceBindingAuthnService(
         val jwsObject = try {
             JWSObject.parse(response)
         } catch (e: Throwable) {
-            Napier.w("JWS not parsed", e) // TODO error looks fine to me
+            Napier.w("JWS not parsed", e)
             throw BadCredentialsException("jws not parsed", e)
         }
         val decodedCert = jwsObject.header.x509CertChain?.firstOrNull()?.decode()
@@ -60,6 +60,7 @@ class SimpleDeviceBindingAuthnService(
             throw BadCredentialsException("challenge not valid")
                 .also { Napier.w("Challenge in JWS payload not valid") }
         val bpk = deviceBindingStorageService.lookupBpk(decodedCert)
+        Napier.i("Translated cert into bpk")
         Napier.v("Translated cert '${decodedCert.encodeBase64()}' into bpk '$bpk'")
         if (bpk == null)
             return null

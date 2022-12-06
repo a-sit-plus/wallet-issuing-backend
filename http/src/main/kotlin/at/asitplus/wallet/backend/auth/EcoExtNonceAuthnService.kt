@@ -28,10 +28,14 @@ class EcoExtNonceAuthnService(
         val entity = restTemplate.getForEntity<CardCreationCodeResolveResult>(
             "$url/CardCreationCode/{cardCode}",
             uriVariables = mapOf("cardCode" to nonce)
-        ).also { Napier.v("exchangeNonceForBpk('$nonce') got $it") }
+        ).also {
+            Napier.d("exchangeNonceForBpk called")
+            Napier.v("exchangeNonceForBpk('$nonce') got $it")
+        }
         entity.body?.bpk
     }.getOrElse {
-        Napier.e("exchangeNonceForBpk('$nonce') got error") // TODO: is this ok? apparently it isnt related to a bpk
+        Napier.v("exchangeNonceForBpk(nonce) got error")
+        Napier.v("exchangeNonceForBpk('$nonce') got error")
         null
     }
 

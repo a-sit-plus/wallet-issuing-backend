@@ -51,7 +51,7 @@ class AeraPkiService(
             val validUntil = X509CertificateHolder(encoded).notAfter.toInstant().toKotlinInstant()
             SignedCertificate(encoded, validUntil)
         }.getOrElse {
-            Napier.e("verifyAndSign: error", it) // TODO I think bouncycastle exceptions are fine?
+            Napier.e("verifyAndSign: error", it) // TODO I think bouncycastle/RestClientExceptions are fine?
             null
         }
 
@@ -84,7 +84,7 @@ class AeraPkiService(
             Napier.v("Certificate: ${certificate.encodeBase64()}")
         }
     }.getOrElse {
-        Napier.e("revokeCertificate got error", it) // TODO I think bouncycastle exceptions are fine?
+        Napier.e("revokeCertificate got error", it) // TODO I think bouncycastle/RestClientExceptions are fine?
     }
 
     data class RevokeRequestDto(

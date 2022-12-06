@@ -23,6 +23,7 @@ class DeviceBindingAuthnFilter : RequestHeaderAuthenticationFilter() {
         val headerValue = request.getHeader(HttpHeaders.AUTHORIZATION) ?: return null
         if (!headerValue.startsWith(PREFIX_RESPONSE)) return null
         val stripped = headerValue.removePrefix(PREFIX_RESPONSE).trim()
+        Napier.d("Reading response")
         Napier.v("Reading response '$stripped'")
         return DeviceBindingAuthnToken(stripped)
     }

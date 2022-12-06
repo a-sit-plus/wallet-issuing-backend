@@ -76,7 +76,7 @@ class PupilIdController(
                     Napier.v("/pupilid/issue returns HTTP 200: ${result.message.take(128)}...")
                 }
             is NextMessage.Error -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
-                .also { Napier.i("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
+                .also { Napier.w("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
             is NextMessage.SendProblemReport -> ResponseEntity.ok(result.message)
                 .also {
                     Napier.i("/pupilid/issue returns HTTP 200: Problem Report")

@@ -49,9 +49,10 @@ class EcoCredentialDataProvider(
             uriVariables = mapOf("bpk" to bpk)
         ).also { Napier.v("getCredential for '$bpk' got $it") }
         val body = entity.body
-            ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(NullPointerException("getCredential for bpk returns null")).also {
-                Napier.v("getCredential for '$bpk' returns null: $entity") // TODO: This will be out-of-order, as the NPE is caught later
-            }
+            ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(NullPointerException("getCredential for bpk returns null"))
+                .also {
+                    Napier.v("getCredential for '$bpk' returns null: $entity")
+                }
                 
         val (expString, parsedExpiration) = (kotlin.runCatching {
             body.validUntil to Instant.parse(
@@ -59,18 +60,18 @@ class EcoCredentialDataProvider(
             )
         }.getOrNull()
             ?: kotlin.run {
-                // TODO: This should be fine, data is corrupted anyways
                 Napier.w("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
                 "${body.validUntil}Z".let { it to Instant.parse(it) }
             }).let { (str, instant) ->
             str.substring(0, 10) to instant
         }
-        Napier.d("Using validUntil String $expString") // TODO: is expiration safe? could deduct user from that
+        Napier.d("Using validUntil String $expString")
         val cappedExpiration =
             if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
-        if (cappedExpiration != maxExpiration)
-            Napier.i("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'") // TODO: is expiration ok?
-
+        if (cappedExpiration != maxExpiration) {
+            Napier.i("Capping expiration")
+            Napier.v("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'")
+        }
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = body.firstname,
@@ -88,6 +89,7 @@ class EcoCredentialDataProvider(
             validUntil = expString
         )
         KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
+            Napier.i("getCredential success")
             Napier.v("getCredential for '$bpk' returns $it")
         })
     }.getOrElse {

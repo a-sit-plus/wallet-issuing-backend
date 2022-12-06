@@ -141,7 +141,10 @@ class DefaultBindingService(
                 .getOrElse { error ->
                     // TODO: Cursory look over thrown exceptions shows that it may leak some stuff, but only if data
                     // is malformed anyways. Is this fine?
-                    return null.also { Napier.w("Could not parse public key from CSR", error) }
+                    return null.also {
+                        Napier.w("Could not parse public key from CSR", error)
+                        Napier.v("Error was: ", error)
+                    }
                 } as ECPublicKey
 
         val attestedPublicKey = when (val attestationResult = attestationService.verifyAttestation(

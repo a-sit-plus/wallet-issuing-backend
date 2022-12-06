@@ -45,7 +45,7 @@ class PublicController(
     fun getCurrentVcRevocationLists() = runBlocking {
         Napier.i("/credentials/status/current called")
         val rl = issuer.compileCurrentRevocationLists()
-        Napier.i("/credentials/status/current returns $rl") // public anyways
+        Napier.i("/credentials/status/current returns $rl")
         ResponseEntity.ok(rl)
     }
 
@@ -64,7 +64,7 @@ class PublicController(
     fun getVcRevocationList(@PathVariable timePeriod:Int) = runBlocking {
         Napier.i("/credentials/status/$timePeriod called")
         val rl = issuer.issueRevocationListCredential(timePeriod)
-        Napier.i("/credentials/status/$timePeriod returns $rl") // TODO public API, so this should be ok
+        Napier.i("/credentials/status/$timePeriod returns $rl")
         ResponseEntity.ok(rl)
     }
 

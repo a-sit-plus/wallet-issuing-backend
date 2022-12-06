@@ -47,9 +47,7 @@ class RestTemplateConfigurationService constructor(
 
     inner class LoggingErrorHandler : DefaultResponseErrorHandler() {
         override fun handleError(url: URI, method: HttpMethod, response: ClientHttpResponse) {
-            Napier.e(
-                //TODO: From what I see, only FakeEco has URLs with parameters, so this should be fine.
-                "URL '${url}', method '${method}' got response statusCode '${response.statusCode}': ${response.statusText}")
+            Napier.e("URL '${url}', method '${method}' got response statusCode '${response.statusCode}': ${response.statusText}")
             super.handleError(url, method, response)
         }
     }

@@ -41,7 +41,7 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
 
         val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
             ?: return KmmResult.failure(DataSourceProblem("Found no stored EIDAS claim for bpk").also {
-                Napier.v("bpk: '$bpk'") // TODO: This is out-of-order, as the NPE is only caught later
+                Napier.v("Found no stored EIDAS claim for bpk: '$bpk'")
             })
 
         val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
