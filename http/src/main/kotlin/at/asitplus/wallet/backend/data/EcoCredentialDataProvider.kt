@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
+import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import io.github.aakira.napier.Napier
@@ -26,6 +26,7 @@ class EcoCredentialDataProvider(
     private val url: String,
     private val restTemplate: RestTemplate,
     private val gracePeriod: Duration,
+    private val pictureService: PictureService,
 ) : CredentialDataProvider {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -68,7 +69,7 @@ class EcoCredentialDataProvider(
             Napier.v("No photo from ECO, return failure, for bpk '$bpk'")
         }.run { return KmmResult.failure(DataSourceProblem("Photo could not be decoded")) }
         val pictureHash = hash(picture)
-        val scaledPicture = WebpAdapter.scalePicture(picture)
+        val scaledPicture = pictureService.scalePicture(picture)
         val scaledPictureHash = hash(scaledPicture)
         val subject = PupilIdCredential(
             id = subjectId,
@@ -89,9 +90,10 @@ class EcoCredentialDataProvider(
         )
         val limit = parsedExpiration + gracePeriod
         val capped = if (maxExpiration > limit) limit else maxExpiration
+        val format = pictureService.format
         val attachments = listOf(
             CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", picture),
-            CredentialToBeIssuedAttachment("scaledPicture.webp", "image/webp", scaledPicture),
+            CredentialToBeIssuedAttachment("scaledPicture.$format", "image/$format", scaledPicture),
         )
         val result = CredentialDataProvider.CredentialToBeIssued(subject, capped, attributeType, attachments)
 

@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.auth.InMemoryDeviceBindingStorageService
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
+import at.asitplus.wallet.backend.data.PictureService
 import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -20,6 +21,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class IssuerCredentialDataProviderAdapterTest {
 
+    private lateinit var pictureService: PictureService
     private lateinit var credentialDataProvider: CredentialDataProvider
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
     private lateinit var subjectId: String
@@ -31,7 +33,8 @@ class IssuerCredentialDataProviderAdapterTest {
 
     @BeforeEach
     fun setup() {
-        credentialDataProvider = RandomCredentialDataProvider(mapOf())
+        pictureService = PictureService(true, "webp", 30, false, 0, 0)
+        credentialDataProvider = RandomCredentialDataProvider(mapOf(), pictureService)
         deviceBindingStorageService = InMemoryDeviceBindingStorageService()
         subjectId = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()

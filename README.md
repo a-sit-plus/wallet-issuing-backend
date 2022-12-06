@@ -328,6 +328,13 @@ backend:
   credentials:
     lifetime: PT60M
     one-credential-per-device-binding: true
+    pictures:
+      compress: true
+      format: webp
+      quality: 30
+      scale: true
+      height: 154
+      width: 120
   issuer-key: {{ KEY_CONFIG }}
   hsm-facade:
     enabled: false
@@ -371,7 +378,16 @@ backend:
       key: {{ KEY_CONFIG }}
 ```
 
-Set `backend.credentials.one-credential-per-device-binding=true` if existing credentials for the same device binding should be revoked when a new credential is issued (e.g. as it is the case for PupilIds).
+Options for credential issuance under `backend.credentials`:
+ - Set `backend.credentials.one-credential-per-device-binding=true` if existing credentials for the same device binding should be revoked when a new credential is issued (e.g. as it is the case for PupilIds).
+
+Options for pictures in credentials under `backend.credentials.pictures`:
+ - `compress=true` to enable compressing
+ - `format=webp` to enable compressing pictures into WebP format
+ - `quality=30` to set the level of compression
+ - `scale=true` to enable scaling
+ - `height=154` to set the height of the scaled picture
+ - `width=120` to set the width of the scaled picture
 
 Alternative configuration for the device binding authentication (i.e. the validation of the ext. nonce provided by the Wallet App):
 

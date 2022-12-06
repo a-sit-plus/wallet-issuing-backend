@@ -27,6 +27,7 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
 import javax.annotation.PostConstruct
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -313,8 +314,14 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
+    fun pictureService(): PictureService = configurationProperties.credentials.pictures.let {
+        PictureService(it.compress, it.format, it.quality, it.scale, it.height, it.width)
+    }
+
+    @Bean
     fun dataProvider(
-        deviceBindingStorageService: DeviceBindingStorageService
+        deviceBindingStorageService: DeviceBindingStorageService,
+        pictureService: PictureService,
     ): CredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
             AttributeSourceType.RANDOM -> {
@@ -325,9 +332,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
                     .filter { it.filename != null }
                     .map { it.filename!! to it.inputStream }
                     .map { it.first to it.second.readAllBytes() }
-                RandomCredentialDataProvider(
-                    mapOfPhotos.toMap(),
-                )
+                RandomCredentialDataProvider(mapOfPhotos.toMap(), pictureService)
             }
 
             AttributeSourceType.ECO -> {
@@ -339,6 +344,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
                     configurationProperties.attributeSource.eco!!.url.toString(),
                     restTemplate,
                     gracePeriod = configurationProperties.attributeSource.eco!!.gracePeriodDuration,
+                    pictureService,
                 )
             }
 

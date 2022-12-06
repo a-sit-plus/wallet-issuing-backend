@@ -83,10 +83,42 @@ data class CredentialConfigurationProperties(
      * Whether to revoke all existing credentials when a new credential is issued for the same device binding
      */
     val oneCredentialPerDeviceBinding: Boolean = true,
+    /**
+     * Settings for scaling and compressing pictures in credentials
+     */
+    val pictures: PicturesConfigurationProperties = PicturesConfigurationProperties()
 ) {
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
 }
+
+@ConstructorBinding
+data class PicturesConfigurationProperties(
+    /**
+     * Whether to compress the pictures at all. Default: `true`.
+     */
+    val compress: Boolean = true,
+    /**
+     * Format of the compressed picture. Default: `webp`.
+     */
+    val format: String = "webp",
+    /**
+     * Quality of the compressed picture. Default: `30`.
+     */
+    val quality: Int = 30,
+    /**
+     * Whether to scale the pictures at all. Default: `true`.
+     */
+    val scale: Boolean = true,
+    /**
+     * Height of the scaled picture. Default: `154`.
+     */
+    val height: Int = 154,
+    /**
+     * Width of the scaled picture. Default: `120`.
+     */
+    val width: Int = 120,
+)
 
 @ConstructorBinding
 data class CleanupConfigurationProperties(
@@ -318,7 +350,8 @@ data class IOSAttestationConfigurationProperties(
     val sandbox: Boolean = false,
     val iosVersion: String? = null,
 ) {
-    fun toIosAttestationConfiguration() = IOSAttestationConfiguration(teamIdentifier, bundleIdentifier, sandbox, iosVersion)
+    fun toIosAttestationConfiguration() =
+        IOSAttestationConfiguration(teamIdentifier, bundleIdentifier, sandbox, iosVersion)
 }
 
 @ConstructorBinding
