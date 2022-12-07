@@ -15,14 +15,16 @@ class AuthenticationEvents {
     @EventListener
     fun onSuccess(success: AuthenticationSuccessEvent?) {
         success?.let {
-            Napier.i("Authentication success: $it")
+            Napier.i("Authentication success")
+            Napier.v("Authentication success: $it")
         }
     }
 
     @EventListener
     fun onFailure(failure: AbstractAuthenticationFailureEvent?) {
         failure?.let {
-            Napier.e("Authentication failure: $it")
+            Napier.e("Authentication failure")
+            Napier.v("Authentication failure: $it")
         }
     }
 }
