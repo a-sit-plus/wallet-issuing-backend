@@ -100,44 +100,44 @@ class DefaultRevocationService(
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int
-    ): Long? {
-        synchronized(CredentialRepositoriesLock) {
-            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
-                return null.also {
-                    Napier.e("Tried to store a new credential for existing vcId")
-                    Napier.v("vcId: '$vcId'")
+    ): Long? =
+        runCatching {
+            synchronized(CredentialRepositoriesLock) {
+                if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
+                    return@runCatching null.also {
+                      Napier.e("Tried to store a new credential for existing vcId")
+                      Napier.v("vcId: '$vcId'")
+                    }
+                val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
+                    ?: return@runCatching null.also {
+                         Napier.e("Got no authenticated user when trying to store vcId")
+                         Napier.v("vcId: '$vcId'")
+                    }
+                if (oneCredentialPerDeviceBinding) {
+                    val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
+                    if (revokedCreds > 0)
+                       Napier.i("Revoked $revokedCreds already existing credentials")
+                       Napier.v("device binding certificate: '${deviceBinding.certificate.encodeBase64()}', bpk: '${deviceBinding.bpk}'",)
                 }
-            val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-                ?: return null.also {
-                    Napier.e("Got no authenticated user when trying to store vcId")
-                    Napier.v("vcId: '$vcId'")
-                }
-            if (oneCredentialPerDeviceBinding) {
-                val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
-                if (revokedCreds > 0) {
-                    Napier.i("Revoked $revokedCreds already existing credentials")
-                    Napier.v("device binding certificate: '${deviceBinding.certificate.encodeBase64()}', bpk: '${deviceBinding.bpk}'",)
-                }
-
+                val revocationListIndex = max(
+                    (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
+                    revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
+                ) + 1
+                val attributeName = credentialSubject.javaClass.simpleName
+                val issuedCredential = IssuedCredential(
+                    vcId,
+                    credentialSubject.id,
+                    expirationDate.toJavaInstant(),
+                    timePeriod,
+                    deviceBinding,
+                    attributeName,
+                    revocationListIndex
+                )
+                val savedCredential = credentialRepo.save(issuedCredential)
+                return@runCatching savedCredential.revocationListIndex
             }
-            val revocationListIndex = max(
-                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
-                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-            ) + 1
-            val attributeName = credentialSubject.javaClass.simpleName
-            val issuedCredential = IssuedCredential(
-                vcId,
-                credentialSubject.id,
-                expirationDate.toJavaInstant(),
-                timePeriod,
-                deviceBinding,
-                attributeName,
-                revocationListIndex
-            )
-            val savedCredential = credentialRepo.save(issuedCredential)
-            return savedCredential.revocationListIndex
-        }
-    }
+        }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
+
 
     /**
      * Revokes one credential, specified by its [vcId] (which is a unique identifier
