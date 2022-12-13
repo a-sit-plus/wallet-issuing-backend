@@ -5,13 +5,14 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import at.asitplus.wallet.lib.decodeBase64ToArray
 import io.github.aakira.napier.Napier
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
+import kotlin.time.Duration
 
 
 /**
@@ -22,6 +23,7 @@ import org.springframework.web.client.getForEntity
 class EcoCredentialDataProvider(
     private val url: String,
     private val restTemplate: RestTemplate,
+    private val gracePeriod: Duration,
 ) : CredentialDataProvider {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -79,7 +81,13 @@ class EcoCredentialDataProvider(
             picture = body.photo.decodeBase64ToArray() ?: byteArrayOf(),
             validUntil = validUntilString
         )
-        KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType))
+        KmmResult.success(
+            CredentialDataProvider.CredentialToBeIssued(
+                subject,
+                cappedExpiration + gracePeriod,
+                attributeType
+            )
+        )
             .also { Napier.v("getCredential for '$bpk' returns $it") }
             .also { Napier.i("getCredential success") }
     }.getOrElse {

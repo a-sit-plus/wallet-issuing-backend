@@ -19,7 +19,6 @@ class IssuerCredentialDataProviderAdapter(
     private val lifetime: Duration,
     private val credentialDataProvider: CredentialDataProvider,
     private val deviceBindingStorageService: DeviceBindingStorageService,
-    private val gracePeriod: Duration,
     private val clock: Clock
 ) : IssuerCredentialDataProvider {
 
@@ -70,7 +69,7 @@ class IssuerCredentialDataProviderAdapter(
             cappedExpiration
         )
         return credential.map {
-            IssuerCredentialDataProvider.CredentialToBeIssued(it.subject, it.expiration + gracePeriod, it.attributeType)
+            IssuerCredentialDataProvider.CredentialToBeIssued(it.subject, it.expiration, it.attributeType)
         }
     }
 

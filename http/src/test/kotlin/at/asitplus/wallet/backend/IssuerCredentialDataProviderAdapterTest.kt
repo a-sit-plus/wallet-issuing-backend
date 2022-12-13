@@ -39,7 +39,7 @@ class IssuerCredentialDataProviderAdapterTest {
 
     @BeforeEach
     fun setup() {
-        credentialDataProvider = RandomCredentialDataProvider(mapOf())
+        credentialDataProvider = RandomCredentialDataProvider(mapOf(),  gracePeriod = Duration.ZERO)
         deviceBindingStorageService = InMemoryDeviceBindingStorageService()
         subjectId = UUID.randomUUID().toString()
         deviceName = UUID.randomUUID().toString()
@@ -56,7 +56,6 @@ class IssuerCredentialDataProviderAdapterTest {
             lifetime,
             credentialDataProvider,
             deviceBindingStorageService,
-            gracePeriod = Duration.ZERO,
             clock = TestTimeSource
         )
     }
@@ -101,9 +100,8 @@ class IssuerCredentialDataProviderAdapterTest {
     fun testGracePeriod(gracePeriod: Duration) {
         adapter = IssuerCredentialDataProviderAdapter(
             lifetime,
-            credentialDataProvider,
+            credentialDataProvider = RandomCredentialDataProvider(mapOf(),  gracePeriod ),
             deviceBindingStorageService,
-            gracePeriod = gracePeriod,
             clock = TestTimeSource
         )
 

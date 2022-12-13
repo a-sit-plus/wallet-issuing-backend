@@ -92,14 +92,10 @@ data class CredentialConfigurationProperties(
 
     val revocationListCache: RevocationListCacheProperties? = null,
 
-    /**
-     * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
-     */
-    private val gracePeriod: String = "P90D",
-) {
+
+    ) {
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
-    val gracePeriodDuration = Duration.parse(gracePeriod)
 }
 
 @ConstructorBinding
@@ -219,8 +215,15 @@ data class EcoAttributeSourceConfigurationProperties(
     override val key: KeyConfiguration? = null,
     override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
-    override val apiKey: String? = null
-) : ExternalConnectionConfig
+    override val apiKey: String? = null,
+    /**
+     * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
+     */
+    private val gracePeriod: String = "P90D",
+) : ExternalConnectionConfig {
+
+    val gracePeriodDuration = Duration.parse(gracePeriod)
+}
 
 interface ExternalConnectionConfig {
     val url: URI?
