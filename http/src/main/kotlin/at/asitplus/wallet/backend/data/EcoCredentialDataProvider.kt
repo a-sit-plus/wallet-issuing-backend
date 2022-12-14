@@ -10,7 +10,6 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import org.slf4j.LoggerFactory
 import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
@@ -25,8 +24,6 @@ class EcoCredentialDataProvider(
     private val url: String,
     private val restTemplate: RestTemplate,
 ) : CredentialDataProvider {
-
-    private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -45,35 +42,28 @@ class EcoCredentialDataProvider(
         maxExpiration: Instant
     ) = kotlin.runCatching {
         if (attributeType != ConstantIndex.PupilId.vcType)
-            return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(UnsupportedOperationException("Unsupported attribute type '$attributeType"))
+            return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
+                UnsupportedOperationException("Unsupported attribute type '$attributeType")
+            )
         val entity = restTemplate.getForEntity<EcoStudentData>(
             "$url/Student/{bpk}",
             uriVariables = mapOf("bpk" to bpk)
         ).also { Napier.v("getCredential for '$bpk' got $it") }
         val body = entity.body
-            ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(NullPointerException("getCredential for bpk returns null"))
-                .also {
-                    Napier.v("getCredential for '$bpk' returns null: $entity")
-                }
-                
-        val (expString, parsedExpiration) = (kotlin.runCatching {
-            body.validUntil to Instant.parse(
-                body.validUntil
-            )
-        }.getOrNull()
-            ?: kotlin.run {
-                Napier.w("Could not parse validUtil String ${body.validUntil}, retrying with added time zone")
-                "${body.validUntil}Z".let { it to Instant.parse(it) }
-            }).let { (str, instant) ->
-            str.substring(0, 10) to instant
-        }
-        Napier.d("Using validUntil String $expString")
-        val cappedExpiration =
-            if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
+            ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
+                NullPointerException("getCredential for '$bpk' returns null: $entity")
+            ).also { Napier.v("getCredential for '$bpk' returns null: $entity") }
+        val parsedExpiration = LenientInstantParser.parse(body.validUntil)
+            ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
+                NullPointerException("Could not parse validUntil: '${body.validUntil}'")
+            ).also { Napier.v("getCredential for '$bpk' could not parse validUntil: '${body.validUntil}'") }
+        Napier.v("Using validUntil $parsedExpiration")
+        val cappedExpiration = if (maxExpiration > parsedExpiration) parsedExpiration else maxExpiration
         if (cappedExpiration != maxExpiration) {
             Napier.i("Capping expiration")
             Napier.v("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'")
         }
+        val validUntilString = LenientInstantParser.toYearMonthDateString(cappedExpiration)
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = body.firstname,
@@ -91,12 +81,11 @@ class EcoCredentialDataProvider(
                 ?: return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
                     DataSourceProblem("Photo could not be decoded")
                 ),
-            validUntil = expString
+            validUntil = validUntilString
         )
-        KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType).also {
-            Napier.i("getCredential success")
-            Napier.v("getCredential for '$bpk' returns $it")
-        })
+        KmmResult.success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType))
+            .also { Napier.v("getCredential for '$bpk' returns $it") }
+            .also { Napier.i("getCredential success") }
     }.getOrElse {
         Napier.e("getCredential for bpk got error")
         Napier.v("bpk: $bpk, error: ", it)
@@ -105,17 +94,13 @@ class EcoCredentialDataProvider(
             val problem = kotlin.runCatching { json.decodeFromString<Rfc7807Problem>(it.responseBodyAsString) }
                 .getOrElse { _ -> return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it) }
             return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(
-                DataSourceProblem(
-                    problem.title,
-                    problem.detail,
-                    it
-                )
+                DataSourceProblem(problem.title, problem.detail, it)
             )
-
         }
 
         return KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(it)
     }
+
 
     data class EcoStudentData(
         val firstname: String,
