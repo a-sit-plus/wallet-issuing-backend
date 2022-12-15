@@ -17,8 +17,8 @@ object VersionsBackend {
     const val pgsql = "42.5.0"
     const val mockito = "4.0.0"
 
-    const val pupilid = "1.4.9"
-    const val vclib = "1.3.12"
+    const val pupilid = "1.4.10-SNAPSHOT"
+    const val vclib = "1.3.13-SNAPSHOT"
     const val attestation = "0.2.1"
 
     object spring {
