@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
-import at.asitplus.wallet.lib.decodeBase64ToArray
+import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable

@@ -13,7 +13,7 @@ import at.asitplus.wallet.backend.pki.*
 import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.decodeBase16ToArray
+import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock

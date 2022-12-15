@@ -3,8 +3,8 @@ package at.asitplus.wallet.backend.service
 import at.asitplus.attestation.AttestationResult
 import at.asitplus.attestation.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
-import at.asitplus.wallet.lib.encodeBase16
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.encoding.base16.encodeBase16
+import io.matthewnelson.component.base64.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwkType

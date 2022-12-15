@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 

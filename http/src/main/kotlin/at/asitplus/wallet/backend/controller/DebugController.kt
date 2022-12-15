@@ -7,7 +7,7 @@ import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter

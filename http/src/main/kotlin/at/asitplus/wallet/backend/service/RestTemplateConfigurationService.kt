@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend.service
 import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.config.*
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory
 import org.apache.http.impl.client.CloseableHttpClient

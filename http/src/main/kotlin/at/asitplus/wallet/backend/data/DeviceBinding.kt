@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.data
 
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction

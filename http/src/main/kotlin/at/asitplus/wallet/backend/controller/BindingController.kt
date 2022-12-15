@@ -7,8 +7,8 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
 import at.asitplus.wallet.backend.service.BindingService
-import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.component.base64.encodeBase64
 import at.asitplus.wallet.pupilid.*
 import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation

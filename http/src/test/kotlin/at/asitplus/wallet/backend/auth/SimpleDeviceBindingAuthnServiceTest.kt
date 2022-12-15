@@ -4,7 +4,7 @@ import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.service.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
 import at.asitplus.wallet.backend.TestTimeSource
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject

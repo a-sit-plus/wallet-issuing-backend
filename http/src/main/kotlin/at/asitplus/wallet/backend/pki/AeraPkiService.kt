@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.pki
 
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant

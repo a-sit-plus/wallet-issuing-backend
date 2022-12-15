@@ -2,8 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
-import at.asitplus.wallet.lib.decodeBase64ToArray
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.component.base64.encodeBase64
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
 import io.github.aakira.napier.Napier

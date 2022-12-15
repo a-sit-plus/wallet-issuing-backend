@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.service.ChallengeService
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject

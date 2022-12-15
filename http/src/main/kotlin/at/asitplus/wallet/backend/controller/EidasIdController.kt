@@ -7,7 +7,7 @@ import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter

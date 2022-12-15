@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.service.ChallengeService
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.AuthenticationException

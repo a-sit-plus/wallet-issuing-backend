@@ -2,7 +2,7 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.data.CredentialSubject
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

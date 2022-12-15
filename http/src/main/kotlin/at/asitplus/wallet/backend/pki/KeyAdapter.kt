@@ -6,7 +6,7 @@ import at.asitplus.wallet.backend.config.KeyHsmFacadeConfiguration
 import at.asitplus.wallet.backend.config.KeyRemoteCryptoConfiguration
 import at.asitplus.wallet.backend.config.KeyStoreConfiguration
 import at.asitplus.wallet.backend.service.fromJcaKey
-import at.asitplus.wallet.lib.encodeBase64
+import io.matthewnelson.component.base64.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwsAlgorithm

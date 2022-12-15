@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.backend.map
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.keyId
 import at.asitplus.wallet.lib.AuthenticationError
