@@ -3,8 +3,6 @@ package at.asitplus.wallet.backend.service
 import at.asitplus.attestation.AttestationResult
 import at.asitplus.attestation.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
-import io.matthewnelson.component.encoding.base16.encodeBase16
-import io.matthewnelson.component.base64.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwkType
@@ -14,6 +12,8 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import io.github.aakira.napier.Napier
+import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.component.encoding.base16.encodeBase16
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -152,7 +152,11 @@ class DefaultBindingService(
             challenge, /*already verified by challengeService*/
             bindingPublicKey.toAnsi(),
         )) {
-            is AttestationResult.Error -> return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
+            is AttestationResult.Error -> return null.also {
+                Napier.w("Attestation failed! Could not verify device integrity")
+                Napier.d { attestationResult.explanation }
+            }
+
             is AttestationResult.Android -> (attestationResult.attestationCertificate.publicKey as ECPublicKey).toAnsi()
 
             is AttestationResult.IOS -> attestationResult.clientData
