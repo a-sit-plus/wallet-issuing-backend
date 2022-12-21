@@ -352,6 +352,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
                 EcoCredentialDataProvider(
                     configurationProperties.attributeSource.eco!!.url.toString(),
                     restTemplate,
+                    gracePeriod = configurationProperties.attributeSource.eco!!.gracePeriodDuration,
                 )
             }
 
@@ -371,7 +372,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         lifetime = configurationProperties.credentials.lifeTime,
         credentialDataProvider = credentialDataProvider,
         deviceBindingStorageService = deviceBindingStorageService,
-        gracePeriod = configurationProperties.credentials.gracePeriodDuration,
         clock = clock()
     )
 

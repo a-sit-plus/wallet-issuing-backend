@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
+import kotlin.time.Duration
 
 
 /**
@@ -23,6 +24,7 @@ import org.springframework.web.client.getForEntity
 class EcoCredentialDataProvider(
     private val url: String,
     private val restTemplate: RestTemplate,
+    private val gracePeriod: Duration,
 ) : CredentialDataProvider {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -80,7 +82,16 @@ class EcoCredentialDataProvider(
                 ?: return KmmResult.Failure(DataSourceProblem("Photo could not be decoded")),
             validUntil = validUntilString
         )
-        KmmResult.Success(CredentialDataProvider.CredentialToBeIssued(subject, cappedExpiration, attributeType))
+        (parsedExpiration + gracePeriod).let { limit ->
+            KmmResult.success(
+                CredentialDataProvider.CredentialToBeIssued(
+                    subject,
+                    if (maxExpiration > limit) limit else maxExpiration,
+                    attributeType
+                )
+            )
+        }
+
             .also { Napier.v("getCredential for '$bpk' returns $it") }
             .also { Napier.i("getCredential success") }
     }.getOrElse {

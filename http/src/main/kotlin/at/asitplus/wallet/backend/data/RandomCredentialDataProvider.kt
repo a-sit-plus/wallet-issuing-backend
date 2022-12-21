@@ -10,6 +10,7 @@ import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.time.Duration
 
 internal const val RND_MONTH = "09"
 internal const val RND_DAY = "01"
@@ -21,6 +22,7 @@ internal const val EXP = "$RND_YEAR-$RND_MONTH-$RND_DAY"
  */
 class RandomCredentialDataProvider constructor(
     private val listOfPhotos: Map<String, ByteArray>,
+    private val gracePeriod: Duration = Duration.ZERO,
 ) : CredentialDataProvider {
 
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
@@ -86,7 +88,7 @@ class RandomCredentialDataProvider constructor(
         return KmmResult.success(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
-                maxExpiration,
+                maxExpiration + gracePeriod,
                 ConstantIndex.Generic.vcType
             )
         )
@@ -121,7 +123,7 @@ class RandomCredentialDataProvider constructor(
         )
         return KmmResult.success(CredentialDataProvider.CredentialToBeIssued(
             subject,
-            maxExpiration,
+            maxExpiration + gracePeriod,
             ConstantIndex.Generic.vcType
         ))
     }

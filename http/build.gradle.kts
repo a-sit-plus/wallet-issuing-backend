@@ -60,6 +60,7 @@ dependencies {
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:${VersionsBackend.datetime}")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql:${VersionsBackend.pgsql}")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -70,7 +71,7 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:${VersionsBackend.mockito}")
     testImplementation("io.ktor:ktor-client-java:${VersionsBackend.ktor}")
     testImplementation("io.kotest:kotest-assertions-core:${VersionsBackend.kotest}")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:${VersionsBackend.datetime}")
+    testImplementation("com.squareup.okhttp3:mockwebserver:${VersionsBackend.mochws}")
 }
 
 tasks.withType<KotlinCompile> {
