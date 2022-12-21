@@ -80,8 +80,7 @@ class EidasCredentialDataProvider(private val timeout: Duration, private val clo
         attributeType: String,
         bpk: String,
         maxExpiration: Instant
-    ) =
-        KmmResult.failure<CredentialDataProvider.CredentialToBeIssued>(UnsupportedOperationException("not supported for EIDAS"))
+    ) = KmmResult.failure(UnsupportedOperationException("not supported for EIDAS"))
 
 
     data class EidasClaim(

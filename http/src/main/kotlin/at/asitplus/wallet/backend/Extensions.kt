@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.KmmResult
 import org.springframework.web.util.UriComponentsBuilder
 
 object Extensions {

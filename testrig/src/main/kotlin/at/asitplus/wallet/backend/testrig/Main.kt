@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.testrig
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
@@ -28,7 +29,6 @@ import java.net.URL
 import java.security.KeyPairGenerator
 import java.security.Security
 import kotlin.math.roundToInt
-import at.asitplus.KmmResult
 
 
 @ConstructorBinding
@@ -118,19 +118,11 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                                         input: ByteArray,
                                         key: KeyAlgorithm,
                                         hash: HashAlgorithm
-                                    ): KmmResult<ByteArray> =
-                                        cryptoService.sign(input).let { result ->
-                                            result
-                                                .getOrNull()?.let {
-                                                    KmmResult.success(it)
-                                                } ?: KmmResult.failure(result.error!!)
-                                        }
-
+                                    ): KmmResult<ByteArray> = cryptoService.sign(input)
                                 })
 
 
-                        val res = bindingService.createDeviceBinding()
-                        when (res) {
+                        when (val res = bindingService.createDeviceBinding()) {
                             is ServiceResult.Success -> res.xAuthToken
                             else -> {
                                 if (cfg.printErrors) System.err.print("run $i binding error: $res")

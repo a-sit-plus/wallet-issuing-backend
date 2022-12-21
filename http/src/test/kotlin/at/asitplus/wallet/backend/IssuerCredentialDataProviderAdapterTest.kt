@@ -66,7 +66,8 @@ class IssuerCredentialDataProviderAdapterTest {
         val credential = adapter.getCredential(client.keyId, ConstantIndex.PupilId.vcType)
 
         credential.isSuccess shouldBe true
-        (credential.value!!.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
+        credential as KmmResult.Success
+        (credential.value.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
     }
 
     @Test
@@ -95,7 +96,8 @@ class IssuerCredentialDataProviderAdapterTest {
         val credential = adapter.getClaim(client.keyId, "$ATTR_GENERIC_PREFIX/given-name")
 
         credential.isSuccess shouldBe true
-        (credential.value!!.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
+        credential as KmmResult.Success
+        (credential.value.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
     }
 
     fun testGracePeriod(gracePeriod: Duration) {
@@ -110,10 +112,11 @@ class IssuerCredentialDataProviderAdapterTest {
         val credential = adapter.getCredential(client.keyId, ConstantIndex.PupilId.vcType)
 
         credential.shouldBeInstanceOf<KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued>>()
-        (credential.value!!.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
+        credential as KmmResult.Success
+        (credential.value.expiration.toJavaInstant() <= client.selfSignedCert.notAfter.toInstant()).shouldBeTrue()
 
         val expectedInstant = TestTimeSource.now() + lifetime + gracePeriod
-        credential.value!!.expiration shouldBe expectedInstant
+        credential.value.expiration shouldBe expectedInstant
     }
 
 }
