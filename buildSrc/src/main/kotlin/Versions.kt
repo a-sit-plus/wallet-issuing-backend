@@ -16,6 +16,7 @@ object VersionsBackend {
     const val hsmf = "0.8.3"
     const val pgsql = "42.5.0"
     const val mockito = "4.0.0"
+    const val mochws = "4.10.0"
 
     object spring {
         const val boot = "2.7.4"

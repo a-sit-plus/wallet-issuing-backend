@@ -217,9 +217,9 @@ data class EcoAttributeSourceConfigurationProperties(
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
     override val apiKey: String? = null,
     /**
-     * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
+     * Additional validity period added on top of issued credential validity. Default: 30 days (`P30D`)
      */
-    private val gracePeriod: String = "P90D",
+    private val gracePeriod: String = "P30D",
 ) : ExternalConnectionConfig {
 
     val gracePeriodDuration = Duration.parse(gracePeriod)

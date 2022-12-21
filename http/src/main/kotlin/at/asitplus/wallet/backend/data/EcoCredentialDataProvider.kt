@@ -81,13 +81,16 @@ class EcoCredentialDataProvider(
             picture = body.photo.decodeBase64ToArray() ?: byteArrayOf(),
             validUntil = validUntilString
         )
-        KmmResult.success(
-            CredentialDataProvider.CredentialToBeIssued(
-                subject,
-                cappedExpiration + gracePeriod,
-                attributeType
+        (parsedExpiration + gracePeriod).let { limit ->
+            KmmResult.success(
+                CredentialDataProvider.CredentialToBeIssued(
+                    subject,
+                    if (maxExpiration > limit) limit else maxExpiration,
+                    attributeType
+                )
             )
-        )
+        }
+
             .also { Napier.v("getCredential for '$bpk' returns $it") }
             .also { Napier.i("getCredential success") }
     }.getOrElse {
