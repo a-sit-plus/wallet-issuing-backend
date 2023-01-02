@@ -8,6 +8,7 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.PupilIdCredential
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.component.encoding.base16.encodeBase16
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -69,6 +70,10 @@ class EcoCredentialDataProvider(
             Napier.i("No photo from ECO, return failure")
             Napier.v("No photo from ECO, return failure, for bpk '$bpk'")
         }.run { return KmmResult.failure(DataSourceProblem("Photo could not be decoded")) }
+        if (picture.take(2).toByteArray().encodeBase16().uppercase() != "FFD8") {
+            Napier.w("ECO sent no JPG as picture, aborting")
+            return KmmResult.failure(DataSourceProblem("Photo is not in JPG format"))
+        }
         val pictureHash = picture.sha256()
         val scaledPicture = pictureService.convertPicture(picture)
         val scaledPictureHash = scaledPicture.sha256()
