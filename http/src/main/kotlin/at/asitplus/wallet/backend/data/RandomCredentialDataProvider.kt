@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -79,7 +80,7 @@ class RandomCredentialDataProvider(
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.cardId)
-            "picture" -> AtomicAttributeCredential(subjectId, attributeName, hash(it.encodedPhoto).encodeBase64())
+            "picture" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto.sha256().encodeBase64())
             else -> return KmmResult.failure(UnsupportedOperationException("Claim '$name' is not supported"))
         }
         val attachments = listOf(
@@ -107,9 +108,9 @@ class RandomCredentialDataProvider(
             return KmmResult.failure(UnsupportedOperationException("Credential '$attributeType' is not supported"))
         }
         val picture = it.encodedPhoto
-        val pictureHash = hash(picture)
+        val pictureHash = picture.sha256()
         val scaledPicture = pictureService.convertPicture(picture)
-        val scaledPictureHash = hash(scaledPicture)
+        val scaledPictureHash = scaledPicture.sha256()
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = it.firstName,
@@ -144,8 +145,6 @@ class RandomCredentialDataProvider(
             )
         )
     }
-
-    private fun hash(it: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(it)
 
     companion object {
         const val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

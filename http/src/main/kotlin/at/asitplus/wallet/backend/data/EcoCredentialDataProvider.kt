@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -68,9 +69,9 @@ class EcoCredentialDataProvider(
             Napier.i("No photo from ECO, return failure")
             Napier.v("No photo from ECO, return failure, for bpk '$bpk'")
         }.run { return KmmResult.failure(DataSourceProblem("Photo could not be decoded")) }
-        val pictureHash = hash(picture)
+        val pictureHash = picture.sha256()
         val scaledPicture = pictureService.convertPicture(picture)
-        val scaledPictureHash = hash(scaledPicture)
+        val scaledPictureHash = scaledPicture.sha256()
         val subject = PupilIdCredential(
             id = subjectId,
             firstName = body.firstname,
@@ -114,8 +115,6 @@ class EcoCredentialDataProvider(
         }
         return KmmResult.failure(it)
     }
-
-    private fun hash(it: ByteArray): ByteArray = java.security.MessageDigest.getInstance("SHA-256").digest(it)
 
     /**
      * Updated from ECO Swagger on 2022-02-05
