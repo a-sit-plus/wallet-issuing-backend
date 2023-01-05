@@ -1,11 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.HolderAgent
@@ -31,7 +28,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.UUID
@@ -42,7 +38,6 @@ import java.util.UUID
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = ["backend.time-source=TEST"])
 @WithMockUser(authorities = [AUTHORITY_DEVICE_BINDING])
 class PupilIdControllerLogicTest {
 
@@ -64,7 +59,6 @@ class PupilIdControllerLogicTest {
     private val holderAgent = HolderAgent.newDefaultInstance(
         subjectCredentialStore = subjectCredentialStore,
         cryptoService = holderCryptoService,
-        clock = TestTimeSource
     )
     private val messageWrapper = MessageWrapper(holderCryptoService)
     private val holderMessenger = IssueCredentialMessenger.newHolderInstance(

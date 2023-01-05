@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.attestation.IOSAttestationConfiguration
-import at.asitplus.wallet.backend.TimeSource
 import at.asitplus.wallet.lib.agent.MonthAndDay
 import at.asitplus.wallet.lib.agent.RevocationListCache
 import kotlinx.datetime.Month
@@ -18,14 +17,10 @@ data class BackendConfigurationProperties(
      * Public URL of this instance, used for several URLs in messages sent to the Wallet
      */
     val publicContext: String = "http://localhost:8080/",
-
-    val timeSource: TimeSource = TimeSource.SYSTEM,
-
     /**
      * Date when a school year starts (MM-DD)
      */
     private val timePeriodRollover: String = "09-10",
-
     /**
      * Configuration for issued credentials
      */
@@ -63,7 +58,7 @@ data class BackendConfigurationProperties(
      */
     val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
 ) {
-    val schooYearStart: MonthAndDay =
+    val schoolYearStart: MonthAndDay =
         timePeriodRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
 }
 

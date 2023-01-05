@@ -9,13 +9,8 @@ import io.matthewnelson.component.base64.decodeBase64ToArray
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.Random
 import kotlin.time.Duration
-
-internal const val RND_MONTH = "09"
-internal const val RND_DAY = "01"
-internal const val RND_YEAR = "2023"
-internal const val EXP = "$RND_YEAR-$RND_MONTH-$RND_DAY"
 
 /**
  * Provides random credential data for the currently logged-in user
@@ -119,7 +114,7 @@ class RandomCredentialDataProvider constructor(
             pupilZip = it.zip,
             pupilId = it.pupilId,
             picture = it.encodedPhoto,
-            validUntil = EXP,
+            validUntil = "2032-12-31",
         )
         return KmmResult.success(CredentialDataProvider.CredentialToBeIssued(
             subject,

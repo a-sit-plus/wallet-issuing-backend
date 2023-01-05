@@ -1,9 +1,13 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.TestTimeSource
-import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.data.DeviceBindingCleanupTask
+import at.asitplus.wallet.backend.data.DeviceBindingRepository
+import at.asitplus.wallet.backend.data.IssuedCredential
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import io.kotest.matchers.collections.shouldBeEmpty
+import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.verify
@@ -33,17 +37,17 @@ class AutomaticCleanupTest {
         credentialRepository.deleteAll()
 
         val validUntilBinding =
-            TestTimeSource.now() + (configuration.cleanup.bindingsExpirationDays + 1).days
+            Clock.System.now() - (configuration.cleanup.bindingsExpirationDays + 1).days
         val deviceBinding =
             DeviceBinding("bpk", byteArrayOf(), "deviceName", "deviceId", validUntilBinding.toJavaInstant())
                 .also { deviceBindingRepository.save(it) }
         val validUntilCredential =
-            TestTimeSource.now() - (configuration.cleanup.credentialsExpirationDays + 1).days
+            Clock.System.now() - (configuration.cleanup.credentialsExpirationDays + 1).days
         IssuedCredential(
             "vcId",
             "subjectId",
             validUntilCredential.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            1,
             deviceBinding,
             "attributeName",
             1L

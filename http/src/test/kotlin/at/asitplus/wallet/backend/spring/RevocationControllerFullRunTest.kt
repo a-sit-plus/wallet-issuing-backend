@@ -1,9 +1,8 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.controller.RevocationController
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
+import at.asitplus.wallet.backend.controller.RevocationController
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
@@ -11,8 +10,6 @@ import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,13 +21,13 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import java.util.*
-import kotlin.time.Duration.Companion.seconds
+import java.time.Instant
+import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser(authorities = [AUTHORITY_REVOCATION])
-@TestPropertySource(properties = ["backend.time-source=TEST","spring.jpa.show-sql=true","spring.jpa.properties.hibernate.format_sql=true"])
+@TestPropertySource(properties = ["spring.jpa.show-sql=true", "spring.jpa.properties.hibernate.format_sql=true"])
 class RevocationControllerFullRunTest {
 
     @Autowired
@@ -64,7 +61,7 @@ class RevocationControllerFullRunTest {
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
-        validUntil = TestTimeSource.now() + 5.seconds
+        validUntil = Instant.now().plusSeconds(5)
         deviceBindingRepository.deleteAll()
         deviceBinding = client.storeDeviceBinding(bpk, deviceBindingRepository)
         deviceId = deviceBinding.deviceId
@@ -73,8 +70,8 @@ class RevocationControllerFullRunTest {
         IssuedCredential(
             vcId,
             subjectId,
-            validUntil.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            validUntil,
+            1,
             deviceBinding,
             attributeName,
             2
@@ -84,11 +81,10 @@ class RevocationControllerFullRunTest {
 
     @Test
     fun `revoking binding leads to revoked credential`() {
-        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(Instant.now())
             .shouldNotBeEmpty()
-        deviceBindingRepository.findAllByValidUntilAfter(
-            TestTimeSource.now().toJavaInstant()
-        ).shouldNotBeEmpty()
+        deviceBindingRepository.findAllByValidUntilAfter(Instant.now())
+            .shouldNotBeEmpty()
 
         val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(1)
@@ -101,16 +97,15 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(Instant.now())
             .shouldBeEmpty()
-        deviceBindingRepository.findAllByValidUntilAfter(
-            TestTimeSource.now().toJavaInstant()
-        ).shouldBeEmpty()
+        deviceBindingRepository.findAllByValidUntilAfter(Instant.now())
+            .shouldBeEmpty()
     }
 
     @Test
     fun `expired binding cannot be revoked`() {
-        val validUntil = TestTimeSource.now() - 1.seconds
+        val validUntil = Instant.now().minusSeconds(1)
         saveExpiredBinding(validUntil)
 
         val request = RevocationController.RevocationRequest(bpk)
@@ -125,11 +120,10 @@ class RevocationControllerFullRunTest {
 
     @Test
     fun `revoking binding by bpk and deviceId leads to revoked credential`() {
-        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(Instant.now())
             .shouldNotBeEmpty()
-        deviceBindingRepository.findAllByValidUntilAfter(
-            TestTimeSource.now().toJavaInstant()
-        ).shouldNotBeEmpty()
+        deviceBindingRepository.findAllByValidUntilAfter(Instant.now())
+            .shouldNotBeEmpty()
         val request = RevocationController.RevocationRequest(bpk, deviceId)
         val expectedResponse = RevocationController.RevocationResponse(1)
 
@@ -141,20 +135,18 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(Instant.now())
             .shouldBeEmpty()
-        deviceBindingRepository.findAllByValidUntilAfter(
-            TestTimeSource.now().toJavaInstant()
-        ).shouldBeEmpty()
+        deviceBindingRepository.findAllByValidUntilAfter(Instant.now())
+            .shouldBeEmpty()
     }
 
     @Test
     fun `revoking pupilId by bpk does not lead to revoked binding`() {
-        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(Instant.now())
             .shouldNotBeEmpty()
-        deviceBindingRepository.findAllByValidUntilAfter(
-            TestTimeSource.now().toJavaInstant()
-        ).shouldNotBeEmpty()
+        deviceBindingRepository.findAllByValidUntilAfter(Instant.now())
+            .shouldNotBeEmpty()
 
         val request = RevocationController.RevocationRequest(bpk)
         val expectedResponse = RevocationController.RevocationResponse(1)
@@ -167,16 +159,15 @@ class RevocationControllerFullRunTest {
             content { json(mapper.writeValueAsString(expectedResponse)) }
         }.andReturn()
 
-        credentialRepo.findAllByValidUntilAfter(TestTimeSource.now().toJavaInstant())
+        credentialRepo.findAllByValidUntilAfter(Instant.now())
             .shouldBeEmpty()
-        deviceBindingRepository.findAllByValidUntilAfter(
-            TestTimeSource.now().toJavaInstant()
-        ).shouldNotBeEmpty()
+        deviceBindingRepository.findAllByValidUntilAfter(Instant.now())
+            .shouldNotBeEmpty()
     }
 
     @Test
     fun `expired pupilId can not be revoked`() {
-        val validUntil = TestTimeSource.now() - 1.seconds
+        val validUntil = Instant.now().minusSeconds(1)
         val deviceBinding = saveExpiredBinding(validUntil)
         saveExpiredCredential(validUntil, deviceBinding)
         val request = RevocationController.RevocationRequest(bpk)
@@ -205,7 +196,7 @@ class RevocationControllerFullRunTest {
 
     @Test
     fun `expired bindings are not listed as devices`() {
-        val validUntil = TestTimeSource.now() - 1.seconds
+        val validUntil = Instant.now().minusSeconds(1)
         val deviceBinding = saveExpiredBinding(validUntil)
         saveExpiredCredential(validUntil, deviceBinding)
 
@@ -218,16 +209,13 @@ class RevocationControllerFullRunTest {
 
     private fun saveExpiredBinding(validUntil: Instant): DeviceBinding {
         deviceBindingRepository.deleteAll()
-        val deviceBinding =
-            DeviceBinding(
-                bpk,
-                client.selfSignedCert.encoded,
-                deviceName,
-                deviceId,
-                validUntil.toJavaInstant()
-            )
-                .also { deviceBindingRepository.save(it) }
-        return deviceBinding
+        return DeviceBinding(
+            bpk,
+            client.selfSignedCert.encoded,
+            deviceName,
+            deviceId,
+            validUntil
+        ).also { deviceBindingRepository.save(it) }
     }
 
     private fun saveExpiredCredential(validUntil: Instant, deviceBinding: DeviceBinding) {
@@ -235,13 +223,12 @@ class RevocationControllerFullRunTest {
         IssuedCredential(
             vcId,
             subjectId,
-            validUntil.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            validUntil,
+            1,
             deviceBinding,
             attributeName,
             3
-        )
-            .also { credentialRepo.save(it) }
+        ).also { credentialRepo.save(it) }
     }
 
 }

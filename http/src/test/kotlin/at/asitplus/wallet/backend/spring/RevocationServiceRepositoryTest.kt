@@ -1,13 +1,13 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.service.DeviceBindingStorageService
-import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.backend.service.RevocationService
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.BeforeEach
@@ -15,13 +15,11 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.TestPropertySource
 import java.util.*
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
-@TestPropertySource(properties = ["backend.time-source=TEST"])
 class RevocationServiceRepositoryTest {
 
     @Autowired
@@ -43,14 +41,16 @@ class RevocationServiceRepositoryTest {
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
     private lateinit var validUntilExpired: Instant
+    private var timePeriod: Int = 0
 
     @BeforeEach
     fun beforeEach() {
+        timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
-        validUntil = TestTimeSource.now() + 2.seconds
-        validUntilExpired = TestTimeSource.now() - 2.seconds
+        validUntil = Clock.System.now() + 2.seconds
+        validUntilExpired = Clock.System.now() - 2.seconds
         bpk = UUID.randomUUID().toString()
         certificate = Random.nextBytes(32)
         deviceName = UUID.randomUUID().toString()
@@ -66,7 +66,7 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.isRevoked(vcId, TestTimeSource.timePeriod) shouldBe false
+        revocationService.isRevoked(vcId, timePeriod) shouldBe false
     }
 
     @Test
@@ -74,18 +74,18 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.timePeriod) shouldBe 1
+        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
     }
 
     @Test
     @Disabled("Remnant")
      fun `check on non-existing vcId should return null`() {
-        revocationService.isRevoked(vcId, TestTimeSource.timePeriod).shouldBeNull()
+        revocationService.isRevoked(vcId, timePeriod).shouldBeNull()
     }
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.revokeCredentialsByVcId(vcId, TestTimeSource.timePeriod) shouldBe 0
+        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 0
     }
 
     @Test
@@ -157,7 +157,7 @@ class RevocationServiceRepositoryTest {
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            timePeriod,
             deviceBinding,
             attributeName,
             1L
@@ -168,7 +168,7 @@ class RevocationServiceRepositoryTest {
             vcId,
             subjectId,
             validUntilExpired.toJavaInstant(),
-            TestTimeSource.timePeriod,
+            timePeriod,
             deviceBinding,
             attributeName,
             1L

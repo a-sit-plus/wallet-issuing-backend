@@ -22,7 +22,6 @@ class AeraPkiService(
     private val certValidity: Duration,
     private val url: String,
     private val restTemplate: RestTemplate,
-    private val clock: Clock
 ) : PkiService {
 
 
@@ -35,7 +34,7 @@ class AeraPkiService(
                 }
             val requestDto = SignRequestDto(
                 csr = csr.encoded.encodeBase64(),
-                expirationTimestamp = (clock.now() + certValidity).epochSeconds,
+                expirationTimestamp = (Clock.System.now() + certValidity).epochSeconds,
             )
             val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
             val requestEntity = HttpEntity(requestDto, headers)

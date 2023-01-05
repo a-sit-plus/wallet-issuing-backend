@@ -22,6 +22,7 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssued
+import kotlinx.datetime.Clock
 
 class RandomCredentialDataProviderTest {
 
@@ -31,7 +32,7 @@ class RandomCredentialDataProviderTest {
     private lateinit var bpk2: String
     private lateinit var dataProvider: RandomCredentialDataProvider
     private lateinit var deviceBindingStorageService: DeviceBindingStorageService
-    private val expiration = TestTimeSource.now() + 5.seconds
+    private val expiration = Clock.System.now() + 5.seconds
 
     @BeforeEach
     fun setup() {

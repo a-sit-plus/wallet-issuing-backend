@@ -1,15 +1,13 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.TestTimeSource
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
-import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.matthewnelson.component.base64.decodeBase64ToArray
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,10 +47,7 @@ class PupilIdControllerFullRunTest {
     fun beforeEach() {
         client = Client()
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
-        holderAgent = HolderAgent.newDefaultInstance(
-            cryptoService = holderCryptoService,
-            clock= TestTimeSource,
-        )
+        holderAgent = HolderAgent.newDefaultInstance(holderCryptoService)
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,

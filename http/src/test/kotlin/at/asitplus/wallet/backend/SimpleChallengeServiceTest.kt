@@ -8,10 +8,7 @@ import org.junit.jupiter.api.Test
 class SimpleChallengeServiceTest {
 
     private val timeoutSeconds = 1
-    private val service = SimpleChallengeService(
-        lifetimeSeconds = timeoutSeconds,
-        clock = Clock.System
-    )
+    private val service = SimpleChallengeService(lifetimeSeconds = timeoutSeconds)
 
     @Test
     fun timeout() {

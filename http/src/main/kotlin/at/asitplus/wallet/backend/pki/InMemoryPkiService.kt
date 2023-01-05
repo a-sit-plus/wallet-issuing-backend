@@ -1,9 +1,8 @@
 package at.asitplus.wallet.backend.pki
 
+import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
-import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
-import at.asitplus.wallet.lib.toJavaDate
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
@@ -17,7 +16,7 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import java.math.BigInteger
-import java.util.*
+import java.util.Date
 import javax.security.auth.x500.X500Principal
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -31,16 +30,12 @@ class InMemoryPkiService(
     private val certValidity: Duration = 1.days,
     private val issuerName: String = "CN=Issuer",
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
-    private val clock: Clock
 ) : PkiService {
 
 
     private val crlEntryList = mutableListOf<CrlEntry>()
     private val issuer = cryptoService.certificate?.let {
-        X500Name.getInstance(
-            BCStyle.INSTANCE,
-            it.subjectX500Principal.encoded
-        )
+        X500Name.getInstance(BCStyle.INSTANCE, it.subjectX500Principal.encoded)
     } ?: X500Name(issuerName)
 
     private val caCertificate =
@@ -69,8 +64,8 @@ class InMemoryPkiService(
         X509v3CertificateBuilder(
             /* issuer = */ issuer,
             /* serial = */ BigInteger.valueOf(Random.nextLong()),
-            /* notBefore = */ clock.now().toJavaDate(),
-            /* notAfter = */ Date.from((clock.now() + certValidity).toJavaInstant()),
+            /* notBefore = */ Clock.System.now().toJavaDate(),
+            /* notAfter = */ (Clock.System.now() + certValidity).toJavaDate(),
             /* subject = */ subject,
             /* publicKeyInfo = */ subjectPublicKeyInfo
         ).build(cryptoService.jcaContentSigner)
@@ -93,3 +88,6 @@ class InMemoryPkiService(
 
     data class CrlEntry(val serialNumber: BigInteger, val date: Date)
 }
+
+
+private fun kotlinx.datetime.Instant.toJavaDate(): Date = Date.from(toJavaInstant())
