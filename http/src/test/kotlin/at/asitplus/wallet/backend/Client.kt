@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.service.fromJcaKey
-import io.matthewnelson.component.base64.encodeBase64
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import com.nimbusds.jose.JWSAlgorithm
@@ -12,6 +11,7 @@ import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.util.Base64
+import io.matthewnelson.component.base64.encodeBase64
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -19,7 +19,6 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
-import org.springframework.stereotype.Service
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -28,25 +27,27 @@ import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
+import kotlin.properties.Delegates
 import kotlin.random.Random
 
-@Service
 class Client {
 
-    final lateinit var keyPair: KeyPair
-    final var keyId: String
+    lateinit var keyPair: KeyPair
+    var keyId: String
+    var lifetimeSeconds: Long by Delegates.notNull()
 
     constructor(keyPair: KeyPair) {
         this.keyPair = keyPair
         this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
+        this.lifetimeSeconds = 60
     }
 
-    constructor() {
+    constructor(lifetimeSeconds: Long = 60) {
         this.keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
         this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
+        this.lifetimeSeconds = lifetimeSeconds
     }
 
-    val lifetimeSeconds: Long = 60
     private val issuer = X500Name("CN=Issuer")
     private val contentSigner by lazy { JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private) }
 

@@ -10,14 +10,12 @@ import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Random
-import kotlin.time.Duration
 
 /**
  * Provides random credential data for the currently logged-in user
  */
-class RandomCredentialDataProvider constructor(
+class RandomCredentialDataProvider(
     private val listOfPhotos: Map<String, ByteArray>,
-    private val gracePeriod: Duration = Duration.ZERO,
 ) : CredentialDataProvider {
 
     private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
@@ -83,7 +81,7 @@ class RandomCredentialDataProvider constructor(
         return KmmResult.success(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
-                maxExpiration + gracePeriod,
+                maxExpiration,
                 ConstantIndex.Generic.vcType
             )
         )
@@ -114,13 +112,15 @@ class RandomCredentialDataProvider constructor(
             pupilZip = it.zip,
             pupilId = it.pupilId,
             picture = it.encodedPhoto,
-            validUntil = "2032-12-31",
+            validUntil = maxExpiration.toString().substring(0..9),
         )
-        return KmmResult.success(CredentialDataProvider.CredentialToBeIssued(
-            subject,
-            maxExpiration + gracePeriod,
-            ConstantIndex.Generic.vcType
-        ))
+        return KmmResult.success(
+            CredentialDataProvider.CredentialToBeIssued(
+                subject,
+                maxExpiration,
+                ConstantIndex.Generic.vcType
+            )
+        )
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +
