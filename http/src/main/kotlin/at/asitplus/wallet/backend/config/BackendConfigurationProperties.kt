@@ -326,7 +326,7 @@ data class AndroidAttestationConfigurationProperties(
     val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
     val signatureDigests: Array<String>,
     val requireStrongBox: Boolean = false,
-    val requireRollbackResistance: Boolean = true,
+    val requireRollbackResistance: Boolean = false,
 )
 
 @ConstructorBinding
