@@ -1,10 +1,10 @@
 package at.asitplus.wallet.backend.pki
 
-import at.asitplus.wallet.backend.service.CryptoServiceAdapter
-import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.data.IssuedCertificate
 import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
+import at.asitplus.wallet.backend.service.CryptoServiceAdapter
+import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
@@ -17,9 +17,9 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import java.math.BigInteger
-import java.util.*
-import kotlin.time.Duration
+import java.util.Date
 import kotlin.random.Random
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -30,9 +30,7 @@ class PersistentPkiService(
     private val certValidity: Duration = 30.days,
     private val issuedCertificateRepository: IssuedCertificateRepository,
     private val cryptoService: CryptoServiceAdapter = DefaultCryptoServiceAdapter(RandomKeyAdapter()),
-    private val clock: Clock
 ) : PkiService {
-
 
     private val caCertificate =
         cryptoService.certificate ?: throw RuntimeException("No certificate provided")
@@ -54,8 +52,8 @@ class PersistentPkiService(
         subject: X500Name,
         subjectPublicKeyInfo: SubjectPublicKeyInfo
     ): X509CertificateHolder {
-        val validFrom = clock.now()
-        val validUntil = clock.now() + certValidity
+        val validFrom = Clock.System.now()
+        val validUntil = validFrom + certValidity
         val serialNumber = uniqueSerialNumber()
         return X509v3CertificateBuilder(
             /* issuer = */ issuer,
@@ -90,22 +88,21 @@ class PersistentPkiService(
 
     override fun getCrl(): ByteArray {
         val crlBuilder = JcaX509v2CRLBuilder(caCertificate.subjectX500Principal, Date())
-        issuedCertificateRepository.findAllByRevokedTrueAndValidFromBeforeAndValidUntilAfter(
-            clock.now().toJavaInstant(),
-            clock.now().toJavaInstant()
-        ).forEach {
-            crlBuilder.addCRLEntry(
-                /* userCertificateSerial = */ BigInteger.valueOf(it.serialNumber),
-                /* revocationDate = */ Date.from(it.revocationDate ?: clock.now().toJavaInstant()),
-                /* reason = */ CRLReason.unspecified
-            )
-        }
+        issuedCertificateRepository
+            .findAllByRevokedTrueAndValidFromBeforeAndValidUntilAfter(java.time.Instant.now(), java.time.Instant.now())
+            .forEach {
+                crlBuilder.addCRLEntry(
+                    /* userCertificateSerial = */ BigInteger.valueOf(it.serialNumber),
+                    /* revocationDate = */ Date.from(it.revocationDate ?: java.time.Instant.now()),
+                    /* reason = */ CRLReason.unspecified
+                )
+            }
         return crlBuilder.build(cryptoService.jcaContentSigner).encoded
     }
 
     override fun revokeCertificate(certificate: ByteArray) {
         issuedCertificateRepository.findByCertificate(certificate)?.let {
-            it.revocationDate = clock.now().toJavaInstant()
+            it.revocationDate = java.time.Instant.now()
             it.revoked = true
             issuedCertificateRepository.save(it)
         }

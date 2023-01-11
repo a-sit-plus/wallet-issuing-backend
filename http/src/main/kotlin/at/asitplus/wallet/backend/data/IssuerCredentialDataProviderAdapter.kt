@@ -18,7 +18,6 @@ class IssuerCredentialDataProviderAdapter(
     private val lifetime: Duration,
     private val credentialDataProvider: CredentialDataProvider,
     private val deviceBindingStorageService: DeviceBindingStorageService,
-    private val clock: Clock
 ) : IssuerCredentialDataProvider {
 
 
@@ -30,7 +29,7 @@ class IssuerCredentialDataProviderAdapter(
             ?: return KmmResult.failure(AuthenticationError("No device binding present"))
 
         val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
-        val maxExpiration = clock.now() + lifetime
+        val maxExpiration = Clock.System.now() + lifetime
         val cappedExpiration =
             if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
         val credential = credentialDataProvider.getClaim(
@@ -53,13 +52,9 @@ class IssuerCredentialDataProviderAdapter(
         attributeType: String
     ): KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued> {
         val deviceBinding = getVerifiedDeviceBinding(subjectId)
-            ?: return KmmResult.failure(
-                AuthenticationError(
-                    "No device binding present",
-                )
-            )
+            ?: return KmmResult.failure(AuthenticationError("No device binding present"))
         val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
-        val maxExpiration = clock.now() + lifetime
+        val maxExpiration = Clock.System.now() + lifetime
         val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
         val credential = credentialDataProvider.getCredential(
             subjectId,

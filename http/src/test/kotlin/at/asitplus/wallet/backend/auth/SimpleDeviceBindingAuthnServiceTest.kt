@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.service.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
-import at.asitplus.wallet.backend.TestTimeSource
 import io.matthewnelson.component.base64.encodeBase64
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -14,6 +13,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,7 +22,7 @@ import java.util.UUID
 
 class SimpleDeviceBindingAuthnServiceTest {
 
-    private val challengeService = SimpleChallengeService(clock = TestTimeSource)
+    private val challengeService = SimpleChallengeService()
     private val deviceBindingStorageService = InMemoryDeviceBindingStorageService()
     private val service = SimpleDeviceBindingAuthnService(
         deviceBindingStorageService = deviceBindingStorageService,

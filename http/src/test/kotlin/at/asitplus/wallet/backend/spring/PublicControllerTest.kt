@@ -1,7 +1,5 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.TestTimeSource
-import at.asitplus.wallet.backend.TimeSource
 import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
@@ -20,7 +18,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET VC status list with period`() {
-        mockMvc.get("/credentials/status/${TestTimeSource.timePeriod}") {
+        mockMvc.get("/credentials/status/2000") {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }

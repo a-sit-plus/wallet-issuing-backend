@@ -13,9 +13,9 @@ import at.asitplus.wallet.backend.pki.*
 import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
-import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import io.github.aakira.napier.Napier
+import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import kotlinx.datetime.Clock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -109,7 +109,6 @@ class BackendConfiguration {
             DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
                 SimpleChallengeService(
                     lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds,
-                    clock = clock()
                 )
             )
 
@@ -179,21 +178,18 @@ class BackendConfiguration {
                     configurationProperties.pki.certValidityDays.days,
                     configurationProperties.pki.internal.issuerName,
                     DefaultCryptoServiceAdapter(keyAdapter),
-                    clock()
                 )
 
                 PkiType.PERSISTENT -> PersistentPkiService(
                     configurationProperties.pki.certValidityDays.days,
                     issuedCertificateRepository,
                     DefaultCryptoServiceAdapter(keyAdapter),
-                    clock()
                 )
 
                 else -> {
                     throw RuntimeException("WUT?!")
                 }
             }
-
         }
 
         PkiType.AERA -> {
@@ -205,7 +201,6 @@ class BackendConfiguration {
                 configurationProperties.pki.certValidityDays.days,
                 configurationProperties.pki.aera.url!!.toString(),
                 restTemplate,
-                clock()
             )
         }
     }
@@ -217,13 +212,14 @@ class BackendConfiguration {
             androidAttestationConfiguration(),
             (configurationProperties.authn.deviceBinding.attestation.ios
                 ?: throw RuntimeException("no iOS Attestation configured")).toIosAttestationConfiguration(),
-            clock(),
+            Clock.System,
             configurationProperties.authn.deviceBinding.attestation.verificationOffSetDuration
         )
     else {
         if (configurationProperties.authn.deviceBinding.attestation.ios != null || configurationProperties.authn.deviceBinding.attestation.android != null)
             throw RuntimeException("As precautionary measure, attestation can only be disabled if neither Android nor iOS attestation are configured!")
-        Napier.w("""
+        Napier.w(
+            """
 
 
 
@@ -257,17 +253,15 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
 
 
 
-""")
+"""
+        )
         NoopAttestationService
     }
 
 
     @Bean
     fun challengeService(): ChallengeService =
-        SimpleChallengeService(
-            lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds,
-            clock = clock()
-        )
+        SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
 
     @Bean
     fun authenticationSupplier(): AuthenticationSupplier = SpringSecurityAuthenticationSupplier()
@@ -282,7 +276,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             deviceBindingRepository,
             revokedCredentialRepo,
             authenticationSupplier,
-            clock = clock()
         )
 
     @Bean
@@ -302,14 +295,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         revokedCredentialRepo,
         deviceBindingStorageService,
         configurationProperties.credentials.oneCredentialPerDeviceBinding,
-        clock()
     )
-
-    @Bean
-    fun clock(): Clock = when (configurationProperties.timeSource) {
-        TimeSource.SYSTEM -> Clock.System
-        TimeSource.TEST -> TestTimeSource
-    }
 
     @Bean
     fun deviceBindingAuthnService(
@@ -357,10 +343,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             }
 
             AttributeSourceType.EIDAS -> {
-                EidasCredentialDataProvider(
-                    600.seconds,
-                    clock = clock()
-                )
+                EidasCredentialDataProvider(600.seconds)
             }
         }
 
@@ -372,7 +355,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         lifetime = configurationProperties.credentials.lifeTime,
         credentialDataProvider = credentialDataProvider,
         deviceBindingStorageService = deviceBindingStorageService,
-        clock = clock()
     )
 
     @Bean
@@ -422,14 +404,12 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             "status"
         ),
         timePeriodProvider = timePeriodProvider(),
-        clock = clock(),
-        cacheLimits = configurationProperties.credentials.revocationListCache?.cacheDuration,
-        validator =  Validator.newDefaultInstance(DefaultVerifierCryptoService())
+        validator = Validator.newDefaultInstance(DefaultVerifierCryptoService())
     )
 
     @Bean
     fun timePeriodProvider(): TimePeriodProvider =
-        SchoolyearBasedTimePeriodProvider(configurationProperties.schooYearStart)
+        SchoolyearBasedTimePeriodProvider(configurationProperties.schoolYearStart)
 
     @Bean
     fun issuerMessageWrapper(

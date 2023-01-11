@@ -50,9 +50,7 @@ class EidasIdController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
     private val credentialDataProvider: CredentialDataProvider,
-    private val clock: Clock
 ) {
-
 
     @Operation(
         summary = "Issue credentials",
@@ -157,7 +155,7 @@ class EidasIdController(
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["creation"] = clock.now().toString()
+        model["creation"] = Clock.System.now().toString()
         return ModelAndView("initialize", model)
     }
 

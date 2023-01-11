@@ -15,16 +15,14 @@ import kotlin.time.Duration
  * the previously stored attributes (from an OIDC login),
  * i.e. it looks up data with the `bpk` from its internal map
  */
-class EidasCredentialDataProvider(private val timeout: Duration, private val clock: Clock) :
-    CredentialDataProvider {
-
+class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDataProvider {
 
     private val list = mutableListOf<EidasClaimHolder>()
 
     fun storeClaims(eidasClaim: EidasClaim, bpk: String) {
-        list.removeAll { it.expiration < clock.now() }
+        list.removeAll { it.expiration < Clock.System.now() }
         list += EidasClaimHolder(
-            expiration = clock.now() + timeout,
+            expiration = Clock.System.now() + timeout,
             bpk = bpk,
             claim = eidasClaim,
         )

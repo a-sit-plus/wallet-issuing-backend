@@ -43,7 +43,6 @@ class PersistentPkiServiceTest {
                     "PKCS12", password = "test", alias = "test", aliasPassword = "test"
                 )
             ),
-            clock = Clock.System
         )
     }
 

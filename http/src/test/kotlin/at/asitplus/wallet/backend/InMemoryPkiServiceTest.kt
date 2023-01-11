@@ -13,7 +13,7 @@ import java.util.*
 
 class InMemoryPkiServiceTest {
 
-    private val service = InMemoryPkiService(clock = Clock.System)
+    private val service = InMemoryPkiService()
 
     @Test
     fun `sign correct CSR`() {

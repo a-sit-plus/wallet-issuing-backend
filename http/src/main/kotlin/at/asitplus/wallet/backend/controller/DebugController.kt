@@ -7,11 +7,11 @@ import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import io.matthewnelson.component.base64.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
+import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import org.springframework.http.ResponseEntity
@@ -37,10 +37,8 @@ class DebugController(
     private val credentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val deviceBindingRepo: DeviceBindingRepository,
-    private val clock: Clock,
     private val timePeriodProvider: TimePeriodProvider,
 ) {
-
 
     /**
      * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
@@ -61,7 +59,7 @@ class DebugController(
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
         model["qrcode"] = qrCodeImage.encodeBase64()
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["creation"] = clock.now().toString()
+        model["creation"] = Clock.System.now().toString()
         return ModelAndView("initialize", model)
     }
 
@@ -106,7 +104,7 @@ class DebugController(
         Napier.v("vcId='$vcId'")
         revocationService.revokeCredentialsByVcId(
             vcId,
-            timePeriodProvider.getTimePeriodFor(clock.now())
+            timePeriodProvider.getTimePeriodFor(Clock.System.now())
         )
         return ModelAndView("redirect:/debug/credential/list")
     }
@@ -119,7 +117,7 @@ class DebugController(
         val attributeValue = UUID.randomUUID().toString()
         val credentialSubject =
             AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
-        val exp = clock.now() + 1.hours
+        val exp = Clock.System.now() + 1.hours
         val deviceName = "fake-" + UUID.randomUUID().toString()
         val deviceId = UUID.randomUUID().toString()
         val bpk = UUID.randomUUID().toString()
@@ -133,7 +131,7 @@ class DebugController(
             .also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
         synchronized(CredentialRepositoriesLock) {
-            val timePeriod = timePeriodProvider.getTimePeriodFor(clock.now())
+            val timePeriod = timePeriodProvider.getTimePeriodFor(Clock.System.now())
             val revocationListIndex = max(
                 (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
                 revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
