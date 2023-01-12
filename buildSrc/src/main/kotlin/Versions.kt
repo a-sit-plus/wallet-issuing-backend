@@ -17,9 +17,9 @@ object VersionsBackend {
     const val mockito = "4.0.0"
     const val mochws = "4.10.0"
 
-    const val pupilid = "1.4.10-SNAPSHOT"
-    const val vclib = "1.3.13-SNAPSHOT"
-    const val attestation = "0.2.1"
+    const val pupilid = "1.4.10"
+    const val vclib = "1.3.13"
+    const val attestation = "0.3.0"
 
     object spring {
         const val boot = "2.7.4"
