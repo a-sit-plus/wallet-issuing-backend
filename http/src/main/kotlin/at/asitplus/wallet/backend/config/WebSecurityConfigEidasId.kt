@@ -14,10 +14,10 @@ import at.asitplus.wallet.backend.service.ChallengeService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
@@ -56,9 +57,10 @@ class WebSecurityConfigEidasId(
     private val deviceBindingAuthnChallengeService: ChallengeService,
     private val apiKeyAuthnProvider: ApiKeyAuthnProvider,
     private val extNonceLogoutHandler: ExtNonceLogoutHandler,
-) : WebSecurityConfigurerAdapter() {
+) {
 
-    override fun configure(http: HttpSecurity) {
+    @Bean
+    fun filterChain(http: HttpSecurity, authenticationManager: AuthenticationManager): SecurityFilterChain? {
         http.csrf().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
@@ -79,6 +81,7 @@ class WebSecurityConfigEidasId(
             .and().oauth2Login().defaultSuccessUrl("/eidasid/initialize").userInfoEndpoint()
             .oidcUserService(this.oidcUserService()).and()
             .and().headers().frameOptions().sameOrigin()
+        return http.build()
     }
 
     /**
@@ -107,10 +110,9 @@ class WebSecurityConfigEidasId(
         }
     }
 
-    override fun configure(auth: AuthenticationManagerBuilder) {
-        auth.authenticationProvider(deviceBindingAuthnProvider)
-            .authenticationProvider(extNonceAuthnProvider)
-            .authenticationProvider(apiKeyAuthnProvider)
+    @Bean
+    fun authenticationManager(): AuthenticationManager {
+        return ProviderManager(deviceBindingAuthnProvider, extNonceAuthnProvider, apiKeyAuthnProvider)
     }
 
     @Bean
