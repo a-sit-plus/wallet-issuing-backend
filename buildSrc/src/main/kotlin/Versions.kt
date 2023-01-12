@@ -18,8 +18,8 @@ object VersionsBackend {
     const val okhttp = "4.10.0"
     const val opencv = "4.5.5-1"
 
-    const val pupilid = "1.5.0-SNAPSHOT"
-    const val vclib = "1.4.0-SNAPSHOT"
+    const val pupilid = "1.5.0"
+    const val vclib = "1.4.0"
     const val attestation = "0.2.1"
 
     object spring {
