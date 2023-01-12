@@ -2,16 +2,17 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_EIDASID
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
-import io.matthewnelson.component.base64.encodeBase64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
+import io.matthewnelson.component.base64.encodeBase64
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -120,7 +121,7 @@ class EidasIdController(
      * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
      */
     @GetMapping("/eidasid/initialize")
-    @PreAuthorize("hasAuthority(\"EIDASID\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC_EIDASID\")")
     fun initialize(model: ModelMap): ModelAndView {
         Napier.i("/eidasid/initialize called")
         val nonceBpk = extNonceAuthnService.generateNonce()

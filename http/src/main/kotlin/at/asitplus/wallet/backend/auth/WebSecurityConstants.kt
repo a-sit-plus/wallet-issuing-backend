@@ -15,4 +15,6 @@ object WebSecurityConstants {
      * from [HeaderHttpSessionIdResolver]
      */
     const val X_AUTH_TOKEN = "X-Auth-Token"
+
+    const val AUTHORITY_OIDC_EIDASID = "OIDC_EIDASID"
 }

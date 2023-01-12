@@ -9,6 +9,7 @@ import at.asitplus.wallet.backend.auth.DeviceBindingAuthnProvider
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnFilter
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnProvider
 import at.asitplus.wallet.backend.auth.ExtNonceLogoutHandler
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.service.ChallengeService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -81,14 +82,14 @@ class WebSecurityConfigEidasId(
     }
 
     /**
-     * Adapted from Spring's [OidcUserService] to set the authority `EIDASID`
+     * Adapted from Spring's [OidcUserService] to set the authority `EIDASID` [WebSecurityConstants.AUTHORITY_OIDC_EIDASID]
      */
     fun oidcUserService(): OidcUserService = object : OidcUserService() {
         override fun loadUser(userRequest: OidcUserRequest?): OidcUser {
             require(userRequest != null) { "userRequest cannot be null" }
             val userInfo: OidcUserInfo? = null
             val authorities: MutableSet<GrantedAuthority> = LinkedHashSet()
-            authorities.add(OidcUserAuthority("EIDASID", userRequest.idToken, userInfo))
+            authorities.add(OidcUserAuthority(WebSecurityConstants.AUTHORITY_OIDC_EIDASID, userRequest.idToken, userInfo))
             userRequest.accessToken.scopes.mapTo(authorities) { SimpleGrantedAuthority("SCOPE_$it") }
             return getUser(userRequest, userInfo, authorities)
         }
