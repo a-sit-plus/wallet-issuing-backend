@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.info.BuildProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpHeaders
 
 
 /**
@@ -59,6 +57,11 @@ class OpenApiConfiguration {
                         .scheme("bearer")
                         .bearerFormat("JWT")
                         .description("Response to challenge sent in header `WWW—Authenticate`, shall contain JWT signed with device binding key.")
+                ).addSecuritySchemes(
+                    "oidcPupil",
+                    SecurityScheme()
+                        .type(SecurityScheme.Type.OPENIDCONNECT)
+                        .description("OIDC authentication with ID Austria")
                 )
                     .addResponses(
                         "errorResponse", ApiResponse().description("Internal server error").content(

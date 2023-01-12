@@ -66,7 +66,7 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 
 `POST /binding/confirm` finishes the device binding process.
 
-The call to `/binding/start` requires authentication with an external nonce, to be sent in the header `X-Auth-ExtNonce`. The Wallet App extracts this nonce from a QR Code displayed by ECO (or this service, in the EIDAS deployment).
+The call to `/binding/start` requires authentication with an external nonce, to be sent in the header `X-Auth-ExtNonce`. The Wallet App extracts this nonce from a QR Code displayed by ECO (or this service, in the EIDAS deployment). Alternatively, the client may include a session identifier in the header `X-Auth-Token` after logging in with OIDC, see below.
 
 Subsequent requests, to `/binding/create` and `/binding/confirm`, need to include the session identifier in the header `X-Auth-Token` (which in turn has been set by this service in the first response).
 
@@ -567,6 +567,34 @@ truststore:
   provider: BC                     # may be null
   password: changeit               # may be null
 ```
+
+### ID Austria Authentication
+
+When the profile `authnida` is active, clients may authenticate using OIDC and the ID Austria system.
+
+```yaml
+spring:
+  profiles:
+    active: authnida
+  security:
+    oauth2:
+      client:
+        registration:
+          ida:
+            client-id: "https://example.com"
+            client-secret: "your-client-secret"
+            client-name: "IDA"
+            scope: "openid, profile"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "https://example.com/login/oauth2/code/ida"
+        provider:
+          ida:
+            issuer-uri: "https://eid.egiz.gv.at"
+```
+
+Clients may call this service at `http://example.com/login` to get redirected to the configured OpenID provider. After authentication at that external system, the client is redirected back to the URL configured above. This service then exchanges the received authorization code to an ID token at the OpenID provider. The client then gets set a session identifier in the header `X-Auth-Token`, that can be used to start the device binding process. 
+
 
 ### Server
 
