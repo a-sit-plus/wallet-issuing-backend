@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.agent.NextMessage
@@ -70,23 +69,28 @@ class PupilIdController(
         return when (val result = issueCredentialAdapter.parseMessage(body)) {
             is NextMessage.Result<*> -> ResponseEntity.ok().build<String>()
                 .also { Napier.i("/pupilid/issue returns HTTP 200: Finished") }
+
             is NextMessage.Send -> ResponseEntity.ok(result.message)
                 .also {
                     Napier.i("/pupilid/issue returns HTTP 200")
                     Napier.v("/pupilid/issue returns HTTP 200: ${result.message.take(128)}...")
                 }
+
             is NextMessage.Error -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build<String>()
                 .also { Napier.w("/pupilid/issue returns HTTP 400: Incorrect protocol state") }
+
             is NextMessage.SendProblemReport -> ResponseEntity.ok(result.message)
                 .also {
                     Napier.i("/pupilid/issue returns HTTP 200: Problem Report")
                     Napier.v("Problem Report ${result.message}")
                 }
+
             is NextMessage.ReceivedProblemReport -> ResponseEntity.ok().build<String>()
                 .also {
                     Napier.i("/pupilid/issue returns HTTP 200: Received Problem Report")
                     Napier.v("Received Problem Report ${result.message}")
                 }
+
             else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
                 .also {
                     Napier.w("/pupilid/issue returns HTTP 500: Internal error")

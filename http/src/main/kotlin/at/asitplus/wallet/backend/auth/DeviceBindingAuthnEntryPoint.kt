@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.service.ChallengeService
+import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -8,7 +9,6 @@ import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.AuthenticationEntryPoint
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import io.github.aakira.napier.Napier
 
 /**
  * Sends a challenge to the client, since it is not authenticated.
@@ -17,7 +17,6 @@ import io.github.aakira.napier.Napier
 class DeviceBindingAuthnEntryPoint(
     private val deviceBindingAuthnChallengeService: ChallengeService
 ) : AuthenticationEntryPoint {
-
 
     override fun commence(
         request: HttpServletRequest,
