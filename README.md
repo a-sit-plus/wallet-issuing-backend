@@ -343,6 +343,24 @@ backend:
         key: asdfasdf
     device-binding:
       type: INTERNAL
+    attestation:
+      verification-offset: PT10m  #add some offset to temporal validity checks to account for slightly off clocks
+      android:
+        package-name: android.package.name
+        signature-digests:
+          - <HEX_ENCODED_SHA-256-FINGERPRINT_OF_SINGING_CER_1>
+          - <HEX_ENCODED_SHA-256-FINGERPRINT_OF_SINGING_CER_2>
+          - ...
+        patch-level: #entirely optional. Omission = no minimum patch level
+          year: 2020
+          month: 01
+        android-version: 9000 #optional; omission = no minimum version. 4200 = Android 4.2, 9000 = Android 9, 10000 = Android 10, etc.
+        require-strong-box: false #defaults to false, set to true to enforce strongBox-protected hardware keys on Android
+      ios:
+        bundle-identifier: ios.bundle.identifier
+        team-identifier: DEADBEEF42
+        sandbox: false  # either development stage (=true) or production (=false)
+        ios-version: 14 # optional. Omission = no minimum iOS version required
   attribute-source:
     type: RANDOM
   pki:
@@ -370,6 +388,15 @@ backend:
     device-binding:
       type: ECO
       eco: {{ SERVICE_CONFIG }}
+```
+
+Key Attestation is considered a key feature, but it can be disabled for testing:
+
+```yaml
+backend:
+  authn:
+    attestation:
+      noop: true
 ```
 
 Alternative configuration of the attribute source (which attributes to issue for the Wallet App):
@@ -454,6 +481,7 @@ hsmfacade:
 type: REMOTE
 remote:
   key-name: key1
+  certificate: "file:/path/to/certificate/containing/public/key.cer"
 ```
 
 Using keys from a remote HsmFacade service also requires setting the general connection properties:
@@ -478,8 +506,7 @@ backend:
     enabled: true
     hostname: remote.example.com
     port: 443
-    username: user
-    password: password
+    api-key: "YOUR_API_KEY"
 ```
 
 Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above:
@@ -538,6 +565,29 @@ spring:
             non_contextual_creation: true
   datasource:
     url: "jdbc:h2:mem:userstore"
+```
+
+
+Configuration to use dedicated PGSQL database:
+
+```yaml
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: "at.asitplus.wallet.backend.data.FixedPostgreSQLDialect"
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    url: "jdbc:postgresql://server:port/db_name"
+    driver-class: "org.postgresql.Driver"
+    username: username
+    password: password
+    hikari:
+      auto-commit: false
 ```
 
 ### Cleanup
@@ -631,23 +681,11 @@ and the application throws an exception like `IllegalArgumentException("foo")`, 
 ```
 
 ### Logging
-MDC-based assigment of unique transaction IDs for each incoming request is supported (into the variable `txID`), but requires a customized `logback.xml`:
+MDC-based assigment of unique transaction IDs for each incoming request is supported (into the variable `txID`), but requires a customized logger pattern, e.g.:
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>
-                %d{dd-MM-yyyy HH:mm:ss.SSS} [%X{txID:-00000000-0000-0000-0000-000000000000}] %-5level %-50logger{50}:%-4line - %msg%n
-            </pattern>
-        </layout>
-    </appender>
-    <logger name="com.oddblogger" level="debug" additivity="false">
-        <appender-ref ref="Console"/>
-    </logger>
-    <root level="error">
-        <appender-ref ref="Console"/>
-    </root>
-</configuration>
+```yaml
+logging:
+  pattern:
+    file: "%d{dd-MM-yyyy HH:mm:ss.SSS} [%X{txID:-00000000-0000-0000-0000-000000000000}] %-5level %-50logger{50}:%-4line - %msg%n"
+    console: "%d{dd-MM-yyyy HH:mm:ss.SSS} [%X{txID:-00000000-0000-0000-0000-000000000000}] %-5level %-50logger{50}:%-4line - %msg%n"
 ```

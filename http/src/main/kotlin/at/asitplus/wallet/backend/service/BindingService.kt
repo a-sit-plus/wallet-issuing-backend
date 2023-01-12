@@ -1,12 +1,10 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.attestation.AttestationResult
 import at.asitplus.attestation.AttestationService
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwkType
-import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import at.asitplus.wallet.pupilid.AttestedPublicKey
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -147,36 +145,23 @@ class DefaultBindingService(
                     }
                 } as ECPublicKey
 
-        val attestedPublicKey = when (val attestationResult = attestationService.verifyAttestation(
+
+        val attestedPublicKey = attestationService.verifyKeyAttestation(
             attestationCerts,
             challenge, /*already verified by challengeService*/
-            bindingPublicKey.toAnsi(),
-        )) {
-            is AttestationResult.Error -> return null.also {
-                Napier.w("Attestation failed! Could not verify device integrity")
-                Napier.d { attestationResult.explanation }
-            }
-
-            is AttestationResult.Android -> (attestationResult.attestationCertificate.publicKey as ECPublicKey).toAnsi()
-
-            is AttestationResult.IOS -> attestationResult.clientData
-        }
-
-        if (!bindingPublicKey.toAnsi().contentEquals(attestedPublicKey)) {
-            return null.also {
-
-                Napier.w("Binding public key does not equal attestation public key")
-                Napier.v("Binding public key: ${bindingPublicKey.toAnsi().encodeBase64()}" +
-                        ", attestation public key: ${attestedPublicKey?.encodeBase64()}"
-                )
-            }
-        }
+            bindingPublicKey,
+        ).fold({ err ->
+            null.also { Napier.v(throwable = err.cause) { "Attestation error: ${err.explanation}" } }
+        }) { publicKey, details ->
+            Napier.d { "Attestation successful. details:" }
+            publicKey
+        } ?: return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
 
 
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
             ?: return null.also { Napier.w("CSR invalid") }
 
-        val signedPublicKey = cryptoService.wrapInJws(bindingPublicKey)
+        val signedPublicKey = cryptoService.wrapInJws(attestedPublicKey)
 
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
@@ -208,9 +193,5 @@ class DefaultBindingService(
         }.serialize()
     }
 
-    private fun ECPublicKey.toAnsi() = let {
-        val xFromBc = it.w.affineX.toByteArray().ensureSize(32)
-        val yFromBc = it.w.affineY.toByteArray().ensureSize(32)
-        byteArrayOf(0x04) + xFromBc + yFromBc
-    }
+
 }

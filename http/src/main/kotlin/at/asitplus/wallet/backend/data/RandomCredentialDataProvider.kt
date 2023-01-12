@@ -9,17 +9,12 @@ import io.matthewnelson.component.base64.decodeBase64ToArray
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.*
-
-internal const val RND_MONTH = "09"
-internal const val RND_DAY = "01"
-internal const val RND_YEAR = "2023"
-internal const val EXP = "$RND_YEAR-$RND_MONTH-$RND_DAY"
+import java.util.Random
 
 /**
  * Provides random credential data for the currently logged-in user
  */
-class RandomCredentialDataProvider constructor(
+class RandomCredentialDataProvider(
     private val listOfPhotos: Map<String, ByteArray>,
 ) : CredentialDataProvider {
 
@@ -117,13 +112,15 @@ class RandomCredentialDataProvider constructor(
             pupilZip = it.zip,
             pupilId = it.pupilId,
             picture = it.encodedPhoto,
-            validUntil = EXP,
+            validUntil = maxExpiration.toString().substring(0..9),
         )
-        return KmmResult.success(CredentialDataProvider.CredentialToBeIssued(
-            subject,
-            maxExpiration,
-            ConstantIndex.Generic.vcType
-        ))
+        return KmmResult.success(
+            CredentialDataProvider.CredentialToBeIssued(
+                subject,
+                maxExpiration,
+                ConstantIndex.Generic.vcType
+            )
+        )
     }
 
     private val fallbackPhoto = "/9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gIwSUNDX1BST0ZJTEUA\n" +

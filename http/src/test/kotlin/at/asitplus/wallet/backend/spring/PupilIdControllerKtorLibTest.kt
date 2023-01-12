@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -46,10 +45,7 @@ class PupilIdControllerKtorLibTest {
     fun beforeEach() {
         val client = Client()
         holderCryptoService = DefaultCryptoService(client.keyPair)
-        holderAgent = HolderAgent.newDefaultInstance(
-            cryptoService = holderCryptoService,
-            clock = TestTimeSource
-        )
+        holderAgent = HolderAgent.newDefaultInstance(holderCryptoService)
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,

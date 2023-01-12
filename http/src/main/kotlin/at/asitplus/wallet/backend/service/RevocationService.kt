@@ -1,10 +1,13 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
+import at.asitplus.wallet.backend.data.IssuedCredential
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.RevokedCredential
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.data.CredentialSubject
-import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
-import kotlinx.datetime.Clock
+import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import java.lang.Long.max
@@ -77,7 +80,6 @@ class DefaultRevocationService(
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
-    private val clock: Clock
 ) : RevocationService {
 
     /**
@@ -105,19 +107,19 @@ class DefaultRevocationService(
             synchronized(CredentialRepositoriesLock) {
                 if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
                     return@runCatching null.also {
-                      Napier.e("Tried to store a new credential for existing vcId")
-                      Napier.v("vcId: '$vcId'")
+                        Napier.e("Tried to store a new credential for existing vcId")
+                        Napier.v("vcId: '$vcId'")
                     }
                 val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
                     ?: return@runCatching null.also {
-                         Napier.e("Got no authenticated user when trying to store vcId")
-                         Napier.v("vcId: '$vcId'")
+                        Napier.e("Got no authenticated user when trying to store vcId")
+                        Napier.v("vcId: '$vcId'")
                     }
                 if (oneCredentialPerDeviceBinding) {
                     val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
                     if (revokedCreds > 0)
-                       Napier.i("Revoked $revokedCreds already existing credentials")
-                       Napier.v("device binding certificate: '${deviceBinding.certificate.encodeBase64()}', bpk: '${deviceBinding.bpk}'",)
+                        Napier.i("Revoked $revokedCreds already existing credentials")
+                    Napier.v("device binding certificate: '${deviceBinding.certificate.encodeBase64()}', bpk: '${deviceBinding.bpk}'")
                 }
                 val revocationListIndex = max(
                     (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
@@ -153,10 +155,7 @@ class DefaultRevocationService(
      * Revokes all credentials for one pupil, specified by their [bpk].
      */
     override fun revokeCredentialsByBpk(bpk: String): Int {
-        val credentials = credentialRepo.findByValidUntilAfterAndDeviceBinding_Bpk(
-            clock.now().toJavaInstant(),
-            bpk
-        )
+        val credentials = credentialRepo.findByValidUntilAfterAndDeviceBinding_Bpk(java.time.Instant.now(), bpk)
         return revokeAllCredentials(credentials)
     }
 
@@ -169,7 +168,7 @@ class DefaultRevocationService(
             return revokeCredentialsByBpk(bpk)
         val credentials =
             credentialRepo.findByValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
-                clock.now().toJavaInstant(), bpk, deviceId
+                java.time.Instant.now(), bpk, deviceId
             )
         return revokeAllCredentials(credentials)
     }
@@ -201,7 +200,7 @@ class DefaultRevocationService(
      * Lists all non-revoked credentials that have been issued
      */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
-        return credentialRepo.findAllByValidUntilAfter(clock.now().toJavaInstant())
+        return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
     }
 
     /**

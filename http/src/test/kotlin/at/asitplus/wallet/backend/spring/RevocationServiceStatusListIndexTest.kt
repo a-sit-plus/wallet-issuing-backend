@@ -1,8 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.TestTimeSource
-import at.asitplus.wallet.backend.TestTimeSource.timePeriod
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -16,6 +14,7 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.BeforeEach
@@ -24,14 +23,12 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.test.context.TestPropertySource
 import java.util.UUID
 import javax.transaction.Transactional
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest
-@TestPropertySource(properties = ["backend.time-source=TEST"])
 class RevocationServiceStatusListIndexTest {
 
     @Autowired
@@ -60,18 +57,20 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var credentialSubject: CredentialSubject
     private lateinit var issuanceDate: Instant
     private lateinit var expirationDate: Instant
+    private var timePeriod: Int = 0
 
     @BeforeEach
     fun beforeEach() {
         val client = Client()
+        timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
         attributeName = UUID.randomUUID().toString()
         attributeValue = UUID.randomUUID().toString()
         subjectId = UUID.randomUUID().toString()
         credentialSubject = AtomicAttributeCredential(subjectId, attributeName, attributeValue)
-        issuanceDate = TestTimeSource.now()
-        expirationDate = TestTimeSource.now() + 60.seconds
-        validUntil = TestTimeSource.now() + 2.seconds
+        issuanceDate = Clock.System.now()
+        expirationDate = Clock.System.now() + 60.seconds
+        validUntil = Clock.System.now() + 2.seconds
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
         credentialRepo.deleteAll()
@@ -97,8 +96,7 @@ class RevocationServiceStatusListIndexTest {
     fun `revocation list indexes should be grouped by time period`() {
         storeNewCredential(timePeriod) shouldBe 1L
         storeNewCredential(timePeriod) shouldBe 2L
-        
-        //TODO testTimeSource is rather fixed
+
         storeNewCredential(timePeriod + 1) shouldBe 1L
         storeNewCredential(timePeriod + 1) shouldBe 2L
         storeNewCredential(timePeriod + 1) shouldBe 3L

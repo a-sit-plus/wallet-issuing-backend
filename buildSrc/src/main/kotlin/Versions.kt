@@ -1,13 +1,12 @@
 object VersionsBackend {
     const val kotlin = "1.7.21"
     const val coroutines = "1.6.4"
-    const val ktor = "2.1.2"
-    const val kotest = "5.5.1"
+    const val ktor = "2.2.1"
+    const val kotest = "5.5.4"
     const val datetime = "0.4.0"
 
     const val zxing = "3.5.0"
     const val jose = "9.25.6"
-    const val deviceCheck = "0.9.4"
     const val `jackson-cbor` = "2.13.4"
     const val semver = "1.1.2"
     const val bouncycastle = "1.72"
@@ -16,10 +15,11 @@ object VersionsBackend {
     const val hsmf = "0.8.3"
     const val pgsql = "42.5.0"
     const val mockito = "4.0.0"
+    const val mochws = "4.10.0"
 
-    const val pupilid = "1.4.9"
-    const val vclib = "1.3.12"
-    const val attestation = "0.2.1"
+    const val pupilid = "1.4.10"
+    const val vclib = "1.3.13"
+    const val attestation = "0.3.0"
 
     object spring {
         const val boot = "2.7.4"

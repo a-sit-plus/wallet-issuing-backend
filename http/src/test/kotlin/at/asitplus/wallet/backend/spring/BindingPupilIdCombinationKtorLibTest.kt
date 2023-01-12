@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -19,7 +18,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.web.server.LocalServerPort
-import org.springframework.test.context.TestPropertySource
 import java.security.KeyPair
 import java.security.Signature
 import java.util.*
@@ -31,7 +29,6 @@ import java.util.*
  * Uses the KMM library with ktor to simulate the client.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = ["backend.time-source=TEST"])
 @AutoConfigureMockMvc
 class BindingPupilIdCombinationKtorLibTest {
 
@@ -55,7 +52,6 @@ class BindingPupilIdCombinationKtorLibTest {
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
         holderAgent = HolderAgent.newDefaultInstance(
             cryptoService = holderCryptoService,
-            clock = TestTimeSource
         )
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,

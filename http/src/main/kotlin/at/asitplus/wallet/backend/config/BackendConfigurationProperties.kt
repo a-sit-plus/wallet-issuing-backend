@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.attestation.IOSAttestationConfiguration
-import at.asitplus.wallet.backend.TimeSource
 import at.asitplus.wallet.lib.agent.MonthAndDay
 import at.asitplus.wallet.lib.agent.RevocationListCache
 import kotlinx.datetime.Month
@@ -18,14 +17,10 @@ data class BackendConfigurationProperties(
      * Public URL of this instance, used for several URLs in messages sent to the Wallet
      */
     val publicContext: String = "http://localhost:8080/",
-
-    val timeSource: TimeSource = TimeSource.SYSTEM,
-
     /**
      * Date when a school year starts (MM-DD)
      */
     private val timePeriodRollover: String = "09-10",
-
     /**
      * Configuration for issued credentials
      */
@@ -63,7 +58,7 @@ data class BackendConfigurationProperties(
      */
     val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
 ) {
-    val schooYearStart: MonthAndDay =
+    val schoolYearStart: MonthAndDay =
         timePeriodRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
 }
 
@@ -92,14 +87,10 @@ data class CredentialConfigurationProperties(
 
     val revocationListCache: RevocationListCacheProperties? = null,
 
-    /**
-     * Additional validity period added on top of issued credential validity . Default:  or 90 days (`P90D`)
-     */
-    private val gracePeriod: String = "P90D",
-) {
+
+    ) {
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
-    val gracePeriodDuration = Duration.parse(gracePeriod)
 }
 
 @ConstructorBinding
@@ -219,8 +210,15 @@ data class EcoAttributeSourceConfigurationProperties(
     override val key: KeyConfiguration? = null,
     override val trust: TrustConfiguration? = null,
     override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
-    override val apiKey: String? = null
-) : ExternalConnectionConfig
+    override val apiKey: String? = null,
+    /**
+     * Additional validity period added on top of issued credential validity. Default: 30 days (`P30D`)
+     */
+    private val gracePeriod: String = "P30D",
+) : ExternalConnectionConfig {
+
+    val gracePeriodDuration = Duration.parse(gracePeriod)
+}
 
 interface ExternalConnectionConfig {
     val url: URI?
@@ -323,7 +321,7 @@ data class AndroidAttestationConfigurationProperties(
     val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
     val signatureDigests: Array<String>,
     val requireStrongBox: Boolean = false,
-    val requireRollbackResistance: Boolean = true,
+    val requireRollbackResistance: Boolean = false,
 )
 
 @ConstructorBinding

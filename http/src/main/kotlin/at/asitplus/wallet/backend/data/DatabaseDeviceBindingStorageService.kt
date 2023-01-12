@@ -3,21 +3,18 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.DeviceListEntry
+import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import io.github.aakira.napier.Napier
-import java.util.*
+import java.util.UUID
 
 
 class DatabaseDeviceBindingStorageService(
     private val deviceBindingRepository: DeviceBindingRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val authenticationSupplier: AuthenticationSupplier,
-    private val clock: Clock
 ) : DeviceBindingStorageService {
-
 
     override fun store(
         bpk: String,
@@ -40,12 +37,12 @@ class DatabaseDeviceBindingStorageService(
 
     override fun lookupBpk(decodedCert: ByteArray): String? {
         return deviceBindingRepository
-            .findByCertificateAndValidUntilAfter(decodedCert, clock.now().toJavaInstant())?.bpk
+            .findByCertificateAndValidUntilAfter(decodedCert, java.time.Instant.now())?.bpk
     }
 
     override fun lookupDevices(bpk: String): Collection<DeviceListEntry> {
         return deviceBindingRepository
-            .findAllByBpkAndValidUntilAfter(bpk, clock.now().toJavaInstant())
+            .findAllByBpkAndValidUntilAfter(bpk, java.time.Instant.now())
             .map { DeviceListEntry(it.deviceName, it.deviceId) }
     }
 
@@ -54,7 +51,7 @@ class DatabaseDeviceBindingStorageService(
             ?: return null.also {
                 Napier.e("Got no authenticated user when trying to store vc")
             }
-        val now = clock.now().toJavaInstant()
+        val now = java.time.Instant.now()
         return deviceBindingRepository
             .findByCertificateAndValidUntilAfter(certificate, now)
             ?: return null.also {
@@ -68,16 +65,13 @@ class DatabaseDeviceBindingStorageService(
         deviceId: String?
     ): Map<DeviceBinding, Collection<RevokedCredential>> {
         synchronized(CredentialRepositoriesLock) {
-            val toRevoke = if (deviceId != null)
+            val toRevoke = if (deviceId != null) {
                 deviceBindingRepository
-                    .findAllByBpkAndDeviceIdAndValidUntilAfter(
-                        bpk,
-                        deviceId,
-                        clock.now().toJavaInstant()
-                    )
-            else
+                    .findAllByBpkAndDeviceIdAndValidUntilAfter(bpk, deviceId, java.time.Instant.now())
+            } else {
                 deviceBindingRepository
-                    .findAllByBpkAndValidUntilAfter(bpk, clock.now().toJavaInstant())
+                    .findAllByBpkAndValidUntilAfter(bpk, java.time.Instant.now())
+            }
 
             Napier.i("Revoking ${toRevoke.size} device bindings")
 

@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.pki.PkiService
-import at.asitplus.wallet.backend.TestTimeSource
 import at.asitplus.wallet.lib.agent.Issuer
 import kotlinx.coroutines.test.runTest
 import org.hamcrest.Matchers.containsString
@@ -14,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import java.util.UUID
+import kotlin.random.Random
 
 /**
  * This is no MockMVC test, because that test setup would not create the error documents
@@ -43,15 +43,16 @@ class PublicControllerErrorTest {
 
     @Test
     fun `GET VC status list returns error document`() {
+        val timePeriod = Random.nextInt(2000, 2032)
         runTest {
-            whenever(issuer.issueRevocationListCredential(TestTimeSource.timePeriod)).thenThrow(IllegalArgumentException(exceptionMessage))
+            whenever(issuer.issueRevocationListCredential(timePeriod)).thenThrow(IllegalArgumentException(exceptionMessage))
         }
 
-        webClient.get().uri("/credentials/status/2021").exchange()
+        webClient.get().uri("/credentials/status/$timePeriod").exchange()
             .expectStatus().is5xxServerError
             .expectBody().jsonPath("status").isEqualTo(500)
             .jsonPath("exception").value(containsString(IllegalArgumentException::class.java.simpleName))
-            .jsonPath("path").isEqualTo("/credentials/status/2021")
+            .jsonPath("path").isEqualTo("/credentials/status/$timePeriod")
             .jsonPath("message").isEqualTo(exceptionMessage)
     }
 
