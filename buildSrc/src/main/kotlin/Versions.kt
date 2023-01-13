@@ -15,11 +15,12 @@ object VersionsBackend {
     const val hsmf = "0.8.3"
     const val pgsql = "42.5.0"
     const val mockito = "4.0.0"
-    const val mochws = "4.10.0"
+    const val okhttp = "4.10.0"
+    const val opencv = "4.5.5-1"
 
-    const val pupilid = "1.4.10"
-    const val vclib = "1.3.13"
-    const val attestation = "0.3.0"
+    const val pupilid = "1.5.0"
+    const val vclib = "1.4.0"
+    const val attestation = "0.2.1"
 
     object spring {
         const val boot = "2.7.4"

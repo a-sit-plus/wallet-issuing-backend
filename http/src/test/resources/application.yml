@@ -1,3 +1,6 @@
+logging:
+  level:
+    at.asitplus: trace
 spring:
   profiles:
     default: pupilid

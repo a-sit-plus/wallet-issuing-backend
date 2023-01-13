@@ -6,3 +6,8 @@ spring:
   cloud:
     config:
       enabled: false
+backend:
+  authn:
+    deviceBinding:
+      attestation:
+        noop: true

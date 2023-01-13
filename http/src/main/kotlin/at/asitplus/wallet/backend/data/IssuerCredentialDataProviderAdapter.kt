@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.keyId
 import at.asitplus.wallet.lib.AuthenticationError
@@ -42,7 +43,8 @@ class IssuerCredentialDataProviderAdapter(
             IssuerCredentialDataProvider.CredentialToBeIssued(
                 it.subject,
                 it.expiration,
-                it.attributeType
+                it.attributeType,
+                it.attachments.map(CredentialToBeIssuedAttachment::toIssuerCredentialDataProviderFormat),
             )
         }
     }
@@ -63,7 +65,12 @@ class IssuerCredentialDataProviderAdapter(
             cappedExpiration
         )
         return credential.map {
-            IssuerCredentialDataProvider.CredentialToBeIssued(it.subject, it.expiration, it.attributeType)
+            IssuerCredentialDataProvider.CredentialToBeIssued(
+                it.subject,
+                it.expiration,
+                it.attributeType,
+                it.attachments.map(CredentialToBeIssuedAttachment::toIssuerCredentialDataProviderFormat),
+            )
         }
     }
 
