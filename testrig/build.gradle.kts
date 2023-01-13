@@ -5,9 +5,9 @@ import java.util.*
 plugins {
     id("org.springframework.boot") version "2.7.2"
     id("io.spring.dependency-management") version "1.0.12.RELEASE"
-    kotlin("jvm") version "1.7.21"
-    kotlin("plugin.spring") version "1.7.21"
-    kotlin("plugin.serialization") version "1.7.21"
+    kotlin("jvm") version "1.8.0"
+    kotlin("plugin.spring") version "1.8.0"
+    kotlin("plugin.serialization") version "1.8.0"
 }
 
 val artifactVersion: String by extra
@@ -24,15 +24,9 @@ configurations {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.apache.httpcomponents:httpclient")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
     implementation("com.nimbusds:nimbus-jose-jwt:9.23")
-    implementation("at.asitplus.wallet:vclib-jvm")
-    implementation("at.asitplus.wallet:pupilidlib-jvm")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
-    implementation("io.github.aakira:napier:2.6.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    implementation("at.asitplus.wallet:pupilidumbrella-jvm")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("io.ktor:ktor-client-core:2.1.0")

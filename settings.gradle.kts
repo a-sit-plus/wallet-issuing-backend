@@ -9,15 +9,10 @@ pluginManagement {
 rootProject.name = "backend"
 
 include( "http", "testrig")
-includeBuild("vclib"){
-    dependencySubstitution {
-        substitute(module("at.asitplus.wallet:vclib-jvm")).using(project(":vclib"))
-    }
-}
 
-includeBuild("pupilidlib"){
+includeBuild("pupilidumbrella"){
     dependencySubstitution {
-        substitute(module("at.asitplus.wallet:pupilidlib-jvm")).using(project(":pupilidlib"))
+        substitute(module("at.asitplus.wallet:pupilidumbrella-jvm")).using(project(":pupilidumbrella"))
     }
 }
 includeBuild("remote-crypto-provider"){

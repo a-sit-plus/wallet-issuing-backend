@@ -1,16 +1,13 @@
 object VersionsBackend {
-    const val kotlin = "1.7.21"
-    const val coroutines = "1.6.4"
+    const val kotlin = "1.8.0"
     const val ktor = "2.2.1"
     const val kotest = "5.5.4"
-    const val datetime = "0.4.0"
 
     const val zxing = "3.5.0"
     const val jose = "9.25.6"
     const val `jackson-cbor` = "2.13.4"
+    const val bcprov = "1.72"
     const val semver = "1.1.2"
-    const val bouncycastle = "1.72"
-    const val napier = "2.6.1"
     const val `google-cbor` = "0.01.02"
     const val hsmf = "0.8.3"
     const val pgsql = "42.5.0"
@@ -18,8 +15,7 @@ object VersionsBackend {
     const val okhttp = "4.10.0"
     const val opencv = "4.5.5-1"
 
-    const val pupilid = "1.5.0"
-    const val vclib = "1.4.0"
+    const val umbrella = " 1.1.0-SNAPSHOT"
     const val attestation = "0.2.1"
 
     object spring {

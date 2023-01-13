@@ -35,43 +35,50 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-config-client:${VersionsBackend.spring.`cloud-config-client`}")
     implementation("org.springframework.session:spring-session-core")
+    implementation("de.codecentric:spring-boot-admin-starter-client:${VersionsBackend.spring.`admin-starter-client`}")
+
+    implementation("org.springdoc:springdoc-openapi-ui:${VersionsBackend.spring.doc}")
+    implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
+    implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
+
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.apache.httpcomponents:httpclient")
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${VersionsBackend.serialization.json}")
     implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.jose}")
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
+
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
     implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
-    implementation("de.codecentric:spring-boot-admin-starter-client:${VersionsBackend.spring.`admin-starter-client`}")
-    implementation("at.asitplus.wallet:vclib-jvm:${VersionsBackend.vclib}")
-    implementation("at.asitplus.wallet:pupilidlib-jvm:${VersionsBackend.pupilid}")
+
+    implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${VersionsBackend.coroutines}")
-    implementation("org.bouncycastle:bcpkix-jdk18on:${VersionsBackend.bouncycastle}")
-    implementation("org.springdoc:springdoc-openapi-ui:${VersionsBackend.spring.doc}")
-    implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
-    implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
-    implementation("io.github.aakira:napier:${VersionsBackend.napier}")
+    implementation("org.bouncycastle:bcpkix-jdk18on:${VersionsBackend.bcprov}")
+
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:${VersionsBackend.datetime}")
     implementation("org.openpnp:opencv:${VersionsBackend.opencv}")
+
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql:${VersionsBackend.pgsql}")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${VersionsBackend.coroutines}")
     testImplementation("org.mockito.kotlin:mockito-kotlin:${VersionsBackend.mockito}")
-    testImplementation("io.ktor:ktor-client-java:${VersionsBackend.ktor}")
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testImplementation("io.kotest:kotest-assertions-core:${VersionsBackend.kotest}")
+
+    testImplementation("io.ktor:ktor-client-java:${VersionsBackend.ktor}")
     testImplementation("com.squareup.okhttp3:mockwebserver:${VersionsBackend.okhttp}")
 }
 
