@@ -328,6 +328,9 @@ backend:
       width: 120
   revocation-list:
     lifetime: P7D
+    regular-write-timeout: P5D
+    dirty-check-rate: PT10M
+    regular-check-rate: PT24H
   issuer-key: {{ KEY_CONFIG }}
   hsm-facade:
     enabled: false
@@ -367,6 +370,9 @@ Options for pictures in credentials under `backend.credentials.pictures`:
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
  - `lifetime` to set the lifetime of a single revocation list, i.e. the validity of the Verifiable Credential which represents the revocation list for other credentials, defaults to `P7D`, i.e. 7 days.
+ - `regular-write-timeout` to set the timeout after which a revocation list shall be written again, defaults to `P5D`, i.e. 5 days.
+ - `dirty-check-rate` to set the rate at which the service shall check for dirty (i.e. where a credential has been revoked) revocation lists that need to be written, defaults to `PT10M`, i.e. 10 minutes.
+ - `regular-check-rate` to set the rate at which the service shall check for outdated revocation lists (see `regular-write-timeout`) that need to be written, defaults to `PT24H`, i.e. 24 hours.
 
 Alternative configuration for the device binding authentication (i.e. the validation of the ext. nonce provided by the Wallet App):
 

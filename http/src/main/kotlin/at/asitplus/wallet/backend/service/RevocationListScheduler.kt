@@ -1,21 +1,23 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
-import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
-import kotlin.time.Duration.Companion.days
+import kotlin.time.toJavaDuration
 
 @Service
 class RevocationListScheduler(
     private val revocationListWriter: RevocationListWriter,
     private val timePeriodProvider: TimePeriodProvider,
-) :
-    ApplicationListener<RevocationEvent> {
+    private val configurationProperties: BackendConfigurationProperties,
+    private val taskScheduler: TaskScheduler,
+) : ApplicationListener<RevocationEvent> {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -28,6 +30,14 @@ class RevocationListScheduler(
             mapTimePeriodDirty[it] = false
             mapTimePeriodTimestamp[it] = Instant.fromEpochSeconds(0)
         }
+        taskScheduler.scheduleAtFixedRate(
+            { writeDirtyRevocationList() },
+            configurationProperties.revocationList.dirtyCheckRateDuration.toJavaDuration()
+        )
+        taskScheduler.scheduleAtFixedRate(
+            { writeRegularRevocationList() },
+            configurationProperties.revocationList.regularCheckRateDuration.toJavaDuration()
+        )
     }
 
     override fun onApplicationEvent(event: RevocationEvent) {
@@ -35,7 +45,6 @@ class RevocationListScheduler(
         mapTimePeriodDirty[event.timePeriod] = true
     }
 
-    @Scheduled
     fun writeDirtyRevocationList() {
         mapTimePeriodDirty
             .filterValues { it }
@@ -46,11 +55,9 @@ class RevocationListScheduler(
             }
     }
 
-    @Scheduled
     fun writeRegularRevocationList() {
-        val durationAfterWhichToWriteRevocationList = 5.days
         mapTimePeriodTimestamp
-            .filterValues { Clock.System.now() - it > durationAfterWhichToWriteRevocationList }
+            .filterValues { Clock.System.now() - it > configurationProperties.revocationList.regularWriteTimeoutDuration }
             .forEach {
                 log.debug("writeRegularRevocationList for ${it.key}")
                 revocationListWriter.writeRevocationList(it.key)

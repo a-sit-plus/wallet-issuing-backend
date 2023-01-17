@@ -209,8 +209,23 @@ data class RevocationListConfigurationProperties(
      * Lifetime of a single revocation list, defaults to 7 days
      */
     private val lifetime: String = "P7D",
+    /**
+     * Timeout after which to write revocation lists again, that have not been written recently
+     */
+    private val regularWriteTimeout: String = "P5D",
+    /**
+     * Rate at which to check for dirty revocation lists that shall be written after a credential got revoked
+     */
+    private val dirtyCheckRate: String = "PT10M",
+    /**
+     * Rate at which to check for outdated revocation lists that shall be written again, if nothing changed
+     */
+    private val regularCheckRate: String = "PT24H"
 ) {
     val lifetimeDuration: Duration = Duration.parse(lifetime)
+    val regularWriteTimeoutDuration: Duration = Duration.parse(regularWriteTimeout)
+    val dirtyCheckRateDuration: Duration = Duration.parse(dirtyCheckRate)
+    val regularCheckRateDuration: Duration = Duration.parse(regularCheckRate)
 }
 
 @ConstructorBinding

@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -18,7 +19,12 @@ class RevocationListSchedulerTest {
         override fun getRelevantTimePeriods(clock: Clock): List<Int> = listOfTimePeriods
         override fun getTimePeriodFor(instant: Instant): Int = listOfTimePeriods.first()
     }
-    private val scheduler = RevocationListScheduler(writer, timePeriodProvider).also { it.postConstruct() }
+    private val scheduler = RevocationListScheduler(
+        writer,
+        timePeriodProvider,
+        BackendConfigurationProperties(),
+        mock(),
+    ).also { it.postConstruct() }
 
     @Test
     fun testDirty() {
