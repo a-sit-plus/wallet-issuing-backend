@@ -10,6 +10,8 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import org.springframework.context.ApplicationEvent
+import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
 
 
@@ -75,11 +77,17 @@ interface RevocationService {
 
 }
 
+/**
+ * Gets emitted by [DefaultRevocationService] when a credential (issued in [timePeriod]) got revoked.
+ */
+class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(source)
+
 class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val deviceBindingStorageService: DeviceBindingStorageService,
     private val oneCredentialPerDeviceBinding: Boolean,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) : RevocationService {
 
     /**
@@ -185,6 +193,8 @@ class DefaultRevocationService(
         synchronized(CredentialRepositoriesLock) {
             revokedCredentialRepo.saveAll(toRevoke.map { RevokedCredential(it.timePeriod, it.revocationListIndex) })
             credentialRepo.deleteAllInBatch(toRevoke)
+            toRevoke.map { it.timePeriod }.toSet()
+                .forEach { applicationEventPublisher.publishEvent(RevocationEvent(this, it)) }
             return toRevoke.count()
         }
     }

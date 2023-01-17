@@ -20,6 +20,7 @@ import kotlinx.datetime.Clock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -27,7 +28,6 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
 import javax.annotation.PostConstruct
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -291,11 +291,13 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         revokedCredentialRepo: RevokedCredentialRepository,
         deviceBindingStorageService: DeviceBindingStorageService,
         pkiService: PkiService,
+        applicationEventPublisher: ApplicationEventPublisher,
     ): RevocationService = DefaultRevocationService(
         credentialRepo,
         revokedCredentialRepo,
         deviceBindingStorageService,
         configurationProperties.credentials.oneCredentialPerDeviceBinding,
+        applicationEventPublisher,
     )
 
     @Bean
