@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.service
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import java.util.concurrent.ConcurrentLinkedDeque
-import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
 
@@ -40,7 +39,7 @@ class SimpleChallengeService(
 
     override fun generate(): ByteArray {
         removeExpiredChallenges()
-        return Entry(Random.nextBytes(challengeLength), Clock.System.now()).also { list += it }.challenge
+        return Entry(SecureRandom.nextBytes(challengeLength), Clock.System.now()).also { list += it }.challenge
     }
 
     override fun verify(challenge: ByteArray): Boolean {

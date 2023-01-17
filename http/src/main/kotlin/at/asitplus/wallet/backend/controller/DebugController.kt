@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.backend.service.SecureRandom
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import com.google.zxing.BarcodeFormat
@@ -26,7 +27,6 @@ import java.io.ByteArrayOutputStream
 import java.lang.Long.max
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
 
 @Controller
@@ -123,7 +123,7 @@ class DebugController(
         val bpk = UUID.randomUUID().toString()
         val deviceBinding = DeviceBinding(
             bpk,
-            Random.Default.nextBytes(32),
+            SecureRandom.nextBytes(32),
             deviceName,
             deviceId,
             exp.toJavaInstant()

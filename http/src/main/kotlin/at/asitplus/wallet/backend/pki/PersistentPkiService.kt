@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.data.IssuedCertificateRepository
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.service.SecureRandom
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
@@ -18,7 +19,6 @@ import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import java.math.BigInteger
 import java.util.Date
-import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -76,7 +76,7 @@ class PersistentPkiService(
     }
 
     private fun uniqueSerialNumber(): Long {
-        val serialNumber = Random.nextLong()
+        val serialNumber = SecureRandom.nextLong()
         if (issuedCertificateRepository.findBySerialNumber(serialNumber) != null)
             return uniqueSerialNumber()
         return serialNumber

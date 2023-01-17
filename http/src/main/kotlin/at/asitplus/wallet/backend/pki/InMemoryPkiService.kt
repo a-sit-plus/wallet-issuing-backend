@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.pki
 import at.asitplus.wallet.backend.pki.PkiUtils.verifyCsr
 import at.asitplus.wallet.backend.service.CryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.service.SecureRandom
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
@@ -18,7 +19,6 @@ import org.bouncycastle.cert.jcajce.JcaX509v2CRLBuilder
 import java.math.BigInteger
 import java.util.Date
 import javax.security.auth.x500.X500Principal
-import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -63,7 +63,7 @@ class InMemoryPkiService(
     ): X509CertificateHolder =
         X509v3CertificateBuilder(
             /* issuer = */ issuer,
-            /* serial = */ BigInteger.valueOf(Random.nextLong()),
+            /* serial = */ BigInteger.valueOf(SecureRandom.nextLong()),
             /* notBefore = */ Clock.System.now().toJavaDate(),
             /* notAfter = */ (Clock.System.now() + certValidity).toJavaDate(),
             /* subject = */ subject,
