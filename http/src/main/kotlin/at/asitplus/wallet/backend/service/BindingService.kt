@@ -134,17 +134,16 @@ class DefaultBindingService(
         if (!challengeService.verifyAndRemove(challenge))
             return null.also { Napier.w("binding challenge null") }
 
-        val bindingPublicKey =
-            kotlin.runCatching { BouncyCastleProvider.getPublicKey(PKCS10CertificationRequest(csr).subjectPublicKeyInfo) }
-                .getOrElse { error ->
-                    // TODO: Cursory look over thrown exceptions shows that it may leak some stuff, but only if data
-                    // is malformed anyways. Is this fine?
-                    return null.also {
-                        Napier.w("Could not parse public key from CSR", error)
-                        Napier.v("Error was: ", error)
-                    }
-                } as ECPublicKey
-
+        val bindingPublicKey = runCatching {
+            BouncyCastleProvider.getPublicKey(PKCS10CertificationRequest(csr).subjectPublicKeyInfo)
+        }.getOrElse { error ->
+            // TODO: Cursory look over thrown exceptions shows that it may leak some stuff, but only if data
+            // is malformed anyways. Is this fine?
+            return null.also {
+                Napier.w("Could not parse public key from CSR", error)
+                Napier.v("Error was: ", error)
+            }
+        } as ECPublicKey
 
         val attestedPublicKey = attestationService.verifyKeyAttestation(
             attestationCerts,
@@ -157,17 +156,13 @@ class DefaultBindingService(
             publicKey
         } ?: return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
 
-
         val certificate = pkiService.verifyAndSign(csr, buildSubject(challenge))
             ?: return null.also { Napier.w("CSR invalid") }
-
         val signedPublicKey = cryptoService.wrapInJws(attestedPublicKey)
-
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
         Napier.i("Created new device binding")
         Napier.v("bpk: $bpk, binding certificate: ${certificate.encoded.encodeBase64()}")
-
         return BindingCertificate(certificate.encoded, signedPublicKey)
     }
 
