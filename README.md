@@ -326,6 +326,8 @@ backend:
       scale: true
       height: 154
       width: 120
+  revocation-list:
+    lifetime: P7D
   issuer-key: {{ KEY_CONFIG }}
   hsm-facade:
     enabled: false
@@ -362,6 +364,9 @@ Options for pictures in credentials under `backend.credentials.pictures`:
  - `scale=true` to enable scaling
  - `height=154` to set the height of the scaled picture
  - `width=120` to set the width of the scaled picture
+
+Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
+ - `lifetime` to set the lifetime of a single revocation list, i.e. the validity of the Verifiable Credential which represents the revocation list for other credentials, defaults to `P7D`, i.e. 7 days.
 
 Alternative configuration for the device binding authentication (i.e. the validation of the ext. nonce provided by the Wallet App):
 

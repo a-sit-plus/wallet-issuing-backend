@@ -56,6 +56,10 @@ data class BackendConfigurationProperties(
      * Configure the source of attributes for the credentials
      */
     val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
+    /**
+     * Configure details about revocation lists for Verifiable Credentials
+     */
+    val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
 ) {
     val schoolYearStart: MonthAndDay =
         timePeriodRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
@@ -198,6 +202,16 @@ data class RemoteCryptoConfiguration(
      */
     val apiKey: String? = null
 )
+
+@ConstructorBinding
+data class RevocationListConfigurationProperties(
+    /**
+     * Lifetime of a single revocation list, defaults to 7 days
+     */
+    private val lifetime: String = "P7D",
+) {
+    val lifetimeDuration: Duration = Duration.parse(lifetime)
+}
 
 @ConstructorBinding
 data class AttributeSourceConfigurationProperties(

@@ -403,12 +403,12 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
-        //TODO
         revocationListBaseUrl = appendPath(
             configurationProperties.publicContext,
             "credentials",
             "status"
         ),
+        revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         timePeriodProvider = timePeriodProvider(),
         validator = Validator.newDefaultInstance(DefaultVerifierCryptoService())
     )
