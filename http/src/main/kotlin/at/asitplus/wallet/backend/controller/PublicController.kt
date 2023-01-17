@@ -1,20 +1,28 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.Extensions.sha256
+import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.agent.Issuer
-import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
+import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.component.encoding.base16.encodeBase16
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
+import kotlin.io.path.Path
+import kotlin.io.path.notExists
+import kotlin.io.path.readText
+import kotlin.time.toJavaDuration
 
 /**
  * Public endpoints, available without authentication:
@@ -26,8 +34,8 @@ import org.springframework.web.server.ResponseStatusException
 class PublicController(
     private val issuer: Issuer,
     private val pkiService: PkiService,
+    private val configurationProperties: BackendConfigurationProperties,
 ) {
-
 
     @Operation(
         summary = "Get currently valid VC revocation lists",
@@ -35,8 +43,12 @@ class PublicController(
         responses = [
             ApiResponse(
                 description = "A JSON array with a list of endpoints",
-                content = [Content(examples = [ExampleObject(value = "[\"https://wallet.a-sit.at/credentials/status/2022\", " +
-                        "\"https://wallet.a-sit.at/credentials/status/2022\"]")])]
+                content = [Content(
+                    examples = [ExampleObject(
+                        value = "[\"https://wallet.a-sit.at/credentials/status/2022\", " +
+                                "\"https://wallet.a-sit.at/credentials/status/2022\"]"
+                    )]
+                )]
             ),
             ApiResponse(responseCode = "500", ref = "errorResponse"),
         ]
@@ -61,11 +73,19 @@ class PublicController(
         ]
     )
     @GetMapping("/credentials/status/{timePeriod}")
-    fun getVcRevocationList(@PathVariable timePeriod:Int) = runBlocking {
+    fun getVcRevocationList(@PathVariable timePeriod: Int): ResponseEntity<String> {
         Napier.i("/credentials/status/$timePeriod called")
-        val rl = issuer.issueRevocationListCredential(timePeriod)
-        Napier.i("/credentials/status/$timePeriod returns $rl")
-        ResponseEntity.ok(rl)
+        val path = Path(configurationProperties.revocationList.path, timePeriod.toString())
+        if (path.notExists()) {
+            Napier.i("/credentials/status/$timePeriod returns HTTP 404, path does not exist: '$path'")
+            return ResponseEntity.notFound().build()
+        }
+        val rl = path.readText()
+        Napier.i("/credentials/status/$timePeriod returns ${rl.count()} chars")
+        return ResponseEntity.ok()
+            .eTag(rl.encodeToByteArray().sha256().encodeBase16().uppercase())
+            .cacheControl(CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration()))
+            .body(rl)
     }
 
     @Operation(
