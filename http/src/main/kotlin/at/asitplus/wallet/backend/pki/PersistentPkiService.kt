@@ -37,16 +37,15 @@ class PersistentPkiService(
 
     private val issuer = X500Name.getInstance(BCStyle.INSTANCE, caCertificate.subjectX500Principal.encoded)
 
-    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? {
-        try {
+    override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? =
+        kotlin.runCatching {
             val csr = verifyCsr(csrEncoded, expectedSubject) ?: return null
             val holder = signCertificate(csr.subject, csr.subjectPublicKeyInfo)
-            return SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
-        } catch (e: Throwable) {
+            SignedCertificate(holder.encoded, holder.notAfter.toInstant().toKotlinInstant())
+        }.getOrElse { e ->
             Napier.e("verifyAndSign: error", e)
-            return null
+            null
         }
-    }
 
     private fun signCertificate(
         subject: X500Name,
