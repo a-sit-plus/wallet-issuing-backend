@@ -13,6 +13,7 @@ import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
 import kotlin.time.toJavaDuration
 
+
 @Service
 class RevocationListScheduler(
     private val revocationListWriter: RevocationListWriter,
@@ -70,7 +71,7 @@ class RevocationListScheduler(
 
     fun writeRegularRevocationList() {
         mapTimePeriodTimestamp
-            .filterValues { Clock.System.now() - it > configurationProperties.revocationList.regularWriteTimeoutDuration }
+            .filterValues { it.isOutdated }
             .forEach {
                 log.debug("writeRegularRevocationList for ${it.key}")
                 thread {
@@ -80,4 +81,8 @@ class RevocationListScheduler(
             }
     }
 
+    private val Instant.isOutdated: Boolean
+        get() {
+            return (Clock.System.now() - this) > (configurationProperties.revocationList.regularWriteTimeoutDuration - configurationProperties.revocationList.regularCheckRateDuration)
+        }
 }

@@ -218,9 +218,9 @@ data class RevocationListConfigurationProperties(
      */
     private val dirtyCheckRate: String = "PT10M",
     /**
-     * Rate at which to check for outdated revocation lists that shall be written again, if nothing changed, defaults to `PT24H`.
+     * Rate at which to check for outdated revocation lists that shall be written again, if nothing changed, defaults to `PT1H`.
      */
-    private val regularCheckRate: String = "PT24H",
+    private val regularCheckRate: String = "PT1H",
     /**
      * Path at which the revocation lists shall be written to and read from, defaults to `cache/revocation-lists/`
      */
