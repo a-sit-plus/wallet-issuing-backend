@@ -12,7 +12,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.boot.web.server.LocalServerPort
+import org.springframework.boot.test.web.server.LocalServerPort
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
