@@ -21,7 +21,9 @@ The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagge
 
 `GET /crl/1` returns the X.509 Certificate Revocation List, if the PKI implementation supports this, i.e. only for the internal PKI (see below for configuration). When the external AERA service is used to sign device binding certificates, the CRL is available at an external URL (specified in the issued certificates).
 
-`GET /credentials/status/1` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/). It is essentially a bitstring in which a bit is set if the verifiable credential with this `statusListIndex` is revoked. The bitstring is then zlib compressed and base64 encoded to be transported inside an JWS.
+`GET /credentials/status/current` returns a simple list of currently available revocation lists.
+
+`GET /credentials/status/{year}` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/). It is essentially a bitstring in which a bit is set if the verifiable credential with this `statusListIndex` is revoked. The bitstring is then zlib compressed and base64 encoded to be transported inside an JWS. The `{year}` variable may be filled with an entry from the `current` revocation lists, or is contained in an issued ID.
 
 Sample revocation list (transported as a JWS in compact representation, exploded here for readability):
 
@@ -141,19 +143,15 @@ HTTP/1.1 200
                   F7zzQbM/4pF1DfK+6jAKBggqhkjOPQQDAgNJADBGAiEAs9sOHPs3vuHP5zbaT
                   UTxC2j4a/afLfW1GlMJdHGwsToCIQCiAbOdx7Bth+T7MjQhv9hsYo0zDzuMBv
                   xYKF+pbNtJdg==",
-  "attestedPublicKey": "eyJhbGciOiJFUzI1NiJ9.eyJqd2siOnsia3R5IjoiRUMiLCJjcnYiOi
-                        JQLTI1NiIsImtpZCI6ImRpZDprZXk6bUVwQjVWWDkzLy9wZGZBV0Zzc
-                        FlsbDlCQ21ybUlDZVJnaUJxbjhRdk1TYUIvaUEvQmY2anJNQkFBV1lE
-                        T0UyUk5BT0s4MUJkaHZtUWYrL1RPaFZ5VXNUQXUiLCJ4IjoiZVZWX2R
-                        fXzZYWHdGaGJLV0paZlFRcHE1aUFua1lJZ2FwX0VMekVtZ2Y0ZyIsIn
-                        kiOiJEOEZfcU9zd0VBQlpnTTRUWkUwQTRyelVGMkctWkJfNzlNNkZYS
-                        lN4TUM0In0sInNuIjoyMzEzMzIyNzQwODkyNzE3MzY0fQ.C3pPFUTsZ
-                        xZnnq-_KYv45pq--zrBFKrgfKuk82nF5NE1HuJUdFyS18a1Nqfibfr7
-                        HeAh9DpBV2o7rWTUv8HMjA"
+  "attestedPublicKey": "eyJhbGciOiJFUzI1NiJ9.eyJraWQiOiJkaWQ6a2V5Om1FcEFuUzFuQj
+                        BXaVErVjFyMmRObWNoSGFSRVE1bUJpU1FsVGJqdXkxV0x2U1VzaTR3S
+                        lNOdEJuMHZja2dNY1d1dFpXbEdOeGpSSUFTVkdRT1QyZk4zeGJiIn0.
+                        oAQ27KKdyi6FpjXRC7wuLFaCrN6UoLOk1HGc42KhFju0U1IkR-khRLB
+                        nmFMFD_K4yCkHXVWpz-YrUkLEoaQ2Bg"
 }
 ```
 
-The `attestedPublicKey` structure contains the public key of the device binding certificate, along with the serial number of the device binding certificate:
+The `attestedPublicKey` structure contains the public key of the device binding certificate:
 
 ```
 {
@@ -161,14 +159,7 @@ The `attestedPublicKey` structure contains the public key of the device binding 
 }
 .
 {
-  "jwk": {
-    "kty": "EC",
-    "crv": "P-256",
-    "kid": "did:key:mEpB5VX93//pdfAWFspYll9BCmrmICeRgiBqn8QvMSaB/iA/Bf6jrMBAAWYDOE2RNAOK81BdhvmQf+/TOhVyUsTAu",
-    "x": "eVV_d__6XXwFhbKWJZfQQpq5iAnkYIgap_ELzEmgf4g",
-    "y": "D8F_qOswEABZgM4TZE0A4rzUF2G-ZB_79M6FXJSxMC4"
-  },
-  "sn": 2313322740892717600
+  "kid": "did:key:mEpB5VX93//pdfAWFspYll9BCmrmICeRgiBqn8QvMSaB/iA/Bf6jrMBAAWYDOE2RNAOK81BdhvmQf+/TOhVyUsTAu",
 }
 ```
 
@@ -350,24 +341,7 @@ backend:
         key: asdfasdf
     device-binding:
       type: INTERNAL
-    attestation:
-      verification-offset: PT10m  #add some offset to temporal validity checks to account for slightly off clocks
-      android:
-        package-name: android.package.name
-        signature-digests:
-          - <HEX_ENCODED_SHA-256-FINGERPRINT_OF_SINGING_CER_1>
-          - <HEX_ENCODED_SHA-256-FINGERPRINT_OF_SINGING_CER_2>
-          - ...
-        patch-level: #entirely optional. Omission = no minimum patch level
-          year: 2020
-          month: 01
-        android-version: 9000 #optional; omission = no minimum version. 4200 = Android 4.2, 9000 = Android 9, 10000 = Android 10, etc.
-        require-strong-box: false #defaults to false, set to true to enforce strongBox-protected hardware keys on Android
-      ios:
-        bundle-identifier: ios.bundle.identifier
-        team-identifier: DEADBEEF42
-        sandbox: false  # either development stage (=true) or production (=false)
-        ios-version: 14 # optional. Omission = no minimum iOS version required
+    attestation: [...]
   attribute-source:
     type: RANDOM
   pki:
@@ -414,6 +388,39 @@ backend:
     attestation:
       noop: true
 ```
+
+```yaml
+backend:
+  authn:
+    attestation:
+      verification-offset: PT10M
+      android:
+        package-name: android.package.name
+        signature-digests:
+          - ...
+        patch-level:
+          year: 2020
+          month: 01
+        android-version: 9000
+        require-strong-box: false
+      ios:
+        bundle-identifier: ios.bundle.identifier
+        team-identifier: DEADBEEF42
+        sandbox: false
+        ios-version: 14
+```
+
+There are more options for configuring validation of the Key Attestation provided by clients, under `backend.authn.attestation`:
+- `verification-offset` may add some offset to temporal validity checks, to account for slightly off clocks.
+- `android.package-name` defines the expected name of the client application running on Android.
+- `android.signature-digests` is a list of hex encoded SHA-256 fingerprints of valid App signing certificates.
+- `android.patch-level` is optional, e.g. `android.patch-level.year=2020` and `android.patch-level.month=01`, omitting the values defines no minimum patch level.
+- `android.android-version` is also optional, e.g. `9000` for Android 9, or `4200` for Android 4.2.
+- `android.require-strong-box` is `false` by default, may be set to `true` to enforce StrongBox-compatible hardware on Android clients.
+- `ios.bundle-identifier` is the App bundle identifier, similar to Android package name, e.g. `ios.wallet.app`.
+- `ios.team-identifier` is the Apple Development Team identifier of the valid client App.
+- `ios.sandbox` may be set to `true` to enable "development" stage attestation, or to `false` to enable "production" stage attestation.
+- `ios.ios-version` defines optionally the minimal iOS version running on devices, e.g. `14`
 
 Alternative configuration of the attribute source (which attributes to issue for the Wallet App):
 
@@ -697,6 +704,7 @@ and the application throws an exception like `IllegalArgumentException("foo")`, 
 ```
 
 ### Logging
+
 MDC-based assigment of unique transaction IDs for each incoming request is supported (into the variable `txID`), but requires a customized logger pattern, e.g.:
 
 ```yaml
