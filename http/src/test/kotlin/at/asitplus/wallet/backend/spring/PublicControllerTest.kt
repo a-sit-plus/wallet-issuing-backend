@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import kotlinx.datetime.Clock
 import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
@@ -16,12 +18,24 @@ class PublicControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
 
+    @Autowired
+    private lateinit var timePeriodProvider: TimePeriodProvider
+
     @Test
-    fun `GET VC status list with period`() {
-        mockMvc.get("/credentials/status/2000") {
+    fun `GET VC status list with valid period`() {
+        mockMvc.get("/credentials/status/${timePeriodProvider.getRelevantTimePeriods(Clock.System).first()}") {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }
+        }.andReturn()
+    }
+
+    @Test
+    fun `GET VC status list with invalid period`() {
+        mockMvc.get("/credentials/status/${timePeriodProvider.getRelevantTimePeriods(Clock.System).first() * 2}") {
+        }.andExpect {
+            status { isNotFound() }
+            content { string(emptyString()) }
         }.andReturn()
     }
 

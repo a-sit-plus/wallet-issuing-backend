@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.pki.PkiService
-import at.asitplus.wallet.backend.service.RevocationEvent
 import at.asitplus.wallet.lib.agent.Issuer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
@@ -37,7 +36,6 @@ class PublicController(
     private val issuer: Issuer,
     private val pkiService: PkiService,
     private val configurationProperties: BackendConfigurationProperties,
-    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     @Operation(
@@ -57,7 +55,7 @@ class PublicController(
         ]
     )
     @GetMapping("/credentials/status/current")
-    fun getCurrentVcRevocationLists() = runBlocking {
+    fun getCurrentVcRevocationLists(): ResponseEntity<List<String>> = runBlocking {
         Napier.i("/credentials/status/current called")
         val rl = issuer.compileCurrentRevocationLists()
         Napier.i("/credentials/status/current returns $rl")
@@ -79,12 +77,7 @@ class PublicController(
     fun getVcRevocationList(@PathVariable timePeriod: Int): ResponseEntity<String> = runBlocking {
         Napier.i("/credentials/status/$timePeriod called")
         val path = Path(configurationProperties.revocationList.path, timePeriod.toString())
-        val rl = if (path.exists()) {
-            path.readText()
-        } else {
-            applicationEventPublisher.publishEvent(RevocationEvent(this, timePeriod)) // triggers cache write
-            issuer.issueRevocationListCredential(timePeriod)
-        }
+        val rl = if (path.exists()) path.readText() else null
         if (rl.isNullOrEmpty()) {
             Napier.w("/credentials/status/$timePeriod returns HTTP 404")
             return@runBlocking ResponseEntity.notFound().build()
