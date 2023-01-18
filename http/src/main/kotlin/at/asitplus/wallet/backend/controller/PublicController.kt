@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.pki.PkiService
+import at.asitplus.wallet.backend.service.RevocationEvent
 import at.asitplus.wallet.lib.agent.Issuer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import kotlin.io.path.Path
-import kotlin.io.path.notExists
+import kotlin.io.path.exists
 import kotlin.io.path.readText
 import kotlin.time.toJavaDuration
 
@@ -35,6 +37,7 @@ class PublicController(
     private val issuer: Issuer,
     private val pkiService: PkiService,
     private val configurationProperties: BackendConfigurationProperties,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     @Operation(
@@ -73,16 +76,21 @@ class PublicController(
         ]
     )
     @GetMapping("/credentials/status/{timePeriod}")
-    fun getVcRevocationList(@PathVariable timePeriod: Int): ResponseEntity<String> {
+    fun getVcRevocationList(@PathVariable timePeriod: Int): ResponseEntity<String> = runBlocking {
         Napier.i("/credentials/status/$timePeriod called")
         val path = Path(configurationProperties.revocationList.path, timePeriod.toString())
-        if (path.notExists()) {
-            Napier.i("/credentials/status/$timePeriod returns HTTP 404, path does not exist: '$path'")
-            return ResponseEntity.notFound().build()
+        val rl = if (path.exists()) {
+            path.readText()
+        } else {
+            applicationEventPublisher.publishEvent(RevocationEvent(this, timePeriod)) // triggers cache write
+            issuer.issueRevocationListCredential(timePeriod)
         }
-        val rl = path.readText()
+        if (rl.isNullOrEmpty()) {
+            Napier.w("/credentials/status/$timePeriod returns HTTP 404")
+            return@runBlocking ResponseEntity.notFound().build()
+        }
         Napier.i("/credentials/status/$timePeriod returns ${rl.count()} chars")
-        return ResponseEntity.ok()
+        return@runBlocking ResponseEntity.ok()
             .eTag(rl.encodeToByteArray().sha256().encodeBase16().uppercase())
             .cacheControl(CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration()))
             .body(rl)

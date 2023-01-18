@@ -48,6 +48,8 @@ class RevocationListScheduler(
     override fun onApplicationEvent(event: RevocationEvent) {
         log.debug("onApplicationEvent $event")
         mapTimePeriodDirty[event.timePeriod] = true
+        if (!mapTimePeriodTimestamp.containsKey(event.timePeriod))
+            mapTimePeriodTimestamp[event.timePeriod] = Instant.fromEpochSeconds(0)
     }
 
     fun writeDirtyRevocationList() {
