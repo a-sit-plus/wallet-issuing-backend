@@ -28,6 +28,7 @@ class RevocationListScheduler(
 
     @PostConstruct
     fun postConstruct() {
+        log.debug("postConstruct")
         timePeriodProvider.getRelevantTimePeriods(Clock.System).forEach {
             mapTimePeriodDirty[it] = false
             mapTimePeriodTimestamp[it] = Instant.fromEpochSeconds(0)
@@ -36,7 +37,7 @@ class RevocationListScheduler(
 
     @EventListener
     fun onRevocationEvent(event: RevocationEvent) {
-        log.debug("onApplicationEvent $event")
+        log.debug("onRevocationEvent $event")
         mapTimePeriodDirty[event.timePeriod] = true
         if (!mapTimePeriodTimestamp.containsKey(event.timePeriod))
             mapTimePeriodTimestamp[event.timePeriod] = Instant.fromEpochSeconds(0)
@@ -44,6 +45,7 @@ class RevocationListScheduler(
 
     @EventListener
     fun onApplicationStartedEvent(event: ApplicationStartedEvent) {
+        log.debug("onApplicationStartedEvent $event")
         taskScheduler.scheduleAtFixedRate(
             { writeDirtyRevocationList() },
             configurationProperties.revocationList.dirtyCheckRateDuration.toJavaDuration()
