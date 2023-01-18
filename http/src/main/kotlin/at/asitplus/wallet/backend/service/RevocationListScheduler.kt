@@ -4,14 +4,13 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
 import org.slf4j.LoggerFactory
-import org.springframework.context.ApplicationListener
+import org.springframework.boot.context.event.ApplicationStartedEvent
+import org.springframework.context.event.EventListener
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 import kotlin.concurrent.thread
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 @Service
@@ -20,7 +19,7 @@ class RevocationListScheduler(
     private val timePeriodProvider: TimePeriodProvider,
     private val configurationProperties: BackendConfigurationProperties,
     private val taskScheduler: TaskScheduler,
-) : ApplicationListener<RevocationEvent> {
+) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -33,23 +32,26 @@ class RevocationListScheduler(
             mapTimePeriodDirty[it] = false
             mapTimePeriodTimestamp[it] = Instant.fromEpochSeconds(0)
         }
-        taskScheduler.scheduleAtFixedRate(
-            { writeDirtyRevocationList() },
-            Clock.System.now().plus(5.seconds).toJavaInstant(),
-            configurationProperties.revocationList.dirtyCheckRateDuration.toJavaDuration()
-        )
-        taskScheduler.scheduleAtFixedRate(
-            { writeRegularRevocationList() },
-            Clock.System.now().plus(5.seconds).toJavaInstant(),
-            configurationProperties.revocationList.regularCheckRateDuration.toJavaDuration()
-        )
     }
 
-    override fun onApplicationEvent(event: RevocationEvent) {
+    @EventListener
+    fun onRevocationEvent(event: RevocationEvent) {
         log.debug("onApplicationEvent $event")
         mapTimePeriodDirty[event.timePeriod] = true
         if (!mapTimePeriodTimestamp.containsKey(event.timePeriod))
             mapTimePeriodTimestamp[event.timePeriod] = Instant.fromEpochSeconds(0)
+    }
+
+    @EventListener
+    fun onApplicationStartedEvent(event: ApplicationStartedEvent) {
+        taskScheduler.scheduleAtFixedRate(
+            { writeDirtyRevocationList() },
+            configurationProperties.revocationList.dirtyCheckRateDuration.toJavaDuration()
+        )
+        taskScheduler.scheduleAtFixedRate(
+            { writeRegularRevocationList() },
+            configurationProperties.revocationList.regularCheckRateDuration.toJavaDuration()
+        )
     }
 
     fun writeDirtyRevocationList() {
