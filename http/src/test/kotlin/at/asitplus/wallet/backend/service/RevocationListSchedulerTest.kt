@@ -4,6 +4,7 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -12,19 +13,28 @@ import kotlin.random.Random
 
 class RevocationListSchedulerTest {
 
-    private val writer = mock<RevocationListWriter>()
-    private val listOfTimePeriods = listOf(Random.nextInt(), Random.nextInt(), Random.nextInt())
-    private val timePeriodProvider = object : TimePeriodProvider {
-        override fun getCurrentTimePeriod(clock: Clock): Int = listOfTimePeriods.first()
-        override fun getRelevantTimePeriods(clock: Clock): List<Int> = listOfTimePeriods
-        override fun getTimePeriodFor(instant: Instant): Int = listOfTimePeriods.first()
+    private lateinit var writer: RevocationListWriter
+    private lateinit var listOfTimePeriods: List<Int>
+    private lateinit var timePeriodProvider: TimePeriodProvider
+    private lateinit var scheduler: RevocationListScheduler
+
+    @BeforeEach
+    fun beforeEach() {
+        writer = mock<RevocationListWriter>()
+        listOfTimePeriods =
+            listOf(Random.nextInt(0, Int.MAX_VALUE), Random.nextInt(0, Int.MAX_VALUE), Random.nextInt(0, Int.MAX_VALUE))
+        timePeriodProvider = object : TimePeriodProvider {
+            override fun getCurrentTimePeriod(clock: Clock): Int = listOfTimePeriods.first()
+            override fun getRelevantTimePeriods(clock: Clock): List<Int> = listOfTimePeriods
+            override fun getTimePeriodFor(instant: Instant): Int = listOfTimePeriods.first()
+        }
+        scheduler = RevocationListScheduler(
+            writer,
+            timePeriodProvider,
+            BackendConfigurationProperties(),
+            mock(),
+        ).also { it.postConstruct() }
     }
-    private val scheduler = RevocationListScheduler(
-        writer,
-        timePeriodProvider,
-        BackendConfigurationProperties(),
-        mock(),
-    ).also { it.postConstruct() }
 
     @Test
     fun testDirty() {
