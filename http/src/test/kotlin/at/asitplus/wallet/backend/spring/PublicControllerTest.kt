@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpHeaders
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 
@@ -23,10 +24,23 @@ class PublicControllerTest {
 
     @Test
     fun `GET VC status list with valid period`() {
-        mockMvc.get("/credentials/status/${timePeriodProvider.getRelevantTimePeriods(Clock.System).first()}") {
+        val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
+        val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }
+            header { exists(HttpHeaders.ETAG) }
+            header { exists(HttpHeaders.LAST_MODIFIED) }
+        }.andReturn()
+
+        mockMvc.get("/credentials/status/$timePeriod") {
+            headers {
+                ifNoneMatch = listOf(firstResult.response.getHeader(HttpHeaders.ETAG))
+                ifModifiedSince = firstResult.response.getDateHeader(HttpHeaders.LAST_MODIFIED)
+            }
+        }.andExpect {
+            status { isNotModified() }
+            content { string(emptyString()) }
         }.andReturn()
     }
 

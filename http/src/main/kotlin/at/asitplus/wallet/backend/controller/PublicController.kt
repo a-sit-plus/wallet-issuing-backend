@@ -12,16 +12,17 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.context.request.WebRequest
 import org.springframework.web.server.ResponseStatusException
 import kotlin.io.path.Path
 import kotlin.io.path.exists
+import kotlin.io.path.isReadable
 import kotlin.io.path.readText
 import kotlin.time.toJavaDuration
 
@@ -74,17 +75,22 @@ class PublicController(
         ]
     )
     @GetMapping("/credentials/status/{timePeriod}")
-    fun getVcRevocationList(@PathVariable timePeriod: Int): ResponseEntity<String> = runBlocking {
+    fun getVcRevocationList(@PathVariable timePeriod: Int, request: WebRequest): ResponseEntity<String> = runBlocking {
         Napier.i("/credentials/status/$timePeriod called")
         val path = Path(configurationProperties.revocationList.path, timePeriod.toString())
-        val rl = if (path.exists()) path.readText() else null
+        val rl = if (path.exists() && path.isReadable()) path.readText() else null
         if (rl.isNullOrEmpty()) {
             Napier.w("/credentials/status/$timePeriod returns HTTP 404")
             return@runBlocking ResponseEntity.notFound().build()
         }
+        val etag = rl.encodeToByteArray().sha256().encodeBase16().uppercase()
+        if (request.checkNotModified(etag, path.toFile().lastModified())) {
+            Napier.d("/credentials/status/$timePeriod returns HTTP 304")
+            return@runBlocking ResponseEntity.status(HttpStatus.NOT_MODIFIED).build()
+        }
         Napier.i("/credentials/status/$timePeriod returns ${rl.count()} chars")
         return@runBlocking ResponseEntity.ok()
-            .eTag(rl.encodeToByteArray().sha256().encodeBase16().uppercase())
+            .eTag(etag)
             .cacheControl(CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration()))
             .body(rl)
     }
