@@ -27,6 +27,8 @@ configurations {
 }
 
 dependencies {
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -41,16 +43,17 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
     implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
 
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+
     implementation("org.apache.httpcomponents:httpclient")
 
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${VersionsBackend.serialization.json}")
     implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.jose}")
+
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
+
+    implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
 
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
     implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")
@@ -59,11 +62,11 @@ dependencies {
 
     implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
-    implementation("org.bouncycastle:bcpkix-jdk18on:${VersionsBackend.bcprov}")
-
-    implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")
+
+
+    implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("org.openpnp:opencv:${VersionsBackend.opencv}")
 
     runtimeOnly("com.h2database:h2")
