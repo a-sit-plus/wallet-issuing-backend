@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.junit.jupiter.api.BeforeEach
@@ -37,17 +39,21 @@ class RevocationListSchedulerTest {
     }
 
     @Test
-    fun testDirty() {
+    fun testDirty() = runTest {
         val timePeriod = Random.nextInt()
         scheduler.onRevocationEvent(RevocationEvent(this, timePeriod))
         scheduler.writeDirtyRevocationList()
+        // wait for background thread in [RevocationListScheduler]
+        delay(1000L)
 
         verify(writer).writeRevocationList(eq(timePeriod))
     }
 
     @Test
-    fun testRegular() {
+    fun testRegular() = runTest {
         scheduler.writeRegularRevocationList()
+        // wait for background thread in [RevocationListScheduler]
+        delay(1000L)
 
         listOfTimePeriods.forEach {
             verify(writer).writeRevocationList(eq(it))
