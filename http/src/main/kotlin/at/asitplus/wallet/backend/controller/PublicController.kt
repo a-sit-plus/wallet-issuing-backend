@@ -84,14 +84,19 @@ class PublicController(
             return@runBlocking ResponseEntity.notFound().build()
         }
         val etag = rl.encodeToByteArray().sha256().encodeBase16().uppercase()
+        val cacheControl =
+            CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration())
         if (request.checkNotModified(etag, path.toFile().lastModified())) {
             Napier.d("/credentials/status/$timePeriod returns HTTP 304")
-            return@runBlocking ResponseEntity.status(HttpStatus.NOT_MODIFIED).build()
+            return@runBlocking ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                .eTag(etag)
+                .cacheControl(cacheControl)
+                .build()
         }
         Napier.i("/credentials/status/$timePeriod returns ${rl.count()} chars")
         return@runBlocking ResponseEntity.ok()
             .eTag(etag)
-            .cacheControl(CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration()))
+            .cacheControl(cacheControl)
             .body(rl)
     }
 

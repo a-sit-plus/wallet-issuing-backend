@@ -31,6 +31,7 @@ class PublicControllerTest {
             content { string(not(emptyString())) }
             header { exists(HttpHeaders.ETAG) }
             header { exists(HttpHeaders.LAST_MODIFIED) }
+            header { exists(HttpHeaders.CACHE_CONTROL) }
         }.andReturn()
 
         mockMvc.get("/credentials/status/$timePeriod") {
@@ -41,6 +42,9 @@ class PublicControllerTest {
         }.andExpect {
             status { isNotModified() }
             content { string(emptyString()) }
+            header { exists(HttpHeaders.ETAG) }
+            header { exists(HttpHeaders.LAST_MODIFIED) }
+            header { exists(HttpHeaders.CACHE_CONTROL) }
         }.andReturn()
     }
 
