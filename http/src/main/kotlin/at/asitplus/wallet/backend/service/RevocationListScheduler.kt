@@ -10,7 +10,6 @@ import org.springframework.context.event.EventListener
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
-import kotlin.concurrent.thread
 import kotlin.time.toJavaDuration
 
 
@@ -62,10 +61,9 @@ class RevocationListScheduler(
             .filterValues { it }
             .forEach {
                 log.debug("writeDirtyRevocationList for ${it.key}")
-                thread {
-                    revocationListWriter.writeRevocationList(it.key)
-                }
+                revocationListWriter.writeRevocationList(it.key)
                 mapTimePeriodTimestamp[it.key] = Clock.System.now()
+                mapTimePeriodDirty[it.key] = false
             }
     }
 
@@ -74,9 +72,7 @@ class RevocationListScheduler(
             .filterValues { it.isOutdated }
             .forEach {
                 log.debug("writeRegularRevocationList for ${it.key}")
-                thread {
-                    revocationListWriter.writeRevocationList(it.key)
-                }
+                revocationListWriter.writeRevocationList(it.key)
                 mapTimePeriodTimestamp[it.key] = Clock.System.now()
             }
     }

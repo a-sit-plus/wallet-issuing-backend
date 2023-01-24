@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.Issuer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -26,16 +27,20 @@ class RevocationListWriter(
      * Since move is an atomic operation (at least on Linux), the read
      * operations should never read a partial file.
      */
-    fun writeRevocationList(timePeriod: Int) = runBlocking {
-        log.info("Writing revocation list for $timePeriod")
-        Path(configurationProperties.revocationList.path).createDirectories()
-        val destinationFile = Path(configurationProperties.revocationList.path, timePeriod.toString())
-        issuer.issueRevocationListCredential(timePeriod)?.let { list ->
-            createTempFile().apply {
-                writeText(list)
-                moveTo(destinationFile, true)
+    fun writeRevocationList(timePeriod: Int) {
+        Dispatchers.IO.run {
+            runBlocking {
+                log.info("Writing revocation list for $timePeriod")
+                Path(configurationProperties.revocationList.path).createDirectories()
+                val destinationFile = Path(configurationProperties.revocationList.path, timePeriod.toString())
+                issuer.issueRevocationListCredential(timePeriod)?.let { list ->
+                    createTempFile().apply {
+                        writeText(list)
+                        moveTo(destinationFile, true)
+                    }
+                    log.info("Wrote revocation list for $timePeriod to ${destinationFile.pathString} with ${list.length} chars")
+                }
             }
-            log.info("Wrote revocation list for $timePeriod to ${destinationFile.pathString} with ${list.length} chars")
         }
     }
 

@@ -39,21 +39,17 @@ class RevocationListSchedulerTest {
     }
 
     @Test
-    fun testDirty() = runTest {
+    fun testDirty() {
         val timePeriod = Random.nextInt()
         scheduler.onRevocationEvent(RevocationEvent(this, timePeriod))
         scheduler.writeDirtyRevocationList()
-        // wait for background thread in [RevocationListScheduler]
-        delay(1000L)
 
         verify(writer).writeRevocationList(eq(timePeriod))
     }
 
     @Test
-    fun testRegular() = runTest {
+    fun testRegular() {
         scheduler.writeRegularRevocationList()
-        // wait for background thread in [RevocationListScheduler]
-        delay(1000L)
 
         listOfTimePeriods.forEach {
             verify(writer).writeRevocationList(eq(it))
