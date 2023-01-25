@@ -107,7 +107,7 @@ class EcoCredentialDataProvider(
         val result = CredentialDataProvider.CredentialToBeIssued(subject, capped, attributeType, attachments)
 
         KmmResult.success(result)
-            .also { Napier.v("getCredential for '$bpk' returns $it.value") }
+            .also { Napier.v("getCredential for '$bpk' returns ${it.value.toLogString()}") }
             .also { Napier.i("getCredential success") }
     }.getOrElse {
         Napier.e("getCredential for bpk got error")

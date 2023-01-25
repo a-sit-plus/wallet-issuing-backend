@@ -13,7 +13,6 @@ import javax.servlet.http.HttpServletRequest
  */
 class ExtNonceAuthnFilter : RequestHeaderAuthenticationFilter() {
 
-
     init {
         setRequiresAuthenticationRequestMatcher(RequestHeaderRequestMatcher(X_AUTH_EXT_NONCE))
     }

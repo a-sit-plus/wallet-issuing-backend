@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.CredentialSubject
 import kotlinx.datetime.Instant
 
@@ -19,7 +18,11 @@ interface CredentialDataProvider {
         val expiration: Instant,
         val attributeType: String,
         val attachments: List<CredentialToBeIssuedAttachment> = listOf(),
-    )
+    ) {
+        fun toLogString(): String {
+            return "CredentialToBeIssued(subject=$subject, expiration=$expiration, attributeType='$attributeType', attachments=${attachments.map { it.toLogString() }})"
+        }
+    }
 
     data class CredentialToBeIssuedAttachment(
         val name: String,
@@ -47,5 +50,11 @@ interface CredentialDataProvider {
             result = 31 * result + data.contentHashCode()
             return result
         }
+
+        fun toLogString(): String {
+            return "CredentialToBeIssuedAttachment(name='$name', mediaType='$mediaType', data.size=${data.size})"
+        }
+
+
     }
 }

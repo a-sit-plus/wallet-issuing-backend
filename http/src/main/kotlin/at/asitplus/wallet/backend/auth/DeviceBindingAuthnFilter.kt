@@ -14,7 +14,6 @@ import io.github.aakira.napier.Napier
  */
 class DeviceBindingAuthnFilter : RequestHeaderAuthenticationFilter() {
 
-
     init {
         setRequiresAuthenticationRequestMatcher(RequestHeaderRequestMatcher(HttpHeaders.AUTHORIZATION))
     }
