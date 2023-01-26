@@ -272,11 +272,13 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         deviceBindingRepository: DeviceBindingRepository,
         revokedCredentialRepo: RevokedCredentialRepository,
         authenticationSupplier: AuthenticationSupplier,
+        applicationEventPublisher: ApplicationEventPublisher,
     ): DeviceBindingStorageService =
         DatabaseDeviceBindingStorageService(
             deviceBindingRepository,
             revokedCredentialRepo,
             authenticationSupplier,
+            applicationEventPublisher,
         )
 
     @Bean

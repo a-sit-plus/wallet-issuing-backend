@@ -3,10 +3,12 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.DeviceListEntry
+import at.asitplus.wallet.backend.service.RevocationEvent
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import org.springframework.context.ApplicationEventPublisher
 import java.util.UUID
 
 
@@ -14,6 +16,7 @@ class DatabaseDeviceBindingStorageService(
     private val deviceBindingRepository: DeviceBindingRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val authenticationSupplier: AuthenticationSupplier,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) : DeviceBindingStorageService {
 
     override fun store(
@@ -69,10 +72,8 @@ class DatabaseDeviceBindingStorageService(
                 deviceBindingRepository
                     .findAllByBpkAndDeviceIdAndValidUntilAfter(bpk, deviceId, java.time.Instant.now())
             } else {
-                deviceBindingRepository
-                    .findAllByBpkAndValidUntilAfter(bpk, java.time.Instant.now())
+                deviceBindingRepository.findAllByBpkAndValidUntilAfter(bpk, java.time.Instant.now())
             }
-
             Napier.i("Revoking ${toRevoke.size} device bindings")
 
             val revoked = toRevoke.associateWith { binding ->
@@ -81,9 +82,11 @@ class DatabaseDeviceBindingStorageService(
                 }.also {
                     binding.issuedCredentialList.clear()
                     revokedCredentialRepo.saveAll(it)
+                    it.forEach { cred ->
+                        applicationEventPublisher.publishEvent(RevocationEvent(this, cred.timePeriod))
+                    }
                 }
             }
-
             deviceBindingRepository.saveAll(toRevoke)
             deviceBindingRepository.deleteAllInBatch(toRevoke)
             return revoked

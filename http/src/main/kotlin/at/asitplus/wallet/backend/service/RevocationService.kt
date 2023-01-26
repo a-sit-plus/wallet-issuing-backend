@@ -81,7 +81,11 @@ interface RevocationService {
  * Gets emitted by [DefaultRevocationService] when a credential (issued in [timePeriod]) got revoked,
  * gets caught by [RevocationListScheduler] to update the cache of revocation lists.
  */
-class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(source)
+class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(source) {
+    override fun toString(): String {
+        return "RevocationEvent(timePeriod=$timePeriod)"
+    }
+}
 
 class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
