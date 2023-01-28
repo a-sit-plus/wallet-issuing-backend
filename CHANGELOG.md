@@ -1,5 +1,10 @@
 # Changelog
 
+1.5.0:
+ - Emit revocation event when revoking bindings too
+ - Cleanup logs
+ - Update to Umbrella Lib 1.2.0
+
 1.4.0:
  - Use new format for PupilIDs with picture and scaled picture externalized from the VC
  - revamped revocation list caching

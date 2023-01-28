@@ -15,7 +15,7 @@ object VersionsBackend {
     const val okhttp = "4.10.0"
     const val opencv = "4.5.5-1"
 
-    const val umbrella = " 1.1.1"
+    const val umbrella = " 1.2.0"
     const val attestation = "0.3.0"
 
     object spring {
