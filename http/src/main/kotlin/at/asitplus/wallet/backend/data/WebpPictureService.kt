@@ -4,6 +4,8 @@ import com.google.webp.libwebp
 import com.sksamuel.scrimage.ImmutableImage
 import com.sksamuel.scrimage.ScaleMethod
 import org.slf4j.LoggerFactory
+import kotlin.io.path.Path
+import kotlin.io.path.absolutePathString
 
 
 /**
@@ -22,13 +24,13 @@ class WebpPictureService(
 
     init {
         if (libPathSharp != null) {
-            System.load(libPathSharp)
+            System.load(Path(libPathSharp).absolutePathString())
         } // else webp will load sharpyuv
         if (libPathWebp != null) {
-            System.load(libPathWebp)
+            System.load(Path(libPathWebp).absolutePathString())
         } // else webp_jni will load webp
         if (libPathJni != null) {
-            System.load(libPathJni)
+            System.load(Path(libPathJni).absolutePathString())
         } else {
             System.loadLibrary("webp_jni")
         }

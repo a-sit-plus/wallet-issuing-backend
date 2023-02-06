@@ -36,8 +36,6 @@ assembleJdk11:
   stage: assemble
   except:
     - tags
-  before_script: |
-    apt update -q && apt install -yq libweb7
   script: |
     ./gradlew --continue clean assemble test build
   artifacts:
@@ -52,8 +50,6 @@ publish:
   only:
     - master
     - development
-  before_script: |
-    apt update -q && apt install -yq libweb7
   script: |
     export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
     echo "Publishing version $VERSION for $LIB_NAME"
@@ -71,8 +67,6 @@ publishSnapshot:
   except:
     - tags
   when: manual
-  before_script: |
-    apt update -q && apt install -yq libweb7
   script: |
     export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
     echo "Publishing version $VERSION for $LIB_NAME"
