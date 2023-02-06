@@ -25,7 +25,7 @@ class WebpPictureServiceTest {
         val pictureService = WebpPictureService(true, 30, true, 154, 120)
 
         val output = pictureService.convertPicture(input)
-        // 101028 -> 1366 bytes
+        // 101028 -> 1382 bytes
         // File("outputCompressAndScale.webp").writeBytes(output)
 
         output.size shouldBeLessThan input.size
@@ -36,7 +36,7 @@ class WebpPictureServiceTest {
         val pictureService = WebpPictureService(false, 30, true, 154, 120)
 
         val output = pictureService.convertPicture(input)
-        // 101028 -> 25068 bytes
+        // 101028 -> 10452 bytes
         // File("outputScale.webp").writeBytes(output)
 
         output.size shouldBeLessThan input.size

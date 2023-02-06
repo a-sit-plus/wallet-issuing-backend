@@ -1,6 +1,7 @@
+
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 
 plugins {
     id("org.springframework.boot") version VersionsBackend.spring.boot
@@ -67,7 +68,8 @@ dependencies {
 
 
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
-    implementation("org.openpnp:opencv:${VersionsBackend.opencv}")
+    implementation("com.sksamuel.scrimage:scrimage-core:${VersionsBackend.scrimage}")
+    implementation(files("libs/libwebp.jar"))
 
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql:${VersionsBackend.pgsql}")

@@ -16,3 +16,6 @@ backend:
     deviceBinding:
       attestation:
         noop: true
+  credentials:
+    pictures:
+      pathLibJni: "http/libwebp/libwebp_jni.so"

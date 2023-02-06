@@ -122,6 +122,18 @@ data class PicturesConfigurationProperties(
      * Width of the scaled picture. Default: `120`.
      */
     val width: Int = 120,
+    /**
+     * Path to library `libwebp_jni.so`. Default: `null`, meaning load from system paths.
+     */
+    val pathLibJni: String? = null,
+    /**
+     * Path to library `libwebp.so.7`. Default: `null`, meaning load from system paths.
+     */
+    val pathLibWebp: String? = null,
+    /**
+     * Path to library `libsharpyuv.so.0`. Default: `null`, meaning load from system paths.
+     */
+    val pathLibSharp: String? = null,
 )
 
 @ConstructorBinding
