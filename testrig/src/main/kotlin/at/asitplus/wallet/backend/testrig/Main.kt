@@ -8,6 +8,7 @@ import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsHeader
 import at.asitplus.wallet.pupilid.*
+import io.ktor.client.engine.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -119,7 +120,7 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                                         key: KeyAlgorithm,
                                         hash: HashAlgorithm
                                     ): KmmResult<ByteArray> = cryptoService.sign(input)
-                                })
+                                }, httpClientBuilder = HttpClientBuilder())
 
 
                         when (val res = bindingService.createDeviceBinding()) {
@@ -184,7 +185,7 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
         cert: ByteArray
     ): Pair<Int, Boolean> {
         val issuingService =
-            PupilIdIssuingService(cfg.host.baseURL.toString(), { payload ->
+            PupilIdIssuingService(cfg.host.baseURL.toString(), jwsAdapter =  { payload ->
                 KmmResult.success(
                     DefaultJwsService(cryptoService).createSignedJws(
                         JwsHeader(
@@ -194,7 +195,9 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                         payload.encodeToByteArray()
                     )!!
                 )
-            })
+            },
+                httpClientBuilder = HttpClientBuilder()
+            )
         val messenger = IssueCredentialMessenger.newHolderInstance(
             holder = HolderAgent.newDefaultInstance(
                 cryptoService = cryptoService,

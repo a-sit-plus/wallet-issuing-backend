@@ -7,6 +7,7 @@ import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.jws.JwsHeader
+import at.asitplus.wallet.pupilid.HttpClientBuilder
 import at.asitplus.wallet.pupilid.PupilIdIssuingService
 import at.asitplus.wallet.pupilid.ServiceResult
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -73,7 +74,7 @@ class PupilIdControllerKtorLibTest {
             )
         }
 
-        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
+        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter, httpClientBuilder = HttpClientBuilder())
         val result = service.issueCredentials(request.message)
 
         result.shouldBeInstanceOf<ServiceResult.Success>()
@@ -95,7 +96,7 @@ class PupilIdControllerKtorLibTest {
             )
         }
 
-        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter)
+        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter, httpClientBuilder = HttpClientBuilder())
         val result = service.issueCredentials(request.message)
 
         result.shouldBeInstanceOf<ServiceResult.ErrorFromNetwork>()

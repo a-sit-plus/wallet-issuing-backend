@@ -95,7 +95,8 @@ class BindingControllerKtorLibTest {
             serverAddress = "http://localhost:$localServerPort",
             extAuthNonce = nonce,
             deviceAdapter = deviceAdapter,
-            cryptoAdapter = asn1Adapter
+            cryptoAdapter = asn1Adapter,
+            httpClientBuilder = HttpClientBuilder(),
         )
     }
 
