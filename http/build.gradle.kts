@@ -61,7 +61,12 @@ dependencies {
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
 
-    implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}")
+    implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}"){
+        exclude("at.asitplus.wallet","vclib-jvm")
+        exclude("at.asitplus.wallet","pupilidlib-jvm")
+    }
+    implementation("at.asitplus.wallet:pupilidlib-jvm")
+    implementation("at.asitplus.wallet:vclib-jvm")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")

@@ -37,7 +37,11 @@ assembleJdk11:
   except:
     - tags
   script: |
-    ./gradlew --continue clean assemble test build
+    ./gradlew --continue clean
+    cd pupilidumbrella
+    ./gradlew --continue clean assemble build
+    cd ..
+    ./gradlew --continue assemble test build
   artifacts:
     when: always
     reports:
@@ -53,6 +57,10 @@ publish:
   script: |
     export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
     echo "Publishing version $VERSION for $LIB_NAME"
+    ./gradlew --continue clean
+    cd pupilidumbrella
+    ./gradlew --continue clean assemble build
+    cd ..
     ./gradlew --continue clean assemble publishAllPublicationsToGitlabRepository
     echo "VERSION=$VERSION" >> variables.env
   artifacts:
@@ -70,6 +78,10 @@ publishSnapshot:
   script: |
     export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
     echo "Publishing version $VERSION for $LIB_NAME"
+    ./gradlew --continue clean
+    cd pupilidumbrella
+    ./gradlew --continue clean assemble build
+    cd ..
     ./gradlew --continue clean assemble publishAllPublicationsToGitlabRepository
     echo "VERSION=$VERSION" >> variables.env
   artifacts:
@@ -93,3 +105,4 @@ release:
     release-cli create --name "$VERSION" --tag-name "v$VERSION" --ref "$CI_COMMIT_SHA" --description "$(cat README.md)" \
         --assets-link "{\"name\":\"$LIB_NAME-$VERSION.pom\",\"url\":\"${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/maven/at/asitplus/wallet/$LIB_NAME/$VERSION/$LIB_NAME-$VERSION.pom\"}" \
         --assets-link "{\"name\":\"$LIB_NAME-$VERSION.jar\",\"url\":\"${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/maven/at/asitplus/wallet/$LIB_NAME/$VERSION/$LIB_NAME-$VERSION.jar\"}"
+        

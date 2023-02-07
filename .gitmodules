@@ -7,3 +7,9 @@
 [submodule "kotlin-umbrella-library"]
 	path = pupilidumbrella
 	url = ../kotlin-umbrella-library.git
+[submodule "vc-library-kotlin"]
+	path = vclib
+	url = ../vc-library-kotlin.git
+[submodule "pupilid-kmm-lib"]
+	path = pupilidlib
+	url = ../pupilid-kmm-lib.git
