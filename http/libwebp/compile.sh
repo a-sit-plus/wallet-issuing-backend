@@ -1,9 +1,14 @@
 cd /
 
-yum -y install java-11-openjdk.x86_64 java-11-openjdk-devel.x86_64
-yum -y install libpng-devel.x86_64
-yum -y install gcc make automake
-yum -y install wget
+if command -v yum &> /dev/null
+then
+    yum -y install java-11-openjdk.x86_64 java-11-openjdk-devel.x86_64 libpng-devel.x86_64 gcc make automake wget
+else
+    apt -q update
+    apt -yq install gcc wget make automake openjdk-11-jdk-headless openjdk-11-source wget
+fi
+
+
 
 wget https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.3.0.tar.gz
 
