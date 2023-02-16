@@ -326,6 +326,7 @@ backend:
       scale: true
       height: 154
       width: 120
+      path-to-jni-lib: "/data/libwebp_jni.so"
   revocation-list:
     lifetime: P7D
     regular-write-timeout: P5D
@@ -368,6 +369,11 @@ Options for pictures in credentials under `backend.credentials.pictures`:
  - `scale=true` to enable scaling
  - `height=154` to set the height of the scaled picture
  - `width=120` to set the width of the scaled picture
+ - `pathLibJni=/data/libwebp_jni.so` to set the filename of the WebP-JNI library. If it is not specified, this service will try to load the library `webp-jni` using the default system paths.
+ - `pathLibWebp=/data/libwebp.so.7` to set the filename of the WebP library. If it is not specified, this service will try to load the library `webp` using the default system paths.
+ - `pathLibWebp=/data/libsharpyuv.so.0` to set the filename of the SharpYUV library. If it is not specified, this service will try to load the library `sharpyuv` using the default system paths.
+
+Please note that the `libwebp_jni` (provided in `http/lib`) as well as `libwebp` is necessary to start this service.
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
  - `lifetime` to set the lifetime of a single revocation list, i.e. the validity of the Verifiable Credential which represents the revocation list for other credentials, defaults to `P7D`, i.e. 7 days.

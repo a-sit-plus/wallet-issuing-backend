@@ -1,12 +1,11 @@
 package at.asitplus.wallet.backend.data
 
-import org.opencv.core.MatOfByte
-import org.opencv.core.MatOfInt
-import org.opencv.core.Size
-import org.opencv.imgcodecs.Imgcodecs
-import org.opencv.imgproc.Imgproc
-import org.opencv.imgproc.Imgproc.INTER_AREA
+import com.google.webp.libwebp
+import com.sksamuel.scrimage.ImmutableImage
+import com.sksamuel.scrimage.ScaleMethod
 import org.slf4j.LoggerFactory
+import kotlin.io.path.Path
+import kotlin.io.path.absolutePathString
 
 
 /**
@@ -16,40 +15,57 @@ class WebpPictureService(
     private val compress: Boolean,
     private val quality: Int,
     private val scale: Boolean,
-    private val height: Int,
-    private val width: Int,
+    private val scaleHeight: Int,
+    private val scaleWidth: Int,
+    libPathJni: String? = null,
+    libPathWebp: String? = null,
+    libPathSharp: String? = null,
 ) : PictureService {
 
     init {
-        nu.pattern.OpenCV.loadShared()
-        System.loadLibrary(org.opencv.core.Core.NATIVE_LIBRARY_NAME)
+        if (libPathSharp != null) {
+            System.load(Path(libPathSharp).absolutePathString())
+        } // else webp will load sharpyuv
+        if (libPathWebp != null) {
+            System.load(Path(libPathWebp).absolutePathString())
+        } // else webp_jni will load webp
+        if (libPathJni != null) {
+            System.load(Path(libPathJni).absolutePathString())
+        } else {
+            System.loadLibrary("webp_jni")
+        }
     }
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     /**
-     * Scales the input picture by converting into WebP format with quality 30
+     * Scales the input picture by converting into WebP format
      */
     override fun convertPicture(input: ByteArray): ByteArray {
         try {
-            val inputImage = Imgcodecs.imdecode(MatOfByte(*input), Imgcodecs.IMREAD_UNCHANGED)
-            if (scale) {
-                val scaleSize = Size(width.toDouble(), height.toDouble())
-                Imgproc.resize(inputImage, inputImage, scaleSize, 0.0, 0.0, INTER_AREA)
+            val image = ImmutableImage.loader().fromBytes(input).run {
+                if (scale) this.scaleTo(scaleWidth, scaleHeight, ScaleMethod.Progressive) else this
             }
-            val resultMob = MatOfByte()
-            val parameters = if (compress) MatOfInt(Imgcodecs.IMWRITE_WEBP_QUALITY, quality) else MatOfInt()
-            if (Imgcodecs.imencode(".webp", inputImage, resultMob, parameters)) {
-                log.debug("convertPicture: {} -> {} bytes", input.size, resultMob.toArray().size)
-                return resultMob.toArray()
-            } else {
-                log.error("convertPicture: imencode failed")
-                return input
-            }
+            val bytes = toRgb(image)
+            val quality = if (compress) quality.toFloat() else 100.0f
+            val result = libwebp.WebPEncodeRGB(bytes, image.width, image.height, image.width * 3, quality)
+            log.debug("convertPicture: {} -> {} bytes", input.size, result.size)
+            return result
         } catch (it: Throwable) {
             log.error("convertPicture failed", it)
             return input
         }
+    }
+
+    private fun toRgb(image: ImmutableImage): ByteArray {
+        val bytes = ByteArray(image.width * image.height * 3)
+        for (p in image.pixels()) {
+            val i = 3 * (p.x + p.y * image.width)
+            bytes[i + 0] = p.red().toByte()
+            bytes[i + 1] = p.green().toByte()
+            bytes[i + 2] = p.blue().toByte()
+        }
+        return bytes
     }
 
     override val mediaType: String

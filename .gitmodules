@@ -1,11 +1,3 @@
-[submodule "vclib"]
-	path = vclib
-	url = ../vc-library-kotlin.git
-	branch = development
-[submodule "pupilidlib"]
-	path = pupilidlib
-	url = ../pupilid-kmm-lib.git
-	branch = development
 [submodule "remote-crypto-provider"]
 	path = remote-crypto-provider
 	url = ../remote-crypto-provider.git
@@ -15,3 +7,9 @@
 [submodule "kotlin-umbrella-library"]
 	path = pupilidumbrella
 	url = ../kotlin-umbrella-library.git
+[submodule "vc-library-kotlin"]
+	path = vclib
+	url = ../vc-library-kotlin.git
+[submodule "pupilid-kmm-lib"]
+	path = pupilidlib
+	url = ../pupilid-kmm-lib.git

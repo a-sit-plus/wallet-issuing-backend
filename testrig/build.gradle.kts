@@ -24,9 +24,13 @@ configurations {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.apache.httpcomponents:httpclient")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
     implementation("com.nimbusds:nimbus-jose-jwt:9.23")
-    implementation("at.asitplus.wallet:pupilidumbrella-jvm")
+    implementation("at.asitplus.wallet:pupilidumbrella-jvm") {
+        exclude("at.asitplus.wallet", "vclib-jvm")
+        exclude("at.asitplus.wallet", "pupilidlib-jvm")
+    }
+    implementation("at.asitplus.wallet:pupilidlib-jvm")
+    implementation("at.asitplus.wallet:vclib-jvm")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("io.ktor:ktor-client-core:2.1.0")

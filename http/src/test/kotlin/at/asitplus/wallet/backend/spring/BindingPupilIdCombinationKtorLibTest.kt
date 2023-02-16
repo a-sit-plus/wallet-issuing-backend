@@ -110,7 +110,7 @@ class BindingPupilIdCombinationKtorLibTest {
             cryptoAdapter = asn1Adapter,
             callback = { KmmResult.success((holderMessenger.startDirect() as NextMessage.Send).message) },
             serverIssuePath = listOf("pupilid", "issue"),
-            engine = Java.create()
+            HttpClientBuilder(engine = Java.create())
         )
     }
 

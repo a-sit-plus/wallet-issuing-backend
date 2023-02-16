@@ -319,7 +319,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
 
     @Bean
     fun pictureService(): PictureService = configurationProperties.credentials.pictures.let {
-        WebpPictureService(it.compress, it.quality, it.scale, it.height, it.width)
+        WebpPictureService(it.compress, it.quality, it.scale, it.height, it.width, it.pathLibJni, it.pathLibWebp, it.pathLibSharp)
     }
 
     @Bean

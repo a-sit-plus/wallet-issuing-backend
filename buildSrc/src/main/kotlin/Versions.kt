@@ -13,7 +13,7 @@ object VersionsBackend {
     const val pgsql = "42.5.0"
     const val mockito = "4.0.0"
     const val okhttp = "4.10.0"
-    const val opencv = "4.5.5-1"
+    const val scrimage = "4.0.33"
 
     const val umbrella = " 1.2.0"
     const val attestation = "0.3.0"

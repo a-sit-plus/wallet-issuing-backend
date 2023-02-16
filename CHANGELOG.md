@@ -1,5 +1,8 @@
 # Changelog
 
+1.6.0:
+ - Uses `libwebp` over a `libwebp-jni` instead of OpenCV to create webp images
+
 1.5.0:
  - Emit revocation event when revoking bindings too
  - Cleanup logs
