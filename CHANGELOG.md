@@ -1,5 +1,8 @@
 # Changelog
 
+1.6.1:
+ - update attestation lib for more detailed error messages from android certificate verification
+
 1.6.0:
  - Uses `libwebp` over a `libwebp-jni` instead of OpenCV to create webp images
 
