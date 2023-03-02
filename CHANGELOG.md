@@ -1,5 +1,8 @@
 # Changelog
 
+1.6.2:
+ - update attestation lib
+
 1.6.1:
  - update attestation lib for more detailed error messages from android certificate verification
 
