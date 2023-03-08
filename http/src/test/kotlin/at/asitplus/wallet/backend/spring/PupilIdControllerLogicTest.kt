@@ -11,7 +11,8 @@ import at.asitplus.wallet.lib.agent.MessageWrapper
 import at.asitplus.wallet.lib.agent.NextMessage
 import at.asitplus.wallet.lib.agent.ProblemReporter
 import at.asitplus.wallet.lib.agent.SubjectCredentialStore
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.pupilid.ConstantIndex
+import at.asitplus.wallet.pupilid.Initializer
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -70,6 +71,7 @@ class PupilIdControllerLogicTest {
 
     @BeforeEach
     fun beforeEach() {
+        Initializer.initWithVcLib()
         bpk = UUID.randomUUID().toString()
         certificate = client.selfSignedCert.encoded
         deviceBindingRepository.deleteAll()

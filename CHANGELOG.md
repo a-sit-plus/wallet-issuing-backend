@@ -1,5 +1,9 @@
 # Changelog
 
+NEXT
+ - depend on locally built umbrella lib
+ - add new `purge` task to purge included umbrella lib maven artifacts
+
 1.6.2:
  - update attestation lib
 

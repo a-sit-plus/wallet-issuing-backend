@@ -25,12 +25,20 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.apache.httpcomponents:httpclient")
     implementation("com.nimbusds:nimbus-jose-jwt:9.23")
-    implementation("at.asitplus.wallet:pupilidumbrella-jvm") {
-        exclude("at.asitplus.wallet", "vclib-jvm")
-        exclude("at.asitplus.wallet", "pupilidlib-jvm")
+    implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}"){
+        layout.projectDirectory.dir("..").dir("pupilidumbrella").dir("repo").asFile.let {
+            if (it.exists() && it.isDirectory && it.listFiles()!!.isNotEmpty()) {
+                logger.info("assuming PupilIdLib maven artifact present")
+            } else {
+                exec {
+                    workingDir = layout.projectDirectory.dir("..").dir("pupilidumbrella").asFile
+                    println("descending into ${workingDir.absolutePath}")
+                    logger.lifecycle("Rebuilding PupilIdUmbrella maven artifacts")
+                    commandLine("./gradlew", "publishAllPublicationsToLocalRepository")
+                }
+            }
+        }
     }
-    implementation("at.asitplus.wallet:pupilidlib-jvm")
-    implementation("at.asitplus.wallet:vclib-jvm")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("io.ktor:ktor-client-core:2.1.0")
@@ -69,6 +77,7 @@ val gitLabProjectId: String by extra
 val gitLabGroupId: String by extra
 
 repositories {
+    maven(uri(layout.projectDirectory.dir("..").dir("pupilidumbrella").dir("repo")))
     mavenLocal()
     if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
         maven {

@@ -15,7 +15,7 @@ object VersionsBackend {
     const val okhttp = "4.10.0"
     const val scrimage = "4.0.33"
 
-    const val umbrella = " 1.2.0"
+    const val umbrella = "1.3.1-SNAPSHOT"
     const val attestation = "0.3.0"
 
     object spring {

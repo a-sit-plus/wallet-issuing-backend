@@ -2,12 +2,13 @@ package at.asitplus.wallet.backend.testrig
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.lib.jws.JwsHeader
 import at.asitplus.wallet.pupilid.*
+import at.asitplus.wallet.utils.Asn1Service
 import io.ktor.client.engine.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
