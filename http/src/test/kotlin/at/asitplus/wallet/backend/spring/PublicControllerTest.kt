@@ -23,26 +23,46 @@ class PublicControllerTest {
     private lateinit var timePeriodProvider: TimePeriodProvider
 
     @Test
-    fun `GET VC status list with valid period`() {
+    fun `GET VC status list with If-None-Match in second request`() {
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
         val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }
             header { exists(HttpHeaders.ETAG) }
-            header { exists(HttpHeaders.LAST_MODIFIED) }
             header { exists(HttpHeaders.CACHE_CONTROL) }
         }.andReturn()
 
         mockMvc.get("/credentials/status/$timePeriod") {
             headers {
                 ifNoneMatch = listOf(firstResult.response.getHeader(HttpHeaders.ETAG))
-                ifModifiedSince = firstResult.response.getDateHeader(HttpHeaders.LAST_MODIFIED)
             }
         }.andExpect {
             status { isNotModified() }
             content { string(emptyString()) }
             header { exists(HttpHeaders.ETAG) }
+            header { exists(HttpHeaders.CACHE_CONTROL) }
+        }.andReturn()
+    }
+
+    @Test
+    fun `GET VC status list, with If-Modified-Since in second request`() {
+        val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
+        val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
+        }.andExpect {
+            status { isOk() }
+            content { string(not(emptyString())) }
+            header { exists(HttpHeaders.LAST_MODIFIED) }
+            header { exists(HttpHeaders.CACHE_CONTROL) }
+        }.andReturn()
+
+        mockMvc.get("/credentials/status/$timePeriod") {
+            headers {
+                ifModifiedSince = firstResult.response.getDateHeader(HttpHeaders.LAST_MODIFIED)
+            }
+        }.andExpect {
+            status { isNotModified() }
+            content { string(emptyString()) }
             header { exists(HttpHeaders.LAST_MODIFIED) }
             header { exists(HttpHeaders.CACHE_CONTROL) }
         }.andReturn()

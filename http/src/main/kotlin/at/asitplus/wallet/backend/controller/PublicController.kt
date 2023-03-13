@@ -78,26 +78,27 @@ class PublicController(
     fun getVcRevocationList(@PathVariable timePeriod: Int, request: WebRequest): ResponseEntity<String> = runBlocking {
         Napier.i("/credentials/status/$timePeriod called")
         val path = Path(configurationProperties.revocationList.path, timePeriod.toString())
-        val rl = if (path.exists() && path.isReadable()) path.readText() else null
-        if (rl.isNullOrEmpty()) {
+        val content = if (path.exists() && path.isReadable()) path.readText() else null
+        if (content.isNullOrEmpty()) {
             Napier.w("/credentials/status/$timePeriod returns HTTP 404")
             return@runBlocking ResponseEntity.notFound().build()
         }
-        val etag = rl.encodeToByteArray().sha256().encodeBase16().uppercase()
+        val etag = content.encodeToByteArray().sha256().encodeBase16().uppercase()
         val cacheControl =
             CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration())
-        if (request.checkNotModified(etag, path.toFile().lastModified())) {
+        // Spring (or Tomcat?) appends "-gzip" to the ETag set by us, so we'll need to check that variant too
+        if (request.checkNotModified(etag, path.toFile().lastModified())
+            || request.checkNotModified("${etag}-gzip", path.toFile().lastModified())
+        ) {
             Napier.d("/credentials/status/$timePeriod returns HTTP 304")
             return@runBlocking ResponseEntity.status(HttpStatus.NOT_MODIFIED)
-                .eTag(etag)
                 .cacheControl(cacheControl)
                 .build()
         }
-        Napier.i("/credentials/status/$timePeriod returns ${rl.count()} chars")
+        Napier.i("/credentials/status/$timePeriod returns ${content.count()} chars")
         return@runBlocking ResponseEntity.ok()
-            .eTag(etag)
             .cacheControl(cacheControl)
-            .body(rl)
+            .body(content)
     }
 
     @Operation(
