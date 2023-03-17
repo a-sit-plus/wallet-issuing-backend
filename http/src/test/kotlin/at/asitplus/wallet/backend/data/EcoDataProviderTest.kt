@@ -5,8 +5,8 @@ import at.asitplus.wallet.backend.config.EcoAttributeSourceConfigurationProperti
 import at.asitplus.wallet.backend.config.HttpBasicAuthnConfigurationProperties
 import at.asitplus.wallet.backend.service.RestTemplateConfigurationService
 import at.asitplus.wallet.lib.DataSourceProblem
-import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.PupilIdCredential
+import at.asitplus.wallet.pupilid.ConstantIndex
+import at.asitplus.wallet.pupilid.PupilIdCredential
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf

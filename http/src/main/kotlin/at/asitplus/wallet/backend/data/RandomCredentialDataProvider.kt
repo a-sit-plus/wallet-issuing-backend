@@ -4,8 +4,8 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.PupilIdCredential
+import at.asitplus.wallet.pupilid.ConstantIndex
+import at.asitplus.wallet.pupilid.PupilIdCredential
 import at.asitplus.wallet.lib.data.SchemaIndex
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.base64.encodeBase64
@@ -90,7 +90,7 @@ class RandomCredentialDataProvider(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
                 maxExpiration,
-                ConstantIndex.Generic.vcType,
+                at.asitplus.wallet.lib.data.ConstantIndex.Generic.vcType,
                 attachments,
             )
         )
@@ -140,7 +140,7 @@ class RandomCredentialDataProvider(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
                 maxExpiration,
-                ConstantIndex.Generic.vcType,
+                at.asitplus.wallet.lib.data.ConstantIndex.Generic.vcType,
                 attachments,
             )
         )

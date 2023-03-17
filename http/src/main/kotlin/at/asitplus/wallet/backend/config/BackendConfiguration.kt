@@ -12,8 +12,10 @@ import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.pki.*
 import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
+import at.asitplus.wallet.pupilid.Initializer
+import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import kotlinx.datetime.Clock
@@ -83,6 +85,7 @@ class BackendConfiguration {
     private lateinit var issuedCertificateRepository: IssuedCertificateRepository
 
     init {
+        Initializer.initWithVcLib()
         Napier.base(AntilogSlf4jAdapter())
     }
 
@@ -454,7 +457,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         messageWrapper = issuerMessageWrapper,
         keyId = issuerCryptoService.keyId,
         serviceEndpoint = appendPath(configurationProperties.publicContext, "eidasid", "issue"),
-        credentialScheme = ConstantIndex.Generic,
+        credentialScheme = at.asitplus.wallet.lib.data.ConstantIndex.Generic,
     )
 
     private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {

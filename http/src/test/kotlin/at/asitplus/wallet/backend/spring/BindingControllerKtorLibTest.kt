@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.pupilid.*
+import at.asitplus.wallet.utils.Asn1Service
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach

@@ -6,6 +6,7 @@ import at.asitplus.wallet.backend.auth.ApiKeyAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_REVOCATION
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
+import at.asitplus.wallet.pupilid.Initializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,6 +31,9 @@ import java.util.UUID
 @AutoConfigureMockMvc
 class RevocationControllerSpringSecurityTest {
 
+    init {
+        Initializer.initWithVcLib()
+    }
     @Autowired
     private lateinit var mockMvc: MockMvc
 

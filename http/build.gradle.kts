@@ -23,7 +23,7 @@ configurations {
         extendsFrom(configurations.annotationProcessor.get())
     }
     all {
-        resolutionStrategy
+        resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
     }
 }
 
@@ -62,11 +62,20 @@ dependencies {
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
 
     implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}"){
-        exclude("at.asitplus.wallet","vclib-jvm")
-        exclude("at.asitplus.wallet","pupilidlib-jvm")
+        layout.projectDirectory.dir("..").dir("pupilidumbrella").dir("repo").asFile.let {
+            if (it.exists() && it.isDirectory && it.listFiles()!!.isNotEmpty()) {
+                logger.info("assuming PupilIdLib maven artifact present")
+            } else {
+                exec {
+                    workingDir = layout.projectDirectory.dir("..").dir("pupilidumbrella").asFile
+                    println("descending into ${workingDir.absolutePath}")
+                    logger.lifecycle("Rebuilding PupilIdUmbrella maven artifacts")
+                    commandLine("./gradlew", "publishAllPublicationsToLocalRepository")
+                }
+            }
+        }
     }
-    implementation("at.asitplus.wallet:pupilidlib-jvm")
-    implementation("at.asitplus.wallet:vclib-jvm")
+
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
     implementation("at.asitplus.wallet:remotecrypto")
@@ -135,6 +144,7 @@ val gitLabProjectId: String by extra
 val gitLabGroupId: String by extra
 
 repositories {
+    maven(uri(layout.projectDirectory.dir("..").dir("pupilidumbrella").dir("repo")))
     mavenLocal()
     if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
         maven {

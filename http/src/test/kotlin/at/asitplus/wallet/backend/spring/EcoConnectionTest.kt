@@ -5,7 +5,7 @@ import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.pupilid.ConstantIndex
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength

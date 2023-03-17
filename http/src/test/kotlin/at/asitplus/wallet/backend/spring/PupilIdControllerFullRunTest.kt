@@ -5,7 +5,8 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.pupilid.ConstantIndex
+import at.asitplus.wallet.pupilid.Initializer
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import kotlinx.coroutines.test.runTest
@@ -30,6 +31,7 @@ import java.util.*
 @AutoConfigureMockMvc
 class PupilIdControllerFullRunTest {
 
+
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -45,6 +47,7 @@ class PupilIdControllerFullRunTest {
 
     @BeforeEach
     fun beforeEach() {
+        Initializer.initWithVcLib()
         client = Client()
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
         holderAgent = HolderAgent.newDefaultInstance(holderCryptoService)

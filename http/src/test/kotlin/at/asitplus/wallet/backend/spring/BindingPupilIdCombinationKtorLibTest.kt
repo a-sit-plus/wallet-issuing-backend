@@ -4,8 +4,8 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.pupilid.*
+import at.asitplus.wallet.utils.Asn1Service
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.client.engine.java.*
@@ -48,6 +48,7 @@ class BindingPupilIdCombinationKtorLibTest {
 
     @BeforeEach
     fun beforeEach() {
+        Initializer.initWithVcLib()
         client = Client()
         holderCryptoService = DefaultCryptoService(keyPair = client.keyPair)
         holderAgent = HolderAgent.newDefaultInstance(
