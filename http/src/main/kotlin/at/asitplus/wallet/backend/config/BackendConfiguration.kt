@@ -12,10 +12,9 @@ import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.pki.*
 import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
+import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
-import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import kotlinx.datetime.Clock
