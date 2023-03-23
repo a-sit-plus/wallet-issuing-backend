@@ -6,7 +6,6 @@ variables:
   GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.console=plain -Dmaven.repo.local=${CI_PROJECT_DIR}/.m2/repository"
   GIT_SUBMODULE_STRATEGY: recursive
-  GET_DEPTH: 4
   GIT_STRATEGY: clone
   SECRET_DETECTION_EXCLUDED_PATHS: ".gradle,gradle,.m2"
 
