@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.attestation.IOSAttestationConfiguration
-import at.asitplus.wallet.lib.agent.MonthAndDay
+import at.asitplus.wallet.pupilid.MonthAndDay
 import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
@@ -386,6 +386,7 @@ data class AndroidAttestationConfigurationProperties(
     val signatureDigests: Array<String>,
     val requireStrongBox: Boolean = false,
     val requireRollbackResistance: Boolean = false,
+    val ignoreLeafValidity: Boolean = false,
 )
 
 @ConstructorBinding

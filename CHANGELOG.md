@@ -3,6 +3,7 @@
 NEXT
  - depend on locally built umbrella lib
  - add new `purge` task to purge included umbrella lib maven artifacts
+ - attestation-library v0.4.0 can now ignore timely validity of Android leaf certificates
 
 1.6.2:
  - update attestation lib

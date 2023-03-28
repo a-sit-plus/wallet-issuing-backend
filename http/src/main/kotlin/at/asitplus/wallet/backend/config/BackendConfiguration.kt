@@ -15,6 +15,7 @@ import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
+import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import kotlinx.datetime.Clock
@@ -473,7 +474,8 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             patchLevel = aCfg.patchLevel?.let { PatchLevel(it.year, it.month) },
             requireStrongBox = aCfg.requireStrongBox,
             bootloaderUnlockAllowed = false,
-            requireRollbackResistance = aCfg.requireRollbackResistance
+            requireRollbackResistance = aCfg.requireRollbackResistance,
+            ignoreLeafValidity = aCfg.ignoreLeafValidity
         )
     }
 

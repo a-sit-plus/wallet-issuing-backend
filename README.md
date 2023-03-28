@@ -422,6 +422,7 @@ backend:
           month: 01
         android-version: 9000
         require-strong-box: false
+        ignore-leaf-validity: false
       ios:
         bundle-identifier: ios.bundle.identifier
         team-identifier: DEADBEEF42
@@ -436,10 +437,11 @@ There are more options for configuring validation of the Key Attestation provide
 - `android.patch-level` is optional, e.g. `android.patch-level.year=2020` and `android.patch-level.month=01`, omitting the values defines no minimum patch level.
 - `android.android-version` is also optional, e.g. `9000` for Android 9, or `4200` for Android 4.2.
 - `android.require-strong-box` is `false` by default, may be set to `true` to enforce StrongBox-compatible hardware on Android clients.
+- `android.ignore-leaf-validity` is `false` by default, may be set to `true` to ignore the timely validity of the attestation leaf certificate (looking at you, Samsung!).
 - `ios.bundle-identifier` is the App bundle identifier, similar to Android package name, e.g. `ios.wallet.app`.
 - `ios.team-identifier` is the Apple Development Team identifier of the valid client App.
 - `ios.sandbox` may be set to `true` to enable "development" stage attestation, or to `false` to enable "production" stage attestation.
-- `ios.ios-version` defines optionally the minimal iOS version running on devices, e.g. `14`
+- `ios.ios-version` defines optionally the minimal iOS version running on devices, e.g. `14.1`
 
 Alternative configuration of the attribute source (which attributes to issue for the Wallet App):
 
