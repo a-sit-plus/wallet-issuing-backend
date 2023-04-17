@@ -43,7 +43,8 @@ class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDat
             "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
             "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
             "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
-            else -> return KmmResult.failure(DataSourceProblem("Requested attribute '$attributeName' could not be issued"))
+            else -> AtomicAttributeCredential(subjectId, attributeName, "<empty>")
+            //else -> return KmmResult.failure(DataSourceProblem("Requested attribute '$attributeName' could not be issued"))
         }
 
         return KmmResult.success(
