@@ -6,27 +6,38 @@ import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
+import at.asitplus.wallet.backend.data.Rfc7807Problem
 import at.asitplus.wallet.backend.service.BindingService
-import io.matthewnelson.component.base64.decodeBase64ToArray
-import io.matthewnelson.component.base64.encodeBase64
 import at.asitplus.wallet.pupilid.*
 import io.github.aakira.napier.Napier
+import io.ktor.http.*
+import io.ktor.util.date.*
+import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.component.base64.encodeBase64
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import kotlinx.datetime.Clock
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import java.security.Principal
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpSession
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val SESSION_ATTR_CERTIFICATE = "certificate"
 
@@ -36,6 +47,9 @@ class BindingController(
     private val bindingService: BindingService,
 ) {
 
+    @Value("\${backend.max-drift:PT12H}")
+    private lateinit var timeDrift: String
+    private val timeDifference: Duration by lazy { Duration.parse(timeDrift) }
 
     @Operation(
         summary = "Initiate binding",
@@ -55,13 +69,42 @@ class BindingController(
     @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
     fun requestBindingParams(
         @RequestBody body: BindingParamsRequestJ,
+        @RequestHeader(name = HttpHeaders.DATE, required = false) dateHeader: String?,
         principal: Principal
-    ): ResponseEntity<BindingParamsResponseJ> {
-        Napier.i("/binding/start called")
+    ): ResponseEntity<out Any> {
+        Napier.apply {
+            i("/binding/start called")
+            v("/binding/start called with client date $dateHeader (which may differ by at most $timeDifference)")
+        }
         Napier.v("principal: $principal, body: $body")
+
+        runCatching {
+            dateHeader?.fromHttpToGmtDate()?.timestamp?.milliseconds?.let { clientTime ->
+
+                if ((clientTime - Clock.System.now().epochSeconds.seconds) > timeDifference) {
+                    Napier.w("Client clock too far in the future")
+                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)
+                        .contentType(MediaType("application", "problem+json"))
+                        .body(
+                            Rfc7807Problem(
+                                type = "https://wallet.a-sit.at/schemas/error/client/date",
+                                title = "Client clock too far in the future",
+                                status = HttpStatus.PRECONDITION_FAILED.value(),
+                                detail = Clock.System.now().epochSeconds.toString()
+                            ).toString()
+                        )
+                } else {
+                    Napier.v("Client clock is fine: $clientTime")
+                }
+
+            }
+        }.getOrElse {
+            Napier.w { "/binding/start could not parse client date header $dateHeader" }
+        }
+
         val response = bindingService.getBindingParams(body.deviceName)
         return ResponseEntity.ok(BindingParamsResponseJ(response.challenge, response.subject, response.keyType))
-            .also { Napier.i("/binding/start returns HTTP 200: $it") /* this is fine, no personal data */}
+            .also { Napier.i("/binding/start returns HTTP 200: $it") /* this is fine, no personal data */ }
     }
 
     @Operation(

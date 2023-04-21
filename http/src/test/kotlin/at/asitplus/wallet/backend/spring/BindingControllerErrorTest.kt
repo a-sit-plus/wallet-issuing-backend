@@ -1,12 +1,16 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
+import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
 import at.asitplus.wallet.pupilid.BindingParamsRequestJ
+import io.kotest.matchers.longs.shouldBeLessThanOrEqual
+import io.ktor.http.*
+import io.ktor.util.date.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -17,9 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.HttpRequestMethodNotSupportedException
-import java.util.UUID
+import java.util.*
 
 /**
  * This is no MockMVC test, because that test setup would not create the error documents
@@ -66,6 +71,23 @@ class BindingControllerErrorTest {
             .jsonPath("exception").value(containsString(IllegalArgumentException::class.java.simpleName))
             .jsonPath("path").isEqualTo("/binding/start")
             .jsonPath("message").isEqualTo(exceptionMessage)
+    }
+
+    @Test
+    fun `binding with clock too far in the future returns error document`() {
+        webClient.post().uri("/binding/start")
+            .bodyValue(BindingParamsRequestJ("deviceName"))
+            .header(X_AUTH_EXT_NONCE, nonce)
+            .header("Date", GMTDate(0, 0, 0, 1, Month.JANUARY, 2100).toHttpDate())
+            .exchange()
+            .expectHeader().contentType("application/problem+json")
+            .expectStatus().isEqualTo(HttpStatus.PRECONDITION_FAILED)
+            .expectBody().consumeWith { println(String(it.responseBody!!)) }
+            .jsonPath("type").isEqualTo("https://wallet.a-sit.at/schemas/error/client/date")
+            .jsonPath("title").isEqualTo("Client clock too far in the future")
+            .jsonPath("detail").value<String> {
+                it.toLong() shouldBeLessThanOrEqual Clock.System.now().epochSeconds
+            }
     }
 
     @Test

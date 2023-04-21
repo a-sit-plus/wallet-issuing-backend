@@ -10,7 +10,6 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.encoding.base16.encodeBase16
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.springframework.web.client.HttpStatusCodeException
@@ -138,15 +137,6 @@ class EcoCredentialDataProvider(
         val studentCity: String?,
         val studentZip: String?,
         val photo: String,
-    )
-
-    @Serializable
-    private class Rfc7807Problem(
-        val type: String? = null,
-        val title: String,
-        val status: Int? = null,
-        val instance: String? = null,
-        val detail: String? = null,
     )
 
 }
