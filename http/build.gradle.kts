@@ -75,6 +75,7 @@ dependencies {
             }
         }
     }
+    implementation("at.asitplus.wallet:idaustriacredential-jvm:1.0.0-SNAPSHOT")
 
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")

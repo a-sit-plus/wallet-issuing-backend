@@ -13,6 +13,9 @@ interface CredentialDataProvider {
     fun getCredential(subjectId: String, attributeType: String, bpk: String, maxExpiration: Instant)
             : KmmResult<CredentialToBeIssued>
 
+    fun getCredentialWithType(subjectId: String, attributeTypes: Collection<String>, bpk: String, maxExpiration: Instant)
+            : KmmResult<List<CredentialToBeIssued>>
+
     data class CredentialToBeIssued(
         val subject: CredentialSubject,
         val expiration: Instant,

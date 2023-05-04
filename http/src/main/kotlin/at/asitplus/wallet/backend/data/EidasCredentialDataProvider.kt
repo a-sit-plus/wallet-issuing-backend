@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.lib.DataSourceProblem
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -15,7 +17,10 @@ import kotlin.time.Duration
  * the previously stored attributes (from an OIDC login),
  * i.e. it looks up data with the `bpk` from its internal map
  */
-class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDataProvider {
+class EidasCredentialDataProvider(
+    private val timeout: Duration,
+    private val authenticationSupplier: AuthenticationSupplier,
+) : CredentialDataProvider {
 
     private val list = mutableListOf<EidasClaimHolder>()
 
@@ -60,6 +65,36 @@ class EidasCredentialDataProvider(private val timeout: Duration) : CredentialDat
     ): KmmResult<CredentialDataProvider.CredentialToBeIssued> =
         KmmResult.failure(UnsupportedOperationException("not supported for EIDAS"))
 
+    override fun getCredentialWithType(
+        subjectId: String,
+        attributeTypes: Collection<String>,
+        bpk: String,
+        maxExpiration: Instant
+    ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
+        Napier.v("getCredentialWithType for $subjectId and $attributeTypes and $bpk")
+        if (attributeTypes.contains("IdAustriaCredential")) {
+            val idToken = authenticationSupplier.getCurrentUserOidcDetails()
+            Napier.v("getCredentialWithType user is $idToken")
+            if (idToken == null)
+                return KmmResult.failure(UnsupportedOperationException("no OIDC user found"))
+            val subject = IdAustriaCredential(
+                id = subjectId,
+                name = idToken.givenName,
+                value = idToken.familyName,
+            )
+            Napier.v("getCredentialWithType issuing $subject")
+            return KmmResult.success(
+                listOf(
+                    CredentialDataProvider.CredentialToBeIssued(
+                        subject = subject,
+                        expiration = maxExpiration,
+                        attributeType = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType
+                    )
+                )
+            )
+        }
+        return KmmResult.success(listOf())
+    }
 
     data class EidasClaim(
         val subject: String,

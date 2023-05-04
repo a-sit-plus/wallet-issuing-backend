@@ -4,13 +4,12 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.data.AtomicAttributeCredential
+import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.PupilIdCredential
-import at.asitplus.wallet.lib.data.SchemaIndex
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
-import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.random.Random
@@ -144,6 +143,18 @@ class RandomCredentialDataProvider(
                 attachments,
             )
         )
+    }
+
+    override fun getCredentialWithType(
+        subjectId: String,
+        attributeTypes: Collection<String>,
+        bpk: String,
+        maxExpiration: Instant
+    ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
+        if (attributeTypes.contains(ConstantIndex.PupilId.vcType)) {
+            return getCredential(subjectId, ConstantIndex.PupilId.vcType, bpk, maxExpiration).map { listOf(it) }
+        }
+        return KmmResult.success(listOf())
     }
 
     companion object {

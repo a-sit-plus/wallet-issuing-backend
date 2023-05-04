@@ -120,6 +120,18 @@ class EcoCredentialDataProvider(
         return KmmResult.failure(it)
     }
 
+    override fun getCredentialWithType(
+        subjectId: String,
+        attributeTypes: Collection<String>,
+        bpk: String,
+        maxExpiration: Instant
+    ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
+        if (attributeTypes.contains(ConstantIndex.PupilId.vcType)) {
+            return getCredential(subjectId, ConstantIndex.PupilId.vcType, bpk, maxExpiration).map { listOf(it) }
+        }
+        return KmmResult.success(listOf())
+    }
+
     /**
      * Updated from ECO Swagger on 2022-02-05
      */
