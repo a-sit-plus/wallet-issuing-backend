@@ -127,8 +127,7 @@ class DebugController(
             deviceName,
             deviceId,
             exp.toJavaInstant()
-        )
-            .also { deviceBindingRepo.save(it) }
+        ).also { deviceBindingRepo.save(it) }
         val vcId = UUID.randomUUID().toString()
         synchronized(CredentialRepositoriesLock) {
             val timePeriod = timePeriodProvider.getTimePeriodFor(Clock.System.now())
@@ -144,8 +143,7 @@ class DebugController(
                 deviceBinding,
                 attributeName,
                 revocationListIndex
-            )
-                .also { credentialRepo.save(it) }
+            ).also { credentialRepo.save(it) }
         }
         return ModelAndView("redirect:/debug/credential/list")
     }
@@ -157,8 +155,8 @@ class DebugController(
                 it.createdOn.toString(),
                 it.attributeName,
                 it.subjectId,
-                it.deviceBinding.deviceName,
-                it.deviceBinding.bpk
+                it.deviceBinding?.deviceName ?: "no binding",
+                it.deviceBinding?.bpk ?: "no binding",
             )
         }
         model["vcList"] = vcList
