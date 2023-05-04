@@ -13,6 +13,7 @@ import at.asitplus.wallet.backend.pki.*
 import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.jws.DefaultJwsService
+import at.asitplus.wallet.oidvci.IssuerService
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
 import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
@@ -329,6 +330,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     fun dataProvider(
         deviceBindingStorageService: DeviceBindingStorageService,
         pictureService: PictureService,
+        authenticationSupplier: AuthenticationSupplier,
     ): CredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
             AttributeSourceType.RANDOM -> {
@@ -356,7 +358,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             }
 
             AttributeSourceType.EIDAS -> {
-                EidasCredentialDataProvider(600.seconds)
+                EidasCredentialDataProvider(600.seconds, authenticationSupplier)
             }
         }
 
@@ -458,6 +460,17 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         keyId = issuerCryptoService.keyId,
         serviceEndpoint = appendPath(configurationProperties.publicContext, "eidasid", "issue"),
         credentialScheme = at.asitplus.wallet.lib.data.ConstantIndex.Generic,
+    )
+
+    @Profile("eidasid")
+    @Bean
+    fun issuerService(
+        issuer: Issuer,
+        issuerCryptoService: CryptoService,
+        issuerMessageWrapper: MessageWrapper
+    ): IssuerService = IssuerService(
+        issuer = issuer,
+        publicContext = configurationProperties.publicContext
     )
 
     private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {

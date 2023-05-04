@@ -1,5 +1,8 @@
 # Changelog
 
+NEXT (1.6.4):
+ - Implement OpenId4VerifiableCredentialIssuance
+
 NEXT
  - depend on locally built umbrella lib
  - add new `purge` task to purge included umbrella lib maven artifacts
