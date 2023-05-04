@@ -10,7 +10,7 @@ import kotlinx.coroutines.runBlocking
  */
 interface IssueCredentialAdapter {
 
-    fun parseMessage(it: String): NextMessage?
+    fun parseMessage(it: String): NextMessage
 
 }
 
@@ -18,7 +18,7 @@ class DefaultIssueCredentialAdapter(
     private val issueCredentialMessenger: IssueCredentialMessenger,
 ) : IssueCredentialAdapter {
 
-    override fun parseMessage(it: String) =
+    override fun parseMessage(it: String): NextMessage =
         runBlocking { issueCredentialMessenger.parseMessage(it) }
 
 }

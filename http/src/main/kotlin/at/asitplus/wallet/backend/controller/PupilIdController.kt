@@ -163,12 +163,6 @@ class PupilIdController(
                     Napier.i("/pupilid/issue returns HTTP 200: Received Problem Report")
                     Napier.v("Received Problem Report ${result.message}")
                 }
-
-            else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build<String>()
-                .also {
-                    Napier.w("/pupilid/issue returns HTTP 500: Internal error")
-                    Napier.v("Internal error $result")
-                }
         }.also { request.logout() }
     }
 
