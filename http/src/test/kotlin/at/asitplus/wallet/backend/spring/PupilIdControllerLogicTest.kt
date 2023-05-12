@@ -6,11 +6,11 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BIN
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.agent.HolderAgent
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.MessageWrapper
-import at.asitplus.wallet.lib.agent.NextMessage
-import at.asitplus.wallet.lib.agent.ProblemReporter
 import at.asitplus.wallet.lib.agent.SubjectCredentialStore
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.MessageWrapper
+import at.asitplus.wallet.lib.aries.NextMessage
+import at.asitplus.wallet.lib.aries.ProblemReporter
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -66,7 +66,6 @@ class PupilIdControllerLogicTest {
         holder = holderAgent,
         messageWrapper = messageWrapper,
         credentialScheme = ConstantIndex.PupilId,
-        keyId = holderCryptoService.keyId
     )
 
     @BeforeEach

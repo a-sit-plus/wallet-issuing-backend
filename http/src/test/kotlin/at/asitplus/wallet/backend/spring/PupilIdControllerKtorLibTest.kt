@@ -4,6 +4,9 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.MessageWrapper
+import at.asitplus.wallet.lib.aries.NextMessage
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.jws.JwsHeader
 import at.asitplus.wallet.pupilid.*
@@ -48,7 +51,6 @@ class PupilIdControllerKtorLibTest {
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,
-            keyId = holderCryptoService.keyId,
             messageWrapper = MessageWrapper(holderCryptoService)
         )
         val bpk = UUID.randomUUID().toString()
@@ -62,17 +64,21 @@ class PupilIdControllerKtorLibTest {
         val cryptoAdapter = PupilIdIssuingService.JwsAdapter { payload ->
             KmmResult.success(
                 DefaultJwsService(holderCryptoService).createSignedJws(
-                    JwsHeader(
-                        holderCryptoService.jwsAlgorithm,
-                        holderCryptoService.keyId,
+                    header = JwsHeader(
+                        algorithm = holderCryptoService.jwsAlgorithm,
+                        keyId = holderCryptoService.toJsonWebKey().keyId,
                         certificateChain = arrayOf(clientCert)
                     ),
-                    payload.encodeToByteArray()
+                    payload = payload.encodeToByteArray()
                 )!!
             )
         }
 
-        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter, httpClientBuilder = HttpClientBuilder())
+        val service = PupilIdIssuingService(
+            "http://localhost:$localServerPort",
+            cryptoAdapter,
+            httpClientBuilder = HttpClientBuilder()
+        )
         val result = service.issueCredentials(request.message)
 
         result.shouldBeInstanceOf<ServiceResult.Success>()
@@ -84,17 +90,21 @@ class PupilIdControllerKtorLibTest {
         val cryptoAdapter = PupilIdIssuingService.JwsAdapter { payload ->
             KmmResult.success(
                 DefaultJwsService(holderCryptoService).createSignedJws(
-                    JwsHeader(
-                        holderCryptoService.jwsAlgorithm,
-                        holderCryptoService.keyId,
+                    header = JwsHeader(
+                        algorithm = holderCryptoService.jwsAlgorithm,
+                        keyId = holderCryptoService.toJsonWebKey().keyId,
                         certificateChain = arrayOf(clientCert)
                     ),
-                    payload.encodeToByteArray().reversedArray()
+                    payload = payload.encodeToByteArray().reversedArray()
                 )!!
             )
         }
 
-        val service = PupilIdIssuingService("http://localhost:$localServerPort", cryptoAdapter, httpClientBuilder = HttpClientBuilder())
+        val service = PupilIdIssuingService(
+            "http://localhost:$localServerPort",
+            cryptoAdapter,
+            httpClientBuilder = HttpClientBuilder()
+        )
         val result = service.issueCredentials(request.message)
 
         result.shouldBeInstanceOf<ServiceResult.ErrorFromNetwork>()

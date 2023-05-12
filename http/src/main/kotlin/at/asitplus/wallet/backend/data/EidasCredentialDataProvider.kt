@@ -4,12 +4,11 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.lib.DataSourceProblem
-import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.SchemaIndex
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import kotlin.time.Duration
 
 /**
@@ -29,71 +28,77 @@ class EidasCredentialDataProvider(
         list += EidasClaimHolder(expiration = Clock.System.now() + timeout, bpk = bpk, claim = eidasClaim)
     }
 
-    override fun getClaim(
-        subjectId: String,
-        attributeName: String,
-        bpk: String,
-        maxExpiration: Instant
-    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> {
-        if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX))
-            return KmmResult.failure(UnsupportedOperationException("$attributeName is not supported")) // other attribute names are not supported
-
-        val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
-            ?: return KmmResult.failure(DataSourceProblem("Found no stored EIDAS claim for bpk").also {
-                Napier.v("Found no stored EIDAS claim for bpk: '$bpk'")
-            })
-
-        val subject = when (attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
-            "given-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.givenName)
-            "family-name" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.familyName)
-            "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.birthdate)
-            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, eidasClaim.subject)
-            else -> AtomicAttributeCredential(subjectId, attributeName, "<empty>")
-            //else -> return KmmResult.failure(DataSourceProblem("Requested attribute '$attributeName' could not be issued"))
-        }
-
-        return KmmResult.success(
-            CredentialDataProvider.CredentialToBeIssued(subject, maxExpiration, ConstantIndex.Generic.vcType)
-        )
-    }
-
-    override fun getCredential(
-        subjectId: String,
-        attributeType: String,
-        bpk: String,
-        maxExpiration: Instant
-    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> =
-        KmmResult.failure(UnsupportedOperationException("not supported for EIDAS"))
-
     override fun getCredentialWithType(
         subjectId: String,
         attributeTypes: Collection<String>,
-        bpk: String,
+        bpk: String?,
         maxExpiration: Instant
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         Napier.v("getCredentialWithType for $subjectId and $attributeTypes and $bpk")
         if (attributeTypes.contains("IdAustriaCredential")) {
             val idToken = authenticationSupplier.getCurrentUserOidcDetails()
             Napier.v("getCredentialWithType user is $idToken")
-            if (idToken == null)
-                return KmmResult.failure(UnsupportedOperationException("no OIDC user found"))
-            val subject = IdAustriaCredential(
-                id = subjectId,
-                name = idToken.givenName,
-                value = idToken.familyName,
-            )
-            Napier.v("getCredentialWithType issuing $subject")
-            return KmmResult.success(
-                listOf(
-                    CredentialDataProvider.CredentialToBeIssued(
-                        subject = subject,
-                        expiration = maxExpiration,
-                        attributeType = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType
-                    )
-                )
-            )
+            if (idToken != null) {
+                return issueFromAppOidc(subjectId, idToken, maxExpiration)
+            }
+            if (bpk != null) {
+                return issueFromWebOidc(subjectId, bpk, maxExpiration)
+            }
+            return KmmResult.success(listOf())
         }
         return KmmResult.success(listOf())
+    }
+
+    private fun issueFromWebOidc(
+        subjectId: String,
+        bpk: String,
+        maxExpiration: Instant
+    ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
+
+        val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
+            ?: return KmmResult.failure(DataSourceProblem("Found no stored EIDAS claim for bpk").also {
+                Napier.v("Found no stored EIDAS claim for bpk: '$bpk'")
+            })
+
+        val subject = IdAustriaCredential(
+            id = subjectId,
+            firstname = eidasClaim.givenName,
+            lastname = eidasClaim.familyName,
+            dateOfBirth = LocalDate.parse(eidasClaim.birthdate)
+        )
+        Napier.v("getCredentialWithType issuing $subject")
+        return KmmResult.success(
+            listOf(
+                CredentialDataProvider.CredentialToBeIssued(
+                    subject = subject,
+                    expiration = maxExpiration,
+                    attributeType = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType
+                )
+            )
+        )
+    }
+
+    private fun issueFromAppOidc(
+        subjectId: String,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ): KmmResult.Success<List<CredentialDataProvider.CredentialToBeIssued>> {
+        val subject = IdAustriaCredential(
+            id = subjectId,
+            firstname = idToken.givenName,
+            lastname = idToken.familyName,
+            dateOfBirth = LocalDate.parse(idToken.birthdate)
+        )
+        Napier.v("getCredentialWithType issuing $subject")
+        return KmmResult.success(
+            listOf(
+                CredentialDataProvider.CredentialToBeIssued(
+                    subject = subject,
+                    expiration = maxExpiration,
+                    attributeType = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType
+                )
+            )
+        )
     }
 
     data class EidasClaim(

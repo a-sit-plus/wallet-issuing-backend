@@ -3,18 +3,14 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.backend.service.SecureRandom
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import at.asitplus.wallet.lib.data.AtomicAttributeCredential
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
@@ -24,19 +20,14 @@ import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
-import java.lang.Long.max
-import java.util.*
+import java.util.Collections
 import javax.imageio.ImageIO
-import kotlin.time.Duration.Companion.hours
 
 @Controller
 class DebugController(
     private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
     private val revocationService: RevocationService,
-    private val credentialRepo: IssuedCredentialRepository,
-    private val revokedCredentialRepo: RevokedCredentialRepository,
-    private val deviceBindingRepo: DeviceBindingRepository,
     private val timePeriodProvider: TimePeriodProvider,
 ) {
 
@@ -109,45 +100,6 @@ class DebugController(
         return ModelAndView("redirect:/debug/credential/list")
     }
 
-    @GetMapping("/debug/credential/create")
-    fun createCredential(model: ModelMap): ModelAndView {
-        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        Napier.i("/debug/credential/create called")
-        val attributeName = UUID.randomUUID().toString()
-        val attributeValue = UUID.randomUUID().toString()
-        val credentialSubject =
-            AtomicAttributeCredential(UUID.randomUUID().toString(), attributeName, attributeValue)
-        val exp = Clock.System.now() + 1.hours
-        val deviceName = "fake-" + UUID.randomUUID().toString()
-        val deviceId = UUID.randomUUID().toString()
-        val bpk = UUID.randomUUID().toString()
-        val deviceBinding = DeviceBinding(
-            bpk,
-            SecureRandom.nextBytes(32),
-            deviceName,
-            deviceId,
-            exp.toJavaInstant()
-        ).also { deviceBindingRepo.save(it) }
-        val vcId = UUID.randomUUID().toString()
-        synchronized(CredentialRepositoriesLock) {
-            val timePeriod = timePeriodProvider.getTimePeriodFor(Clock.System.now())
-            val revocationListIndex = max(
-                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
-                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-            ) + 1
-            IssuedCredential(
-                vcId,
-                credentialSubject.id,
-                exp.toJavaInstant(),
-                timePeriod,
-                deviceBinding,
-                attributeName,
-                revocationListIndex
-            ).also { credentialRepo.save(it) }
-        }
-        return ModelAndView("redirect:/debug/credential/list")
-    }
-
     private fun buildCredentialList(model: ModelMap): ModelAndView {
         val vcList = revocationService.getAllNonRevokedWithDetails().map {
             CredentialListDto(
@@ -160,10 +112,6 @@ class DebugController(
             )
         }
         model["vcList"] = vcList
-        model["createCredentialUrl"] = appendPath(
-            configurationProperties.publicContext,
-            "debug", "credential", "create"
-        )
         model["revokeActionUrl"] = appendPath(
             configurationProperties.publicContext,
             "debug", "credential", "revoke"

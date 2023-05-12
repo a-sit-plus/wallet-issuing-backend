@@ -7,7 +7,6 @@ import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
 import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.pupilid.ConstantIndex
-import at.asitplus.wallet.lib.data.SchemaIndex.ATTR_GENERIC_PREFIX
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.toKotlinInstant
@@ -53,21 +52,11 @@ class IssuerCredentialDataProviderAdapterTest {
 
     @Test
     fun `credential lifetime should be capped with binding lifetime`() {
-        val credential = adapter.getCredential(client.keyId, ConstantIndex.PupilId.vcType)
+        val credential = adapter.getCredentialWithType(client.keyId, listOf(ConstantIndex.PupilId.vcType))
 
         credential.isSuccess shouldBe true
         credential as KmmResult.Success
-        credential.value.expiration shouldBeLessThanOrEqualTo client.selfSignedCert.notAfter.toInstant()
-            .toKotlinInstant()
-    }
-
-    @Test
-    fun `claim lifetime should be capped with binding lifetime`() {
-        val credential = adapter.getClaim(client.keyId, "$ATTR_GENERIC_PREFIX/given-name")
-
-        credential.isSuccess shouldBe true
-        credential as KmmResult.Success
-        credential.value.expiration shouldBeLessThanOrEqualTo client.selfSignedCert.notAfter.toInstant()
+        credential.value.first().expiration shouldBeLessThanOrEqualTo client.selfSignedCert.notAfter.toInstant()
             .toKotlinInstant()
     }
 

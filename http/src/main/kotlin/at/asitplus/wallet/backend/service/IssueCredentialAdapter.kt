@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.lib.agent.IssueCredentialMessenger
-import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.NextMessage
 import kotlinx.coroutines.runBlocking
 
 /**

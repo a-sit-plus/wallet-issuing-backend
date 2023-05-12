@@ -7,14 +7,12 @@ import kotlinx.datetime.Instant
 
 interface CredentialDataProvider {
 
-    fun getClaim(subjectId: String, attributeName: String, bpk: String, maxExpiration: Instant)
-            : KmmResult<CredentialToBeIssued>
-
-    fun getCredential(subjectId: String, attributeType: String, bpk: String, maxExpiration: Instant)
-            : KmmResult<CredentialToBeIssued>
-
-    fun getCredentialWithType(subjectId: String, attributeTypes: Collection<String>, bpk: String, maxExpiration: Instant)
-            : KmmResult<List<CredentialToBeIssued>>
+    fun getCredentialWithType(
+        subjectId: String,
+        attributeTypes: Collection<String>,
+        bpk: String?,
+        maxExpiration: Instant
+    ): KmmResult<List<CredentialToBeIssued>>
 
     data class CredentialToBeIssued(
         val subject: CredentialSubject,

@@ -1,6 +1,7 @@
+
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 
 plugins {
     id("org.springframework.boot") version "2.7.2"
@@ -39,6 +40,8 @@ dependencies {
             }
         }
     }
+
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("io.ktor:ktor-client-core:2.1.0")

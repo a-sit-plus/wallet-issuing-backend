@@ -12,8 +12,10 @@ import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.pki.*
 import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.MessageWrapper
 import at.asitplus.wallet.lib.jws.DefaultJwsService
-import at.asitplus.wallet.oidvci.IssuerService
+import at.asitplus.wallet.lib.oidvci.IssuerService
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
 import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
@@ -409,7 +411,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
         issuerCryptoService: CryptoService
     ): Issuer = IssuerAgent(
-        keyId = issuerCryptoService.keyId,
+        identifier = issuerCryptoService.identifier,
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
@@ -444,7 +446,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
         issuer = issuer,
         messageWrapper = issuerMessageWrapper,
-        keyId = issuerCryptoService.keyId,
         serviceEndpoint = appendPath(configurationProperties.publicContext, "pupilid", "issue"),
         credentialScheme = ConstantIndex.PupilId,
     )
@@ -458,9 +459,8 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
         issuer = issuer,
         messageWrapper = issuerMessageWrapper,
-        keyId = issuerCryptoService.keyId,
         serviceEndpoint = appendPath(configurationProperties.publicContext, "eidasid", "issue"),
-        credentialScheme = at.asitplus.wallet.lib.data.ConstantIndex.Generic,
+        credentialScheme = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential,
     )
 
     @Profile("eidasid")

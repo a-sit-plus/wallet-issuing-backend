@@ -32,20 +32,14 @@ class EcoCredentialDataProvider(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun getClaim(
-        subjectId: String,
-        attributeName: String,
-        bpk: String,
-        maxExpiration: Instant
-    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> =
-        KmmResult.failure(UnsupportedOperationException("ECO does not support claims"))
-
-    override fun getCredential(
+    fun getCredential(
         subjectId: String,
         attributeType: String,
-        bpk: String,
+        bpk: String?,
         maxExpiration: Instant
     ): KmmResult<CredentialDataProvider.CredentialToBeIssued> = kotlin.runCatching {
+        if (bpk == null)
+            return KmmResult.failure(UnsupportedOperationException("BPK is null"))
         if (attributeType != ConstantIndex.PupilId.vcType)
             return KmmResult.failure(UnsupportedOperationException("Unsupported attribute type '$attributeType"))
         val entity = restTemplate.getForEntity<EcoStudentData>(
@@ -123,7 +117,7 @@ class EcoCredentialDataProvider(
     override fun getCredentialWithType(
         subjectId: String,
         attributeTypes: Collection<String>,
-        bpk: String,
+        bpk: String?,
         maxExpiration: Instant
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         if (attributeTypes.contains(ConstantIndex.PupilId.vcType)) {

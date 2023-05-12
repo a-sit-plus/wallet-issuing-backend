@@ -3,12 +3,9 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
-import at.asitplus.wallet.lib.data.AtomicAttributeCredential
-import at.asitplus.wallet.lib.data.SchemaIndex
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.PupilIdCredential
 import io.matthewnelson.component.base64.decodeBase64ToArray
-import io.matthewnelson.component.base64.encodeBase64
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -63,39 +60,7 @@ class RandomCredentialDataProvider(
             .ifEmpty { listOf(Companion.fallbackPhoto.decodeBase64ToArray()!!) }.random()
     }
 
-    override fun getClaim(
-        subjectId: String,
-        attributeName: String,
-        bpk: String,
-        maxExpiration: Instant
-    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> {
-        val it = randomAttributeCache[bpk]
-            ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
-        if (!attributeName.startsWith(SchemaIndex.ATTR_GENERIC_PREFIX)) {
-            return KmmResult.failure(UnsupportedOperationException("Claim '$attributeName' is not supported"))
-        }
-        val subject = when (val name = attributeName.removePrefix(SchemaIndex.ATTR_GENERIC_PREFIX + "/")) {
-            "given-name" -> AtomicAttributeCredential(subjectId, attributeName, it.firstName)
-            "family-name" -> AtomicAttributeCredential(subjectId, attributeName, it.lastName)
-            "date-of-birth" -> AtomicAttributeCredential(subjectId, attributeName, it.dateOfBirth)
-            "identifier" -> AtomicAttributeCredential(subjectId, attributeName, it.cardId)
-            "picture" -> AtomicAttributeCredential(subjectId, attributeName, it.encodedPhoto.sha256().encodeBase64())
-            else -> return KmmResult.failure(UnsupportedOperationException("Claim '$name' is not supported"))
-        }
-        val attachments = listOf(
-            CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", it.encodedPhoto)
-        )
-        return KmmResult.success(
-            CredentialDataProvider.CredentialToBeIssued(
-                subject,
-                maxExpiration,
-                at.asitplus.wallet.lib.data.ConstantIndex.Generic.vcType,
-                attachments,
-            )
-        )
-    }
-
-    override fun getCredential(
+    fun getCredential(
         subjectId: String,
         attributeType: String,
         bpk: String,
@@ -139,7 +104,7 @@ class RandomCredentialDataProvider(
             CredentialDataProvider.CredentialToBeIssued(
                 subject,
                 maxExpiration,
-                at.asitplus.wallet.lib.data.ConstantIndex.Generic.vcType,
+                ConstantIndex.PupilId.vcType,
                 attachments,
             )
         )
@@ -148,9 +113,12 @@ class RandomCredentialDataProvider(
     override fun getCredentialWithType(
         subjectId: String,
         attributeTypes: Collection<String>,
-        bpk: String,
+        bpk: String?,
         maxExpiration: Instant
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
+        if (bpk == null) {
+            return KmmResult.success(listOf())
+        }
         if (attributeTypes.contains(ConstantIndex.PupilId.vcType)) {
             return getCredential(subjectId, ConstantIndex.PupilId.vcType, bpk, maxExpiration).map { listOf(it) }
         }

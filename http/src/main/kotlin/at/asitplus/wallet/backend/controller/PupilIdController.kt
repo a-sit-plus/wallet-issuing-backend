@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_PUPIL
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
-import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.aries.NextMessage
 import io.github.aakira.napier.Napier
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content

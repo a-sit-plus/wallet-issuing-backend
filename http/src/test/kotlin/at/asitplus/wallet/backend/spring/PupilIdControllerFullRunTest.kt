@@ -5,6 +5,10 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.IssueCredentialProtocolResult
+import at.asitplus.wallet.lib.aries.MessageWrapper
+import at.asitplus.wallet.lib.aries.NextMessage
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -54,7 +58,6 @@ class PupilIdControllerFullRunTest {
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,
-            keyId = holderCryptoService.keyId,
             messageWrapper = MessageWrapper(holderCryptoService)
         )
         bpk = UUID.randomUUID().toString()

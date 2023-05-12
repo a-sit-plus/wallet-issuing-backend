@@ -21,73 +21,23 @@ class IssuerCredentialDataProviderAdapter(
     private val deviceBindingStorageService: DeviceBindingStorageService,
 ) : IssuerCredentialDataProvider {
 
-
-    override fun getClaim(
-        subjectId: String,
-        attributeName: String
-    ): KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued> {
-        val deviceBinding = getVerifiedDeviceBinding(subjectId)
-            ?: return KmmResult.failure(AuthenticationError("No device binding present"))
-
-        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
-        val maxExpiration = Clock.System.now() + lifetime
-        val cappedExpiration =
-            if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
-        val credential = credentialDataProvider.getClaim(
-            subjectId,
-            attributeName,
-            deviceBinding.bpk,
-            cappedExpiration
-        )
-        return credential.map {
-            IssuerCredentialDataProvider.CredentialToBeIssued(
-                it.subject,
-                it.expiration,
-                it.attributeType,
-                it.attachments.map(CredentialToBeIssuedAttachment::toIssuerCredentialDataProviderFormat),
-            )
-        }
-    }
-
-    override fun getCredential(
-        subjectId: String,
-        attributeType: String
-    ): KmmResult<IssuerCredentialDataProvider.CredentialToBeIssued> {
-        val deviceBinding = getVerifiedDeviceBinding(subjectId)
-            ?: return KmmResult.failure(AuthenticationError("No device binding present"))
-        val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
-        val maxExpiration = Clock.System.now() + lifetime
-        val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
-        val credential = credentialDataProvider.getCredential(
-            subjectId,
-            attributeType,
-            deviceBinding.bpk,
-            cappedExpiration
-        )
-        return credential.map {
-            IssuerCredentialDataProvider.CredentialToBeIssued(
-                it.subject,
-                it.expiration,
-                it.attributeType,
-                it.attachments.map(CredentialToBeIssuedAttachment::toIssuerCredentialDataProviderFormat),
-            )
-        }
-    }
-
     override fun getCredentialWithType(
         subjectId: String,
         attributeTypes: Collection<String>
     ): KmmResult<List<IssuerCredentialDataProvider.CredentialToBeIssued>> {
-        //val deviceBinding = getVerifiedDeviceBinding(subjectId)
-        //    ?: return KmmResult.failure(AuthenticationError("No device binding present"))
-        //val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
+        val deviceBinding = getVerifiedDeviceBinding(subjectId)
         val maxExpiration = Clock.System.now() + lifetime
-        //val cappedExpiration = if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
+        val cappedExpiration = if (deviceBinding != null) {
+            val bindingExpiration = deviceBinding.validUntil.toKotlinInstant()
+            if (maxExpiration > bindingExpiration) bindingExpiration else maxExpiration
+        } else {
+            maxExpiration
+        }
         val credential = credentialDataProvider.getCredentialWithType(
             subjectId,
             attributeTypes,
-            "bpk", // deviceBinding.bpk,
-            maxExpiration //cappedExpiration
+            deviceBinding?.bpk,
+            cappedExpiration,
         )
 
         return credential.map { list ->

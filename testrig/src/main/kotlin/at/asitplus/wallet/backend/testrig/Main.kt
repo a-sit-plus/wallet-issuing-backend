@@ -204,7 +204,6 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                 cryptoService = cryptoService,
                 verifierCryptoService = DefaultVerifierCryptoService(),
                 subjectCredentialStore = InMemorySubjectCredentialStore(),
-                Clock.System
             ),
             keyId = cryptoService.keyId,
             messageWrapper = MessageWrapper(DefaultCryptoService()),

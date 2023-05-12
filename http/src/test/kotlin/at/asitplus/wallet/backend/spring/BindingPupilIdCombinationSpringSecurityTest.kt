@@ -11,7 +11,7 @@ import at.asitplus.wallet.backend.service.BindingParams
 import at.asitplus.wallet.backend.service.BindingService
 import at.asitplus.wallet.backend.service.ChallengeService
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
-import at.asitplus.wallet.lib.agent.NextMessage
+import at.asitplus.wallet.lib.aries.NextMessage
 import at.asitplus.wallet.lib.jws.JwkType
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ

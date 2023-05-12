@@ -75,6 +75,10 @@ dependencies {
             }
         }
     }
+    implementation("io.github.aakira:napier-jvm:2.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
+    implementation("at.asitplus.wallet:vclib-aries-jvm:2.0.0-SNAPSHOT")
+    implementation("at.asitplus.wallet:vclib-openid-jvm:2.0.0-SNAPSHOT")
     implementation("at.asitplus.wallet:idaustriacredential-jvm:1.0.0-SNAPSHOT")
 
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")

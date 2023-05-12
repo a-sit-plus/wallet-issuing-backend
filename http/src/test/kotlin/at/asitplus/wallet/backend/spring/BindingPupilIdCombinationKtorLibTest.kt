@@ -4,6 +4,9 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.MessageWrapper
+import at.asitplus.wallet.lib.aries.NextMessage
 import at.asitplus.wallet.pupilid.*
 import at.asitplus.wallet.utils.Asn1Service
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -57,7 +60,6 @@ class BindingPupilIdCombinationKtorLibTest {
         holderMessenger = IssueCredentialMessenger.newHolderInstance(
             holder = holderAgent,
             credentialScheme = ConstantIndex.PupilId,
-            keyId = holderCryptoService.keyId,
             messageWrapper = MessageWrapper(holderCryptoService)
         )
         bpk = UUID.randomUUID().toString()

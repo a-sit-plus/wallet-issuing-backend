@@ -279,8 +279,6 @@ These endpoints are only enabled if `backend.debug.enabled=true` is set.
 
 `GET /debug/credential/revoke?vcId={foo}` revokes a credential.
 
-`GET /debug/credential/create` creates a new credential.
-
 ## Web API
 
 `GET /` displays a general information page for new users.

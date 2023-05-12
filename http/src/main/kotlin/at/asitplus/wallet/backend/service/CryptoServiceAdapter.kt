@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.backend.pki.KeyAdapter
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.KmmResult
+import at.asitplus.wallet.backend.data.DeviceBinding
+import at.asitplus.wallet.backend.pki.KeyAdapter
 import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.Digest
@@ -56,18 +56,15 @@ class DefaultCryptoServiceAdapter(
     keyAdapter: KeyAdapter,
 ) : CryptoServiceAdapter {
 
-
-
     private val privateKey: PrivateKey = keyAdapter.privateKey
     private val publicKey: PublicKey = keyAdapter.publicKey
     private val provider: Provider = keyAdapter.provider
     private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
-    override val keyId: String = jsonWebKey.keyId!!
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
-    override val certificate =keyAdapter.certificate
+    override val certificate = keyAdapter.certificate
 
     init {
-        Napier.i("Loaded public key with keyId $keyId")
+        Napier.i("Loaded public key with id ${jsonWebKey.identifier}")
     }
 
     override fun toJsonWebKey() = jsonWebKey
