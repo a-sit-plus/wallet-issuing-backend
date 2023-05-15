@@ -25,10 +25,10 @@ tasks.register("clean", Delete::class) {
 
 task<Exec>("purge") {
     dependsOn("clean")
-    workingDir = layout.projectDirectory.dir("pupilidumbrella").asFile
+    workingDir = layout.projectDirectory.dir("pupilidlib").asFile
     commandLine("./gradlew", "purge")
     doFirst {
         println("descending into ${workingDir.absolutePath}")
-        logger.lifecycle("Purging PupilIdUmbrella maven build")
+        logger.lifecycle("Purging PupilIdLib maven build")
     }
 }

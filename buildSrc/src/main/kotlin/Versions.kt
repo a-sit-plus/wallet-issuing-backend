@@ -2,7 +2,6 @@ object VersionsBackend {
     const val kotlin = "1.8.0"
     const val ktor = "2.2.1"
     const val kotest = "5.5.4"
-
     const val zxing = "3.5.0"
     const val jose = "9.25.6"
     const val `jackson-cbor` = "2.13.4"
@@ -14,8 +13,7 @@ object VersionsBackend {
     const val mockito = "4.0.0"
     const val okhttp = "4.10.0"
     const val scrimage = "4.0.33"
-
-    const val umbrella = "1.4.0"
+    const val pupilidlib = "2.0.0-SNAPSHOT"
     const val attestation = "0.4.1"
 
     object spring {

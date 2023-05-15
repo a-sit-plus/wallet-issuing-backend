@@ -8,7 +8,7 @@ pluginManagement {
 
 rootProject.name = "backend"
 
-include( "http", "testrig")
+include("http", "testrig", "pupilidlib")
 
 includeBuild("remote-crypto-provider"){
     dependencySubstitution {

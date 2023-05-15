@@ -4,6 +4,6 @@
 [submodule "attestation-service"]
 	path = attestation-service
 	url = ../attestation-service.git
-[submodule "kotlin-umbrella-library"]
-	path = pupilidumbrella
-	url = ../kotlin-umbrella-library.git
+[submodule "pupilidlib"]
+	path = pupilidlib
+	url = ../pupilid-kmm-lib

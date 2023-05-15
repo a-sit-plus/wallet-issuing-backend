@@ -61,15 +61,15 @@ dependencies {
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
 
-    implementation("at.asitplus.wallet:pupilidumbrella-jvm:${VersionsBackend.umbrella}"){
-        layout.projectDirectory.dir("..").dir("pupilidumbrella").dir("repo").asFile.let {
+    implementation("at.asitplus.wallet:pupilidlib-jvm:${VersionsBackend.pupilidlib}"){
+        layout.projectDirectory.dir("..").dir("pupilidlib").dir("repo").asFile.let {
             if (it.exists() && it.isDirectory && it.listFiles()!!.isNotEmpty()) {
                 logger.info("assuming PupilIdLib maven artifact present")
             } else {
                 exec {
-                    workingDir = layout.projectDirectory.dir("..").dir("pupilidumbrella").asFile
+                    workingDir = layout.projectDirectory.dir("..").dir("pupilidlib").asFile
                     println("descending into ${workingDir.absolutePath}")
-                    logger.lifecycle("Rebuilding PupilIdUmbrella maven artifacts")
+                    logger.lifecycle("Rebuilding PupilIdLib maven artifacts")
                     commandLine("./gradlew", "publishAllPublicationsToLocalRepository")
                 }
             }
@@ -149,7 +149,7 @@ val gitLabProjectId: String by extra
 val gitLabGroupId: String by extra
 
 repositories {
-    maven(uri(layout.projectDirectory.dir("..").dir("pupilidumbrella").dir("repo")))
+    maven(uri(layout.projectDirectory.dir("..").dir("pupilidlib").dir("repo")))
     mavenLocal()
     if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
         maven {
