@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_EIDASID
+import at.asitplus.wallet.backend.ProfileConstants
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
@@ -18,12 +19,18 @@ import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.util.Base64Utils
 import java.io.ByteArrayInputStream
+import java.util.UUID
 import javax.imageio.ImageIO
 
 
+/**
+ * Test situation where user authenticates with OpenId on the desktop
+ * to display a QR Code for scanning in the Wallet App
+ * (which will then authenticate with an "external nonce")
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("eidasid")
+@ActiveProfiles(ProfileConstants.EIDASID)
 class EidasIdControllerTest {
 
     @Autowired
@@ -40,10 +47,10 @@ class EidasIdControllerTest {
     fun demo_success() {
         val result = mockMvc.get("/eidasid/initialize") {
             with(oidcLogin().idToken {
-                it.claim("sub", "bar")
+                it.claim("sub", UUID.randomUUID().toString())
                     .claim("birthdate", "2020-01-01")
-                    .claim("given_name", "Susanne")
-                    .claim("family_name", "Meier")
+                    .claim("given_name", UUID.randomUUID().toString())
+                    .claim("family_name", UUID.randomUUID().toString())
             }.authorities(SimpleGrantedAuthority(AUTHORITY_OIDC_EIDASID)))
         }.andExpect { status { isOk() } }
             .andReturn()

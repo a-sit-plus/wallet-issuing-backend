@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.controller.RevocationController
@@ -25,7 +26,7 @@ import java.util.UUID
  * i.e. it tests the filter, authentication provider, token and so on.
  */
 @SpringBootTest
-@ActiveProfiles(profiles = ["pupilid", "apikey"])
+@ActiveProfiles(profiles = [ProfileConstants.PUPILID, "apikey"])
 @AutoConfigureMockMvc
 class RevocationControllerApiKeyTest {
 

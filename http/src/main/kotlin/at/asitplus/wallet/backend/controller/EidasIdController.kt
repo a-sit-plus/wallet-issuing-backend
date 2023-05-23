@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_EIDASID
@@ -64,7 +65,7 @@ import javax.servlet.http.HttpServletRequest
  * - MVC for Browser to display QR Code to initialize Wallet App
  * - OID4VCI for issuing credentials without a device binding
  */
-@Profile("eidasid")
+@Profile(ProfileConstants.EIDASID)
 @RestController
 class EidasIdController(
     private val issueCredentialAdapter: IssueCredentialAdapter,

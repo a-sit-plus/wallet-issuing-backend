@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.DelegatingSessionIdResolver
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnFilter
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnProvider
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnEntryPoint
@@ -47,7 +48,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - Device Binding authentication from the App
  * - API-Key authentication for revocation calls from ext. services
  */
-@Profile("eidasid")
+@Profile(ProfileConstants.EIDASID)
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableSpringHttpSession

@@ -437,7 +437,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         jwsService = DefaultJwsService(issuerCryptoService)
     )
 
-    @Profile("pupilid")
+    @Profile(ProfileConstants.PUPILID)
     @Bean
     fun issueCredentialMessengerPupilId(
         issuer: Issuer,
@@ -450,7 +450,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         credentialScheme = ConstantIndex.PupilId,
     )
 
-    @Profile("eidasid")
+    @Profile(ProfileConstants.EIDASID)
     @Bean
     fun issueCredentialMessengerEidasId(
         issuer: Issuer,
@@ -463,7 +463,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         credentialScheme = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential,
     )
 
-    @Profile("eidasid")
+    @Profile(ProfileConstants.EIDASID)
     @Bean
     fun issuerService(
         issuer: Issuer,

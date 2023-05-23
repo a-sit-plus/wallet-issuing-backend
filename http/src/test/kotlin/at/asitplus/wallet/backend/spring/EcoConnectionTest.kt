@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -19,7 +20,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
 
 @Disabled("Would need a valid API-Key in 'application-eco.yml'")
-@ActiveProfiles(profiles = ["eco", "pupilid"])
+@ActiveProfiles(profiles = ["eco", ProfileConstants.PUPILID])
 @SpringBootTest
 class EcoConnectionTest {
 

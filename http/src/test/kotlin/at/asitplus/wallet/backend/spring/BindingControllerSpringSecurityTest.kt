@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
@@ -295,9 +296,9 @@ abstract class BindingControllerSpringSecurityTest {
 }
 
 
-@ActiveProfiles("pupilid")
+@ActiveProfiles(ProfileConstants.PUPILID)
 class PupilIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}
 
 
-@ActiveProfiles("eidasid")
+@ActiveProfiles(ProfileConstants.EIDASID)
 class EidasIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}

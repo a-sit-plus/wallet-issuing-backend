@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.WebSecurityConstants
@@ -31,7 +32,7 @@ import java.util.UUID
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["server.error.include-exception=true", "server.error.include-message=always"]
 )
-@ActiveProfiles("eidasid")
+@ActiveProfiles(ProfileConstants.EIDASID)
 @AutoConfigureWebTestClient(timeout = "PT1M")
 class EidasIdControllerErrorTest {
 

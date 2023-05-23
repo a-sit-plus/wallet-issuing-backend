@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.DelegatingSessionIdResolver
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnFilter
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnProvider
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnEntryPoint
@@ -50,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - Device Binding authentication from the App
  * - API-Key authentication for revocation calls from ext. services
  */
-@Profile("pupilid")
+@Profile(ProfileConstants.PUPILID)
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableSpringHttpSession
@@ -82,7 +83,7 @@ class WebSecurityConfigPupilId(
             .and().logout().invalidateHttpSession(true).clearAuthentication(true)
             .addLogoutHandler(extNonceLogoutHandler)
             .and().headers().frameOptions().sameOrigin()
-        if (environment.acceptsProfiles(Profiles.of("authnida")) && clientRegistrationRepository != null) {
+        if (environment.acceptsProfiles(Profiles.of(ProfileConstants.AUTHN_IDA)) && clientRegistrationRepository != null) {
             val loginUrl = getOidcLoginUrl(clientRegistrationRepository)
             http.exceptionHandling()
                 .defaultAuthenticationEntryPointFor(
@@ -150,7 +151,7 @@ class WebSecurityConfigPupilId(
 
     @Bean
     fun httpSessionIdResolver(environment: Environment): HttpSessionIdResolver {
-        if (environment.acceptsProfiles(Profiles.of("authnida"))) {
+        if (environment.acceptsProfiles(Profiles.of(ProfileConstants.AUTHN_IDA))) {
             /**
              * We need cookie-based sessions on the Web, and header-based sessions for mobile clients
              */

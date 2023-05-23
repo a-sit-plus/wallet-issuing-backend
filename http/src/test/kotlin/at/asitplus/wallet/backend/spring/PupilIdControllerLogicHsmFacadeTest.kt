@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
+import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
@@ -38,7 +39,7 @@ import java.util.UUID
  * i.e. it skips the authentication process entirely by using [WithMockUser].
  */
 @SpringBootTest
-@ActiveProfiles("hsmfacade", "pupilid")
+@ActiveProfiles("hsmfacade", ProfileConstants.PUPILID)
 @AutoConfigureMockMvc
 @WithMockUser(authorities = [AUTHORITY_DEVICE_BINDING])
 class PupilIdControllerLogicHsmFacadeTest {

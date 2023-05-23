@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.ProfileConstants
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
@@ -19,7 +20,7 @@ import javax.imageio.ImageIO
 
 @SpringBootTest(properties = ["backend.debug.enabled=true"])
 @AutoConfigureMockMvc
-@ActiveProfiles("pupilid")
+@ActiveProfiles(ProfileConstants.PUPILID)
 class PupilIdDebugControllerTest {
 
     @Autowired
