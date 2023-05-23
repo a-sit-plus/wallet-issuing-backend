@@ -8,6 +8,7 @@ import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.lib.data.CredentialSubject
 import io.kotest.assertions.withClue
@@ -64,7 +65,7 @@ class RevocationServiceStatusListIndexTest {
         val client = Client()
         timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
-        attributeName = "IdAustriaCredential"
+        attributeName = ConstantIndex.IdAustriaCredential.vcType
         subjectId = UUID.randomUUID().toString()
         credentialSubject =
             IdAustriaCredential(

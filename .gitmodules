@@ -6,4 +6,4 @@
 	url = ../attestation-service.git
 [submodule "pupilidlib"]
 	path = pupilidlib
-	url = ../pupilid-kmm-lib
+	url = ../pupilid-kmm-lib.git

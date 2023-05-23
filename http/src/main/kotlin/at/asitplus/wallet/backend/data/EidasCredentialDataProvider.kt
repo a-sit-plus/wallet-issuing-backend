@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.lib.DataSourceProblem
 import io.github.aakira.napier.Napier
@@ -35,7 +36,7 @@ class EidasCredentialDataProvider(
         maxExpiration: Instant
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         Napier.v("getCredentialWithType for $subjectId and $attributeTypes and $bpk")
-        if (attributeTypes.contains("IdAustriaCredential")) {
+        if (attributeTypes.contains(ConstantIndex.IdAustriaCredential.vcType)) {
             val idToken = authenticationSupplier.getCurrentUserOidcDetails()
             Napier.v("getCredentialWithType user is $idToken")
             if (idToken != null) {
@@ -54,12 +55,10 @@ class EidasCredentialDataProvider(
         bpk: String,
         maxExpiration: Instant
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
-
         val eidasClaim = list.firstOrNull { it.bpk == bpk }?.claim
             ?: return KmmResult.failure(DataSourceProblem("Found no stored EIDAS claim for bpk").also {
                 Napier.v("Found no stored EIDAS claim for bpk: '$bpk'")
             })
-
         val subject = IdAustriaCredential(
             id = subjectId,
             firstname = eidasClaim.givenName,

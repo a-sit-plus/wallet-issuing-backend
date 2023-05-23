@@ -2,7 +2,9 @@ package at.asitplus.wallet.backend.testrig
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.pupilid.ConstantIndex
+import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.lib.aries.MessageWrapper
+import at.asitplus.wallet.lib.aries.NextMessage
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
@@ -121,7 +123,8 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                                         key: KeyAlgorithm,
                                         hash: HashAlgorithm
                                     ): KmmResult<ByteArray> = cryptoService.sign(input)
-                                }, httpClientBuilder = HttpClientBuilder())
+                                }, httpClientBuilder = HttpClientBuilder()
+                            )
 
 
                         when (val res = bindingService.createDeviceBinding()) {
@@ -186,17 +189,18 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
         cert: ByteArray
     ): Pair<Int, Boolean> {
         val issuingService =
-            PupilIdIssuingService(cfg.host.baseURL.toString(), jwsAdapter =  { payload ->
-                KmmResult.success(
-                    DefaultJwsService(cryptoService).createSignedJws(
-                        JwsHeader(
-                            JwsAlgorithm.ES256,
-                            certificateChain = arrayOf(cert)
-                        ),
-                        payload.encodeToByteArray()
-                    )!!
-                )
-            },
+            PupilIdIssuingService(
+                cfg.host.baseURL.toString(), jwsAdapter = { payload ->
+                    KmmResult.success(
+                        DefaultJwsService(cryptoService).createSignedJws(
+                            JwsHeader(
+                                JwsAlgorithm.ES256,
+                                certificateChain = arrayOf(cert)
+                            ),
+                            payload.encodeToByteArray()
+                        )!!
+                    )
+                },
                 httpClientBuilder = HttpClientBuilder()
             )
         val messenger = IssueCredentialMessenger.newHolderInstance(
@@ -205,7 +209,6 @@ class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
                 verifierCryptoService = DefaultVerifierCryptoService(),
                 subjectCredentialStore = InMemorySubjectCredentialStore(),
             ),
-            keyId = cryptoService.keyId,
             messageWrapper = MessageWrapper(DefaultCryptoService()),
             credentialScheme = ConstantIndex.PupilId
         )
@@ -269,15 +272,3 @@ fun main(args: Array<String>) {
 }
 
 
-private val HashAlgorithm.jcaName: String
-    get() = when (this) {
-        HashAlgorithm.SHA1 -> "SHA1"
-        HashAlgorithm.SHA256 -> "SHA256"
-        HashAlgorithm.SHA512 -> "SHA512"
-    }
-
-private val KeyAlgorithm.jcaName: String
-    get() = when (this) {
-        KeyAlgorithm.EC -> "ECDSA"
-        KeyAlgorithm.RSA -> "RSA"
-    }
