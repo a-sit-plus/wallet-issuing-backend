@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnToken
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnToken
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
@@ -27,13 +28,13 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import java.security.Principal
-import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpSession
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -66,7 +67,7 @@ class BindingController(
         ],
     )
     @PostMapping("/binding/start")
-    @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
+    @PreAuthorize("hasAnyAuthority(\"$AUTHORITY_PUPIL\", \"$AUTHORITY_OIDC\")")
     fun requestBindingParams(
         @RequestBody body: BindingParamsRequestJ,
         @RequestHeader(name = HttpHeaders.DATE, required = false) dateHeader: String?,
@@ -127,12 +128,11 @@ class BindingController(
         ],
     )
     @PostMapping("/binding/create")
-    @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
+    @PreAuthorize("hasAnyAuthority(\"$AUTHORITY_PUPIL\", \"$AUTHORITY_OIDC\")")
     fun postBindingCsr(
         @RequestBody body: BindingCsrRequestJ,
         principal: Principal,
         session: HttpSession,
-        request: HttpServletRequest,
     ): ResponseEntity<BindingCsrResponseJ> {
         Napier.i("/binding/create called")
         Napier.v("principal: $principal, body: $body")
@@ -172,7 +172,7 @@ class BindingController(
         ],
     )
     @PostMapping("/binding/confirm")
-    @PreAuthorize("hasAuthority(\"$AUTHORITY_PUPIL\")")
+    @PreAuthorize("hasAnyAuthority(\"$AUTHORITY_PUPIL\", \"$AUTHORITY_OIDC\")")
     fun confirmBinding(
         @RequestBody body: BindingConfirmRequestJ,
         principal: Principal,
@@ -188,10 +188,18 @@ class BindingController(
         // so we'll set the expected authentication token into the current security context
         // and do not log out the client (previously, "request.logout()" has been called here)
         if (principal is ExtNonceAuthnToken) {
+            Napier.d("Setting current authentication to DeviceBindingAuthnToken")
             val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
             extNonceAuthnService.invalidateNonce(principal.credentials.toString())
             SecurityContextHolder.getContext().authentication =
                 DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
+        }
+        if (principal is OAuth2AuthenticationToken) {
+            Napier.d("Setting current authentication to DeviceBindingAuthnToken")
+            val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
+            extNonceAuthnService.invalidateNonce(principal.credentials.toString())
+            SecurityContextHolder.getContext().authentication =
+                DeviceBindingAuthnToken("", principal.name.toString(), certificate)
         }
         return ResponseEntity.ok(BindingConfirmResponseJ(confirmed))
             .also { Napier.i("/binding/confirm returns HTTP 200: $it") }

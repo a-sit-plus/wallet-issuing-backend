@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.ProfileConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.lib.oidvci.AuthorizationRequestParameters
 import at.asitplus.wallet.lib.oidvci.CredentialRequestParameters
 import at.asitplus.wallet.lib.oidvci.IssuerMetadata
@@ -20,6 +22,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -46,6 +49,7 @@ class OpenId4VciController(
         return ResponseEntity.ok(metadata)
     }
 
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_DEVICE_BINDING\")")
     @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET])
     fun authorize(
         @RequestParam requestParams: Map<String, String>,
@@ -61,6 +65,7 @@ class OpenId4VciController(
         return buildOidcRedirect(location)
     }
 
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_DEVICE_BINDING\")")
     @RequestMapping("/token", method = [RequestMethod.POST])
     fun token(@RequestBody requestBody: String): ResponseEntity<*> {
         Napier.i("/token called")
@@ -77,6 +82,7 @@ class OpenId4VciController(
         }
     }
 
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_DEVICE_BINDING\")")
     @RequestMapping("/credential", method = [RequestMethod.POST])
     fun credential(
         @RequestBody requestBody: String,
