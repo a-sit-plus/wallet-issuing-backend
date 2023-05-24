@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_EIDASID
 import at.asitplus.wallet.backend.ProfileConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
@@ -51,7 +51,7 @@ class EidasIdControllerTest {
                     .claim("birthdate", "2020-01-01")
                     .claim("given_name", UUID.randomUUID().toString())
                     .claim("family_name", UUID.randomUUID().toString())
-            }.authorities(SimpleGrantedAuthority(AUTHORITY_OIDC_EIDASID)))
+            }.authorities(SimpleGrantedAuthority(AUTHORITY_OIDC)))
         }.andExpect { status { isOk() } }
             .andReturn()
 

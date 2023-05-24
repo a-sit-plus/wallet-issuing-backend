@@ -114,14 +114,14 @@ class WebSecurityConfigPupilId(
     }
 
     /**
-     * Adapted from Spring's [OidcUserService] to set the authority `OIDC_PUPIL` [WebSecurityConstants.AUTHORITY_OIDC_PUPIL]
+     * Adapted from Spring's [OidcUserService] to set the authority `OIDC_IDA` [WebSecurityConstants.AUTHORITY_OIDC]
      */
     fun oidcUserService(): OidcUserService = object : OidcUserService() {
         override fun loadUser(userRequest: OidcUserRequest?): OidcUser {
             require(userRequest != null) { "userRequest cannot be null" }
             val userInfo: OidcUserInfo? = null
             val authorities: MutableSet<GrantedAuthority> = LinkedHashSet()
-            authorities.add(OidcUserAuthority(WebSecurityConstants.AUTHORITY_OIDC_PUPIL, userRequest.idToken, userInfo))
+            authorities.add(OidcUserAuthority(WebSecurityConstants.AUTHORITY_OIDC, userRequest.idToken, userInfo))
             userRequest.accessToken.scopes.mapTo(authorities) { SimpleGrantedAuthority("SCOPE_$it") }
             return getUser(userRequest, userInfo, authorities)
         }

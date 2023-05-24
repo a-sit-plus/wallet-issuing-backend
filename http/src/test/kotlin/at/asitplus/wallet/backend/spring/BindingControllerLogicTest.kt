@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import at.asitplus.wallet.pupilid.BindingConfirmRequestJ
 import at.asitplus.wallet.pupilid.BindingCsrRequestJ
@@ -38,7 +38,17 @@ class BindingControllerLogicTest {
 
     @Test
     @WithMockUser(authorities = [AUTHORITY_PUPIL])
-    fun start_create_confirm_ok() {
+    fun start_create_confirm_ok_pupilid() {
+        executeBindingProcess()
+    }
+
+    @Test
+    @WithMockUser(authorities = [AUTHORITY_OIDC])
+    fun start_create_confirm_ok_oidc() {
+        executeBindingProcess()
+    }
+
+    private fun executeBindingProcess() {
         val client = Client()
         val startRequest = BindingParamsRequestJ(UUID.randomUUID().toString())
 

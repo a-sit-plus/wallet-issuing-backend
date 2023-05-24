@@ -2,7 +2,7 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
-import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_PUPIL
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.lib.aries.NextMessage
 import io.github.aakira.napier.Napier
@@ -51,7 +51,7 @@ class PupilIdController(
         ]
     )
     @GetMapping("/pupilid/consent/retrieve")
-    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC_PUPIL\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC\")")
     fun consent(
         authentication: Authentication,
     ): ResponseEntity<String> {
@@ -94,7 +94,7 @@ class PupilIdController(
         ]
     )
     @PostMapping("/pupilid/consent/confirm")
-    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC_PUPIL\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC\")")
     fun storeConsent(
         authentication: Authentication,
     ): ResponseEntity<String> {

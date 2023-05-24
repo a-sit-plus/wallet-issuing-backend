@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
-import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC_EIDASID
+import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
@@ -122,7 +122,7 @@ class EidasIdController(
      * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
      */
     @GetMapping("/eidasid/initialize")
-    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC_EIDASID\")")
+    @PreAuthorize("hasAuthority(\"$AUTHORITY_OIDC\")")
     fun initialize(model: ModelMap): ModelAndView {
         Napier.i("/eidasid/initialize called")
         val nonceBpk = extNonceAuthnService.generateNonce()
