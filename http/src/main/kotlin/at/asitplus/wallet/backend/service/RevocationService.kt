@@ -124,7 +124,11 @@ class DefaultRevocationService(
                         Napier.v("vcId: '$vcId'")
                     }
                 val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-                if (oneCredentialPerDeviceBinding && deviceBinding != null) {
+                    ?: return@runCatching null.also {
+                        Napier.e("Got no authenticated user when trying to store vcId")
+                        Napier.v("vcId: '$vcId'")
+                    }
+                if (oneCredentialPerDeviceBinding) {
                     val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
                     if (revokedCreds > 0)
                         Napier.i("Revoked $revokedCreds already existing credentials")
@@ -222,7 +226,7 @@ class DefaultRevocationService(
         val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             Napier.i("Deleting credential")
-            Napier.v("vcId: ${it.vcId}, subjectId: ${it.subjectId}, bpk: ${it.deviceBinding?.bpk}")
+            Napier.v("vcId: ${it.vcId}, subjectId: ${it.subjectId}, bpk: ${it.deviceBinding.bpk}")
             credentialRepo.delete(it)
         }
         return list.size

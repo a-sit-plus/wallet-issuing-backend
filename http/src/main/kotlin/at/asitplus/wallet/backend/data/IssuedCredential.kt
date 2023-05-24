@@ -17,7 +17,7 @@ class IssuedCredential() {
         subjectId: String,
         validUntil: Instant,
         timePeriod: Int,
-        deviceBinding: DeviceBinding?,
+        deviceBinding: DeviceBinding,
         attributeName: String,
         revocationListIndex: Long,
     ) : this() {
@@ -58,7 +58,7 @@ class IssuedCredential() {
 
     @ManyToOne
     @JoinColumn(name = "device_binding_id", referencedColumnName = "id")
-    var deviceBinding: DeviceBinding? = null
+    lateinit var deviceBinding: DeviceBinding
 
     @Column
     var revocationListIndex: Long = 0L
@@ -71,7 +71,7 @@ class IssuedCredential() {
                 "attributeName='$attributeName', " +
                 "validUntil=$validUntil, " +
                 "timePeriod=$timePeriod, " +
-                "deviceBinding=${deviceBinding?.id}, " +
+                "deviceBinding=${deviceBinding.id}, " +
                 "revocationListIndex=$revocationListIndex)"
     }
 }

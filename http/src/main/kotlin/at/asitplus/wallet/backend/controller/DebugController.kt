@@ -107,8 +107,8 @@ class DebugController(
                 it.createdOn.toString(),
                 it.attributeName,
                 it.subjectId,
-                it.deviceBinding?.deviceName ?: "no binding",
-                it.deviceBinding?.bpk ?: "no binding",
+                it.deviceBinding.deviceName,
+                it.deviceBinding.bpk,
             )
         }
         model["vcList"] = vcList
