@@ -23,10 +23,16 @@ class SpringSecurityAuthenticationSupplier : AuthenticationSupplier {
     }
 
     override fun getCurrentUserOidcDetails(): OidcIdToken? {
-        val principal = SecurityContextHolder.getContext()?.authentication?.principal
-        if (principal !is OidcUser)
-            return null
-        return principal.idToken
+        val authn = SecurityContextHolder.getContext()?.authentication
+            ?: return null
+        if (authn is OidcUser)
+            return authn.idToken
+        if (authn is DeviceBindingAuthnToken)
+            return authn.getOidcIdToken()
+        val principal = authn.principal
+        if (principal is OidcUser)
+            return principal.idToken
+        return null
     }
 
 }

@@ -3,8 +3,7 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
-import at.asitplus.wallet.backend.service.keyId
-import at.asitplus.wallet.lib.AuthenticationError
+import at.asitplus.wallet.backend.service.jsonWebKey
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
@@ -58,11 +57,15 @@ class IssuerCredentialDataProviderAdapter(
                 Napier.e("Got no authenticated user when trying to issue credentials")
             }
 
-        if (deviceBinding.keyId != subjectId)
+        if (deviceBinding.jsonWebKey?.keyId != subjectId
+            && deviceBinding.jsonWebKey?.identifier != subjectId
+            && deviceBinding.jsonWebKey?.jwkThumbprint != subjectId
+        ) {
             return null.also {
-                Napier.e("Got invalid keyId from authenticated user when trying to issue credentials")
-                Napier.v("keyId: '${deviceBinding.keyId}', subjectId: '$subjectId'")
+                Napier.e("getVerifiedDeviceBinding: Key from device binding does not match subject")
+                Napier.v("keyId: '${deviceBinding.jsonWebKey?.keyId}', jwkThumbprint: '${deviceBinding.jsonWebKey?.jwkThumbprint}', subjectId: '$subjectId'")
             }
+        }
         return deviceBinding
     }
 

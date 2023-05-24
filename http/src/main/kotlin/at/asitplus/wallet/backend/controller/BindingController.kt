@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
+import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -192,14 +193,15 @@ class BindingController(
             val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
             extNonceAuthnService.invalidateNonce(principal.credentials.toString())
             SecurityContextHolder.getContext().authentication =
-                DeviceBindingAuthnToken("", principal.principal.toString(), certificate)
+                DeviceBindingAuthnToken(principal.principal.toString(), certificate)
         }
         if (principal is OAuth2AuthenticationToken) {
+            val oidcUser = principal.principal as OidcUser
             Napier.d("Setting current authentication to DeviceBindingAuthnToken")
             val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
             extNonceAuthnService.invalidateNonce(principal.credentials.toString())
             SecurityContextHolder.getContext().authentication =
-                DeviceBindingAuthnToken("", principal.name.toString(), certificate)
+                DeviceBindingAuthnToken(oidcUser.subject, certificate, oidcUser.idToken)
         }
         return ResponseEntity.ok(BindingConfirmResponseJ(confirmed))
             .also { Napier.i("/binding/confirm returns HTTP 200: $it") }

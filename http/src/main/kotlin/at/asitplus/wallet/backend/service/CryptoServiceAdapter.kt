@@ -223,11 +223,11 @@ val JwsAlgorithm.joseType: JWSAlgorithm
         JwsAlgorithm.ES256 -> JWSAlgorithm.ES256
     }
 
-val DeviceBinding.keyId: String?
+val DeviceBinding.jsonWebKey: JsonWebKey?
     get() = kotlin.runCatching {
         val publicKey = CertificateFactory.getInstance("X.509")
             .generateCertificate(certificate.inputStream()).publicKey
-        return JsonWebKey.fromJcaKey(publicKey as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId
+        return JsonWebKey.fromJcaKey(publicKey as ECPublicKey, EcCurve.SECP_256_R_1)
     }.getOrNull()
 
 fun JsonWebKey.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: EcCurve) =
