@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.ProfileConstants
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.lib.oidvci.AuthorizationRequestParameters
 import at.asitplus.wallet.lib.oidvci.CredentialRequestParameters
@@ -44,7 +43,7 @@ class OpenId4VciController(
 
     @GetMapping("/.well-known/openid-credential-issuer")
     fun metadata(): ResponseEntity<IssuerMetadata> {
-        val metadata = issuerService.metadata()
+        val metadata = issuerService.metadata
         Napier.i("/.well-known/openid-credential-issuer returns $metadata")
         return ResponseEntity.ok(metadata)
     }

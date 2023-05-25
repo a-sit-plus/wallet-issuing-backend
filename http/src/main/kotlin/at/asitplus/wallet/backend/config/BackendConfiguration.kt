@@ -471,7 +471,9 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         issuerMessageWrapper: MessageWrapper
     ): IssuerService = IssuerService(
         issuer = issuer,
-        publicContext = configurationProperties.publicContext
+        publicContext = configurationProperties.publicContext,
+        credentialSchemes = listOf(at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential),
+        authorizationServer = "https://eid.egiz.gv.at/",
     )
 
     private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {
