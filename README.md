@@ -1,6 +1,6 @@
 # PupilId Backend Service
 
-This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing PupilIds or EidasIds.
+This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing PupilIds or IdAustriaCredentials.
 
 The default public key that signs the credentials is:
 
@@ -235,9 +235,13 @@ Authorization: Response eyJ4NWMiOlsiTUlJQkZqQ0J2S0FEQWdFQ0FnZ3ZuYTlMeWNzbnh6QUt
                mcLHYnU9lZS7miOw
 ```
 
-#### EIDAS
+### OpenID for Verifiable Credential Issuance
 
 For EIDAS deployments, the endpoint `POST /eidasid/issue` is available instead, with the same semantics as above.
+
+Alternatively, clients may use [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) to retrieve credentials from this service. The client needs to get a device binding first (see above) and then use the session identifier.
+
+The credential issuer metadata is available at `/.well-known/openid-credential-issuer`, the authorization endpoint at `/authorize`, the token endpoint at `/token`, and the credential endpoint at `/credential`.
 
 ### Revocation
 
@@ -568,7 +572,7 @@ truststore:
 
 ### ID Austria Authentication
 
-When the profile `authnida` is active, clients may authenticate using OIDC and the ID Austria system.
+When the profile `authnida` or `eidasid` is active, clients may authenticate using OIDC and the ID Austria system.
 
 ```yaml
 spring:
