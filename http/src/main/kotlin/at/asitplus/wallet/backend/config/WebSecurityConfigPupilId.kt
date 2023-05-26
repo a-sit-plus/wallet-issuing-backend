@@ -108,6 +108,7 @@ class WebSecurityConfigPupilId(
         if (clientRegistrationRepository is InMemoryClientRegistrationRepository) {
             val iterator = clientRegistrationRepository.iterator()
             if (iterator.hasNext())
+                // TODO Once Spring provides a way to get that URL more robust, use this
                 return "/oauth2/authorization/${iterator.next().registrationId}"
         }
         return "/login"
