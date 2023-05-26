@@ -74,7 +74,7 @@ class OpenId4VciControllerTest {
         bindingClient = Client()
         clientRedirectUrl = "https://localhost/${UUID.randomUUID()}"
         walletService = WalletService(
-            tokenType = arrayOf(ConstantIndex.IdAustriaCredential.vcType),
+            credentialScheme = ConstantIndex.IdAustriaCredential,
             clientId = "https://wallet.a-sit.at/mobile",
             redirectUrl = clientRedirectUrl,
             cryptoService = DefaultCryptoService(bindingClient.keyPair)
