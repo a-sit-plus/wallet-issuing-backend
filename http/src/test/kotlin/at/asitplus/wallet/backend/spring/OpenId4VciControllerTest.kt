@@ -7,6 +7,7 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
+import at.asitplus.wallet.lib.oidc.OpenIdConstants
 import at.asitplus.wallet.lib.oidvci.IssuerMetadata
 import at.asitplus.wallet.lib.oidvci.TokenResponseParameters
 import at.asitplus.wallet.lib.oidvci.WalletService
@@ -83,7 +84,7 @@ class OpenId4VciControllerTest {
 
     @Test
     fun metadata_unauthenticated() {
-        mockMvc.get("/.well-known/openid-credential-issuer")
+        mockMvc.get(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER)
             .andExpect {
                 status { isOk() }
             }.andReturn()
@@ -189,7 +190,7 @@ class OpenId4VciControllerTest {
         }.andReturn()
 
         val metadata: IssuerMetadata = Json.decodeFromString(
-            mockMvc.get("/.well-known/openid-credential-issuer").andReturn().response.contentAsString
+            mockMvc.get(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER).andReturn().response.contentAsString
         )
 
         val authorizeResult = mockMvc.post("/authorize") {
