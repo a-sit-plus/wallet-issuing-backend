@@ -103,12 +103,12 @@ class DebugController(
     private fun buildCredentialList(model: ModelMap): ModelAndView {
         val vcList = revocationService.getAllNonRevokedWithDetails().map {
             CredentialListDto(
-                it.vcId,
-                it.createdOn.toString(),
-                it.attributeName,
-                it.subjectId,
-                it.deviceBinding.deviceName,
-                it.deviceBinding.bpk,
+                vcId = it.vcId.substring(0, 20) + "...",
+                issuanceDate = it.createdOn.toString(),
+                attributeName = it.attributeName,
+                subjectId = it.subjectId,
+                deviceName = it.deviceBinding.deviceName,
+                bpk = it.deviceBinding.bpk,
             )
         }
         model["vcList"] = vcList
