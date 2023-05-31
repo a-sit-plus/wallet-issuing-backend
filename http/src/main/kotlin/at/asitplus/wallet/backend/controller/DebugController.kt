@@ -3,6 +3,8 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.data.CredentialDataProvider
+import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import com.google.zxing.BarcodeFormat
@@ -15,6 +17,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
@@ -29,6 +33,7 @@ class DebugController(
     private val configurationProperties: BackendConfigurationProperties,
     private val revocationService: RevocationService,
     private val timePeriodProvider: TimePeriodProvider,
+    private val credentialDataProvider: CredentialDataProvider,
 ) {
 
     /**
@@ -79,6 +84,53 @@ class DebugController(
     fun inviteVerify(model: ModelMap): ModelAndView {
         Napier.i("/help/verify called")
         return ModelAndView("help_verify", model)
+    }
+
+    @GetMapping("/debug/credential/create")
+    fun createCredential(model: ModelMap): ModelAndView {
+        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
+        Napier.i("/debug/credential/create called")
+        model["qrcodeActionUrl"] = appendPath(
+            configurationProperties.publicContext,
+            "debug", "credential", "qrcode"
+        )
+        return ModelAndView("credential_create", model)
+    }
+
+    @RequestMapping("/debug/credential/qrcode", method = [RequestMethod.POST, RequestMethod.GET])
+    fun createCredentialQrcode(
+        model: ModelMap,
+        @RequestParam("firstname") firstname: String,
+        @RequestParam("lastname") lastname: String,
+        @RequestParam("dateofbirth") dateOfBirth: String
+    ): ModelAndView {
+        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
+        Napier.i("/debug/credential/qrcode called")
+        Napier.v("/debug/credential/qrcode called with '$firstname', '$lastname', '$dateOfBirth'")
+        val nonceBpk = extNonceAuthnService.generateNonce()
+        if (nonceBpk == null) {
+            model["error"] = "Internal error: Could not generate nonce"
+            return ModelAndView("initialize", model)
+        }
+        if (credentialDataProvider !is EidasCredentialDataProvider) {
+            model["error"] = "Internal error: Configuration mismatch"
+            return ModelAndView("initialize", model)
+        }
+        val subject = nonceBpk.bpk
+        val eidasClaim = EidasCredentialDataProvider.EidasClaim(subject, dateOfBirth, firstname, lastname)
+        Napier.i("Storing EIDAS claims")
+        Napier.v("Storing EIDAS claims for '${nonceBpk.bpk}': $eidasClaim")
+        credentialDataProvider.storeClaims(eidasClaim, nonceBpk.bpk)
+
+        val content = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
+            .pathSegment("help", "wallet")
+            .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
+            .toUriString()
+        val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
+        model["qrcode"] = qrCodeImage.encodeBase64()
+        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
+        model["creation"] = Clock.System.now().toString()
+        return ModelAndView("initialize", model)
     }
 
     @GetMapping("/debug/credential/list")

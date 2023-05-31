@@ -1,7 +1,8 @@
 # Changelog
 
-NEXT (1.6.4):
- - Implement OpenId4VerifiableCredentialIssuance
+NEXT (2.0.0:
+ - Implement OpenID for VerifiableCredentialIssuance, as well as App Authentication over OpenID Connect
+ - Add debug endpoint to create credentials with custom attribute values
 
 NEXT
  - depend on locally built umbrella lib

@@ -283,6 +283,12 @@ These endpoints are only enabled if `backend.debug.enabled=true` is set.
 
 `GET /debug/credential/revoke?vcId={foo}` revokes a credential.
 
+`GET /debug/initialize` shows a QR code that can be used by the Wallet App to get a nonce to use as the authentication token during the device binding process.
+
+`GET /debug/credential/list` displays a web page with a list of issued credentials.
+
+`GET /debug/credential/qrcode` reads attributes values from request parameters `firstname`, `lastname`, `dateofbirth` and creates a QR code that can be scanned from the Wallet App to load a credential with these attribute values. Beware: Works only in EIDAS deployments! 
+
 ## Web API
 
 `GET /` displays a general information page for new users.
@@ -294,14 +300,6 @@ These endpoints are only enabled if `backend.debug.enabled=true` is set.
 #### EIDAS
 
 For EIDAS deployments, the web page `GET /eidasid/initialize` is available, where the web browser displays a QR code that can be scanned by the Wallet App to load EIDAS credentials. This endpoint is available after the user has been logged in with OAuth2 (link on `/login`).
-
-### Debug
-
-These web pages are only enabled if `backend.debug.enabled=true` is set.
-
-`GET /debug/initialize` shows a QR code that can be used by the Wallet App to get a nonce to use as the authentication token during the device binding process.
-
-`GET /debug/credential/list` displays a web page with a list of issued credentials.
 
 ## Configuration
 
