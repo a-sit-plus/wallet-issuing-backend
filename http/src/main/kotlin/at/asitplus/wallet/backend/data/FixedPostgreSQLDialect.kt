@@ -1,19 +1,37 @@
 package at.asitplus.wallet.backend.data
 
-import org.hibernate.dialect.PostgreSQL10Dialect
-import org.hibernate.type.descriptor.sql.BinaryTypeDescriptor
-import org.hibernate.type.descriptor.sql.SqlTypeDescriptor
+import org.hibernate.boot.model.TypeContributions
+import org.hibernate.dialect.DatabaseVersion
+import org.hibernate.dialect.PostgreSQLDialect
+import org.hibernate.service.ServiceRegistry
+import org.hibernate.type.SqlTypes
+import org.hibernate.type.descriptor.jdbc.BinaryJdbcType
 import java.sql.Types
 
 
-class FixedPostgreSQLDialect : PostgreSQL10Dialect() {
-    init {
-        registerColumnType(Types.BLOB, "bytea")
+//from https://stackoverflow.com/a/75359082
+class FixedPostgreSQLDialect : PostgreSQLDialect(DatabaseVersion.make(10)) {
+
+
+
+    override fun columnType(sqlTypeCode: Int): String {
+        return when (sqlTypeCode) {
+            SqlTypes.BLOB -> "bytea"
+            else -> super.columnType(sqlTypeCode)
+        }
     }
 
-    override fun remapSqlTypeDescriptor(sqlTypeDescriptor: SqlTypeDescriptor): SqlTypeDescriptor? =
-        when (sqlTypeDescriptor.sqlType) {
-            Types.BLOB -> BinaryTypeDescriptor.INSTANCE
-            else -> super.remapSqlTypeDescriptor(sqlTypeDescriptor)
+    override fun castType(sqlTypeCode: Int): String {
+        return when (sqlTypeCode) {
+            SqlTypes.BLOB -> "bytea"
+            else -> super.castType(sqlTypeCode)
         }
+    }
+
+    override fun contributeTypes(typeContributions: TypeContributions, serviceRegistry: ServiceRegistry) {
+        super.contributeTypes(typeContributions, serviceRegistry)
+        val jdbcTypeRegistry = typeContributions.typeConfiguration
+            .jdbcTypeRegistry
+        jdbcTypeRegistry.addDescriptor(Types.BLOB, BinaryJdbcType.INSTANCE)
+    }
 }

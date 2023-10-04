@@ -14,6 +14,7 @@ import at.asitplus.wallet.backend.service.*
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
 import at.asitplus.wallet.lib.aries.MessageWrapper
+import at.asitplus.wallet.lib.cbor.DefaultCoseService
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oidvci.IssuerService
 import at.asitplus.wallet.pupilid.ConstantIndex
@@ -21,6 +22,8 @@ import at.asitplus.wallet.pupilid.Initializer
 import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
+import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 import kotlinx.datetime.Clock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -32,7 +35,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
@@ -422,7 +425,8 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         ),
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         timePeriodProvider = timePeriodProvider(),
-        validator = Validator.newDefaultInstance(DefaultVerifierCryptoService())
+        validator = Validator.newDefaultInstance(DefaultVerifierCryptoService()),
+        coseService = DefaultCoseService(issuerCryptoService)
     )
 
     @Bean
@@ -472,8 +476,8 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     ): IssuerService = IssuerService(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = listOf(at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential),
-        authorizationServer = "https://eid.egiz.gv.at/",
+        credentialSchemes = listOf(at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential, at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023),
+        authorizationServer = "https://eid2.oesterreich.gv.at/",
     )
 
     private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {
@@ -482,7 +486,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         return AndroidAttestationConfiguration(
             packageName = aCfg.packageName,
             signatureDigests = aCfg.signatureDigests.map {
-                it.decodeBase16ToArray()
+                it.decodeToByteArrayOrNull(Base16())
                     ?: throw RuntimeException("Could not hex decode Android attestation signature digest $it")
             },
             appVersion = aCfg.applicationVersion,

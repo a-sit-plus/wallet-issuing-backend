@@ -6,13 +6,14 @@ import at.asitplus.wallet.backend.data.CredentialDataProvider
 import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
 import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
+import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.pupilid.ConstantIndex
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.UUID
+import java.util.*
 import kotlin.properties.Delegates
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -52,11 +53,10 @@ class IssuerCredentialDataProviderAdapterTest {
 
     @Test
     fun `credential lifetime should be capped with binding lifetime`() {
-        val credential = adapter.getCredentialWithType(client.keyId, listOf(ConstantIndex.PupilId.vcType))
+        val credential = adapter.getCredentialWithType(client.keyId, null, listOf(ConstantIndex.PupilId.vcType))
 
         credential.isSuccess shouldBe true
-        credential as KmmResult.Success
-        credential.value.first().expiration shouldBeLessThanOrEqualTo client.selfSignedCert.notAfter.toInstant()
+        (credential.getOrThrow().first() as CredentialToBeIssued.Vc).expiration shouldBeLessThanOrEqualTo client.selfSignedCert.notAfter.toInstant()
             .toKotlinInstant()
     }
 

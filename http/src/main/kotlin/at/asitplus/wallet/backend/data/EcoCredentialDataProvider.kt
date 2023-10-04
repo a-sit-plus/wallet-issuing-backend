@@ -4,11 +4,16 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.lib.DataSourceProblem
+import at.asitplus.wallet.lib.cbor.CoseKey
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.PupilIdCredential
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.encoding.base16.encodeBase16
+import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -36,8 +41,8 @@ class EcoCredentialDataProvider(
         subjectId: String,
         attributeType: String,
         bpk: String?,
-        maxExpiration: Instant
-    ): KmmResult<CredentialDataProvider.CredentialToBeIssued> = kotlin.runCatching {
+        maxExpiration: Instant,
+    ): KmmResult<CredentialDataProvider.CredentialToBeIssued.Vc> = kotlin.runCatching {
         if (bpk == null)
             return KmmResult.failure(UnsupportedOperationException("BPK is null"))
         if (attributeType != ConstantIndex.PupilId.vcType)
@@ -59,11 +64,11 @@ class EcoCredentialDataProvider(
             Napier.v("Capping expiration to '$cappedExpiration', max expiration would be '$maxExpiration'")
         }
         val validUntilString = LenientInstantParser.toYearMonthDateString(cappedExpiration)
-        val picture = body.photo.decodeBase64ToArray() ?: {
+        val picture = body.photo.decodeToByteArrayOrNull(Base64()) ?: {
             Napier.i("No photo from ECO, return failure")
             Napier.v("No photo from ECO, return failure, for bpk '$bpk'")
         }.run { return KmmResult.failure(DataSourceProblem("Photo could not be decoded")) }
-        if (picture.take(2).toByteArray().encodeBase16().uppercase() != "FFD8") {
+        if (picture.take(2).toByteArray().encodeToString(Base16()).uppercase() != "FFD8") {
             Napier.w("ECO sent no JPG as picture, aborting")
             return KmmResult.failure(DataSourceProblem("Photo is not in JPG format"))
         }
@@ -97,10 +102,10 @@ class EcoCredentialDataProvider(
                 scaledPicture
             ),
         )
-        val result = CredentialDataProvider.CredentialToBeIssued(subject, capped, attributeType, attachments)
+        val result = CredentialDataProvider.CredentialToBeIssued.Vc(subject, capped, attributeType, attachments)
 
         KmmResult.success(result)
-            .also { Napier.v("getCredential for '$bpk' returns ${it.value.toLogString()}") }
+            .also { Napier.v("getCredential for '$bpk' returns ${it.getOrThrow().toLogString()}") }
             .also { Napier.i("getCredential success") }
     }.getOrElse {
         Napier.e("getCredential for bpk got error")
@@ -118,7 +123,8 @@ class EcoCredentialDataProvider(
         subjectId: String,
         attributeTypes: Collection<String>,
         bpk: String?,
-        maxExpiration: Instant
+        maxExpiration: Instant,
+        subjectPublicKey: CoseKey?,
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         if (attributeTypes.contains(ConstantIndex.PupilId.vcType)) {
             return getCredential(subjectId, ConstantIndex.PupilId.vcType, bpk, maxExpiration).map { listOf(it) }

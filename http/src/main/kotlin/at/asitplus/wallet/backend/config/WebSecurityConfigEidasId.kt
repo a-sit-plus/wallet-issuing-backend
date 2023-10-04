@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ProviderManager
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.GrantedAuthority
@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Profile(ProfileConstants.EIDASID)
 @Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @EnableSpringHttpSession
 class WebSecurityConfigEidasId(
     private val deviceBindingAuthnProvider: DeviceBindingAuthnProvider,
@@ -62,26 +62,35 @@ class WebSecurityConfigEidasId(
 
     @Bean
     fun filterChain(http: HttpSecurity, authenticationManager: AuthenticationManager): SecurityFilterChain? {
-        http.csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
+        http.csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .addFilter(ExtNonceAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
             .addFilter(ApiKeyAuthnFilter().apply { setAuthenticationManager(authenticationManager()) })
-            .exceptionHandling()
-            .defaultAuthenticationEntryPointFor(
-                DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService),
-                AntPathRequestMatcher("/eidasid/issue")
-            )
-            .defaultAuthenticationEntryPointFor(
-                LoginUrlAuthenticationEntryPoint("/login"),
-                AntPathRequestMatcher("/eidasid/initialize")
-            )
-            .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
-            .and().logout().invalidateHttpSession(true).clearAuthentication(true)
-            .addLogoutHandler(extNonceLogoutHandler).logoutSuccessUrl("/")
-            .and().oauth2Login().defaultSuccessUrl("/eidasid/initialize").userInfoEndpoint()
-            .oidcUserService(this.oidcUserService()).and()
-            .and().headers().frameOptions().sameOrigin()
+            .exceptionHandling {
+                it.defaultAuthenticationEntryPointFor(
+                    DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService),
+                    AntPathRequestMatcher("/eidasid/issue")
+                )
+                it.defaultAuthenticationEntryPointFor(
+                    LoginUrlAuthenticationEntryPoint("/login"),
+                    AntPathRequestMatcher("/eidasid/initialize")
+                )
+                it.defaultAuthenticationEntryPointFor(
+                    Http403ForbiddenEntryPoint(),
+                    AntPathRequestMatcher("/**")
+                )
+            }.logout {
+                it.invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                    .addLogoutHandler(extNonceLogoutHandler)
+                    .logoutSuccessUrl("/")
+            }.oauth2Login {
+                it.defaultSuccessUrl("/eidasid/initialize")
+                    .userInfoEndpoint { it.oidcUserService(oidcUserService()) }
+            }.headers {
+                it.frameOptions { it.sameOrigin() }
+            }
         return http.build()
     }
 

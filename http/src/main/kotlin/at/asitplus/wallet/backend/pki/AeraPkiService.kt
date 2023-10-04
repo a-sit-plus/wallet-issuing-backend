@@ -4,6 +4,9 @@ import at.asitplus.wallet.backend.Extensions.appendPath
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.cert.X509CertificateHolder
@@ -30,10 +33,10 @@ class AeraPkiService(
             val csr = PkiUtils.verifyCsr(csrEncoded, expectedSubject)
                 ?: return null.also {
                     Napier.w("verifyAndSign: CSR not verified")
-                    Napier.v("CSR: ${csrEncoded.encodeBase64()}")
+                    Napier.v("CSR: ${csrEncoded.encodeToString(Base64())}")
                 }
             val requestDto = SignRequestDto(
-                csr = csr.encoded.encodeBase64(),
+                csr = csr.encoded.encodeToString(Base64()),
                 expirationTimestamp = (Clock.System.now() + certValidity).epochSeconds,
             )
             val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
@@ -45,7 +48,7 @@ class AeraPkiService(
                 restTemplate.postForEntity(url, requestEntity, SignResponseDto::class.java)
             Napier.i("verifyAndSign: Got response")
             Napier.v("Response: $response")
-            val encoded = response.body?.certificate?.decodeBase64ToArray()
+            val encoded = response.body?.certificate?.decodeToByteArrayOrNull(Base64())
                 ?: return null
             val validUntil = X509CertificateHolder(encoded).notAfter.toInstant().toKotlinInstant()
             SignedCertificate(encoded, validUntil)
@@ -69,7 +72,7 @@ class AeraPkiService(
     }
 
     override fun revokeCertificate(certificate: ByteArray) = kotlin.runCatching {
-        val requestDto = RevokeRequestDto(certificate = certificate.encodeBase64())
+        val requestDto = RevokeRequestDto(certificate = certificate.encodeToString(Base64()))
         val headers = HttpHeaders().also { it.contentType = MediaType.APPLICATION_JSON }
         val requestEntity = HttpEntity(requestDto, headers)
         val url = appendPath(url, "v1", "revoke-certificate")
@@ -80,7 +83,7 @@ class AeraPkiService(
         Napier.v("Response: $response")
         if (!response.statusCode.is2xxSuccessful || response.body?.result != true) {
             Napier.w("revokeCertificate: Not successful")
-            Napier.v("Certificate: ${certificate.encodeBase64()}")
+            Napier.v("Certificate: ${certificate.encodeToString(Base64())}")
         }
     }.getOrElse {
         Napier.e("revokeCertificate got error", it) // TODO I think bouncycastle/RestClientExceptions are fine?

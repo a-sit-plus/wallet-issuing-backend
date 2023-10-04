@@ -10,7 +10,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @ConfigurationProperties(prefix = "backend")
-@ConstructorBinding
 data class BackendConfigurationProperties(
     /**
      * Public URL of this instance, used for several URLs in messages sent to the Wallet
@@ -65,7 +64,6 @@ data class BackendConfigurationProperties(
         timePeriodRollover.split('-').let { Month.of(it[0].toInt()) to it[1].toUByte() }
 }
 
-@ConstructorBinding
 data class DebugConfigurationProperties(
     /**
      * Whether to enable debug endpoints at all
@@ -77,7 +75,6 @@ data class DebugConfigurationProperties(
     val qrCodeSize: Int = 400,
 )
 
-@ConstructorBinding
 data class CredentialConfigurationProperties(
     /**
      * Lifetime of the credentials issued, e.g. 60 minutes (`PT6M`) or 180 days (`P180D`)
@@ -96,7 +93,6 @@ data class CredentialConfigurationProperties(
     val lifeTime: Duration = Duration.parse(lifetime)
 }
 
-@ConstructorBinding
 data class PicturesConfigurationProperties(
     /**
      * Whether to compress the pictures at all. Default: `true`.
@@ -136,7 +132,6 @@ data class PicturesConfigurationProperties(
     val pathLibSharp: String? = null,
 )
 
-@ConstructorBinding
 data class CleanupConfigurationProperties(
     /**
      * Whether to enable the cleanup at all
@@ -163,7 +158,6 @@ data class CleanupConfigurationProperties(
     val credentialsSchedulingRateDuration = Duration.parse(credentialsSchedulingRate)
 }
 
-@ConstructorBinding
 data class HsmFacadeConfiguration(
     /**
      * Whether to enable connection to the HsmFacade service at all
@@ -195,7 +189,6 @@ data class HsmFacadeConfiguration(
     val timeout: Long = 30,
 )
 
-@ConstructorBinding
 data class RemoteCryptoConfiguration(
     /**
      * Whether to enable connection to the Remote Crypto service at all
@@ -215,7 +208,6 @@ data class RemoteCryptoConfiguration(
     val apiKey: String? = null
 )
 
-@ConstructorBinding
 data class RevocationListConfigurationProperties(
     /**
      * Lifetime of a single revocation list, defaults to `P7D`, i.e. 7 days.
@@ -244,7 +236,6 @@ data class RevocationListConfigurationProperties(
     val regularCheckRateDuration: Duration = Duration.parse(regularCheckRate)
 }
 
-@ConstructorBinding
 data class AttributeSourceConfigurationProperties(
     /**
      * Type of the attribute source
@@ -266,7 +257,6 @@ enum class AttributeSourceType {
     EIDAS
 }
 
-@ConstructorBinding
 data class EcoAttributeSourceConfigurationProperties(
     override val url: URI? = null,
     override val clientTls: Boolean = false,
@@ -294,7 +284,6 @@ interface ExternalConnectionConfig {
     val apiKey: String?
 }
 
-@ConstructorBinding
 data class RandomAttributeSourceConfigurationProperties(
     /**
      * Location of random photos to be used for issued credentials
@@ -302,13 +291,11 @@ data class RandomAttributeSourceConfigurationProperties(
     val photoLocation: URI = URI.create("file:photos/"),
 )
 
-@ConstructorBinding
 data class HttpBasicAuthnConfigurationProperties(
     val username: String,
     val password: String,
 )
 
-@ConstructorBinding
 data class AuthnConfigurationProperties(
     /**
      * Lifetime of challenges sent to clients, e.g. during device binding
@@ -324,7 +311,6 @@ data class AuthnConfigurationProperties(
     val deviceBinding: DeviceBindingConfigurationProperties = DeviceBindingConfigurationProperties(),
 )
 
-@ConstructorBinding
 data class PkiConfigurationProperties(
     val type: PkiType = PkiType.INTERNAL,
     val internal: InternalPkiConfigurationProperties = InternalPkiConfigurationProperties(),
@@ -338,13 +324,11 @@ enum class PkiType {
     AERA
 }
 
-@ConstructorBinding
 data class InternalPkiConfigurationProperties(
     val issuerName: String = "CN=WalletBackend",
     val key: KeyConfiguration = KeyConfiguration(),
 )
 
-@ConstructorBinding
 data class AeraPkiConfigurationProperties(
     override val url: URI? = null,
     override val clientTls: Boolean = false,
@@ -355,7 +339,6 @@ data class AeraPkiConfigurationProperties(
     override val apiKey: String? = null
 ) : ExternalConnectionConfig
 
-@ConstructorBinding
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
     val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties(),
@@ -367,7 +350,6 @@ enum class DeviceBindingNonceType {
     ECO
 }
 
-@ConstructorBinding
 data class AttestationConfigurationProperties(
     val android: AndroidAttestationConfigurationProperties? = null,
     val ios: IOSAttestationConfigurationProperties? = null,
@@ -377,7 +359,6 @@ data class AttestationConfigurationProperties(
     val verificationOffSetDuration = verificationOffset?.let { Duration.parse(it) } ?: 0.seconds
 }
 
-@ConstructorBinding
 data class AndroidAttestationConfigurationProperties(
     val packageName: String,
     val applicationVersion: Int? = null,
@@ -389,7 +370,6 @@ data class AndroidAttestationConfigurationProperties(
     val ignoreLeafValidity: Boolean = false,
 )
 
-@ConstructorBinding
 data class IOSAttestationConfigurationProperties(
     val teamIdentifier: String,
     val bundleIdentifier: String,
@@ -400,10 +380,8 @@ data class IOSAttestationConfigurationProperties(
         IOSAttestationConfiguration(teamIdentifier, bundleIdentifier, sandbox, iosVersion)
 }
 
-@ConstructorBinding
 data class PatchLevelConfigurationProperties(val year: Int, val month: Int)
 
-@ConstructorBinding
 data class EcoDeviceBindingConfigurationProperties(
     override val url: URI? = null,
     override val clientTls: Boolean = false,
@@ -414,13 +392,11 @@ data class EcoDeviceBindingConfigurationProperties(
     override val apiKey: String? = null
 ) : ExternalConnectionConfig
 
-@ConstructorBinding
 data class ApiKeyConfigurationProperties(
     val name: String,
     val key: String,
 )
 
-@ConstructorBinding
 data class KeyConfiguration(
     val type: KeyType = KeyType.MEMORY,
     val file: KeyFileConfiguration? = null,
@@ -429,14 +405,12 @@ data class KeyConfiguration(
     val remote: KeyRemoteCryptoConfiguration? = null,
 )
 
-@ConstructorBinding
 data class KeyFileConfiguration(
     val privateKey: URI,
     val publicKey: URI?,
     val certificate: URI?,
 )
 
-@ConstructorBinding
 data class KeyStoreConfiguration(
     val path: URI,
     val type: String,
@@ -446,26 +420,22 @@ data class KeyStoreConfiguration(
     val aliasPassword: String? = null,
 )
 
-@ConstructorBinding
 data class KeyHsmFacadeConfiguration(
     val keyStoreName: String? = null,
     val keyStoreAlias: String? = null,
 )
 
-@ConstructorBinding
 data class KeyRemoteCryptoConfiguration(
     val keyName: String,
     val publicKey: URI?,
     val certificate: URI?,
 )
 
-@ConstructorBinding
 data class TrustConfiguration(
     val type: TrustType = TrustType.SYSTEM,
     val truststore: TrustStoreConfiguration? = null,
 )
 
-@ConstructorBinding
 data class TrustStoreConfiguration(
     val path: URI,
     val type: String,

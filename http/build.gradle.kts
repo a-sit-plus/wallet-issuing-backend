@@ -1,22 +1,22 @@
-
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.FileInputStream
-import java.util.Properties
+import at.asitplus.gradle.bouncycastle
+import at.asitplus.gradle.gitLab
+import at.asitplus.gradle.gitlab
+import at.asitplus.gradle.ktor
 
 plugins {
+    kotlin("jvm")
+    kotlin("plugin.serialization")
+    kotlin("plugin.spring")
+    kotlin("plugin.jpa")
+    kotlin("plugin.allopen")
     id("org.springframework.boot") version VersionsBackend.spring.boot
     id("io.spring.dependency-management") version VersionsBackend.spring.`dependency-management`
-    id("maven-publish")
-    kotlin("jvm") version VersionsBackend.kotlin
-    kotlin("plugin.spring") version VersionsBackend.kotlin
-    kotlin("plugin.jpa") version VersionsBackend.kotlin
-    kotlin("plugin.serialization") version VersionsBackend.kotlin
+    id("at.asitplus.gradle.vclib-conventions")
 }
 
 val artifactVersion: String by extra
 group = "at.asitplus.wallet"
 version = artifactVersion
-java.sourceCompatibility = JavaVersion.VERSION_11
 
 configurations {
     compileOnly {
@@ -48,36 +48,22 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
-    implementation("org.apache.httpcomponents:httpclient")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
 
-    implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.jose}")
+    implementation("com.nimbusds:nimbus-jose-jwt:${VcLibVersions.Jvm.`jose-jwt`}")
 
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
 
-    implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity5")
+    implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
 
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
     implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
 
-    implementation("at.asitplus.wallet:pupilidlib-jvm:${VersionsBackend.pupilidlib}"){
-        layout.projectDirectory.dir("..").dir("pupilidlib").dir("repo").asFile.let {
-            if (it.exists() && it.isDirectory && it.listFiles()!!.isNotEmpty()) {
-                logger.info("assuming PupilIdLib maven artifact present")
-            } else {
-                exec {
-                    workingDir = layout.projectDirectory.dir("..").dir("pupilidlib").asFile
-                    println("descending into ${workingDir.absolutePath}")
-                    logger.lifecycle("Rebuilding PupilIdLib maven artifacts")
-                    commandLine("./gradlew", "publishAllPublicationsToLocalRepository")
-                }
-            }
-        }
-    }
-    implementation("io.github.aakira:napier-jvm:2.6.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.4.0")
-    implementation("at.asitplus.wallet:idaustriacredential-jvm:1.0.0-SNAPSHOT")
+    implementation("at.asitplus.wallet:pupilidlib:${VersionsBackend.pupilidlib}")
+    implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
+    implementation("at.asitplus.wallet:vclib-openid:${VersionsBackend.vclib}")
 
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
@@ -98,26 +84,12 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:${VersionsBackend.mockito}")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-    testImplementation("io.kotest:kotest-assertions-core:${VersionsBackend.kotest}")
 
-    testImplementation("io.ktor:ktor-client-java:${VersionsBackend.ktor}")
+    testImplementation(ktor("client-java"))
     testImplementation("com.squareup.okhttp3:mockwebserver:${VersionsBackend.okhttp}")
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs = listOf(
-            "-Xjsr305=strict",
-            "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlin.time.ExperimentalTime"
-        )
-        jvmTarget = "11"
-    }
-}
-
 tasks.test {
-    useJUnitPlatform()
     testLogging {
         showExceptions = true
         events = setOf(
@@ -137,62 +109,14 @@ springBoot {
     buildInfo()
 }
 
-Properties().apply {
-    kotlin.runCatching { load(FileInputStream(project.rootProject.file("local.properties"))) }
-    forEach { (k, v) -> extra.set(k as String, v) }
-}
 
-val gitLabPrivateToken: String? by extra
 val gitLabProjectId: String by extra
 val gitLabGroupId: String by extra
 
 repositories {
-    maven(uri(layout.projectDirectory.dir("..").dir("pupilidlib").dir("repo")))
-    mavenLocal()
-    if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
-        maven {
-            name = "gitlab"
-            url = uri("https://gitlab.iaik.tugraz.at/api/v4/groups/$gitLabGroupId/-/packages/maven")
-            if (gitLabPrivateToken != null) {
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Private-Token"
-                    value = gitLabPrivateToken
-                }
-            } else if (System.getenv("CI_JOB_TOKEN") != null) {
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Job-Token"
-                    value = System.getenv("CI_JOB_TOKEN")
-                }
-            }
-            authentication {
-                create<HttpHeaderAuthentication>("header")
-            }
-        }
-    }
-
-    if (System.getenv("CI_JOB_TOKEN") != null || gitLabPrivateToken != null) {
-        maven {
-            name = "gitlabhsm"
-            url = uri("https://gitlab.iaik.tugraz.at/api/v4/groups/119/-/packages/maven")
-            if (gitLabPrivateToken != null) {
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Private-Token"
-                    value = gitLabPrivateToken
-                }
-            } else if (System.getenv("CI_JOB_TOKEN") != null) {
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Job-Token"
-                    value = System.getenv("CI_JOB_TOKEN")
-                }
-            }
-            authentication {
-                create<HttpHeaderAuthentication>("header")
-            }
-        }
-    }
-    mavenCentral()
+    gitlab(gitLabGroupId.toInt()) accessTokenFrom extra
+    gitlab(119, nameOverride = "gitlabhsm")  accessTokenFrom extra
 }
-
 
 publishing {
     publications {
@@ -200,20 +124,5 @@ publishing {
             artifact(tasks.getByName("bootJar"))
         }
     }
-    repositories {
-        mavenLocal()
-        if (System.getenv("CI_JOB_TOKEN") != null) {
-            maven {
-                name = "gitlab"
-                url = uri("https://gitlab.iaik.tugraz.at/api/v4/projects/$gitLabProjectId/packages/maven")
-                credentials(HttpHeaderCredentials::class) {
-                    name = "Job-Token"
-                    value = System.getenv("CI_JOB_TOKEN")
-                }
-                authentication {
-                    create<HttpHeaderAuthentication>("header")
-                }
-            }
-        }
-    }
+    gitLab(gitLabProjectId.toInt())
 }

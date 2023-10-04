@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.context.event.ContextRefreshedEvent
@@ -35,7 +34,6 @@ import java.security.Security
 import kotlin.math.roundToInt
 
 
-@ConstructorBinding
 @ConfigurationProperties(prefix = "testrig")
 data class TestRigConfProps(
     val runs: Int,
@@ -49,10 +47,8 @@ data class TestRigConfProps(
         if (parallelism > runs) throw RuntimeException()
     }
 
-    @ConstructorBinding
     data class Host(val baseURL: URL)
 
-    @ConstructorBinding
     data class FakeEco(val port: Int)
 }
 
@@ -61,7 +57,6 @@ const val FAKE_NONCE = "FAKE_NONCE-"
 
 @SpringBootApplication(scanBasePackages = ["at.asitplus.wallet.backend.testrig"])
 @EnableConfigurationProperties(TestRigConfProps::class)
-@ConstructorBinding
 class TestRig(private val cfg: TestRigConfProps) : CommandLineRunner {
 
     override fun run(vararg args: String?) {

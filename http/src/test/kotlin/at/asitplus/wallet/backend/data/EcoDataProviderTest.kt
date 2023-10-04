@@ -11,6 +11,8 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import okhttp3.HttpUrl
@@ -168,7 +170,7 @@ class EcoDataProviderTest {
         validUntilFromEco: Instant,
         gracePeriod: Duration,
         maxExpirationCappedFromCredentialValidityAndBinding: Instant
-    ): Pair<CredentialDataProvider.CredentialToBeIssued, PupilIdCredential> {
+    ): Pair<CredentialDataProvider.CredentialToBeIssued.Vc, PupilIdCredential> {
         val eco = setupEcoDateProvider(gracePeriod)
         prepareEcoResponse(validUntil = validUntilFromEco)
         val cred = eco.getCredential(
@@ -178,16 +180,15 @@ class EcoDataProviderTest {
             maxExpiration = maxExpirationCappedFromCredentialValidityAndBinding
         )
         cred.isSuccess.shouldBeTrue()
-        cred as KmmResult.Success
-        val sub = cred.value.subject
+        val sub = cred.getOrThrow().subject
         sub.shouldBeInstanceOf<PupilIdCredential>()
 
-        return cred.value to sub
+        return cred.getOrThrow() to sub
     }
 
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline infix fun CredentialDataProvider.CredentialToBeIssued.shouldExpireAt(instant: Instant) =
+    private inline infix fun CredentialDataProvider.CredentialToBeIssued.Vc.shouldExpireAt(instant: Instant) =
         expiration shouldBe instant
 
     @Suppress("NOTHING_TO_INLINE")
@@ -211,7 +212,7 @@ class EcoDataProviderTest {
             "schoolId": "string",
             "studentCity": "string",
             "studentZip": "string",
-            "photo": """" + File("src/test/resources/portrait.jpeg").readBytes().encodeBase64() + """"
+            "photo": """" + File("src/test/resources/portrait.jpeg").readBytes().encodeToString(Base64()) + """"
         }""".trimIndent()
         server.enqueue(MockResponse().addHeader("Content-Type", "application/json").setBody(fakeStudentData))
     }

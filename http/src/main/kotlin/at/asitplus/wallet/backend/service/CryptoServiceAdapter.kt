@@ -3,18 +3,10 @@ package at.asitplus.wallet.backend.service
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.pki.KeyAdapter
-import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
-import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.agent.Digest
-import at.asitplus.wallet.lib.agent.EphemeralKeyHolder
-import at.asitplus.wallet.lib.agent.JvmEphemeralKeyHolder
-import at.asitplus.wallet.lib.agent.getPublicKey
-import at.asitplus.wallet.lib.jws.EcCurve
-import at.asitplus.wallet.lib.jws.JsonWebKey
-import at.asitplus.wallet.lib.jws.JweAlgorithm
-import at.asitplus.wallet.lib.jws.JweEncryption
-import at.asitplus.wallet.lib.jws.JwkType
-import at.asitplus.wallet.lib.jws.JwsAlgorithm
+import at.asitplus.wallet.lib.CryptoPublicKey
+import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.cbor.CoseAlgorithm
+import at.asitplus.wallet.lib.jws.*
 import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSSigner
@@ -28,11 +20,7 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.math.BigInteger
-import java.security.MessageDigest
-import java.security.PrivateKey
-import java.security.Provider
-import java.security.PublicKey
-import java.security.Signature
+import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPrivateKey
@@ -49,7 +37,7 @@ interface CryptoServiceAdapter : CryptoService {
     val subjectPublicKeyInfo: SubjectPublicKeyInfo
     val jwsContentSigner: JWSSigner
     val jcaContentSigner: ContentSigner
-    val certificate: X509Certificate?
+    val x509Certificate: X509Certificate?
 }
 
 class DefaultCryptoServiceAdapter(
@@ -61,13 +49,15 @@ class DefaultCryptoServiceAdapter(
     private val provider: Provider = keyAdapter.provider
     private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
     override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
-    override val certificate = keyAdapter.certificate
+    override val coseAlgorithm: CoseAlgorithm = keyAdapter.coseAlgorithm
+    override val x509Certificate = keyAdapter.certificate
+    override val certificate: ByteArray? = keyAdapter.certificate?.encoded
+    override fun toPublicKey() = jsonWebKey.toCryptoPublicKey()!!
+
 
     init {
         Napier.i("Loaded public key with id ${jsonWebKey.identifier}")
     }
-
-    override fun toJsonWebKey() = jsonWebKey
 
     override suspend fun sign(input: ByteArray): KmmResult<ByteArray> = try {
         val signed = Signature.getInstance(jwsAlgorithm.jcaName, provider).apply {
@@ -186,11 +176,6 @@ class DefaultCryptoServiceAdapter(
             JwkType.RSA -> "RSA"
         }
 
-    private val JwsAlgorithm.jcaName
-        get() = when (this) {
-            JwsAlgorithm.ES256 -> "SHA256withECDSA"
-        }
-
     private val Digest.jcaName
         get() = when (this) {
             Digest.SHA256 -> "SHA-256"
@@ -211,16 +196,14 @@ class DefaultCryptoServiceAdapter(
             JweAlgorithm.ECDH_ES -> "ECDH"
         }
 
-    private val EcCurve.jcaName
-        get() = when (this) {
-            EcCurve.SECP_256_R_1 -> "secp256r1"
-        }
-
 }
 
 val JwsAlgorithm.joseType: JWSAlgorithm
     get() = when (this) {
         JwsAlgorithm.ES256 -> JWSAlgorithm.ES256
+        JwsAlgorithm.ES384 -> JWSAlgorithm.ES384
+        JwsAlgorithm.ES512 -> JWSAlgorithm.ES512
+        JwsAlgorithm.HMAC256 -> JWSAlgorithm.HS256
     }
 
 val DeviceBinding.jsonWebKey: JsonWebKey?

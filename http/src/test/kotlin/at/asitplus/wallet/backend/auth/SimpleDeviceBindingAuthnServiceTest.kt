@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.service.SimpleChallengeService
 import at.asitplus.wallet.backend.SimpleDeviceBindingAuthnService
-import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64 as B64
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
@@ -13,6 +13,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
 import org.junit.jupiter.api.BeforeEach
@@ -64,7 +65,7 @@ class SimpleDeviceBindingAuthnServiceTest {
         val jws = JWSObject(
             JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(client.selfSignedCert.encoded)))
                 .build(),
-            Payload(challenge.encodeBase64())
+            Payload(challenge.encodeToString(B64()))
         )
         val challengeResponse = client.signBindingChallenge(jws)
 
@@ -78,7 +79,7 @@ class SimpleDeviceBindingAuthnServiceTest {
         val jws = JWSObject(
             JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(client.selfSignedCert.encoded)))
                 .build(),
-            Payload(mapOf("challange" to challenge.encodeBase64()))
+            Payload(mapOf("challange" to challenge.encodeToString(B64())))
         )
         val challengeResponse = client.signBindingChallenge(jws)
 

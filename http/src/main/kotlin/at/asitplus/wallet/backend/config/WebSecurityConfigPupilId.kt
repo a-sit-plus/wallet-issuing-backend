@@ -20,7 +20,7 @@ import org.springframework.core.env.Profiles
 import org.springframework.lang.Nullable
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ProviderManager
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.GrantedAuthority
@@ -53,7 +53,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Profile(ProfileConstants.PUPILID)
 @Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @EnableSpringHttpSession
 class WebSecurityConfigPupilId(
     private val deviceBindingAuthnProvider: DeviceBindingAuthnProvider,
@@ -70,36 +70,47 @@ class WebSecurityConfigPupilId(
         environment: Environment,
         @Nullable clientRegistrationRepository: ClientRegistrationRepository?,
     ): SecurityFilterChain? {
-        http.csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).and()
+        http.csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
             .addFilter(DeviceBindingAuthnFilter().apply { setAuthenticationManager(authenticationManager) })
             .addFilter(ExtNonceAuthnFilter().apply { setAuthenticationManager(authenticationManager) })
             .addFilter(ApiKeyAuthnFilter().apply { setAuthenticationManager(authenticationManager) })
-            .exceptionHandling()
-            .defaultAuthenticationEntryPointFor(
-                DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService),
-                AntPathRequestMatcher("/pupilid/**")
-            )
-            .and().logout().invalidateHttpSession(true).clearAuthentication(true)
-            .addLogoutHandler(extNonceLogoutHandler)
-            .and().headers().frameOptions().sameOrigin()
+            .exceptionHandling {
+                it.defaultAuthenticationEntryPointFor(
+                    DeviceBindingAuthnEntryPoint(deviceBindingAuthnChallengeService),
+                    AntPathRequestMatcher("/pupilid/**")
+                )
+            }.logout {
+                it.invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                    .addLogoutHandler(extNonceLogoutHandler)
+            }.headers { it.frameOptions { it.sameOrigin() } }
         if (environment.acceptsProfiles(Profiles.of(ProfileConstants.AUTHN_IDA)) && clientRegistrationRepository != null) {
             val loginUrl = getOidcLoginUrl(clientRegistrationRepository)
-            http.exceptionHandling()
-                .defaultAuthenticationEntryPointFor(
+            http.exceptionHandling {
+                it.defaultAuthenticationEntryPointFor(
                     LoginUrlAuthenticationEntryPoint(loginUrl),
                     AntPathRequestMatcher("/pupilid/consent/retrieve")
                 )
-                .defaultAuthenticationEntryPointFor(
+                it.defaultAuthenticationEntryPointFor(
                     LoginUrlAuthenticationEntryPoint(loginUrl),
                     AntPathRequestMatcher("/binding/**")
                 )
-                .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
-                .and().oauth2Login().defaultSuccessUrl("/pupilid/consent/retrieve").userInfoEndpoint()
-                .oidcUserService(this.oidcUserService())
+                it.defaultAuthenticationEntryPointFor(
+                    Http403ForbiddenEntryPoint(),
+                    AntPathRequestMatcher("/**")
+                )
+            }.oauth2Login {
+                it.defaultSuccessUrl("/pupilid/consent/retrieve")
+                    .userInfoEndpoint { it.oidcUserService(oidcUserService()) }
+            }
         } else {
-            http.exceptionHandling()
-                .defaultAuthenticationEntryPointFor(Http403ForbiddenEntryPoint(), AntPathRequestMatcher("/**"))
+            http.exceptionHandling {
+                it.defaultAuthenticationEntryPointFor(
+                    Http403ForbiddenEntryPoint(),
+                    AntPathRequestMatcher("/**")
+                )
+            }
         }
         return http.build()
     }
@@ -107,8 +118,8 @@ class WebSecurityConfigPupilId(
     private fun getOidcLoginUrl(clientRegistrationRepository: ClientRegistrationRepository): String {
         if (clientRegistrationRepository is InMemoryClientRegistrationRepository) {
             val iterator = clientRegistrationRepository.iterator()
+            // TODO Once Spring provides a way to get that URL more robust, use this
             if (iterator.hasNext())
-                // TODO Once Spring provides a way to get that URL more robust, use this
                 return "/oauth2/authorization/${iterator.next().registrationId}"
         }
         return "/login"

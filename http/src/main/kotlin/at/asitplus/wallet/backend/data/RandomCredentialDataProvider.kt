@@ -3,9 +3,12 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
+import at.asitplus.wallet.lib.cbor.CoseKey
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.PupilIdCredential
 import io.matthewnelson.component.base64.decodeBase64ToArray
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 import kotlinx.datetime.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -57,7 +60,7 @@ class RandomCredentialDataProvider(
         var encodedPhoto: ByteArray = listOfPhotos
             .filter { it.key[0] == randomGender[0] }
             .values
-            .ifEmpty { listOf(Companion.fallbackPhoto.decodeBase64ToArray()!!) }.random()
+            .ifEmpty { listOf(Companion.fallbackPhoto.decodeToByteArrayOrNull(Base64())!!) }.random()
     }
 
     fun getCredential(
@@ -101,7 +104,7 @@ class RandomCredentialDataProvider(
             ),
         )
         return KmmResult.success(
-            CredentialDataProvider.CredentialToBeIssued(
+            CredentialDataProvider.CredentialToBeIssued.Vc(
                 subject,
                 maxExpiration,
                 ConstantIndex.PupilId.vcType,
@@ -114,7 +117,8 @@ class RandomCredentialDataProvider(
         subjectId: String,
         attributeTypes: Collection<String>,
         bpk: String?,
-        maxExpiration: Instant
+        maxExpiration: Instant,
+        subjectPublicKey: CoseKey?,
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         if (bpk == null) {
             return KmmResult.success(listOf())

@@ -6,6 +6,8 @@ import at.asitplus.wallet.backend.service.DeviceListEntry
 import at.asitplus.wallet.backend.service.RevocationEvent
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.springframework.context.ApplicationEventPublisher
@@ -59,7 +61,7 @@ class DatabaseDeviceBindingStorageService(
             .findByCertificateAndValidUntilAfter(certificate, now)
             ?: return null.also {
                 Napier.e("Found no authenticated user at $now for given certificate")
-                Napier.v("Certificate: ${certificate.encodeBase64()}")
+                Napier.v("Certificate: ${certificate.encodeToString(Base64())}")
             }
     }
 

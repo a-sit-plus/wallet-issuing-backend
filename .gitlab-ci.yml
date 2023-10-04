@@ -15,7 +15,7 @@ include:
   - template: Secret-Detection.gitlab-ci.yml
 
 default:
-  image: gradle:jdk11
+  image: gradle:jdk17
   tags:
     - docker
 
@@ -31,7 +31,7 @@ cache:
     - ".gradle/caches"
     - ".m2/repository"
 
-assembleJdk11:
+assembleJdk17:
   stage: assemble
   except:
     - tags

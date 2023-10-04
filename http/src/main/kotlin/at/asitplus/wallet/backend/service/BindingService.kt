@@ -12,6 +12,9 @@ import com.nimbusds.jose.Payload
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
 import io.matthewnelson.component.encoding.base16.encodeBase16
+import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -151,7 +154,7 @@ class DefaultBindingService(
             bindingPublicKey,
         ).fold({ err ->
             null.also { Napier.v(throwable = err.cause) { "Attestation error: ${err.explanation}" } }
-        }) { publicKey, details ->
+        }) { publicKey, _ ->
             Napier.d { "Attestation successful. details:" }
             publicKey
         } ?: return null.also { Napier.w("Attestation failed! Could not verify device integrity") }
@@ -162,11 +165,11 @@ class DefaultBindingService(
         deviceBindingStorageService.store(bpk, certificate.encoded, deviceName, certificate.validUntil)
 
         Napier.i("Created new device binding")
-        Napier.v("bpk: $bpk, binding certificate: ${certificate.encoded.encodeBase64()}")
+        Napier.v("bpk: $bpk, binding certificate: ${certificate.encoded.encodeToString(Base64())}")
         return BindingCertificate(certificate.encoded, signedPublicKey)
     }
 
-    private fun buildSubject(challenge: ByteArray) = "CN=${challenge.encodeBase16()}"
+    private fun buildSubject(challenge: ByteArray) = "CN=${challenge.encodeToString(Base16())}"
 
     /**
      * Confirms the binding process.

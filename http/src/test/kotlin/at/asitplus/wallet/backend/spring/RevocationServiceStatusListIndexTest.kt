@@ -26,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.UUID
-import javax.transaction.Transactional
+import jakarta.transaction.Transactional
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 

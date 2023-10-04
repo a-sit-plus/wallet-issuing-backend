@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
@@ -14,6 +16,7 @@ import at.asitplus.wallet.lib.aries.ProblemReporter
 import at.asitplus.wallet.pupilid.ConstantIndex
 import at.asitplus.wallet.pupilid.Initializer
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

@@ -7,3 +7,7 @@
 [submodule "pupilidlib"]
 	path = pupilidlib
 	url = ../pupilid-kmm-lib.git
+
+[submodule "id-austria-credential"]
+	path = id-austria-credential
+	url = https://github.com/a-sit-plus/id-austria-credential

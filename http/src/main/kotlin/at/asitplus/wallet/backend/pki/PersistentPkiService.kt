@@ -34,8 +34,10 @@ class PersistentPkiService(
 
     private val caCertificate =
         cryptoService.certificate ?: throw RuntimeException("No certificate provided")
+    private val x509CaCertificate =
+        cryptoService.x509Certificate ?: throw RuntimeException("No certificate provided")
 
-    private val issuer = X500Name.getInstance(BCStyle.INSTANCE, caCertificate.subjectX500Principal.encoded)
+    private val issuer = X500Name.getInstance(BCStyle.INSTANCE, x509CaCertificate.subjectX500Principal.encoded)
 
     override fun verifyAndSign(csrEncoded: ByteArray, expectedSubject: String): SignedCertificate? =
         kotlin.runCatching {
@@ -82,11 +84,11 @@ class PersistentPkiService(
     }
 
     override fun getCaCertificate(): ByteArray {
-        return caCertificate.encoded
+        return caCertificate
     }
 
     override fun getCrl(): ByteArray {
-        val crlBuilder = JcaX509v2CRLBuilder(caCertificate.subjectX500Principal, Date())
+        val crlBuilder = JcaX509v2CRLBuilder(x509CaCertificate.subjectX500Principal, Date())
         issuedCertificateRepository
             .findAllByRevokedTrueAndValidFromBeforeAndValidUntilAfter(java.time.Instant.now(), java.time.Instant.now())
             .forEach {

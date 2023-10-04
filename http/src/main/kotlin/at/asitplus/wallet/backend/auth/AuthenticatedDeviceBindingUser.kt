@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -40,7 +42,7 @@ class AuthenticatedDeviceBindingUser(val bpk: String, val certificate: ByteArray
     }
 
     override fun toString(): String {
-        return "AuthenticatedDeviceBindingUser(bpk='$bpk', certificate=${certificate.encodeBase64()})"
+        return "AuthenticatedDeviceBindingUser(bpk='$bpk', certificate=${certificate.encodeToString(Base64())})"
     }
 
 }

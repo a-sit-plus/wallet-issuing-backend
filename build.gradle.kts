@@ -1,27 +1,32 @@
+plugins {
+    id("at.asitplus.gradle.vclib-conventions")
+}
+
+/*
+* This workaround is required, because the kotlin version defined in the `AspVersions` is not a constant, but parsed from a properties file
+* Adding the plugins to the classpath here requires no version string, but instead adds the gradle mpdule containing the required
+* plugin definitions to the classpath without applying them. doing so aligns them with the kotlin version used to build this
+* project and thus prevents version mismatches).
+* There has been an open issue on GitHub for the Kotlin Gradle DSL (because Groovy does not have the restriction on cons) for years
+* */
 buildscript {
-    repositories {
-        gradlePluginPortal()
-        google()
-        mavenCentral()
+    dependencies {
+        classpath("org.jetbrains.kotlin:kotlin-allopen") //Spring
+        classpath("org.jetbrains.kotlin:kotlin-noarg") //JPA
     }
+
 }
 
 tasks.register("listrepos") {
     doLast {
         println("Repositories:")
-        project.repositories.map{it as MavenArtifactRepository}
-            .forEach{
+        project.repositories.map { it as MavenArtifactRepository }
+            .forEach {
                 println("Name: ${it.name}; url: ${it.url}")
             }
     }
 }
 
-tasks.register("clean", Delete::class) {
-    doFirst { println("Cleaning all build files") }
-    delete(rootProject.buildDir)
-    delete(layout.projectDirectory.dir("repo"))
-    doLast { println("Clean done") }
-}
 
 task<Exec>("purge") {
     dependsOn("clean")

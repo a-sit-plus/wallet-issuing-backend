@@ -6,12 +6,18 @@ import at.asitplus.wallet.backend.config.KeyHsmFacadeConfiguration
 import at.asitplus.wallet.backend.config.KeyRemoteCryptoConfiguration
 import at.asitplus.wallet.backend.config.KeyStoreConfiguration
 import at.asitplus.wallet.backend.service.fromJcaKey
-import io.matthewnelson.component.base64.encodeBase64
+import at.asitplus.wallet.lib.cbor.CoseAlgorithm
+import at.asitplus.wallet.lib.cbor.CoseEllipticCurve
+import at.asitplus.wallet.lib.cbor.CoseKey
+import at.asitplus.wallet.lib.cbor.CoseKeyType
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
 import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import at.asitplus.wallet.remotecrypto.EcRemoteKeyParameterSpec
 import io.github.aakira.napier.Napier
+import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -37,7 +43,9 @@ interface KeyAdapter {
     val publicKey: PublicKey
     val certificate: X509Certificate?
     val jsonWebKey: JsonWebKey
+    val coseKey: CoseKey
     val jwsAlgorithm: JwsAlgorithm
+    val coseAlgorithm: CoseAlgorithm
     val provider: Provider
 }
 
@@ -52,8 +60,10 @@ class KeyFileAdapter(
     override val certificate: X509Certificate?
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
+    override val coseAlgorithm: CoseAlgorithm
     override val provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
+    override val coseKey: CoseKey
 
     init {
         val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
@@ -68,8 +78,14 @@ class KeyFileAdapter(
 
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
+        coseAlgorithm = CoseAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        Napier.i("Loaded public key: '${publicKey.encoded.encodeBase64()}'")
+        coseKey = CoseKey.fromAnsiX963Bytes(
+            type = CoseKeyType.EC2,
+            CoseEllipticCurve.P256,
+            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
+        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
 }
@@ -95,8 +111,9 @@ class KeyStoreAdapter(
     override val publicKey: PublicKey
     override val certificate: X509Certificate
     override val jwsAlgorithm: JwsAlgorithm
-
+    override val coseAlgorithm: CoseAlgorithm
     override val jsonWebKey: JsonWebKey
+    override val coseKey: CoseKey
 
     init {
         val keyStore = KeyStore.getInstance(type, provider)
@@ -113,8 +130,14 @@ class KeyStoreAdapter(
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
+        coseAlgorithm = CoseAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        Napier.i("Loaded public key: '${publicKey.encoded.encodeBase64()}'")
+        coseKey = CoseKey.fromAnsiX963Bytes(
+            type = CoseKeyType.EC2,
+            CoseEllipticCurve.P256,
+            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
+        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
 }
@@ -129,8 +152,10 @@ class HsmFacadeAdapter(
     override val publicKey: PublicKey
     override val certificate: X509Certificate
     override val jwsAlgorithm: JwsAlgorithm
+    override val coseAlgorithm: CoseAlgorithm
     override val provider: Provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
+    override val coseKey: CoseKey
 
     init {
         val keyStore = KeyStore.getInstance("RemoteKeyStore", securityProviderBean.provider)
@@ -141,8 +166,14 @@ class HsmFacadeAdapter(
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
+        coseAlgorithm = CoseAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        Napier.i("Loaded public key: '${publicKey.encoded.encodeBase64()}'")
+        coseKey = CoseKey.fromAnsiX963Bytes(
+            type = CoseKeyType.EC2,
+            CoseEllipticCurve.P256,
+            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
+        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
 }
@@ -158,8 +189,10 @@ class RemoteKeyAdapter(
     override val certificate: X509Certificate?
     override val publicKey: PublicKey
     override val jwsAlgorithm: JwsAlgorithm
+    override val coseAlgorithm: CoseAlgorithm
     override val provider: Provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
+    override val coseKey: CoseKey
 
     init {
 
@@ -176,8 +209,14 @@ class RemoteKeyAdapter(
 
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
+        coseAlgorithm = CoseAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        Napier.i("Loaded remote public key: '${publicKey.encoded.encodeBase64()}'")
+        coseKey = CoseKey.fromAnsiX963Bytes(
+            type = CoseKeyType.EC2,
+            CoseEllipticCurve.P256,
+            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
+        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        Napier.i("Loaded remote public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
 }
@@ -189,8 +228,10 @@ class RandomKeyAdapter : KeyAdapter {
     override val publicKey: PublicKey
     override val certificate: X509Certificate? = null
     override val jwsAlgorithm: JwsAlgorithm
+    override val coseAlgorithm: CoseAlgorithm
     override val provider: Provider = BouncyCastleProvider().also { Security.addProvider(it) }
     override val jsonWebKey: JsonWebKey
+    override val coseKey: CoseKey
 
     init {
         val keyPair = KeyPairGenerator.getInstance("EC", provider).also { it.initialize(256) }
@@ -199,8 +240,14 @@ class RandomKeyAdapter : KeyAdapter {
         publicKey = keyPair.public
         val ecCurve = EcCurve.SECP_256_R_1
         jwsAlgorithm = JwsAlgorithm.ES256
+        coseAlgorithm = CoseAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve)!!
-        Napier.i("Generated new key pair with public key: '${keyPair.public.encoded.encodeBase64()}'")
+        coseKey = CoseKey.fromAnsiX963Bytes(
+            type = CoseKeyType.EC2,
+            CoseEllipticCurve.P256,
+            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
+        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        Napier.i("Generated new key pair with public key: '${keyPair.public.encoded.encodeToString(Base64())}'")
     }
 }
 

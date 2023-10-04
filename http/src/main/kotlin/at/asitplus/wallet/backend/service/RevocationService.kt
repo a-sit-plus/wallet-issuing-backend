@@ -6,8 +6,11 @@ import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.springframework.context.ApplicationEvent
@@ -132,7 +135,7 @@ class DefaultRevocationService(
                     val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
                     if (revokedCreds > 0)
                         Napier.i("Revoked $revokedCreds already existing credentials")
-                    Napier.v("device binding certificate: '${deviceBinding.certificate.encodeBase64()}', bpk: '${deviceBinding.bpk}'")
+                    Napier.v("device binding certificate: '${deviceBinding.certificate.encodeToString(Base64())}', bpk: '${deviceBinding.bpk}'")
                 }
                 val revocationListIndex = max(
                     (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),

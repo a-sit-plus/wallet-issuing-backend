@@ -1,17 +1,19 @@
 package at.asitplus.wallet.backend.data
 
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
 import java.time.Instant
-import javax.persistence.CascadeType
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.Lob
-import javax.persistence.OneToMany
+import jakarta.persistence.CascadeType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
+import jakarta.persistence.Lob
+import jakarta.persistence.OneToMany
 
 /**
  * A non-revoked binding certificate
@@ -64,7 +66,7 @@ class DeviceBinding() {
         return "DeviceBinding(id=$id, " +
                 "createdOn=$createdOn, " +
                 "bpk='$bpk', " +
-                "certificate=${certificate.encodeBase64()}, " +
+                "certificate=${certificate.encodeToString(Base64())}, " +
                 "validUntil=$validUntil, " +
                 "deviceName='$deviceName', " +
                 "deviceId='$deviceId', " +

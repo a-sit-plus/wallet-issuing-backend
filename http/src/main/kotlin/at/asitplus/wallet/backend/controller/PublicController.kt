@@ -7,6 +7,9 @@ import at.asitplus.wallet.lib.agent.Issuer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
 import io.matthewnelson.component.encoding.base16.encodeBase16
+import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -83,7 +86,7 @@ class PublicController(
             Napier.w("/credentials/status/$timePeriod returns HTTP 404")
             return@runBlocking ResponseEntity.notFound().build()
         }
-        val etag = content.encodeToByteArray().sha256().encodeBase16().uppercase()
+        val etag = content.encodeToByteArray().sha256().encodeToString(Base16()).uppercase()
         val cacheControl =
             CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration())
         // Spring (or Tomcat?) appends "-gzip" to the ETag set by us, so we'll need to check that variant too
@@ -123,7 +126,7 @@ class PublicController(
         val crl = pkiService.getCrl()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
                 .also { Napier.w("/crl/1 returns 404, not found") }
-        Napier.i("/crl/1 returns ${crl.encodeBase64()}")
+        Napier.i("/crl/1 returns ${crl.encodeToString(Base64())}")
         return ResponseEntity.ok(crl)
     }
 
@@ -149,7 +152,7 @@ class PublicController(
         val caCertificate = pkiService.getCaCertificate()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
                 .also { Napier.w("/ca/1 returns 404, not found") }
-        Napier.i("/ca/1 returns ${caCertificate.encodeBase64()}")
+        Napier.i("/ca/1 returns ${caCertificate.encodeToString(Base64())}")
         return ResponseEntity.ok(caCertificate)
     }
 

@@ -14,6 +14,8 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -38,7 +40,7 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.util.*
 import javax.imageio.ImageIO
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 /**
  * Provides endpoints in the EIDAS deployment:
@@ -155,7 +157,7 @@ class EidasIdController(
             .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
             .toUriString()
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
-        model["qrcode"] = qrCodeImage.encodeBase64()
+        model["qrcode"] = qrCodeImage.encodeToString(Base64())
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
         model["creation"] = Clock.System.now().toString()
         return ModelAndView("initialize", model)

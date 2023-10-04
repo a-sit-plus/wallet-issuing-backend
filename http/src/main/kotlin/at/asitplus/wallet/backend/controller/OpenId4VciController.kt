@@ -2,8 +2,8 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
+import at.asitplus.wallet.lib.oidc.AuthenticationRequestParameters
 import at.asitplus.wallet.lib.oidc.OpenIdConstants
-import at.asitplus.wallet.lib.oidvci.AuthorizationRequestParameters
 import at.asitplus.wallet.lib.oidvci.CredentialRequestParameters
 import at.asitplus.wallet.lib.oidvci.IssuerMetadata
 import at.asitplus.wallet.lib.oidvci.IssuerService
@@ -15,7 +15,6 @@ import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.lib.oidvci.jsonSerializer
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.springframework.context.annotation.Profile
@@ -30,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.client.HttpServerErrorException.InternalServerError
 import java.util.*
 
 /**
@@ -57,10 +57,10 @@ class OpenId4VciController(
     ): ResponseEntity<String> {
         Napier.i("/authorize called")
         Napier.v("/authorize called with $requestParams and $requestBody")
-        val params: AuthorizationRequestParameters =
+        val params: AuthenticationRequestParameters =
             if (requestBody.isNullOrEmpty()) requestParams.decodeFromUrlQuery()
             else requestBody.decodeFromPostBody()
-        val location = issuerService.authorize(params)
+        val location = issuerService.authorize(params)?: TODO("FIXME")
         Napier.d("/authorize returns $location")
         return buildOidcRedirect(location)
     }

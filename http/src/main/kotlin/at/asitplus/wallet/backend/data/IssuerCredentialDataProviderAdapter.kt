@@ -4,7 +4,9 @@ import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
 import at.asitplus.wallet.backend.service.DeviceBindingStorageService
 import at.asitplus.wallet.backend.service.jsonWebKey
+import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import at.asitplus.wallet.lib.cbor.CoseKey
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toKotlinInstant
@@ -22,8 +24,9 @@ class IssuerCredentialDataProviderAdapter(
 
     override fun getCredentialWithType(
         subjectId: String,
+        subjectPublicKey: CoseKey?,
         attributeTypes: Collection<String>
-    ): KmmResult<List<IssuerCredentialDataProvider.CredentialToBeIssued>> {
+    ): KmmResult<List<CredentialToBeIssued>> {
         val deviceBinding = getVerifiedDeviceBinding(subjectId)
         val maxExpiration = Clock.System.now() + lifetime
         val cappedExpiration = if (deviceBinding != null) {
@@ -37,16 +40,24 @@ class IssuerCredentialDataProviderAdapter(
             attributeTypes,
             deviceBinding?.bpk,
             cappedExpiration,
+            subjectPublicKey,
         )
 
         return credential.map { list ->
             list.map {
-                IssuerCredentialDataProvider.CredentialToBeIssued(
-                    it.subject,
-                    it.expiration,
-                    it.attributeType,
-                    it.attachments.map(CredentialToBeIssuedAttachment::toIssuerCredentialDataProviderFormat),
-                )
+                when (it) {
+                    is CredentialDataProvider.CredentialToBeIssued.Iso ->               CredentialToBeIssued.Iso(
+                        it.issuerSignedItems, it.subjectPublicKey, it.expiration, it.attributeType
+                    )
+
+                    is CredentialDataProvider.CredentialToBeIssued.Vc ->               CredentialToBeIssued.Vc(
+                        it.subject,
+                        it.expiration,
+                        it.attributeType,
+                        it.attachments.map(CredentialToBeIssuedAttachment::toIssuerCredentialDataProviderFormat),
+                    )
+
+                }
             }
         }
     }

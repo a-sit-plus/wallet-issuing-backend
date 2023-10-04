@@ -5,11 +5,18 @@ import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.lib.DataSourceProblem
+import at.asitplus.wallet.lib.cbor.CoseKey
+import at.asitplus.wallet.lib.agent.CredentialToBeIssued
+import at.asitplus.wallet.lib.iso.DrivingPrivilege
+import at.asitplus.wallet.lib.iso.ElementValue
+import at.asitplus.wallet.lib.iso.IsoDataModelConstants
+import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
+import kotlin.random.Random
 import kotlin.time.Duration
 
 /**
@@ -33,11 +40,12 @@ class EidasCredentialDataProvider(
         subjectId: String,
         attributeTypes: Collection<String>,
         bpk: String?,
-        maxExpiration: Instant
+        maxExpiration: Instant,
+        subjectPublicKey: CoseKey?,
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         Napier.v("getCredentialWithType for $subjectId and $attributeTypes and $bpk")
-        if (attributeTypes.contains(ConstantIndex.IdAustriaCredential.vcType)) {
             val idToken = authenticationSupplier.getCurrentUserOidcDetails()
+        if (attributeTypes.contains(ConstantIndex.IdAustriaCredential.vcType)) {
             Napier.v("getCredentialWithType user is $idToken")
             if (idToken != null) {
                 return issueFromAppOidc(subjectId, idToken, maxExpiration)
@@ -47,8 +55,48 @@ class EidasCredentialDataProvider(
             }
             return KmmResult.success(listOf())
         }
+        if (attributeTypes.contains(at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023.vcType) && subjectPublicKey != null) {
+            val drivingPrivilege = DrivingPrivilege(
+                vehicleCategoryCode = "B",
+                issueDate = LocalDate.parse("2023-01-01"),
+                expiryDate = LocalDate.parse("2033-01-31"),
+                //codes = arrayOf(DrivingPrivilegeCode(code = "B"))
+            )
+            val issuerSignedItems = listOf(
+                buildIssuerSignedItem(IsoDataModelConstants.DataElements.FAMILY_NAME, idToken?.familyName ?: "Mustermann", 0U),
+                buildIssuerSignedItem(IsoDataModelConstants.DataElements.GIVEN_NAME, idToken?.givenName ?: "Max", 1U),
+                buildIssuerSignedItem(IsoDataModelConstants.DataElements.DOCUMENT_NUMBER, "123456789", 2U),
+                buildIssuerSignedItem(IsoDataModelConstants.DataElements.ISSUE_DATE, "2023-01-01", 3U),
+                buildIssuerSignedItem(IsoDataModelConstants.DataElements.EXPIRY_DATE, "2033-01-31", 4U),
+                buildIssuerSignedItem(IsoDataModelConstants.DataElements.DRIVING_PRIVILEGES, drivingPrivilege, 5U),
+            )
+
+            return KmmResult.success(listOf(
+                CredentialDataProvider.CredentialToBeIssued.Iso(
+                    issuerSignedItems = issuerSignedItems,
+                    subjectPublicKey = subjectPublicKey,
+                    expiration = maxExpiration,
+                    attributeType = at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023.vcType,
+                )
+            ))
+        }
         return KmmResult.success(listOf())
     }
+
+    fun buildIssuerSignedItem(elementIdentifier: String, elementValue: String, digestId: UInt) = IssuerSignedItem(
+        digestId = digestId,
+        random = Random.nextBytes(16),
+        elementIdentifier = elementIdentifier,
+        elementValue = ElementValue(string = elementValue)
+    )
+
+    fun buildIssuerSignedItem(elementIdentifier: String, elementValue: DrivingPrivilege, digestId: UInt) =
+        IssuerSignedItem(
+            digestId = digestId,
+            random = Random.nextBytes(16),
+            elementIdentifier = elementIdentifier,
+            elementValue = ElementValue(drivingPrivilege = arrayOf(elementValue))
+        )
 
     private fun issueFromWebOidc(
         subjectId: String,
@@ -68,7 +116,7 @@ class EidasCredentialDataProvider(
         Napier.v("getCredentialWithType issuing $subject")
         return KmmResult.success(
             listOf(
-                CredentialDataProvider.CredentialToBeIssued(
+                CredentialDataProvider.CredentialToBeIssued.Vc(
                     subject = subject,
                     expiration = maxExpiration,
                     attributeType = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType
@@ -81,7 +129,7 @@ class EidasCredentialDataProvider(
         subjectId: String,
         idToken: OidcIdToken,
         maxExpiration: Instant
-    ): KmmResult.Success<List<CredentialDataProvider.CredentialToBeIssued>> {
+    ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
         val subject = IdAustriaCredential(
             id = subjectId,
             firstname = idToken.givenName,
@@ -91,7 +139,7 @@ class EidasCredentialDataProvider(
         Napier.v("getCredentialWithType issuing $subject")
         return KmmResult.success(
             listOf(
-                CredentialDataProvider.CredentialToBeIssued(
+                CredentialDataProvider.CredentialToBeIssued.Vc(
                     subject = subject,
                     expiration = maxExpiration,
                     attributeType = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType

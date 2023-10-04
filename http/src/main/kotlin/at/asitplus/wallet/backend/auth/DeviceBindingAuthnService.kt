@@ -7,6 +7,9 @@ import io.matthewnelson.component.base64.encodeBase64
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.factories.DefaultJWSVerifierFactory
 import io.github.aakira.napier.Napier
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.springframework.security.authentication.BadCredentialsException
 import java.security.cert.CertificateFactory
 
@@ -55,13 +58,13 @@ class SimpleDeviceBindingAuthnService(
         if (payloadJsonObject?.containsKey("challenge") != true)
             throw BadCredentialsException("challenge not found")
                 .also { Napier.w("No challenge in JWS payload") }
-        val decodedChallenge = payloadJsonObject["challenge"]?.toString()?.decodeBase64ToArray()
+        val decodedChallenge = payloadJsonObject["challenge"]?.toString()?.decodeToByteArrayOrNull(Base64())
         if (decodedChallenge == null || !deviceBindingAuthnChallengeService.verifyAndRemove(decodedChallenge))
             throw BadCredentialsException("challenge not valid")
                 .also { Napier.w("Challenge in JWS payload not valid") }
         val bpk = deviceBindingStorageService.lookupBpk(decodedCert)
         Napier.i("Translated cert into bpk")
-        Napier.v("Translated cert '${decodedCert.encodeBase64()}' into bpk '$bpk'")
+        Napier.v("Translated cert '${decodedCert.encodeToString(Base64())}' into bpk '$bpk'")
         if (bpk == null)
             return null
         return DeviceBindingAuthnResult(bpk, decodedCert)

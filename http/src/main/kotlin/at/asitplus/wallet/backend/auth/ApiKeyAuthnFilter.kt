@@ -5,7 +5,7 @@ import io.github.aakira.napier.Napier
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 /**
  * Reads an API Key from the HTTP header [X_API_KEY], creates a [ApiKeyAuthnToken].

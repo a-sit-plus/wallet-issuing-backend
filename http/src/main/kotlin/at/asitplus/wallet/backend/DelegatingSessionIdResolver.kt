@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend
 
 import org.springframework.session.web.http.HttpSessionIdResolver
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 
 /**
  * Used in EIDAS deployments to set session identifier to
@@ -13,6 +13,7 @@ class DelegatingSessionIdResolver(private vararg val resolvers: HttpSessionIdRes
     override fun resolveSessionIds(request: HttpServletRequest?): MutableList<String> {
         return resolvers.map { it.resolveSessionIds(request) }.flatten().toMutableList()
     }
+
 
     override fun setSessionId(request: HttpServletRequest?, response: HttpServletResponse?, sessionId: String?) {
         resolvers.forEach {

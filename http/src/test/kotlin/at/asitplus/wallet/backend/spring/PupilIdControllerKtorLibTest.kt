@@ -66,7 +66,7 @@ class PupilIdControllerKtorLibTest {
                 DefaultJwsService(holderCryptoService).createSignedJws(
                     header = JwsHeader(
                         algorithm = holderCryptoService.jwsAlgorithm,
-                        keyId = holderCryptoService.toJsonWebKey().keyId,
+                        keyId = holderCryptoService.toPublicKey().toJsonWebKey().keyId,
                         certificateChain = arrayOf(clientCert)
                     ),
                     payload = payload.encodeToByteArray()
@@ -92,7 +92,7 @@ class PupilIdControllerKtorLibTest {
                 DefaultJwsService(holderCryptoService).createSignedJws(
                     header = JwsHeader(
                         algorithm = holderCryptoService.jwsAlgorithm,
-                        keyId = holderCryptoService.toJsonWebKey().keyId,
+                        keyId = holderCryptoService.toPublicKey().toJsonWebKey().keyId,
                         certificateChain = arrayOf(clientCert)
                     ),
                     payload = payload.encodeToByteArray().reversedArray()

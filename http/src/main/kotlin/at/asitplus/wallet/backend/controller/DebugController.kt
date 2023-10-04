@@ -12,6 +12,8 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -53,7 +55,7 @@ class DebugController(
             .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
             .toUriString()
         val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
-        model["qrcode"] = qrCodeImage.encodeBase64()
+        model["qrcode"] = qrCodeImage.encodeToString(Base64())
         model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
         model["creation"] = Clock.System.now().toString()
         return ModelAndView("initialize", model)

@@ -67,7 +67,7 @@ class EcoConnectionTest {
     @Test
     fun credentialDataProvider() {
         val subjectId = client.keyId
-        val credential = issuerCredentialDataProvider.getCredentialWithType(subjectId, listOf(ConstantIndex.PupilId.vcType))
+        val credential = issuerCredentialDataProvider.getCredentialWithType(subjectId, null, listOf(ConstantIndex.PupilId.vcType))
 
         credential.shouldNotBeNull()
         println(credential)

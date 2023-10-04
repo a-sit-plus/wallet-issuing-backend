@@ -34,12 +34,12 @@ class InMemoryPkiService(
 
 
     private val crlEntryList = mutableListOf<CrlEntry>()
-    private val issuer = cryptoService.certificate?.let {
+    private val issuer = cryptoService.x509Certificate?.let {
         X500Name.getInstance(BCStyle.INSTANCE, it.subjectX500Principal.encoded)
     } ?: X500Name(issuerName)
 
     private val caCertificate =
-        cryptoService.certificate ?: JcaX509CertificateConverter().getCertificate(
+        cryptoService.x509Certificate ?: JcaX509CertificateConverter().getCertificate(
             signCertificate(
                 issuer,
                 cryptoService.subjectPublicKeyInfo

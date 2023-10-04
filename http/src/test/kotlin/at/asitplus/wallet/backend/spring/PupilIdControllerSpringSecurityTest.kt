@@ -150,7 +150,7 @@ class PupilIdControllerSpringSecurityTest {
             header(X_AUTH_TOKEN, xAuthToken)
         }.andExpect {
             status { isOk() }
-            header { doesNotExist(X_AUTH_TOKEN) }
+            header { string(X_AUTH_TOKEN, "") }
         }.andReturn()
 
         mockMvc.post("/pupilid/issue") {

@@ -7,10 +7,12 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.github.aakira.napier.Napier
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 /**
  * Delivers an authn challenge to be used by clients for signing
@@ -44,7 +46,7 @@ class AuthnController(
         request: HttpServletRequest,
     ): ResponseEntity<String> {
         Napier.i("/authn/devicebinding/challenge called")
-        val challenge = deviceBindingAuthnChallengeService.generate().encodeBase64()
+        val challenge = deviceBindingAuthnChallengeService.generate().encodeToString(Base64())
         return ResponseEntity.ok(challenge)
             .also { Napier.i("/authn/devicebinding/challenge returns '$challenge'") } // This has no relation to user, possible bug?
     }

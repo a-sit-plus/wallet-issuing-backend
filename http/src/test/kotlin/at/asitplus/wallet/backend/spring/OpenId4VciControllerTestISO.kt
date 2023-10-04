@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
-
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
@@ -7,7 +5,6 @@ import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
-import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.lib.agent.DefaultCryptoService
 import at.asitplus.wallet.lib.oidc.OpenIdConstants
 import at.asitplus.wallet.lib.oidvci.IssuerMetadata
@@ -24,7 +21,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.string.shouldStartWith
 import io.ktor.http.Url
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -55,7 +51,7 @@ import kotlin.random.Random
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.SYSTEM_OUT)
 @ActiveProfiles(ProfileConstants.EIDASID)
-class OpenId4VciControllerTest {
+class OpenId4VciControllerTestISO {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -77,7 +73,7 @@ class OpenId4VciControllerTest {
         bindingClient = Client()
         clientRedirectUrl = "https://localhost/${UUID.randomUUID()}"
         walletService = WalletService(
-            credentialScheme = ConstantIndex.IdAustriaCredential,
+            credentialScheme = at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023,
             clientId = "https://wallet.a-sit.at/mobile",
             redirectUrl = clientRedirectUrl,
             cryptoService = DefaultCryptoService(bindingClient.keyPair)

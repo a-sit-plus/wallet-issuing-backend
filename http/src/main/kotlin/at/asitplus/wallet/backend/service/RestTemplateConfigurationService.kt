@@ -1,16 +1,17 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
 import at.asitplus.wallet.backend.config.*
-import io.matthewnelson.component.base64.encodeBase64
 import io.github.aakira.napier.Napier
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
-import org.apache.http.impl.client.CloseableHttpClient
-import org.apache.http.impl.client.HttpClients
-import org.apache.http.message.BasicHeader
-import org.apache.http.ssl.SSLContextBuilder
-import org.apache.http.ssl.SSLContexts
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
+import org.apache.hc.client5.http.impl.classic.HttpClients
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory
+import org.apache.hc.core5.http.message.BasicHeader
+import org.apache.hc.core5.ssl.SSLContextBuilder
+import org.apache.hc.core5.ssl.SSLContexts
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpMethod
 import org.springframework.http.client.ClientHttpResponse
@@ -19,6 +20,7 @@ import org.springframework.web.client.DefaultResponseErrorHandler
 import org.springframework.web.client.RestTemplate
 import java.net.URI
 import java.security.KeyStore
+import java.util.function.Supplier
 
 
 /**
@@ -40,7 +42,7 @@ class RestTemplateConfigurationService constructor(
         }
         val requestFactory = HttpComponentsClientHttpRequestFactory(httpClient)
         restTemplate = restTemplateBuilder
-            .requestFactory { requestFactory }
+            .requestFactory(Supplier { requestFactory })
             .errorHandler(LoggingErrorHandler())
             .build()
     }
@@ -70,8 +72,10 @@ class RestTemplateConfigurationService constructor(
             Napier.i("Setting api key 'MASKED' for ${config.url}")
             httpClientBuilder.setDefaultHeaders(listOf(BasicHeader(X_API_KEY, config.apiKey)))
         }
+        val connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
         val sslContext = sslContextBuilder.build()
-        return httpClientBuilder.setSSLSocketFactory(SSLConnectionSocketFactory(sslContext)).build()
+        connectionManager.setSSLSocketFactory(SSLConnectionSocketFactory(sslContext))
+        return httpClientBuilder.setConnectionManager(connectionManager.build()).build()
     }
 
     private fun loadKeyStore(sslContextBuilder: SSLContextBuilder, config: KeyStoreConfiguration, url: URI?) {
@@ -98,7 +102,7 @@ class RestTemplateConfigurationService constructor(
     ): CloseableHttpClient {
         // TODO: This is just the http client, all credentials are not related to people... right?
         Napier.i("Loading HTTP basic authn with '${config.username}' for $url")
-        val auth = "${config.username}:${config.password}".encodeToByteArray().encodeBase64()
+        val auth = "${config.username}:${config.password}".encodeToByteArray().encodeToString(Base64())
         val headers = listOf(BasicHeader("Authorization", "Basic $auth"))
         return HttpClients.custom().setDefaultHeaders(headers).build()
     }

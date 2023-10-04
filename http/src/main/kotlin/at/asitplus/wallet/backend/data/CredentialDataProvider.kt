@@ -2,7 +2,9 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.cbor.CoseKey
 import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import kotlinx.datetime.Instant
 
 interface CredentialDataProvider {
@@ -11,18 +13,27 @@ interface CredentialDataProvider {
         subjectId: String,
         attributeTypes: Collection<String>,
         bpk: String?,
-        maxExpiration: Instant
+        maxExpiration: Instant,
+        subjectPublicKey: CoseKey?,
     ): KmmResult<List<CredentialToBeIssued>>
 
-    data class CredentialToBeIssued(
-        val subject: CredentialSubject,
-        val expiration: Instant,
-        val attributeType: String,
-        val attachments: List<CredentialToBeIssuedAttachment> = listOf(),
-    ) {
-        fun toLogString(): String {
-            return "CredentialToBeIssued(subject=$subject, expiration=$expiration, attributeType='$attributeType', attachments=${attachments.map { it.toLogString() }})"
+    sealed class CredentialToBeIssued {
+        data class Vc(
+            val subject: CredentialSubject,
+            val expiration: Instant,
+            val attributeType: String,
+            val attachments: List<CredentialToBeIssuedAttachment> = listOf(),
+        ): CredentialToBeIssued() {
+            fun toLogString(): String {
+                return "CredentialToBeIssued.Vc(subject=$subject, expiration=$expiration, attributeType='$attributeType', attachments=${attachments.map { it.toLogString() }})"
+            }
         }
+        data class Iso(
+            val issuerSignedItems: List<IssuerSignedItem>,
+            val subjectPublicKey: CoseKey,
+            val expiration: Instant,
+            val attributeType: String,
+            ) : CredentialToBeIssued()
     }
 
     data class CredentialToBeIssuedAttachment(

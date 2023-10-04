@@ -5,7 +5,7 @@ import io.github.aakira.napier.Napier
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 /**
  * Reads the nonce from the HTTP header, creates a [ExtNonceAuthnToken].

@@ -15,6 +15,9 @@ import io.ktor.http.*
 import io.ktor.util.date.*
 import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -36,7 +39,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import java.security.Principal
-import javax.servlet.http.HttpSession
+import jakarta.servlet.http.HttpSession
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -145,7 +148,7 @@ class BindingController(
             principal.name
         ) ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST)
             .also { Napier.w("/binding/create returns HTTP 400") }
-        session.setAttribute(SESSION_ATTR_CERTIFICATE, response.certificate.encodeBase64())
+        session.setAttribute(SESSION_ATTR_CERTIFICATE, response.certificate.encodeToString(Base64()))
         return ResponseEntity.ok(BindingCsrResponseJ(response.certificate, response.attestedPublicKey))
             .also {
                 Napier.i("/binding/create returns HTTP 200")
@@ -190,7 +193,8 @@ class BindingController(
         // and do not log out the client (previously, "request.logout()" has been called here)
         if (principal is ExtNonceAuthnToken) {
             Napier.d("Setting current authentication to DeviceBindingAuthnToken")
-            val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
+            val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString()
+                .decodeToByteArrayOrNull(Base64())!!
             extNonceAuthnService.invalidateNonce(principal.credentials.toString())
             SecurityContextHolder.getContext().authentication =
                 DeviceBindingAuthnToken(principal.principal.toString(), certificate)
@@ -198,7 +202,8 @@ class BindingController(
         if (principal is OAuth2AuthenticationToken) {
             val oidcUser = principal.principal as OidcUser
             Napier.d("Setting current authentication to DeviceBindingAuthnToken")
-            val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString().decodeBase64ToArray()!!
+            val certificate = session.getAttribute(SESSION_ATTR_CERTIFICATE).toString()
+                .decodeToByteArrayOrNull(Base64())!!
             extNonceAuthnService.invalidateNonce(principal.credentials.toString())
             SecurityContextHolder.getContext().authentication =
                 DeviceBindingAuthnToken(oidcUser.subject, certificate, oidcUser.idToken)

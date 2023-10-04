@@ -12,6 +12,7 @@ import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.util.Base64
 import io.matthewnelson.component.base64.encodeBase64
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -85,7 +86,7 @@ class Client {
     fun answerBindingChallenge(challenge: ByteArray, certificate: ByteArray): String = signBindingChallenge(
         JWSObject(
             JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(certificate))).build(),
-            Payload(mapOf("challenge" to challenge.encodeBase64()))
+            Payload(mapOf("challenge" to challenge.encodeToString(io.matthewnelson.encoding.base64.Base64())))
         )
     )
 
