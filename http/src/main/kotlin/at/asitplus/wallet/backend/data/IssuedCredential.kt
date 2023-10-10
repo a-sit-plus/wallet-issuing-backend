@@ -1,13 +1,11 @@
 package at.asitplus.wallet.backend.data
 
-import org.hibernate.annotations.CreationTimestamp
-import java.time.Instant
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
+import org.hibernate.annotations.CreationTimestamp
+import java.time.Instant
 
 @Entity
 class IssuedCredential() {
@@ -17,7 +15,6 @@ class IssuedCredential() {
         subjectId: String,
         validUntil: Instant,
         timePeriod: Int,
-        deviceBinding: DeviceBinding,
         attributeName: String,
         revocationListIndex: Long,
     ) : this() {
@@ -26,7 +23,6 @@ class IssuedCredential() {
         this.attributeName = attributeName
         this.validUntil = validUntil
         this.timePeriod = timePeriod
-        this.deviceBinding = deviceBinding
         this.revocationListIndex = revocationListIndex
     }
 
@@ -56,10 +52,6 @@ class IssuedCredential() {
     @Column
     var revoked: Boolean = false
 
-    @ManyToOne
-    @JoinColumn(name = "device_binding_id", referencedColumnName = "id")
-    lateinit var deviceBinding: DeviceBinding
-
     @Column
     var revocationListIndex: Long = 0L
 
@@ -71,7 +63,6 @@ class IssuedCredential() {
                 "attributeName='$attributeName', " +
                 "validUntil=$validUntil, " +
                 "timePeriod=$timePeriod, " +
-                "deviceBinding=${deviceBinding.id}, " +
                 "revocationListIndex=$revocationListIndex)"
     }
 }

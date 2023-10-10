@@ -1,7 +1,5 @@
 package at.asitplus.wallet.backend
 
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.service.fromJcaKey
 import at.asitplus.wallet.lib.jws.EcCurve
 import at.asitplus.wallet.lib.jws.JsonWebKey
@@ -11,7 +9,6 @@ import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import com.nimbusds.jose.crypto.ECDSASigner
 import com.nimbusds.jose.util.Base64
-import io.matthewnelson.component.base64.encodeBase64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
@@ -61,18 +58,6 @@ class Client {
             issuer,
             SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
         ).build(contentSigner)!!
-    }
-
-    fun storeDeviceBinding(bpk: String, deviceBindingRepository: DeviceBindingRepository): DeviceBinding {
-        return DeviceBinding(
-            bpk,
-            selfSignedCert.encoded,
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            selfSignedCert.notAfter.toInstant()
-        ).also {
-            deviceBindingRepository.save(it)
-        }
     }
 
     fun generateCsr(subject: String): ByteArray {

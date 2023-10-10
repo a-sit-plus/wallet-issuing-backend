@@ -6,11 +6,7 @@ import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.data.CredentialSubject
-import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
-import io.matthewnelson.component.base64.encodeBase64
-import io.matthewnelson.encoding.base64.Base64
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import org.springframework.context.ApplicationEvent
@@ -19,17 +15,6 @@ import java.lang.Long.max
 
 
 interface RevocationService {
-
-    /**
-     * Revokes all credentials for one pupil, specified by their [bpk].
-     */
-    fun revokeCredentialsByBpk(bpk: String): Int
-
-    /**
-     * Revokes all credentials for one pupil, specified by their [bpk],
-     * or specified by their [bpk] and [deviceId].
-     */
-    fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Int
 
     /**
      * Revokes one credential, specified by its [vcId] (which is a unique identifier
@@ -67,13 +52,6 @@ interface RevocationService {
     fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long>
 
     /**
-     * Revoke one or more device bindings for a pupil, either specified by their [bpk]
-     * or specified by their [bpk] and [deviceId].
-     * This will also revoke all issued credentials for that binding.
-     */
-    fun revokeBinding(bpk: String, deviceId: String?): Int
-
-    /**
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
      */
     fun deleteExpiredCredentialsBefore(cutoff: Instant): Int
@@ -93,8 +71,6 @@ class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(sourc
 class DefaultRevocationService(
     private val credentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
-    private val deviceBindingStorageService: DeviceBindingStorageService,
-    private val oneCredentialPerDeviceBinding: Boolean,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) : RevocationService {
 
@@ -126,17 +102,6 @@ class DefaultRevocationService(
                         Napier.e("Tried to store a new credential for existing vcId")
                         Napier.v("vcId: '$vcId'")
                     }
-                val deviceBinding = deviceBindingStorageService.getDeviceBindingForCurrentUser()
-                    ?: return@runCatching null.also {
-                        Napier.e("Got no authenticated user when trying to store vcId")
-                        Napier.v("vcId: '$vcId'")
-                    }
-                if (oneCredentialPerDeviceBinding) {
-                    val revokedCreds = revokeAllCredentials(deviceBinding.issuedCredentialList)
-                    if (revokedCreds > 0)
-                        Napier.i("Revoked $revokedCreds already existing credentials")
-                    Napier.v("device binding certificate: '${deviceBinding.certificate.encodeToString(Base64())}', bpk: '${deviceBinding.bpk}'")
-                }
                 val revocationListIndex = max(
                     (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
                     revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
@@ -147,7 +112,6 @@ class DefaultRevocationService(
                     credentialSubject.id,
                     expirationDate.toJavaInstant(),
                     timePeriod,
-                    deviceBinding,
                     attributeName,
                     revocationListIndex
                 )
@@ -166,36 +130,6 @@ class DefaultRevocationService(
             credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) ?: return 0
         return revokeAllCredentials(listOf(credential))
     }
-
-    /**
-     * Revokes all credentials for one pupil, specified by their [bpk].
-     */
-    override fun revokeCredentialsByBpk(bpk: String): Int {
-        val credentials = credentialRepo.findByValidUntilAfterAndDeviceBinding_Bpk(java.time.Instant.now(), bpk)
-        return revokeAllCredentials(credentials)
-    }
-
-    /**
-     * Revokes all credentials for one pupil, specified by their [bpk],
-     * or specified by their [bpk] and [deviceId].
-     */
-    override fun revokeCredentialsByBpkAndDeviceId(bpk: String, deviceId: String?): Int {
-        if (deviceId == null)
-            return revokeCredentialsByBpk(bpk)
-        val credentials =
-            credentialRepo.findByValidUntilAfterAndDeviceBinding_BpkAndDeviceBinding_DeviceId(
-                java.time.Instant.now(), bpk, deviceId
-            )
-        return revokeAllCredentials(credentials)
-    }
-
-    /**
-     * Revoke one or more device bindings for a pupil, either specified by their [bpk]
-     * or specified by their [bpk] and [deviceId].
-     * This will also revoke all issued credentials for that binding.
-     */
-    override fun revokeBinding(bpk: String, deviceId: String?): Int =
-        deviceBindingStorageService.revoke(bpk, deviceId).map { it.value.count() }.sum()
 
     private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>): Int {
         synchronized(CredentialRepositoriesLock) {
@@ -229,7 +163,7 @@ class DefaultRevocationService(
         val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             Napier.i("Deleting credential")
-            Napier.v("vcId: ${it.vcId}, subjectId: ${it.subjectId}, bpk: ${it.deviceBinding.bpk}")
+            Napier.v("vcId: ${it.vcId}, subjectId: ${it.subjectId}")
             credentialRepo.delete(it)
         }
         return list.size

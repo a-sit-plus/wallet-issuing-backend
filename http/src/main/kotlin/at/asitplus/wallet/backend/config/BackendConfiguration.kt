@@ -5,38 +5,52 @@ import at.asitplus.attestation.DefaultAttestationService
 import at.asitplus.attestation.NoopAttestationService
 import at.asitplus.attestation.android.AndroidAttestationConfiguration
 import at.asitplus.attestation.android.PatchLevel
-import at.asitplus.wallet.backend.*
+import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.auth.*
-import at.asitplus.wallet.backend.data.*
-import at.asitplus.wallet.backend.pki.*
-import at.asitplus.wallet.backend.service.*
-import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.aries.IssueCredentialMessenger
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
+import at.asitplus.wallet.backend.data.CredentialDataProvider
+import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
+import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
+import at.asitplus.wallet.backend.data.RandomCredentialDataProvider
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
+import at.asitplus.wallet.backend.pki.HsmFacadeAdapter
+import at.asitplus.wallet.backend.pki.KeyFileAdapter
+import at.asitplus.wallet.backend.pki.KeyStoreAdapter
+import at.asitplus.wallet.backend.pki.RandomKeyAdapter
+import at.asitplus.wallet.backend.pki.SecurityProviderBean
+import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
+import at.asitplus.wallet.backend.service.DefaultRevocationService
+import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.DefaultVerifierCryptoService
+import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
+import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.agent.IssuerAgent
+import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.aries.MessageWrapper
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oidvci.IssuerService
-import at.asitplus.wallet.pupilid.ConstantIndex
-import at.asitplus.wallet.pupilid.Initializer
 import at.asitplus.wallet.pupilid.SchoolyearBasedTimePeriodProvider
 import io.github.aakira.napier.Napier
-import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import jakarta.annotation.PostConstruct
 import kotlinx.datetime.Clock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 import org.springframework.core.io.ResourceLoader
 import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.scheduling.annotation.EnableScheduling
-import jakarta.annotation.PostConstruct
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 @Configuration
@@ -84,14 +98,7 @@ class BackendConfiguration {
     @Autowired
     private lateinit var resourcePatternResolver: ResourcePatternResolver
 
-    @Autowired
-    private lateinit var restTemplateBuilder: RestTemplateBuilder
-
-    @Autowired
-    private lateinit var issuedCertificateRepository: IssuedCertificateRepository
-
     init {
-        Initializer.initWithVcLib()
         at.asitplus.wallet.idaustria.Initializer.initWithVcLib()
         Napier.base(AntilogSlf4jAdapter())
     }
@@ -101,11 +108,8 @@ class BackendConfiguration {
         Napier.i("******** Current Configuration ********")
 
         Napier.i(
-            "\n" +
-                    configurationProperties.toString()
-                        .replace(Regex("password=.*?,"), "password=***,")
-                        .replace(Regex("apiKey=.*?,"), "apiKey=***,")
-                        .replace(Regex("apiKeys=\\[.*?]"), "apiKeys=[***]").toIndentString()
+            "\n" + configurationProperties.toString()
+                .replace(Regex("password=.*?,"), "password=***,").toIndentString()
         )
         Napier.i("***************************************")
     }
@@ -113,97 +117,6 @@ class BackendConfiguration {
     @Bean
     fun securityProviderBean(): SecurityProviderBean =
         SecurityProviderBean(configurationProperties, resourceLoader)
-
-    @Bean
-    fun extNonceAuthnService(): ExtNonceAuthnService =
-        when (configurationProperties.authn.deviceBinding.type) {
-            DeviceBindingNonceType.INTERNAL -> InternalExtNonceAuthnService(
-                SimpleChallengeService(
-                    lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds,
-                )
-            )
-        }
-
-    @Bean
-    fun bindingService(
-        challengeService: ChallengeService,
-        pkiService: PkiService,
-        issuerCryptoService: CryptoServiceAdapter,
-        attestationService: AttestationService,
-        deviceBindingStorageService: DeviceBindingStorageService
-    ): BindingService =
-        DefaultBindingService(
-            challengeService,
-            pkiService,
-            issuerCryptoService,
-            attestationService,
-            deviceBindingStorageService
-        )
-
-    @Bean
-    fun apiKeyAuthnService(): ApiKeyAuthnService =
-        SimpleApiKeyAuthnService(configurationProperties.authn)
-
-    @Bean
-    fun pkiService(
-        securityProviderBean: SecurityProviderBean
-    ): PkiService = when (configurationProperties.pki.type) {
-        PkiType.INTERNAL, PkiType.PERSISTENT -> {
-            val keyAdapter = when (configurationProperties.pki.internal.key.type) {
-                KeyType.FILE -> KeyFileAdapter(
-                    configurationProperties.pki.internal.key.file!!,
-                    resourceLoader,
-                    securityProviderBean
-                )
-
-                KeyType.KEYSTORE -> KeyStoreAdapter(
-                    configurationProperties.pki.internal.key.keystore!!,
-                    securityProviderBean
-                )
-
-                KeyType.HSMFACADE -> HsmFacadeAdapter(
-                    configurationProperties.pki.internal.key.hsmfacade!!,
-                    securityProviderBean
-                )
-
-                KeyType.MEMORY -> RandomKeyAdapter()
-                KeyType.REMOTE -> RemoteKeyAdapter(
-                    configurationProperties.pki.internal.key.remote!!,
-                    resourceLoader,
-                    securityProviderBean
-                )
-            }
-            when (configurationProperties.pki.type) {
-                PkiType.INTERNAL -> InMemoryPkiService(
-                    configurationProperties.pki.certValidityDays.days,
-                    configurationProperties.pki.internal.issuerName,
-                    DefaultCryptoServiceAdapter(keyAdapter),
-                )
-
-                PkiType.PERSISTENT -> PersistentPkiService(
-                    configurationProperties.pki.certValidityDays.days,
-                    issuedCertificateRepository,
-                    DefaultCryptoServiceAdapter(keyAdapter),
-                )
-
-                else -> {
-                    throw RuntimeException("WUT?!")
-                }
-            }
-        }
-
-        PkiType.AERA -> {
-            val restTemplate = RestTemplateConfigurationService(
-                configurationProperties.pki.aera,
-                restTemplateBuilder
-            ).restTemplate
-            AeraPkiService(
-                configurationProperties.pki.certValidityDays.days,
-                configurationProperties.pki.aera.url!!.toString(),
-                restTemplate,
-            )
-        }
-    }
 
     @Bean
     fun attestationService(
@@ -260,56 +173,18 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
 
 
     @Bean
-    fun challengeService(): ChallengeService =
-        SimpleChallengeService(lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds)
-
-    @Bean
     fun authenticationSupplier(): AuthenticationSupplier = SpringSecurityAuthenticationSupplier()
-
-    @Bean
-    fun deviceBindingStorageService(
-        deviceBindingRepository: DeviceBindingRepository,
-        revokedCredentialRepo: RevokedCredentialRepository,
-        authenticationSupplier: AuthenticationSupplier,
-        applicationEventPublisher: ApplicationEventPublisher,
-    ): DeviceBindingStorageService =
-        DatabaseDeviceBindingStorageService(
-            deviceBindingRepository,
-            revokedCredentialRepo,
-            authenticationSupplier,
-            applicationEventPublisher,
-        )
-
-    @Bean
-    fun issueCredentialAdapter(
-        issueCredentialMessenger: IssueCredentialMessenger
-    ): IssueCredentialAdapter =
-        DefaultIssueCredentialAdapter(issueCredentialMessenger)
 
     @Bean
     fun revocationService(
         credentialRepo: IssuedCredentialRepository,
         revokedCredentialRepo: RevokedCredentialRepository,
-        deviceBindingStorageService: DeviceBindingStorageService,
-        pkiService: PkiService,
         applicationEventPublisher: ApplicationEventPublisher,
     ): RevocationService = DefaultRevocationService(
         credentialRepo,
         revokedCredentialRepo,
-        deviceBindingStorageService,
-        configurationProperties.credentials.oneCredentialPerDeviceBinding,
         applicationEventPublisher,
     )
-
-    @Bean
-    fun deviceBindingAuthnService(
-        deviceBindingStorageService: DeviceBindingStorageService,
-        deviceBindingAuthnChallengeService: ChallengeService,
-    ): DeviceBindingAuthnService =
-        SimpleDeviceBindingAuthnService(
-            deviceBindingStorageService,
-            deviceBindingAuthnChallengeService
-        )
 
     @Bean
     fun issuerCredentialStoreAdapter(
@@ -317,14 +192,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
-    fun pictureService(): PictureService = configurationProperties.credentials.pictures.let {
-        WebpPictureService(it.compress, it.quality, it.scale, it.height, it.width, it.pathLibJni, it.pathLibWebp, it.pathLibSharp)
-    }
-
-    @Bean
     fun dataProvider(
-        deviceBindingStorageService: DeviceBindingStorageService,
-        pictureService: PictureService,
         authenticationSupplier: AuthenticationSupplier,
     ): CredentialDataProvider =
         when (configurationProperties.attributeSource.type) {
@@ -336,8 +204,9 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
                     .filter { it.filename != null }
                     .map { it.filename!! to it.inputStream }
                     .map { it.first to it.second.readAllBytes() }
-                RandomCredentialDataProvider(mapOfPhotos.toMap(), pictureService)
+                RandomCredentialDataProvider(mapOfPhotos.toMap())
             }
+
             AttributeSourceType.EIDAS -> {
                 EidasCredentialDataProvider(600.seconds, authenticationSupplier)
             }
@@ -345,12 +214,10 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
 
     @Bean
     fun issuerCredentialDataProvider(
-        credentialDataProvider: CredentialDataProvider,
-        deviceBindingStorageService: DeviceBindingStorageService
+        credentialDataProvider: CredentialDataProvider
     ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
         lifetime = configurationProperties.credentials.lifeTime,
         credentialDataProvider = credentialDataProvider,
-        deviceBindingStorageService = deviceBindingStorageService,
     )
 
     @Bean
@@ -375,11 +242,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
             )
 
             KeyType.MEMORY -> RandomKeyAdapter()
-            KeyType.REMOTE -> RemoteKeyAdapter(
-                configurationProperties.issuerKey.remote!!,
-                resourceLoader,
-                securityProviderBean
-            )
         }
     )
 
@@ -405,8 +267,7 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     )
 
     @Bean
-    fun timePeriodProvider(): TimePeriodProvider =
-        SchoolyearBasedTimePeriodProvider(configurationProperties.schoolYearStart)
+    fun timePeriodProvider(): TimePeriodProvider = FixedTimePeriodProvider
 
     @Bean
     fun issuerMessageWrapper(
@@ -417,37 +278,26 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
     )
 
     @Bean
-    fun issueCredentialMessengerEidasId(
-        issuer: Issuer,
-        issuerCryptoService: CryptoService,
-        issuerMessageWrapper: MessageWrapper
-    ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
-        issuer = issuer,
-        messageWrapper = issuerMessageWrapper,
-        serviceEndpoint = appendPath(configurationProperties.publicContext, "eidasid", "issue"),
-        credentialScheme = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential,
-    )
-
-    @Bean
     fun issuerService(
-        issuer: Issuer,
-        issuerCryptoService: CryptoService,
-        issuerMessageWrapper: MessageWrapper
+        issuer: Issuer
     ): IssuerService = IssuerService(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = listOf(at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential, at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023),
+        credentialSchemes = listOf(
+            at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential,
+            at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023
+        ),
         authorizationServer = "https://eid2.oesterreich.gv.at/",
     )
 
     private fun androidAttestationConfiguration(): AndroidAttestationConfiguration {
         val aCfg = configurationProperties.authn.deviceBinding.attestation.android
-            ?: throw RuntimeException("No Android attestation configured")
+            ?: throw IllegalArgumentException("No Android attestation configured")
         return AndroidAttestationConfiguration(
             packageName = aCfg.packageName,
             signatureDigests = aCfg.signatureDigests.map {
                 it.decodeToByteArrayOrNull(Base16())
-                    ?: throw RuntimeException("Could not hex decode Android attestation signature digest $it")
+                    ?: throw IllegalArgumentException("Could not hex decode Android attestation signature digest $it")
             },
             appVersion = aCfg.applicationVersion,
             androidVersion = aCfg.androidVersion,

@@ -12,7 +12,6 @@ interface CredentialDataProvider {
     fun getCredentialWithType(
         subjectId: String,
         attributeTypes: Collection<String>,
-        bpk: String?,
         maxExpiration: Instant,
         subjectPublicKey: CoseKey?,
     ): KmmResult<List<CredentialToBeIssued>>
@@ -23,17 +22,14 @@ interface CredentialDataProvider {
             val expiration: Instant,
             val attributeType: String,
             val attachments: List<CredentialToBeIssuedAttachment> = listOf(),
-        ): CredentialToBeIssued() {
-            fun toLogString(): String {
-                return "CredentialToBeIssued.Vc(subject=$subject, expiration=$expiration, attributeType='$attributeType', attachments=${attachments.map { it.toLogString() }})"
-            }
-        }
+        ) : CredentialToBeIssued()
+
         data class Iso(
             val issuerSignedItems: List<IssuerSignedItem>,
             val subjectPublicKey: CoseKey,
             val expiration: Instant,
             val attributeType: String,
-            ) : CredentialToBeIssued()
+        ) : CredentialToBeIssued()
     }
 
     data class CredentialToBeIssuedAttachment(
@@ -61,10 +57,6 @@ interface CredentialDataProvider {
             result = 31 * result + mediaType.hashCode()
             result = 31 * result + data.contentHashCode()
             return result
-        }
-
-        fun toLogString(): String {
-            return "CredentialToBeIssuedAttachment(name='$name', mediaType='$mediaType', data.size=${data.size})"
         }
 
 

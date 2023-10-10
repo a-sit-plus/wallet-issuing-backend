@@ -1,77 +1,26 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.data.CredentialDataProvider
-import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
-import io.matthewnelson.component.base64.encodeBase64
-import io.matthewnelson.encoding.base64.Base64
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.ModelAndView
-import org.springframework.web.util.UriComponentsBuilder
-import java.awt.image.BufferedImage
-import java.io.ByteArrayOutputStream
-import java.util.Collections
-import javax.imageio.ImageIO
 
 @Controller
 class DebugController(
-    private val extNonceAuthnService: ExtNonceAuthnService,
     private val configurationProperties: BackendConfigurationProperties,
     private val revocationService: RevocationService,
     private val timePeriodProvider: TimePeriodProvider,
-    private val credentialDataProvider: CredentialDataProvider,
 ) {
 
     /**
-     * Displays a QR code to scan with the Wallet App to get a nonce for authn during the device binding process
-     */
-    @GetMapping("/debug/initialize")
-    fun initialize(model: ModelMap): ModelAndView {
-        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        Napier.i("/debug/initialize called")
-        val nonceBpk = extNonceAuthnService.generateNonce()
-        if (nonceBpk == null) {
-            model["error"] = "Internal error: Could not generate nonce"
-            return ModelAndView("initialize", model)
-        }
-        val content = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
-            .pathSegment("help", "wallet")
-            .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
-            .toUriString()
-        val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
-        model["qrcode"] = qrCodeImage.encodeToString(Base64())
-        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["creation"] = Clock.System.now().toString()
-        return ModelAndView("initialize", model)
-    }
-
-    @GetMapping("/debug/nonce")
-    fun getNonce(): ResponseEntity<String> {
-        if (!configurationProperties.debug.enabled) return ResponseEntity.notFound().build()
-        val nonce = extNonceAuthnService.generateNonce()?.nonce
-        Napier.i("/debug/nonce called")
-        Napier.v("/debug/nonce returns '$nonce'")
-        return ResponseEntity.ok(nonce)
-    }
-
-    /**
-     * Display help page if user scans QR code from [initialize]
+     * Display help page if user scans QR code
      */
     @GetMapping("/help/wallet")
     fun helpWallet(model: ModelMap): ModelAndView {
@@ -97,42 +46,6 @@ class DebugController(
             "debug", "credential", "qrcode"
         )
         return ModelAndView("credential_create", model)
-    }
-
-    @RequestMapping("/debug/credential/qrcode", method = [RequestMethod.POST, RequestMethod.GET])
-    fun createCredentialQrcode(
-        model: ModelMap,
-        @RequestParam("firstname") firstname: String,
-        @RequestParam("lastname") lastname: String,
-        @RequestParam("dateofbirth") dateOfBirth: String
-    ): ModelAndView {
-        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        Napier.i("/debug/credential/qrcode called")
-        Napier.v("/debug/credential/qrcode called with '$firstname', '$lastname', '$dateOfBirth'")
-        val nonceBpk = extNonceAuthnService.generateNonce()
-        if (nonceBpk == null) {
-            model["error"] = "Internal error: Could not generate nonce"
-            return ModelAndView("initialize", model)
-        }
-        if (credentialDataProvider !is EidasCredentialDataProvider) {
-            model["error"] = "Internal error: Configuration mismatch"
-            return ModelAndView("initialize", model)
-        }
-        val subject = nonceBpk.bpk
-        val eidasClaim = EidasCredentialDataProvider.EidasClaim(subject, dateOfBirth, firstname, lastname)
-        Napier.i("Storing EIDAS claims")
-        Napier.v("Storing EIDAS claims for '${nonceBpk.bpk}': $eidasClaim")
-        credentialDataProvider.storeClaims(eidasClaim, nonceBpk.bpk)
-
-        val content = UriComponentsBuilder.fromHttpUrl(configurationProperties.publicContext)
-            .pathSegment("help", "wallet")
-            .fragment("nonce=${nonceBpk.nonce}&server=${configurationProperties.publicContext}")
-            .toUriString()
-        val qrCodeImage = createQrCodeImage(content, configurationProperties.debug.qrCodeSize)
-        model["qrcode"] = qrCodeImage.encodeBase64()
-        model["qrcodeWidth"] = configurationProperties.debug.qrCodeSize
-        model["creation"] = Clock.System.now().toString()
-        return ModelAndView("initialize", model)
     }
 
     @GetMapping("/debug/credential/list")
@@ -161,8 +74,6 @@ class DebugController(
                 issuanceDate = it.createdOn.toString(),
                 attributeName = it.attributeName,
                 subjectId = it.subjectId,
-                deviceName = it.deviceBinding.deviceName,
-                bpk = it.deviceBinding.bpk,
             )
         }
         model["vcList"] = vcList
@@ -173,19 +84,6 @@ class DebugController(
         return ModelAndView("credential_list", model)
     }
 
-    private fun createQrCodeImage(content: String, size: Int): ByteArray {
-        val options = Collections.singletonMap(EncodeHintType.MARGIN, 0)
-        val bits = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, size, size, options)
-        val image = BufferedImage(bits.width, bits.height, BufferedImage.TYPE_INT_RGB)
-        for (y in 0 until bits.height) {
-            for (x in 0 until bits.width) {
-                image.setRGB(x, y, if (bits[x, y]) 0 else 0xffffff)
-            }
-        }
-        val outputStream = ByteArrayOutputStream()
-        ImageIO.write(image, "png", outputStream)
-        return outputStream.toByteArray()
-    }
 }
 
 
@@ -197,6 +95,4 @@ data class CredentialListDto(
     val issuanceDate: String,
     val attributeName: String,
     val subjectId: String,
-    val deviceName: String,
-    val bpk: String,
 )

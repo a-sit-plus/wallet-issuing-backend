@@ -67,8 +67,6 @@ dependencies {
 
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
-    implementation("at.asitplus.wallet:remotecrypto")
-
 
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("com.sksamuel.scrimage:scrimage-core:${VersionsBackend.scrimage}")

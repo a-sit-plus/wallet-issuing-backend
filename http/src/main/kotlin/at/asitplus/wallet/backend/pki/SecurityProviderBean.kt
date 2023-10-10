@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.pki
 
 import at.asitplus.hsmfacade.provider.HsmFacadeProvider
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.remotecrypto.RemoteCryptoProvider
 import io.github.aakira.napier.Napier
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.springframework.core.io.ResourceLoader
@@ -20,8 +19,6 @@ class SecurityProviderBean(
     configurationProperties: BackendConfigurationProperties,
     resourceLoader: ResourceLoader,
 ) {
-
-
     val provider: Provider
 
     init {
@@ -43,20 +40,6 @@ class SecurityProviderBean(
                 )
             }
             provider = hsmFacadeProvider.also {
-                Security.addProvider(it)
-            }
-        } else if (configurationProperties.remoteCrypto.enabled) {
-            Napier.i("Loading Remote Crypto Provider")
-            val config = configurationProperties.remoteCrypto
-            val remoteCryptoProvider = RemoteCryptoProvider.instance
-            if (!remoteCryptoProvider.isInitialized) {
-                remoteCryptoProvider.init(
-                    config.apiKey!!,
-                    config.hostname!!,
-                    config.port!!,
-                )
-            }
-            provider = remoteCryptoProvider.also {
                 Security.addProvider(it)
             }
         } else {

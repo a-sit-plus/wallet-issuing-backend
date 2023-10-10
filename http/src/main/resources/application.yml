@@ -1,8 +1,6 @@
 logging:
   level:
-    at.asitplus.wallet.backend.auth.ApiKeyAuthnFilter: OFF
     at.asitplus.wallet.backend.auth.DeviceBindingAuthnFilter: OFF
-    at.asitplus.wallet.backend.auth.ExtNonceAuthnFilter: OFF
 spring:
   profiles:
     default: pupilid

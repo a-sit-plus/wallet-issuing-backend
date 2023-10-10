@@ -14,12 +14,6 @@ rootProject.name = "backend"
 
 include("http")
 
-includeBuild("remote-crypto-provider") {
-    dependencySubstitution {
-        substitute(module("at.asitplus.wallet:remotecrypto")).using(project(":lib"))
-    }
-}
-
 includeBuild("pupilidlib/vclib") {
     dependencySubstitution {
         substitute(module("at.asitplus.wallet:vclib-openid")).using(project(":vclib-openid"))

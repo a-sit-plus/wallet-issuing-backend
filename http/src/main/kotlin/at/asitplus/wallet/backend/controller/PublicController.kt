@@ -2,11 +2,9 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.pki.PkiService
 import at.asitplus.wallet.lib.agent.Issuer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.context.request.WebRequest
-import org.springframework.web.server.ResponseStatusException
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isReadable
@@ -36,7 +33,6 @@ import kotlin.time.toJavaDuration
 @RestController
 class PublicController(
     private val issuer: Issuer,
-    private val pkiService: PkiService,
     private val configurationProperties: BackendConfigurationProperties,
 ) {
 
@@ -100,58 +96,6 @@ class PublicController(
         return@runBlocking ResponseEntity.ok()
             .cacheControl(cacheControl)
             .body(content)
-    }
-
-    @Operation(
-        summary = "Get the X.509 revocation list",
-        description = "Get a list of revoked certificates in X.509 CRL format, if the internal PKI is used",
-        responses = [
-            ApiResponse(
-                description = "Binary encoded X.509 CRL object",
-                content = [Content(examples = [ExampleObject(value = "<Binary encoded X.509 CRL object>")])]
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "CRL not found, e.g. it is hosted at an external URL",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
-            ApiResponse(responseCode = "500", ref = "errorResponse"),
-        ]
-    )
-    @GetMapping("/crl/1")
-    fun getCertificateRevocationList(): ResponseEntity<ByteArray> {
-        Napier.i("/crl/1 called")
-        val crl = pkiService.getCrl()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { Napier.w("/crl/1 returns 404, not found") }
-        Napier.i("/crl/1 returns ${crl.encodeToString(Base64())}")
-        return ResponseEntity.ok(crl)
-    }
-
-    @Operation(
-        summary = "Get the CA certificate",
-        description = "Get the certificate for the key pair that signs device binding certificates",
-        responses = [
-            ApiResponse(
-                description = "Binary encoded X.509 Certificate object",
-                content = [Content(examples = [ExampleObject(value = "<Binary encoded X.509 Certificate object>")])]
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "CA certificate not found, e.g. it is hosted at an external URL",
-                content = [Content(examples = [ExampleObject(value = "")])]
-            ),
-            ApiResponse(responseCode = "500", ref = "errorResponse"),
-        ]
-    )
-    @GetMapping("/ca/1")
-    fun getCaCertificate(): ResponseEntity<ByteArray> {
-        Napier.i("/ca/1 called")
-        val caCertificate = pkiService.getCaCertificate()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { Napier.w("/ca/1 returns 404, not found") }
-        Napier.i("/ca/1 returns ${caCertificate.encodeToString(Base64())}")
-        return ResponseEntity.ok(caCertificate)
     }
 
 }

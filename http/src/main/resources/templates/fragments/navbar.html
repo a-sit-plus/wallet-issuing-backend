@@ -15,21 +15,6 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarText">
             <ul class="navbar-nav ms-auto">
-                <li sec:authorize="isAnonymous()"
-                    th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
-                    <a th:href="@{/login}" class="nav-link">Login with ID Austria</a>
-                </li>
-                <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}"
-                    sec:authorize="hasAuthority('EIDASID')" class="nav-item ms-2">
-                    <a th:href="@{/eidasid/initialize}" class="nav-link">Initialize</a>
-                </li>
-                <li th:if="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}"
-                    sec:authorize="hasAuthority('EIDASID')" class="nav-item ms-2">
-                    <a th:href="@{/logout}" class="nav-link">Logout</a>
-                </li>
-                <li th:unless="${#arrays.contains(@environment.getActiveProfiles(), 'eidasid')}" class="nav-item ms-2">
-                    <a th:href="@{/debug/initialize}" class="nav-link">Initialize</a>
-                </li>
                 <li class="nav-item ms-2">
                     <a th:href="@{/debug/credential/list}" class="nav-link">Credentials</a>
                 </li>

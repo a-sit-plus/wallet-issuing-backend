@@ -1,9 +1,5 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.data.DeviceBinding
-import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
@@ -15,18 +11,16 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import jakarta.transaction.Transactional
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toJavaInstant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.UUID
-import jakarta.transaction.Transactional
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -40,18 +34,10 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var revokedCredentialRepo: RevokedCredentialRepository
 
     @Autowired
-    private lateinit var deviceBindingRepository: DeviceBindingRepository
-
-    @MockBean
-    private lateinit var authenticationSupplier: AuthenticationSupplier
-
-    @Autowired
     private lateinit var revocationService: RevocationService
 
     private lateinit var vcId: String
     private lateinit var bpk: String
-    private lateinit var certificate: ByteArray
-    private lateinit var deviceBinding: DeviceBinding
     private lateinit var attributeName: String
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
@@ -62,7 +48,6 @@ class RevocationServiceStatusListIndexTest {
 
     @BeforeEach
     fun beforeEach() {
-        val client = Client()
         timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
         attributeName = ConstantIndex.IdAustriaCredential.vcType
@@ -78,13 +63,8 @@ class RevocationServiceStatusListIndexTest {
         expirationDate = Clock.System.now() + 60.seconds
         validUntil = Clock.System.now() + 2.seconds
         bpk = UUID.randomUUID().toString()
-        certificate = client.selfSignedCert.encoded
         credentialRepo.deleteAll()
         revokedCredentialRepo.deleteAll()
-        deviceBindingRepository.deleteAll()
-        deviceBinding = client.storeDeviceBinding(bpk, deviceBindingRepository)
-        whenever(authenticationSupplier.getCurrentUserCertificate())
-            .thenReturn(certificate)
     }
 
     @Test
@@ -117,56 +97,12 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     @Transactional
-    fun otherCredentialsForSameDeviceBindingGetRevoked() {
-        IssuedCredential(
-            vcId,
-            subjectId,
-            validUntil.toJavaInstant(),
-            timePeriod,
-            deviceBinding,
-            attributeName,
-            2
-        ).also {
-            credentialRepo.save(it)
-            deviceBinding.issuedCredentialList += it
-        }
-        IssuedCredential(
-            vcId.reversed(),
-            subjectId.reversed(),
-            validUntil.toJavaInstant(),
-            timePeriod,
-            deviceBinding,
-            attributeName,
-            1
-        ).also {
-            credentialRepo.save(it)
-            deviceBinding.issuedCredentialList += it
-        }
-        revocationService.getAllNonRevokedWithDetails().count() shouldBe 2
-
-        val storeGetNextIndex =
-            revocationService.storeGetNextIndex(
-                vcId.drop(2),
-                credentialSubject,
-                issuanceDate,
-                expirationDate,
-                timePeriod
-            )
-        storeGetNextIndex.shouldNotBeNull()
-        storeGetNextIndex shouldBe 3
-
-        revocationService.getAllNonRevokedWithDetails().count() shouldBe 1
-    }
-
-    @Test
-    @Transactional
     fun cantIssueCredentialWithSameVcIdTwice() {
         IssuedCredential(
             vcId,
             subjectId,
             validUntil.toJavaInstant(),
             timePeriod,
-            deviceBinding,
             attributeName,
             3
         ).also {

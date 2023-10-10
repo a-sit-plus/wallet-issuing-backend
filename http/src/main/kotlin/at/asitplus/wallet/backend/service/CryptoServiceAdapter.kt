@@ -1,9 +1,7 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.backend.data.DeviceBinding
 import at.asitplus.wallet.backend.pki.KeyAdapter
-import at.asitplus.wallet.lib.CryptoPublicKey
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.cbor.CoseAlgorithm
 import at.asitplus.wallet.lib.jws.*
@@ -205,13 +203,6 @@ val JwsAlgorithm.joseType: JWSAlgorithm
         JwsAlgorithm.ES512 -> JWSAlgorithm.ES512
         JwsAlgorithm.HMAC256 -> JWSAlgorithm.HS256
     }
-
-val DeviceBinding.jsonWebKey: JsonWebKey?
-    get() = kotlin.runCatching {
-        val publicKey = CertificateFactory.getInstance("X.509")
-            .generateCertificate(certificate.inputStream()).publicKey
-        return JsonWebKey.fromJcaKey(publicKey as ECPublicKey, EcCurve.SECP_256_R_1)
-    }.getOrNull()
 
 fun JsonWebKey.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: EcCurve) =
     fromCoordinates(

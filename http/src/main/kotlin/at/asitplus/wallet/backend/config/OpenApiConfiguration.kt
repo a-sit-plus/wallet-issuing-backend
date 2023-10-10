@@ -1,8 +1,5 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_API_KEY
-import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
-import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_TOKEN
 import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
@@ -30,34 +27,6 @@ class OpenApiConfiguration {
         return OpenAPI()
             .components(
                 Components().addSecuritySchemes(
-                    "extNonce",
-                    SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .name(X_AUTH_EXT_NONCE)
-                        .`in`(SecurityScheme.In.HEADER)
-                        .description("Nonce to be scanned from QR Code created by ECO, to be transmitted in the header `$X_AUTH_EXT_NONCE`.")
-                ).addSecuritySchemes(
-                    "xAuthToken",
-                    SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .name(X_AUTH_TOKEN)
-                        .`in`(SecurityScheme.In.HEADER)
-                        .description("Session identifier from the previous response, contained in the header `$X_AUTH_TOKEN`.")
-                ).addSecuritySchemes(
-                    "apiKey",
-                    SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .name(X_API_KEY)
-                        .`in`(SecurityScheme.In.HEADER)
-                        .description("API Key to be used for calls to the revocation controller, contained in header `$X_API_KEY`.")
-                ).addSecuritySchemes(
-                    "deviceBinding",
-                    SecurityScheme()
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("bearer")
-                        .bearerFormat("JWT")
-                        .description("Response to challenge sent in header `WWW—Authenticate`, shall contain JWT signed with device binding key.")
-                ).addSecuritySchemes(
                     "oidcPupil",
                     SecurityScheme()
                         .type(SecurityScheme.Type.OPENIDCONNECT)
@@ -80,6 +49,6 @@ class OpenApiConfiguration {
                         )
                     )
             )
-            .info(Info().title("PupilId API").description("PupilId Backend Service").version(buildProperties.version))
+            .info(Info().title("Wallet Backend").description("Wallet Backend Service").version(buildProperties.version))
     }
 }

@@ -2,16 +2,14 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.wallet.backend.Extensions.sha256
-import at.asitplus.wallet.backend.data.CredentialDataProvider.CredentialToBeIssuedAttachment
+import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.lib.cbor.CoseKey
-import at.asitplus.wallet.pupilid.ConstantIndex
-import at.asitplus.wallet.pupilid.PupilIdCredential
-import io.matthewnelson.component.base64.decodeBase64ToArray
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.minus
 import kotlin.random.Random
 
 /**
@@ -19,30 +17,15 @@ import kotlin.random.Random
  */
 class RandomCredentialDataProvider(
     private val listOfPhotos: Map<String, ByteArray>,
-    private val pictureService: PictureService = NoopPictureService,
 ) : CredentialDataProvider {
-
-    private val randomAttributeCache: MutableMap<String, RandomAttributeSet> = mutableMapOf()
 
     inner class RandomAttributeSet {
         private val randomGender = listOf("male", "female").random()
-        private val randomSchoolPrefix = listOf(
-            "Schiller", "Tesla", "Newton", "Einstein", "Marie Curie", "Rosalind Franklin",
-            "Anne Frank", "Geschwister Scholl"
-        ).random()
-        private val randomSchoolSuffix = listOf(
-            "Realgymnasium", "Volksschule", "Gymnasium",
-            "Mittelschule", "HTL", "HAK", "Hauptschule"
-        ).random()
-        val schoolName = "$randomSchoolPrefix $randomSchoolSuffix"
-        val schoolId = (1..6).map { "01".random() }.joinToString("") // e.g. 101010
-        val cardId =  // e.g. 00200000/00000004
-            (1..2).joinToString("/") { (1..8).map { "0123456789".random() }.joinToString("") }
-        val dateOfBirth: String = run {
-            val maxAge = 18 * 12 * 31L
-            val minAge = 6 * 12 * 31L
-            LocalDate.now().minusDays(Random.nextLong(minAge, maxAge))
-                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        val dateOfBirth: kotlinx.datetime.LocalDate = run {
+            val maxAge = 65 * 12 * 31
+            val minAge = 18 * 12 * 31
+            kotlinx.datetime.LocalDate.parse(Clock.System.now().toString())
+                .minus(Random.nextInt(minAge, maxAge), DateTimeUnit.DAY)
         }
         val firstName = if (randomGender == "male") {
             listOf("Lukas", "Tobias", "Maximilian", "Luca", "David").random()
@@ -54,9 +37,6 @@ class RandomCredentialDataProvider(
             "Pichler", "Moser", "Steiner", "Maier"
         ).random()
 
-        val schoolAddress = "Musterstraße 10"
-        val city = listOf("Wien", "Mödling", "Linz", "Salzburg", "Innsbruck", "Klagenfurt", "Graz").random()
-        val zip = listOf("1010", "2050", "4050", "5060", "6070", "7080", "8090").random()
         var encodedPhoto: ByteArray = listOfPhotos
             .filter { it.key[0] == randomGender[0] }
             .values
@@ -66,49 +46,22 @@ class RandomCredentialDataProvider(
     fun getCredential(
         subjectId: String,
         attributeType: String,
-        bpk: String,
         maxExpiration: Instant
     ): KmmResult<CredentialDataProvider.CredentialToBeIssued> {
-        val it = randomAttributeCache[bpk]
-            ?: RandomAttributeSet().also { randomAttributeCache[bpk] = it }
-        if (attributeType != ConstantIndex.PupilId.vcType) {
-            return KmmResult.failure(UnsupportedOperationException("Credential '$attributeType' is not supported"))
-        }
+        val it = RandomAttributeSet()
         val picture = it.encodedPhoto
-        val pictureHash = picture.sha256()
-        val scaledPicture = pictureService.convertPicture(picture)
-        val scaledPictureHash = scaledPicture.sha256()
-        val subject = PupilIdCredential(
+        val subject = IdAustriaCredential(
             id = subjectId,
-            firstName = it.firstName,
-            lastName = it.lastName,
+            firstname = it.firstName,
+            lastname = it.lastName,
             dateOfBirth = it.dateOfBirth,
-            schoolName = it.schoolName,
-            schoolCity = it.city,
-            schoolZip = it.zip,
-            schoolStreet = it.schoolAddress,
-            schoolId = it.schoolId,
-            pupilCity = it.city,
-            pupilZip = it.zip,
-            cardId = it.cardId,
-            pictureHash = pictureHash,
-            scaledPictureHash = scaledPictureHash,
-            validUntil = maxExpiration.toString().substring(0..9),
-        )
-        val attachments = listOf(
-            CredentialToBeIssuedAttachment("picture.jpg", "image/jpg", picture),
-            CredentialToBeIssuedAttachment(
-                "scaledPicture.${pictureService.extension}",
-                pictureService.mediaType,
-                scaledPicture
-            ),
+            portrait = it.encodedPhoto,
         )
         return KmmResult.success(
             CredentialDataProvider.CredentialToBeIssued.Vc(
                 subject,
                 maxExpiration,
-                ConstantIndex.PupilId.vcType,
-                attachments,
+                attributeType,
             )
         )
     }
@@ -116,15 +69,14 @@ class RandomCredentialDataProvider(
     override fun getCredentialWithType(
         subjectId: String,
         attributeTypes: Collection<String>,
-        bpk: String?,
         maxExpiration: Instant,
         subjectPublicKey: CoseKey?,
     ): KmmResult<List<CredentialDataProvider.CredentialToBeIssued>> {
-        if (bpk == null) {
-            return KmmResult.success(listOf())
-        }
-        if (attributeTypes.contains(ConstantIndex.PupilId.vcType)) {
-            return getCredential(subjectId, ConstantIndex.PupilId.vcType, bpk, maxExpiration).map { listOf(it) }
+        if (attributeTypes.contains(at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType)) {
+            return getCredential(
+                subjectId, at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential.vcType,
+                maxExpiration
+            ).map { listOf(it) }
         }
         return KmmResult.success(listOf())
     }
