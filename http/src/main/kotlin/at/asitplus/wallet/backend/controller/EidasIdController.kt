@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
@@ -13,7 +12,6 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import io.github.aakira.napier.Napier
-import io.matthewnelson.component.base64.encodeBase64
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import io.swagger.v3.oas.annotations.Operation
@@ -22,7 +20,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import kotlinx.datetime.Clock
-import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -47,7 +44,6 @@ import jakarta.servlet.http.HttpServletRequest
  * - REST for Wallet App to get credentials (with a device binding)
  * - MVC for Browser to display QR Code to initialize Wallet App
  */
-@Profile(ProfileConstants.EIDASID)
 @RestController
 class EidasIdController(
     private val issueCredentialAdapter: IssueCredentialAdapter,

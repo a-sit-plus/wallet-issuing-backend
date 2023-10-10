@@ -1,8 +1,6 @@
 package at.asitplus.wallet.backend.auth
 
 import at.asitplus.wallet.backend.service.ChallengeService
-import io.matthewnelson.component.encoding.base16.decodeBase16ToArray
-import io.matthewnelson.component.encoding.base16.encodeBase16
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString

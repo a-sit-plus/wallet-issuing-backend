@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.DelegatingSessionIdResolver
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnFilter
 import at.asitplus.wallet.backend.auth.ApiKeyAuthnProvider
 import at.asitplus.wallet.backend.auth.DeviceBindingAuthnEntryPoint
@@ -14,7 +13,6 @@ import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.service.ChallengeService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -48,7 +46,6 @@ import java.util.concurrent.ConcurrentHashMap
  * - Device Binding authentication from the App
  * - API-Key authentication for revocation calls from ext. services
  */
-@Profile(ProfileConstants.EIDASID)
 @Configuration
 @EnableMethodSecurity
 @EnableSpringHttpSession

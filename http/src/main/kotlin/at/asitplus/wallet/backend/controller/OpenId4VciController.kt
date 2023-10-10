@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_DEVICE_BINDING
 import at.asitplus.wallet.lib.oidc.AuthenticationRequestParameters
 import at.asitplus.wallet.lib.oidc.OpenIdConstants
@@ -17,7 +16,6 @@ import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -29,14 +27,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.client.HttpServerErrorException.InternalServerError
-import java.util.*
 
 /**
  * Provides endpoints in the EIDAS deployment:
  * - OID4VCI for issuing credentials after a device binding
  */
-@Profile(ProfileConstants.EIDASID)
 @RestController
 class OpenId4VciController(
     private val issuerService: IssuerService,

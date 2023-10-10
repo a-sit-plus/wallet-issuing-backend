@@ -242,10 +242,6 @@ data class AttributeSourceConfigurationProperties(
      */
     val type: AttributeSourceType = AttributeSourceType.RANDOM,
     /**
-     * Default for PupilId: Get attributes from ECO ("edu.card online")
-     */
-    val eco: EcoAttributeSourceConfigurationProperties? = null,
-    /**
      * Generate random values for attributes
      */
     val random: RandomAttributeSourceConfigurationProperties? = RandomAttributeSourceConfigurationProperties()
@@ -253,25 +249,7 @@ data class AttributeSourceConfigurationProperties(
 
 enum class AttributeSourceType {
     RANDOM,
-    ECO,
     EIDAS
-}
-
-data class EcoAttributeSourceConfigurationProperties(
-    override val url: URI? = null,
-    override val clientTls: Boolean = false,
-    override val serverTls: Boolean = true,
-    override val key: KeyConfiguration? = null,
-    override val trust: TrustConfiguration? = null,
-    override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
-    override val apiKey: String? = null,
-    /**
-     * Additional validity period added on top of issued credential validity. Default: 30 days (`P30D`)
-     */
-    private val gracePeriod: String = "P30D",
-) : ExternalConnectionConfig {
-
-    val gracePeriodDuration = Duration.parse(gracePeriod)
 }
 
 interface ExternalConnectionConfig {
@@ -341,13 +319,11 @@ data class AeraPkiConfigurationProperties(
 
 data class DeviceBindingConfigurationProperties(
     val type: DeviceBindingNonceType = DeviceBindingNonceType.INTERNAL,
-    val eco: EcoDeviceBindingConfigurationProperties = EcoDeviceBindingConfigurationProperties(),
     val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties(),
 )
 
 enum class DeviceBindingNonceType {
-    INTERNAL,
-    ECO
+    INTERNAL
 }
 
 data class AttestationConfigurationProperties(
@@ -381,16 +357,6 @@ data class IOSAttestationConfigurationProperties(
 }
 
 data class PatchLevelConfigurationProperties(val year: Int, val month: Int)
-
-data class EcoDeviceBindingConfigurationProperties(
-    override val url: URI? = null,
-    override val clientTls: Boolean = false,
-    override val serverTls: Boolean = true,
-    override val key: KeyConfiguration? = null,
-    override val trust: TrustConfiguration? = null,
-    override val httpBasic: HttpBasicAuthnConfigurationProperties? = null,
-    override val apiKey: String? = null
-) : ExternalConnectionConfig
 
 data class ApiKeyConfigurationProperties(
     val name: String,

@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
@@ -13,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
@@ -30,7 +28,6 @@ import javax.imageio.ImageIO
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles(ProfileConstants.EIDASID)
 class EidasIdControllerTest {
 
     @Autowired

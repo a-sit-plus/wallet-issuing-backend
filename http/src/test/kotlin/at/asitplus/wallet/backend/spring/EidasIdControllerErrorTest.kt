@@ -3,10 +3,8 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.DeviceBindingAuthnResult
 import at.asitplus.wallet.backend.DeviceBindingAuthnService
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.service.IssueCredentialAdapter
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.PREFIX_RESPONSE
 import at.asitplus.wallet.backend.data.DeviceBindingRepository
 import org.hamcrest.Matchers.containsString
@@ -20,7 +18,6 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import java.util.UUID
@@ -32,7 +29,6 @@ import java.util.UUID
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["server.error.include-exception=true", "server.error.include-message=always"]
 )
-@ActiveProfiles(ProfileConstants.EIDASID)
 @AutoConfigureWebTestClient(timeout = "PT1M")
 class EidasIdControllerErrorTest {
 

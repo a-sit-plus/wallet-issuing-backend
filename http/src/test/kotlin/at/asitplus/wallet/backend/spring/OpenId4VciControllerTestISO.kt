@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.AuthenticatedDeviceBindingUser
 import at.asitplus.wallet.backend.auth.WebSecurityConstants
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_OIDC
@@ -35,7 +34,6 @@ import org.springframework.http.MediaType
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockHttpServletRequestDsl
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
@@ -50,7 +48,6 @@ import kotlin.random.Random
  */
 @SpringBootTest
 @AutoConfigureMockMvc(print = MockMvcPrint.SYSTEM_OUT)
-@ActiveProfiles(ProfileConstants.EIDASID)
 class OpenId4VciControllerTestISO {
 
     @Autowired

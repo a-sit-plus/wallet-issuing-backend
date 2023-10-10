@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.wallet.backend.ProfileConstants
 import at.asitplus.wallet.backend.auth.ExtNonceAuthnService
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.AUTHORITY_PUPIL
 import at.asitplus.wallet.backend.auth.WebSecurityConstants.X_AUTH_EXT_NONCE
@@ -27,7 +26,6 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import java.util.*
@@ -39,7 +37,7 @@ import kotlin.random.Random
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-abstract class BindingControllerSpringSecurityTest {
+class BindingControllerSpringSecurityTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -294,11 +292,3 @@ abstract class BindingControllerSpringSecurityTest {
         }.andReturn()
     }
 }
-
-
-@ActiveProfiles(ProfileConstants.PUPILID)
-class PupilIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}
-
-
-@ActiveProfiles(ProfileConstants.EIDASID)
-class EidasIdBindingControllerSpringSecurityTest : BindingControllerSpringSecurityTest() {}

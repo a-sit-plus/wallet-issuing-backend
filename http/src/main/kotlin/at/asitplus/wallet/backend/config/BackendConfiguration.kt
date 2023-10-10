@@ -122,17 +122,6 @@ class BackendConfiguration {
                     lifetimeSeconds = configurationProperties.authn.challengeTimeoutSeconds,
                 )
             )
-
-            DeviceBindingNonceType.ECO -> {
-                val restTemplate = RestTemplateConfigurationService(
-                    configurationProperties.authn.deviceBinding.eco,
-                    restTemplateBuilder
-                ).restTemplate
-                EcoExtNonceAuthnService(
-                    configurationProperties.authn.deviceBinding.eco.url!!,
-                    restTemplate
-                )
-            }
         }
 
     @Bean
@@ -349,20 +338,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
                     .map { it.first to it.second.readAllBytes() }
                 RandomCredentialDataProvider(mapOfPhotos.toMap(), pictureService)
             }
-
-            AttributeSourceType.ECO -> {
-                val restTemplate = RestTemplateConfigurationService(
-                    configurationProperties.attributeSource.eco!!,
-                    restTemplateBuilder
-                ).restTemplate
-                EcoCredentialDataProvider(
-                    configurationProperties.attributeSource.eco!!.url.toString(),
-                    restTemplate,
-                    gracePeriod = configurationProperties.attributeSource.eco!!.gracePeriodDuration,
-                    pictureService,
-                )
-            }
-
             AttributeSourceType.EIDAS -> {
                 EidasCredentialDataProvider(600.seconds, authenticationSupplier)
             }
@@ -441,20 +416,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         jwsService = DefaultJwsService(issuerCryptoService)
     )
 
-    @Profile(ProfileConstants.PUPILID)
-    @Bean
-    fun issueCredentialMessengerPupilId(
-        issuer: Issuer,
-        issuerCryptoService: CryptoService,
-        issuerMessageWrapper: MessageWrapper
-    ): IssueCredentialMessenger = IssueCredentialMessenger.newIssuerInstance(
-        issuer = issuer,
-        messageWrapper = issuerMessageWrapper,
-        serviceEndpoint = appendPath(configurationProperties.publicContext, "pupilid", "issue"),
-        credentialScheme = ConstantIndex.PupilId,
-    )
-
-    @Profile(ProfileConstants.EIDASID)
     @Bean
     fun issueCredentialMessengerEidasId(
         issuer: Issuer,
@@ -467,7 +428,6 @@ Y8P Y8P Y8P       `8'      `8'       o88o     o8888o o888o  o888o o8o        `8 
         credentialScheme = at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential,
     )
 
-    @Profile(ProfileConstants.EIDASID)
     @Bean
     fun issuerService(
         issuer: Issuer,

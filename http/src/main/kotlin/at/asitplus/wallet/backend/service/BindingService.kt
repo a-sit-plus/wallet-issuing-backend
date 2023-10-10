@@ -10,8 +10,6 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.Payload
 import io.github.aakira.napier.Napier
-import io.matthewnelson.component.base64.encodeBase64
-import io.matthewnelson.component.encoding.base16.encodeBase16
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString

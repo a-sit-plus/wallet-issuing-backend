@@ -1,6 +1,6 @@
-# PupilId Backend Service
+# Wallet Backend Service
 
-This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing PupilIds or IdAustriaCredentials.
+This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing `IdAustriaCredentials` or anything else.
 
 The default public key that signs the credentials is:
 
@@ -66,7 +66,7 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 
 `POST /binding/confirm` finishes the device binding process.
 
-The call to `/binding/start` requires authentication with an external nonce, to be sent in the header `X-Auth-ExtNonce`. The Wallet App extracts this nonce from a QR Code displayed by ECO (or this service, in the EIDAS deployment). Alternatively, the client may include a session identifier in the header `X-Auth-Token` after logging in with OIDC, see below.
+The call to `/binding/start` requires authentication with an external nonce, to be sent in the header `X-Auth-ExtNonce`. The Wallet App extracts this nonce from a QR Code displayed by this service. Alternatively, the client may include a session identifier in the header `X-Auth-Token` after logging in with OIDC, see below.
 
 Subsequent requests, to `/binding/create` and `/binding/confirm`, need to include the session identifier in the header `X-Auth-Token` (which in turn has been set by this service in the first response).
 
@@ -187,53 +187,6 @@ HTTP/1.1 200
 Note that the server does not set the header `X-Auth-Token` in the response if the client has sent one in the request.
 
 The `X-Auth-Token` from this device binding process can be used by clients to start the issuing process without any additional authentication.
-
-### Issuing
-
-`POST /pupilid/issue` issues a PupilId into the Wallet App. User needs to perform a device binding first (see above).
-
-On the first call to `/pupilid/issue`, this service answers with HTTP Status 401 and a challenge in the header `WWW-Authenticate: Challenge OBU7Uz4vI2uRmeZtGzm5FbNmVNpwNnwWQ06P15fRpiI=`.
-
-Alternatively, the client may call `GET /authn/devicebinding/challenge` to receive a valid challenge in the response body.
-
-Note that clients can call this endpoint without additional authentication when including the `X-Auth-Token` from a (successfully completed) device binding process.
-
-The client needs to build a JWS with the `challenge` in the payload and its device binding certificate in the `x5c` header (newlines for display purposes only):
-
-```
-{
-  "x5c": [
-    "MIIBFjCBvKADAgECAggvna9LycsnxzAKBggqhkjOPQQDAjARMQ8wDQYDVQQDDAZJc3N1ZXIwHh
-    cNMjIwMjIyMTUwOTE4WhcNMjIwMjIyMTUxMDE4WjARMQ8wDQYDVQQDDAZJc3N1ZXIwWTATBgcqh
-    kjOPQIBBggqhkjOPQMBBwNCAAQZ6PJaq5YmlvQL/FwS99S1ZJo6zIKulIznMmkyOUInbE0KHsmr
-    GVZHrGIjI/JhCZ0C6QfkXN1A4cx/6Fki1QnTMAoGCCqGSM49BAMCA0kAMEYCIQDBzn7EabGbWAr
-    buL2sJqjaEUZAfEExzTHWEsT/ucpFLwIhANpiyoMjJra0WmWE9T5N/I9m1UQZvbhbxmM2FdJVaN
-    tB"
-  ],
-  "alg": "ES256"
-}
-.
-{
-  "challenge": "OBU7Uz4vI2uRmeZtGzm5FbNmVNpwNnwWQ06P15fRpiI="
-}
-```
-
-This JWS needs to be signed with the private key matching the public key in the device binding certificate and sent in the `Authorization` header to the service (newlines for display purposes only):
-
-```
-Authorization: Response eyJ4NWMiOlsiTUlJQkZqQ0J2S0FEQWdFQ0FnZ3ZuYTlMeWNzbnh6QUt
-               CZ2dxaGtqT1BRUURBakFSTVE4d0RRWURWUVFEREFaSmMzTjFaWEl3SGhjTk1qSXd
-               Nakl5TVRVd09URTRXaGNOTWpJd01qSXlNVFV4TURFNFdqQVJNUTh3RFFZRFZRUUR
-               EQVpKYzNOMVpYSXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUVo
-               2UEphcTVZbWx2UUxcL0Z3Uzk5UzFaSm82eklLdWxJem5NbWt5T1VJbmJFMEtIc21
-               yR1ZaSHJHSWpJXC9KaENaMEM2UWZrWE4xQTRjeFwvNkZraTFRblRNQW9HQ0NxR1N
-               NNDlCQU1DQTBrQU1FWUNJUURCem43RWFiR2JXQXJidUwyc0pxamFFVVpBZkVFeHp
-               USFdFc1RcL3VjcEZMd0loQU5waXlvTWpKcmEwV21XRTlUNU5cL0k5bTFVUVp2Ymh
-               ieG1NMkZkSlZhTnRCIl0sImFsZyI6IkVTMjU2In0.eyJjaGFsbGVuZ2UiOiJPQlU
-               3VXo0dkkydVJtZVp0R3ptNUZiTm1WTnB3Tm53V1EwNlAxNWZScGlJPSJ9.DJKRan
-               m6HvKWlnaajhzq2_CEJmFEdNgmekDAam_3dFvv3xuCz5CMgTgi3QGJeMfqdl5lVB
-               mcLHYnU9lZS7miOw
-```
 
 ### OpenID for Verifiable Credential Issuance
 
@@ -391,14 +344,6 @@ backend:
       type: INTERNAL
 ```
 
-```yaml
-backend:
-  authn:
-    device-binding:
-      type: ECO
-      eco: {{ SERVICE_CONFIG }}
-```
-
 Key Attestation is considered a key feature, but it can be disabled for testing:
 
 ```yaml
@@ -457,13 +402,6 @@ backend:
 backend:
   attribute-source:
     type: EIDAS
-```
-
-```yaml
-backend:
-  attribute-source:
-    type: ECO
-    eco: {{ SERVICE_CONFIG }}
 ```
 
 Alternative configuration for the PKI service to use a remote instance of the AERA service to sign device binding certificates:
