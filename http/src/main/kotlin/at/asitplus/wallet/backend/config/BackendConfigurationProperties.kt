@@ -60,53 +60,10 @@ data class CredentialConfigurationProperties(
      * Lifetime of the credentials issued, e.g. 60 minutes (`PT6M`) or 180 days (`P180D`)
      */
     private val lifetime: String = "PT6M",
-    /**
-     * Settings for scaling and compressing pictures in credentials
-     */
-    val pictures: PicturesConfigurationProperties = PicturesConfigurationProperties()
 ) {
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
 }
-
-data class PicturesConfigurationProperties(
-    /**
-     * Whether to compress the pictures at all. Default: `true`.
-     */
-    val compress: Boolean = true,
-    /**
-     * Format of the compressed picture. Default: `webp`.
-     */
-    val format: String = "webp",
-    /**
-     * Quality of the compressed picture. Default: `30`.
-     */
-    val quality: Int = 30,
-    /**
-     * Whether to scale the pictures at all. Default: `true`.
-     */
-    val scale: Boolean = true,
-    /**
-     * Height of the scaled picture. Default: `154`.
-     */
-    val height: Int = 154,
-    /**
-     * Width of the scaled picture. Default: `120`.
-     */
-    val width: Int = 120,
-    /**
-     * Path to library `libwebp_jni.so`. Default: `null`, meaning load from system paths.
-     */
-    val pathLibJni: String? = null,
-    /**
-     * Path to library `libwebp.so.7`. Default: `null`, meaning load from system paths.
-     */
-    val pathLibWebp: String? = null,
-    /**
-     * Path to library `libsharpyuv.so.0`. Default: `null`, meaning load from system paths.
-     */
-    val pathLibSharp: String? = null,
-)
 
 data class HsmFacadeConfiguration(
     /**

@@ -1,21 +1,5 @@
-logging:
-  level:
-    at.asitplus.wallet.backend.auth.DeviceBindingAuthnFilter: OFF
-spring:
-  profiles:
-    default: pupilid
-  config:
-    import:
-  cloud:
-    config:
-      enabled: false
-backend:
++backend:
   authn:
     deviceBinding:
       attestation:
         noop: true
-  credentials:
-    pictures:
-      pathLibJni: "libwebp/libwebp_jni.so"
-      pathLibWebp: "libwebp/libwebp.so.7.1.6"
-      pathLibSharp: "libwebp/libsharpyuv.so.0"

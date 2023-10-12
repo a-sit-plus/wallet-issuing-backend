@@ -36,26 +36,18 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.cloud:spring-cloud-config-client:${VersionsBackend.spring.`cloud-config-client`}")
     implementation("org.springframework.session:spring-session-core")
     implementation("de.codecentric:spring-boot-admin-starter-client:${VersionsBackend.spring.`admin-starter-client`}")
 
     implementation("org.springdoc:springdoc-openapi-ui:${VersionsBackend.spring.doc}")
     implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
     implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
-
-
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-
     implementation("org.apache.httpcomponents.client5:httpclient5")
-
     implementation("com.nimbusds:nimbus-jose-jwt:${VcLibVersions.Jvm.`jose-jwt`}")
-
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
-
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
-
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
     implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
@@ -64,25 +56,19 @@ dependencies {
     implementation("at.asitplus.wallet:pupilidlib:${VersionsBackend.pupilidlib}")
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:vclib-openid:${VersionsBackend.vclib}")
-
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
 
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("com.sksamuel.scrimage:scrimage-core:${VersionsBackend.scrimage}")
-    implementation(files("libs/libwebp.jar"))
-
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql:${VersionsBackend.pgsql}")
-
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:${VersionsBackend.mockito}")
-
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-
     testImplementation(ktor("client-java"))
     testImplementation("com.squareup.okhttp3:mockwebserver:${VersionsBackend.okhttp}")
 }
