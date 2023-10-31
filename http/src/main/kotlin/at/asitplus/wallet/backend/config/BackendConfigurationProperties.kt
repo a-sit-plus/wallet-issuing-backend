@@ -1,12 +1,8 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.attestation.IOSAttestationConfiguration
-import at.asitplus.wallet.pupilid.MonthAndDay
-import kotlinx.datetime.Month
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 @ConfigurationProperties(prefix = "backend")
 data class BackendConfigurationProperties(
@@ -30,14 +26,6 @@ data class BackendConfigurationProperties(
      * Configure debug endpoints
      */
     val debug: DebugConfigurationProperties = DebugConfigurationProperties(),
-    /**
-     * Configure authentication of external services at this service
-     */
-    val authn: AuthnConfigurationProperties = AuthnConfigurationProperties(),
-    /**
-     * Configure the source of attributes for the credentials
-     */
-    val attributeSource: AttributeSourceConfigurationProperties = AttributeSourceConfigurationProperties(),
     /**
      * Configure details about revocation lists for Verifiable Credentials
      */
@@ -123,86 +111,6 @@ data class RevocationListConfigurationProperties(
     val dirtyCheckRateDuration: Duration = Duration.parse(dirtyCheckRate)
     val regularCheckRateDuration: Duration = Duration.parse(regularCheckRate)
 }
-
-data class AttributeSourceConfigurationProperties(
-    /**
-     * Type of the attribute source
-     */
-    val type: AttributeSourceType = AttributeSourceType.RANDOM,
-    /**
-     * Generate random values for attributes
-     */
-    val random: RandomAttributeSourceConfigurationProperties? = RandomAttributeSourceConfigurationProperties()
-)
-
-enum class AttributeSourceType {
-    RANDOM,
-    EIDAS
-}
-
-data class RandomAttributeSourceConfigurationProperties(
-    /**
-     * Location of random photos to be used for issued credentials
-     */
-    val photoLocation: URI = URI.create("file:photos/"),
-)
-
-data class HttpBasicAuthnConfigurationProperties(
-    val username: String,
-    val password: String,
-)
-
-data class AuthnConfigurationProperties(
-    /**
-     * Valid API keys for revocation endpoints
-     */
-    val apiKeys: Collection<ApiKeyConfigurationProperties> = listOf(),
-    /**
-     * Configuration for nonces used during device binding
-     */
-    val deviceBinding: DeviceBindingConfigurationProperties = DeviceBindingConfigurationProperties(),
-)
-
-data class DeviceBindingConfigurationProperties(
-    val attestation: AttestationConfigurationProperties = AttestationConfigurationProperties(),
-)
-
-data class AttestationConfigurationProperties(
-    val android: AndroidAttestationConfigurationProperties? = null,
-    val ios: IOSAttestationConfigurationProperties? = null,
-    val noop: Boolean? = null,
-    private val verificationOffset: String? = null,
-) {
-    val verificationOffSetDuration = verificationOffset?.let { Duration.parse(it) } ?: 0.seconds
-}
-
-data class AndroidAttestationConfigurationProperties(
-    val packageName: String,
-    val applicationVersion: Int? = null,
-    val androidVersion: Int? = 10000,
-    val patchLevel: PatchLevelConfigurationProperties? = PatchLevelConfigurationProperties(2021, 8),
-    val signatureDigests: Array<String>,
-    val requireStrongBox: Boolean = false,
-    val requireRollbackResistance: Boolean = false,
-    val ignoreLeafValidity: Boolean = false,
-)
-
-data class IOSAttestationConfigurationProperties(
-    val teamIdentifier: String,
-    val bundleIdentifier: String,
-    val sandbox: Boolean = false,
-    val iosVersion: String? = null,
-) {
-    fun toIosAttestationConfiguration() =
-        IOSAttestationConfiguration(teamIdentifier, bundleIdentifier, sandbox, iosVersion)
-}
-
-data class PatchLevelConfigurationProperties(val year: Int, val month: Int)
-
-data class ApiKeyConfigurationProperties(
-    val name: String,
-    val key: String,
-)
 
 data class KeyConfiguration(
     val type: KeyType = KeyType.MEMORY,

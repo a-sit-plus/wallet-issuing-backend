@@ -37,17 +37,6 @@ class DebugController(
         return ModelAndView("help_verify", model)
     }
 
-    @GetMapping("/debug/credential/create")
-    fun createCredential(model: ModelMap): ModelAndView {
-        if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
-        Napier.i("/debug/credential/create called")
-        model["qrcodeActionUrl"] = appendPath(
-            configurationProperties.publicContext,
-            "debug", "credential", "qrcode"
-        )
-        return ModelAndView("credential_create", model)
-    }
-
     @GetMapping("/debug/credential/list")
     fun revokeList(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
