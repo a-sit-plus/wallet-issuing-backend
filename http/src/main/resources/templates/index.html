@@ -16,7 +16,7 @@
     </script>
 </head>
 <body style="background: #ececec;">
-<div th:replace="fragments/navbar.html :: navbar"></div>
+<div th:replace="~{fragments/navbar.html :: navbar}"></div>
 <div class="container py-4">
     <div class="row align-items-start">
         <h1 class="display-4 col">Wallet Backend</h1>
@@ -25,7 +25,7 @@
             <button class="btn btn-primary" type="button" data-bs-toggle="collapse"
                     data-bs-target="#collapseInstructions"
                     aria-expanded="false" aria-controls="collapseInstructions">
-                Take a Tour <span th:replace="fragments/icons.html :: play_icon"></span>
+                Take a Tour <span th:replace="~{fragments/icons.html :: play_icon}"></span>
             </button>
         </p>
     </div>
@@ -43,7 +43,7 @@
 
     <div class="my-4">
         <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
-            <span th:replace="fragments/icons.html :: info_icon"></span>
+            <span th:replace="~{fragments/icons.html :: info_icon}"></span>
             Download the mobile apps
         </p>
         <ul class="list-group">
