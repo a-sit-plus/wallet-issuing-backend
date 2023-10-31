@@ -1,7 +1,10 @@
 import at.asitplus.gradle.bouncycastle
+import at.asitplus.gradle.coroutines
 import at.asitplus.gradle.gitLab
 import at.asitplus.gradle.gitlab
 import at.asitplus.gradle.ktor
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.serialization
 
 plugins {
     kotlin("jvm")
@@ -46,6 +49,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("com.nimbusds:nimbus-jose-jwt:${VcLibVersions.Jvm.`jose-jwt`}")
+    implementation(napier())
+    implementation(coroutines())
+    implementation(serialization("json"))
+    implementation(bouncycastle("bcpkix"))
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
@@ -53,7 +60,6 @@ dependencies {
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
 
-    implementation("at.asitplus.wallet:pupilidlib:${VersionsBackend.pupilidlib}")
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:vclib-openid:${VersionsBackend.vclib}")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")

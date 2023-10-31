@@ -1,5 +1,5 @@
 object VersionsBackend {
-    const val ida: String = "3.0.2-SNAPSHOT"
+    const val ida: String = "3.0.2"
     const val zxing = "3.5.2"
     const val `google-cbor` = "0.01.02"
     const val hsmf = "0.8.3"
@@ -7,8 +7,7 @@ object VersionsBackend {
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val pupilidlib = "3.0.0-SNAPSHOT"
-    const val vclib = "3.0.1"
+    const val vclib = "3.0.2"
     const val attestation = "0.5.2"
 
     object spring {
