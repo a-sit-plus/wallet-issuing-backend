@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.session.MapSessionRepository
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession
@@ -29,7 +30,7 @@ class WebSecurityConfigEidasId {
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
             .exceptionHandling {
                 it.defaultAuthenticationEntryPointFor(
-                    Http403ForbiddenEntryPoint(),
+                    LoginUrlAuthenticationEntryPoint("/login"),
                     AntPathRequestMatcher("/**")
                 )
             }.logout {
@@ -38,6 +39,8 @@ class WebSecurityConfigEidasId {
                     .logoutSuccessUrl("/")
             }.headers {
                 it.frameOptions { it.sameOrigin() }
+            }.oauth2Login {
+                it.defaultSuccessUrl("/")
             }
         return http.build()
     }
