@@ -1,5 +1,5 @@
 plugins {
-    id("at.asitplus.gradle.vclib-conventions")
+    id("at.asitplus.gradle.conventions") version "1.9.20+20231114"
 }
 
 /*
@@ -13,27 +13,5 @@ buildscript {
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-allopen") //Spring
         classpath("org.jetbrains.kotlin:kotlin-noarg") //JPA
-    }
-
-}
-
-tasks.register("listrepos") {
-    doLast {
-        println("Repositories:")
-        project.repositories.map { it as MavenArtifactRepository }
-            .forEach {
-                println("Name: ${it.name}; url: ${it.url}")
-            }
-    }
-}
-
-
-task<Exec>("purge") {
-    dependsOn("clean")
-    workingDir = layout.projectDirectory.dir("pupilidlib").asFile
-    commandLine("./gradlew", "purge")
-    doFirst {
-        println("descending into ${workingDir.absolutePath}")
-        logger.lifecycle("Purging PupilIdLib maven build")
     }
 }

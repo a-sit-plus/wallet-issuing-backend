@@ -14,7 +14,7 @@ plugins {
     kotlin("plugin.allopen")
     id("org.springframework.boot") version VersionsBackend.spring.boot
     id("io.spring.dependency-management") version VersionsBackend.spring.`dependency-management`
-    id("at.asitplus.gradle.vclib-conventions")
+    id("at.asitplus.gradle.conventions")
 }
 
 val artifactVersion: String by extra
@@ -48,7 +48,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.httpcomponents.client5:httpclient5")
-    implementation("com.nimbusds:nimbus-jose-jwt:${VcLibVersions.Jvm.`jose-jwt`}")
+    implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.nimbus}")
     implementation(napier())
     implementation(coroutines())
     implementation(serialization("json"))
