@@ -1,11 +1,14 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.idaustria.IdAustriaCredential
+import at.asitplus.wallet.lib.CryptoPublicKey
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
 import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldBeNull
@@ -44,6 +47,7 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var credentialSubject: CredentialSubject
     private lateinit var issuanceDate: Instant
     private lateinit var expirationDate: Instant
+    private lateinit var subjectPublicKey: CryptoPublicKey
     private var timePeriod: Int = 0
 
     @BeforeEach
@@ -52,17 +56,17 @@ class RevocationServiceStatusListIndexTest {
         vcId = UUID.randomUUID().toString()
         attributeName = ConstantIndex.IdAustriaCredential.vcType
         subjectId = UUID.randomUUID().toString()
-        credentialSubject =
-            IdAustriaCredential(
-                subjectId,
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
-                LocalDate.fromEpochDays(1)
-            )
+        credentialSubject = IdAustriaCredential(
+            subjectId,
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            LocalDate.fromEpochDays(1)
+        )
         issuanceDate = Clock.System.now()
         expirationDate = Clock.System.now() + 60.seconds
         validUntil = Clock.System.now() + 2.seconds
         bpk = UUID.randomUUID().toString()
+        subjectPublicKey = Client().jsonWebKey.toCryptoPublicKey()!!
         credentialRepo.deleteAll()
         revokedCredentialRepo.deleteAll()
     }
@@ -70,7 +74,13 @@ class RevocationServiceStatusListIndexTest {
     @Test
     @Transactional
     fun `simple positive add and revoke vcId should work`() {
-        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
+        revocationService.storeGetNextIndex(
+            issuanceDate,
+            expirationDate,
+            timePeriod,
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            subjectPublicKey
+        )
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
         revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
         revocationService.isRevoked(vcId, timePeriod) shouldBe true
@@ -92,7 +102,13 @@ class RevocationServiceStatusListIndexTest {
 
     private fun storeNewCredential(i: Int): Long? {
         vcId = UUID.randomUUID().toString()
-        return revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, i)
+        return revocationService.storeGetNextIndex(
+            issuanceDate,
+            expirationDate,
+            i,
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            subjectPublicKey
+        )
     }
 
     @Test
@@ -109,17 +125,32 @@ class RevocationServiceStatusListIndexTest {
             credentialRepo.save(it)
         }
 
-        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
-            .shouldBeNull()
+        revocationService.storeGetNextIndex(
+            issuanceDate,
+            expirationDate,
+            timePeriod,
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            subjectPublicKey
+        ).shouldBeNull()
     }
 
     @Test
     @Transactional
     fun `double adding vcId should return null`() {
-        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
-            .shouldNotBeNull()
-        revocationService.storeGetNextIndex(vcId, credentialSubject, issuanceDate, expirationDate, timePeriod)
-            .shouldBeNull()
+        revocationService.storeGetNextIndex(
+            issuanceDate,
+            expirationDate,
+            timePeriod,
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            subjectPublicKey
+        ).shouldNotBeNull()
+        revocationService.storeGetNextIndex(
+            issuanceDate,
+            expirationDate,
+            timePeriod,
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            subjectPublicKey
+        ).shouldBeNull()
     }
 
     @Test
@@ -139,11 +170,11 @@ class RevocationServiceStatusListIndexTest {
             val vcId = UUID.randomUUID().toString()
             val revocationListIndex =
                 revocationService.storeGetNextIndex(
-                    vcId,
-                    credentialSubject,
                     issuanceDate,
                     expirationDate,
-                    timePeriod
+                    timePeriod,
+                    IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+                    subjectPublicKey
                 )
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)

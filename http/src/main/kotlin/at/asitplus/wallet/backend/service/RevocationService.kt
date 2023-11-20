@@ -1,14 +1,21 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
-import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.CryptoPublicKey
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
+import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.encodeToByteArray
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
@@ -29,11 +36,11 @@ interface RevocationService {
      * can verify the revocation status).
      */
     fun storeGetNextIndex(
-        vcId: String,
-        credentialSubject: CredentialSubject,
         issuanceDate: Instant,
         expirationDate: Instant,
-        timePeriod: Int
+        timePeriod: Int,
+        credential: IssuerCredentialStore.Credential,
+        subjectPublicKey: CryptoPublicKey
     ): Long?
 
     /**
@@ -89,37 +96,44 @@ class DefaultRevocationService(
      * can verify the revocation status).
      */
     override fun storeGetNextIndex(
-        vcId: String,
-        credentialSubject: CredentialSubject,
         issuanceDate: Instant,
         expirationDate: Instant,
-        timePeriod: Int
+        timePeriod: Int,
+        credential: IssuerCredentialStore.Credential,
+        subjectPublicKey: CryptoPublicKey
     ): Long? =
         runCatching {
             synchronized(CredentialRepositoriesLock) {
-                if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
+                val id = credential.extractVcId()
+                    // we might store something later on ... index will not be used by vclib
+                    ?: return 0
+                if (credentialRepo.findBytimePeriodAndVcId(timePeriod, id) != null)
                     return@runCatching null.also {
                         Napier.e("Tried to store a new credential for existing vcId")
-                        Napier.v("vcId: '$vcId'")
+                        Napier.v("vcId: '$id'")
                     }
                 val revocationListIndex = max(
                     (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
                     revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
                 ) + 1
-                val attributeName = credentialSubject.javaClass.simpleName
                 val issuedCredential = IssuedCredential(
-                    vcId,
-                    credentialSubject.id,
-                    expirationDate.toJavaInstant(),
-                    timePeriod,
-                    attributeName,
-                    revocationListIndex
+                    vcId = id,
+                    subjectId = subjectPublicKey.toJsonWebKey().identifier,
+                    validUntil = expirationDate.toJavaInstant(),
+                    timePeriod = timePeriod,
+                    attributeName = "TODO from vclib",
+                    revocationListIndex = revocationListIndex
                 )
                 val savedCredential = credentialRepo.save(issuedCredential)
                 return@runCatching savedCredential.revocationListIndex
             }
         }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
 
+    private fun IssuerCredentialStore.Credential.extractVcId() = when (this) {
+        is IssuerCredentialStore.Credential.Iso -> null
+        is IssuerCredentialStore.Credential.VcJwt -> vcId
+        is IssuerCredentialStore.Credential.VcSd -> vcId
+    }
 
     /**
      * Revokes one credential, specified by its [vcId] (which is a unique identifier
@@ -163,7 +177,7 @@ class DefaultRevocationService(
         val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             Napier.i("Deleting credential")
-            Napier.v("vcId: ${it.vcId}, subjectId: ${it.subjectId}")
+            Napier.v("vcId: ${it.vcId}")
             credentialRepo.delete(it)
         }
         return list.size

@@ -1,10 +1,13 @@
 # Changelog
 
-NEXT (2.0.0:
+3.2.0:
+ - Remove everything related to PupilIds
+ - Remove all submodules
+ - Update dependency on vclib to 3.2.0
+
+2.0.0:
  - Implement OpenID for VerifiableCredentialIssuance, as well as App Authentication over OpenID Connect
  - Add debug endpoint to create credentials with custom attribute values
-
-NEXT
  - depend on locally built umbrella lib
  - add new `purge` task to purge included umbrella lib maven artifacts
  - attestation-library v0.4.0 can now ignore timely validity of Android leaf certificates

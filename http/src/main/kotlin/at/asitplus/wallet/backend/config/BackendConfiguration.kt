@@ -4,8 +4,6 @@ import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.backend.data.CredentialDataProvider
-import at.asitplus.wallet.backend.data.EidasCredentialDataProvider
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
@@ -122,16 +120,11 @@ class BackendConfiguration {
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
-    fun dataProvider(
-        authenticationSupplier: AuthenticationSupplier,
-    ): CredentialDataProvider = EidasCredentialDataProvider(authenticationSupplier)
-
-    @Bean
     fun issuerCredentialDataProvider(
-        credentialDataProvider: CredentialDataProvider
+        authenticationSupplier: AuthenticationSupplier,
     ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
         lifetime = configurationProperties.credentials.lifeTime,
-        credentialDataProvider = credentialDataProvider,
+        authenticationSupplier = authenticationSupplier,
     )
 
     @Bean

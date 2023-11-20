@@ -31,18 +31,18 @@ import kotlin.random.Random
 class Client {
 
     lateinit var keyPair: KeyPair
-    var keyId: String
+    var jsonWebKey: JsonWebKey
     var lifetimeSeconds: Long by Delegates.notNull()
 
     constructor(keyPair: KeyPair) {
         this.keyPair = keyPair
-        this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
+        this.jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!
         this.lifetimeSeconds = 60
     }
 
     constructor(lifetimeSeconds: Long = 60) {
         this.keyPair = KeyPairGenerator.getInstance("EC").generateKeyPair()!!
-        this.keyId = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!.keyId!!
+        this.jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, EcCurve.SECP_256_R_1)!!
         this.lifetimeSeconds = lifetimeSeconds
     }
 
@@ -65,17 +65,5 @@ class Client {
             JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private)
         ).encoded
     }
-
-    fun answerBindingChallenge(challenge: ByteArray): String = answerBindingChallenge(challenge, selfSignedCert.encoded)
-
-    fun answerBindingChallenge(challenge: ByteArray, certificate: ByteArray): String = signBindingChallenge(
-        JWSObject(
-            JWSHeader.Builder(JWSAlgorithm.ES256).x509CertChain(listOf(Base64.encode(certificate))).build(),
-            Payload(mapOf("challenge" to challenge.encodeToString(io.matthewnelson.encoding.base64.Base64())))
-        )
-    )
-
-    fun signBindingChallenge(jws: JWSObject) =
-        jws.also { it.sign(ECDSASigner(keyPair.private as ECPrivateKey)) }.serialize()
 
 }
