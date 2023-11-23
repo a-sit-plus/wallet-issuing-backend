@@ -1,5 +1,5 @@
 object VersionsBackend {
-    const val ida: String = "3.2.0"
+    const val ida: String = "3.2.1"
     const val zxing = "3.5.2"
     const val `google-cbor` = "0.01.02"
     const val hsmf = "0.8.3"
