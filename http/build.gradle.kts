@@ -104,6 +104,7 @@ val gitLabProjectId: String by extra
 val gitLabGroupId: String by extra
 
 repositories {
+    mavenLocal()
     gitlab(gitLabGroupId.toInt()) accessTokenFrom extra
     gitlab(119, nameOverride = "gitlabhsm")  accessTokenFrom extra
 }

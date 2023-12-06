@@ -5,8 +5,8 @@ import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.idaustria.ConstantIndex
 import at.asitplus.wallet.idaustria.IdAustriaCredential
+import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.CryptoPublicKey
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
@@ -54,10 +54,11 @@ class RevocationServiceStatusListIndexTest {
     fun beforeEach() {
         timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
-        attributeName = ConstantIndex.IdAustriaCredential.vcType
+        attributeName = IdAustriaScheme.vcType
         subjectId = UUID.randomUUID().toString()
         credentialSubject = IdAustriaCredential(
             subjectId,
+            UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             LocalDate.fromEpochDays(1)
@@ -78,7 +79,7 @@ class RevocationServiceStatusListIndexTest {
             issuanceDate,
             expirationDate,
             timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
             subjectPublicKey
         )
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
@@ -106,7 +107,7 @@ class RevocationServiceStatusListIndexTest {
             issuanceDate,
             expirationDate,
             i,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
             subjectPublicKey
         )
     }
@@ -129,7 +130,7 @@ class RevocationServiceStatusListIndexTest {
             issuanceDate,
             expirationDate,
             timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
             subjectPublicKey
         ).shouldBeNull()
     }
@@ -141,14 +142,14 @@ class RevocationServiceStatusListIndexTest {
             issuanceDate,
             expirationDate,
             timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
             subjectPublicKey
         ).shouldNotBeNull()
         revocationService.storeGetNextIndex(
             issuanceDate,
             expirationDate,
             timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
             subjectPublicKey
         ).shouldBeNull()
     }
@@ -173,7 +174,7 @@ class RevocationServiceStatusListIndexTest {
                     issuanceDate,
                     expirationDate,
                     timePeriod,
-                    IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject),
+                    IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
                     subjectPublicKey
                 )
             if (Random.nextBoolean()) {

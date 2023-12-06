@@ -16,6 +16,7 @@ import at.asitplus.wallet.backend.pki.SecurityProviderBean
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultVerifierCryptoService
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
@@ -182,10 +183,7 @@ class BackendConfiguration {
     ): IssuerService = IssuerService(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = listOf(
-            at.asitplus.wallet.idaustria.ConstantIndex.IdAustriaCredential,
-            at.asitplus.wallet.lib.data.ConstantIndex.MobileDrivingLicence2023
-        ),
+        credentialSchemes = listOf(IdAustriaScheme),
         authorizationServer = "https://eid2.oesterreich.gv.at/",
     )
 
