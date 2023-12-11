@@ -24,6 +24,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET VC status list with If-None-Match in second request`() {
+        Thread.sleep(1000L) // wait for RevocationListScheduler to write the revocation list
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
         val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
         }.andExpect {
@@ -47,6 +48,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET VC status list, with If-Modified-Since in second request`() {
+        Thread.sleep(1000L) // wait for RevocationListScheduler to write the revocation list
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
         val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
         }.andExpect {
@@ -70,7 +72,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET VC status list with invalid period`() {
-        mockMvc.get("/credentials/status/${timePeriodProvider.getRelevantTimePeriods(Clock.System).first() * 2}") {
+        mockMvc.get("/credentials/status/${timePeriodProvider.getRelevantTimePeriods(Clock.System).max() * 2}") {
         }.andExpect {
             status { isNotFound() }
             content { string(emptyString()) }
