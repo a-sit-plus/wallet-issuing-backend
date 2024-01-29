@@ -15,9 +15,11 @@ import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlin.time.Duration
 
@@ -104,7 +106,7 @@ class IssuerCredentialDataProviderAdapter(
     )
 
     private fun claim(claimNames: Collection<String>?, key: String, value: Any?) =
-        if (claimNames.isNullOrContains(key) && value != null) ClaimToBeIssued(key, value) else null
+        if (claimNames.isNullOrContains(key) && value != null) ClaimToBeIssued(key, value.encodeIfNeeded()) else null
 
     private fun Collection<String>?.isNullOrContains(name: String) =
         this == null || contains(name)
@@ -134,3 +136,7 @@ class IssuerCredentialDataProviderAdapter(
         get() = getClaimAsString("urn:eidgvat:attributes.mainAddress")
 
 }
+
+@OptIn(ExperimentalEncodingApi::class)
+private fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
+
