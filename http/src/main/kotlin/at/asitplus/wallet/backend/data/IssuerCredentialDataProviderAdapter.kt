@@ -57,6 +57,7 @@ class IssuerCredentialDataProviderAdapter(
                     lastname = idToken.familyName,
                     dateOfBirth = idToken.dateOfBirth,
                     portrait = idToken.portrait,
+                    mainAddress = idToken.mainAddress,
                     ageOver14 = idToken.ageOver14,
                     ageOver16 = idToken.ageOver16,
                     ageOver18 = idToken.ageOver18,
