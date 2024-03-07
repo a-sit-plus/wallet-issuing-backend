@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
@@ -159,7 +160,7 @@ class BackendConfiguration {
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
         issuerCryptoService: CryptoService
     ): Issuer = IssuerAgent(
-        identifier = issuerCryptoService.identifier,
+        identifier = issuerCryptoService.jsonWebKey.identifier,
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
@@ -171,7 +172,8 @@ class BackendConfiguration {
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         timePeriodProvider = timePeriodProvider(),
         validator = Validator.newDefaultInstance(DefaultVerifierCryptoService()),
-        coseService = DefaultCoseService(issuerCryptoService)
+        coseService = DefaultCoseService(issuerCryptoService),
+        cryptoAlgorithms = listOf(CryptoAlgorithm.ES256)
     )
 
     @Bean

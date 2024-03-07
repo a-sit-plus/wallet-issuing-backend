@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.lib.CryptoPublicKey
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import kotlinx.datetime.Instant
 

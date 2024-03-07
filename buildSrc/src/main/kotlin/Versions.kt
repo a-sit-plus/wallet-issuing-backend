@@ -7,7 +7,7 @@ object VersionsBackend {
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val vclib = "3.3.0"
+    const val vclib = "3.4.0"
     const val attestation = "0.5.2"
     const val nimbus = "9.37.1"
 

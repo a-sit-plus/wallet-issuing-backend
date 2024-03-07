@@ -1,12 +1,27 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.KmmResult
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.Digest
+import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.cose.CoseKey
+import at.asitplus.crypto.datatypes.fromJcaPublicKey
+import at.asitplus.crypto.datatypes.getJcaPublicKey
+import at.asitplus.crypto.datatypes.jcaName
+import at.asitplus.crypto.datatypes.jws.JsonWebKey
+import at.asitplus.crypto.datatypes.jws.JweAlgorithm
+import at.asitplus.crypto.datatypes.jws.JweEncryption
+import at.asitplus.crypto.datatypes.jws.JwkType
+import at.asitplus.crypto.datatypes.jws.jcaKeySpecName
+import at.asitplus.crypto.datatypes.jws.jcaName
 import at.asitplus.wallet.backend.pki.KeyAdapter
-import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.cbor.CoseAlgorithm
-import at.asitplus.wallet.lib.jws.*
-import at.asitplus.wallet.lib.jws.JwsExtensions.ensureSize
-import com.nimbusds.jose.JWSAlgorithm
+import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
+import at.asitplus.wallet.lib.agent.CryptoService
+import at.asitplus.wallet.lib.agent.EphemeralKeyHolder
+import at.asitplus.wallet.lib.agent.JvmEphemeralKeyHolder
 import com.nimbusds.jose.JWSSigner
 import com.nimbusds.jose.crypto.ECDSASigner
 import io.github.aakira.napier.Napier
@@ -19,7 +34,6 @@ import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.math.BigInteger
 import java.security.*
-import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
@@ -43,26 +57,25 @@ class DefaultCryptoServiceAdapter(
 ) : CryptoServiceAdapter {
 
     private val privateKey: PrivateKey = keyAdapter.privateKey
-    private val publicKey: PublicKey = keyAdapter.publicKey
+    override val publicKey: CryptoPublicKey = CryptoPublicKey.fromJcaPublicKey(keyAdapter.publicKey).getOrThrow()
     private val provider: Provider = keyAdapter.provider
-    private val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
-    override val jwsAlgorithm: JwsAlgorithm = keyAdapter.jwsAlgorithm
-    override val coseAlgorithm: CoseAlgorithm = keyAdapter.coseAlgorithm
+    override val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
+    override val coseKey: CoseKey = keyAdapter.coseKey
+    override val algorithm: CryptoAlgorithm = keyAdapter.algorithm
     override val x509Certificate = keyAdapter.certificate
-    override val certificate: ByteArray? = keyAdapter.certificate?.encoded
-    override fun toPublicKey() = jsonWebKey.toCryptoPublicKey()!!
+    override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate = at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromDer(keyAdapter.certificate.encoded)
 
 
     init {
         Napier.i("Loaded public key with id ${jsonWebKey.identifier}")
     }
 
-    override suspend fun sign(input: ByteArray): KmmResult<ByteArray> = try {
-        val signed = Signature.getInstance(jwsAlgorithm.jcaName, provider).apply {
+    override suspend fun sign(input: ByteArray): KmmResult<CryptoSignature> = try {
+        val signed = Signature.getInstance(algorithm.jcaName, provider).apply {
             initSign(privateKey)
             update(input)
         }.sign()
-        KmmResult.success(signed)
+        CryptoSignature.decodeFromDerSafe(signed)
     } catch (e: Throwable) {
         KmmResult.failure(e)
     }
@@ -119,7 +132,7 @@ class DefaultCryptoServiceAdapter(
         return try {
             val secret = KeyAgreement.getInstance(algorithm.jcaName, provider).also {
                 it.init(ephemeralKey.keyPair.private)
-                it.doPhase(recipientKey.getPublicKey(), true)
+                it.doPhase(recipientKey.toCryptoPublicKey().getOrThrow().getJcaPublicKey().getOrThrow(), true)
             }.generateSecret()
             KmmResult.success(secret)
         } catch (e: Throwable) {
@@ -131,7 +144,7 @@ class DefaultCryptoServiceAdapter(
         val parameterSpec = ECNamedCurveTable.getParameterSpec(ephemeralKey.curve?.jcaName)
         val ecPoint = parameterSpec.curve.validatePoint(BigInteger(1, ephemeralKey.x), BigInteger(1, ephemeralKey.y))
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-        val publicKey = JCEECPublicKey(ephemeralKey.type?.jcaName, ecPublicKeySpec)
+        val publicKey = JCEECPublicKey("EC", ecPublicKeySpec)
         return try {
             val secret = KeyAgreement.getInstance(algorithm.jcaName, provider).also {
                 it.init(privateKey)
@@ -161,52 +174,17 @@ class DefaultCryptoServiceAdapter(
         }
 
     override val jcaContentSigner: ContentSigner
-        get() = JcaContentSignerBuilder(jwsAlgorithm.jcaName)
+        get() = JcaContentSignerBuilder(algorithm.jcaName)
             .setProvider(provider)
             .build(privateKey)
 
     override val subjectPublicKeyInfo: SubjectPublicKeyInfo
-        get() = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.encoded))
-
-    private val JwkType.jcaName
-        get() = when (this) {
-            JwkType.EC -> "EC"
-            JwkType.RSA -> "RSA"
-        }
-
-    private val Digest.jcaName
-        get() = when (this) {
-            Digest.SHA256 -> "SHA-256"
-        }
-
-    private val JweEncryption.jcaName
-        get() = when (this) {
-            JweEncryption.A256GCM -> "AES/GCM/NoPadding"
-        }
-
-    private val JweEncryption.jcaKeySpecName
-        get() = when (this) {
-            JweEncryption.A256GCM -> "AES"
-        }
-
-    private val JweAlgorithm.jcaName
-        get() = when (this) {
-            JweAlgorithm.ECDH_ES -> "ECDH"
-        }
+        get() = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.getJcaPublicKey().getOrThrow().encoded))
 
 }
 
-val JwsAlgorithm.joseType: JWSAlgorithm
-    get() = when (this) {
-        JwsAlgorithm.ES256 -> JWSAlgorithm.ES256
-        JwsAlgorithm.ES384 -> JWSAlgorithm.ES384
-        JwsAlgorithm.ES512 -> JWSAlgorithm.ES512
-        JwsAlgorithm.HMAC256 -> JWSAlgorithm.HS256
-    }
-
 fun JsonWebKey.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: EcCurve) =
     fromCoordinates(
-        JwkType.EC,
         ecCurve,
         publicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
         publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)

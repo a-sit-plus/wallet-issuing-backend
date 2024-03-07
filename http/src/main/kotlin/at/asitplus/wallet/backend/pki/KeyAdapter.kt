@@ -1,36 +1,44 @@
 package at.asitplus.wallet.backend.pki
 
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.cose.CoseAlgorithm
+import at.asitplus.crypto.datatypes.cose.CoseKey
+import at.asitplus.crypto.datatypes.cose.toCoseKey
+import at.asitplus.crypto.datatypes.jws.JsonWebKey
 import at.asitplus.hsmfacade.provider.RemoteKeyStoreLoadParameter
 import at.asitplus.wallet.backend.config.KeyFileConfiguration
 import at.asitplus.wallet.backend.config.KeyHsmFacadeConfiguration
 import at.asitplus.wallet.backend.config.KeyStoreConfiguration
 import at.asitplus.wallet.backend.service.fromJcaKey
-import at.asitplus.wallet.lib.cbor.CoseAlgorithm
-import at.asitplus.wallet.lib.cbor.CoseEllipticCurve
-import at.asitplus.wallet.lib.cbor.CoseKey
-import at.asitplus.wallet.lib.cbor.CoseKeyType
-import at.asitplus.wallet.lib.jws.EcCurve
-import at.asitplus.wallet.lib.jws.JsonWebKey
-import at.asitplus.wallet.lib.jws.JwsAlgorithm
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
+import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.springframework.core.io.ResourceLoader
 import org.springframework.util.StreamUtils
 import java.io.StringReader
+import java.math.BigInteger
 import java.net.URI
 import java.net.URL
 import java.nio.charset.Charset
 import java.security.*
+import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
+import java.time.Instant
+import java.util.*
+import kotlin.random.Random
 
 /**
  * Interface to use different sources of cryptographic keys in the [CryptoServiceAdapter].
@@ -38,11 +46,10 @@ import java.security.interfaces.ECPublicKey
 interface KeyAdapter {
     val privateKey: PrivateKey
     val publicKey: PublicKey
-    val certificate: X509Certificate?
+    val certificate: X509Certificate
     val jsonWebKey: JsonWebKey
     val coseKey: CoseKey
-    val jwsAlgorithm: JwsAlgorithm
-    val coseAlgorithm: CoseAlgorithm
+    val algorithm: CryptoAlgorithm
     val provider: Provider
 }
 
@@ -54,10 +61,9 @@ class KeyFileAdapter(
 
 
     override val privateKey: PrivateKey
-    override val certificate: X509Certificate?
+    override val certificate: X509Certificate
     override val publicKey: PublicKey
-    override val jwsAlgorithm: JwsAlgorithm
-    override val coseAlgorithm: CoseAlgorithm
+    override val algorithm: CryptoAlgorithm
     override val provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
     override val coseKey: CoseKey
@@ -71,17 +77,12 @@ class KeyFileAdapter(
         require(k is ECPublicKey) { "expected ECPublicKey" }
 
         publicKey = k
-        certificate = c
+        certificate = c!!
 
         val ecCurve = EcCurve.SECP_256_R_1
-        jwsAlgorithm = JwsAlgorithm.ES256
-        coseAlgorithm = CoseAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        coseKey = CoseKey.fromAnsiX963Bytes(
-            type = CoseKeyType.EC2,
-            CoseEllipticCurve.P256,
-            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
-        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        algorithm = CryptoAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
+        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
         Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
@@ -107,8 +108,7 @@ class KeyStoreAdapter(
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
     override val certificate: X509Certificate
-    override val jwsAlgorithm: JwsAlgorithm
-    override val coseAlgorithm: CoseAlgorithm
+    override val algorithm: CryptoAlgorithm
     override val jsonWebKey: JsonWebKey
     override val coseKey: CoseKey
 
@@ -126,14 +126,9 @@ class KeyStoreAdapter(
         publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
-        jwsAlgorithm = JwsAlgorithm.ES256
-        coseAlgorithm = CoseAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        coseKey = CoseKey.fromAnsiX963Bytes(
-            type = CoseKeyType.EC2,
-            CoseEllipticCurve.P256,
-            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
-        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        algorithm = CryptoAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
+        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
         Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
@@ -148,8 +143,7 @@ class HsmFacadeAdapter(
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
     override val certificate: X509Certificate
-    override val jwsAlgorithm: JwsAlgorithm
-    override val coseAlgorithm: CoseAlgorithm
+    override val algorithm: CryptoAlgorithm
     override val provider: Provider = securityProviderBean.provider
     override val jsonWebKey: JsonWebKey
     override val coseKey: CoseKey
@@ -162,14 +156,9 @@ class HsmFacadeAdapter(
         publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         val ecCurve = EcCurve.SECP_256_R_1
-        jwsAlgorithm = JwsAlgorithm.ES256
-        coseAlgorithm = CoseAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve)!!
-        coseKey = CoseKey.fromAnsiX963Bytes(
-            type = CoseKeyType.EC2,
-            CoseEllipticCurve.P256,
-            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
-        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        algorithm = CryptoAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
+        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
         Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
@@ -180,9 +169,8 @@ class RandomKeyAdapter : KeyAdapter {
 
     override val privateKey: PrivateKey
     override val publicKey: PublicKey
-    override val certificate: X509Certificate? = null
-    override val jwsAlgorithm: JwsAlgorithm
-    override val coseAlgorithm: CoseAlgorithm
+    override val certificate: X509Certificate
+    override val algorithm: CryptoAlgorithm
     override val provider: Provider = BouncyCastleProvider().also { Security.addProvider(it) }
     override val jsonWebKey: JsonWebKey
     override val coseKey: CoseKey
@@ -193,14 +181,21 @@ class RandomKeyAdapter : KeyAdapter {
         privateKey = keyPair.private
         publicKey = keyPair.public
         val ecCurve = EcCurve.SECP_256_R_1
-        jwsAlgorithm = JwsAlgorithm.ES256
-        coseAlgorithm = CoseAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve)!!
-        coseKey = CoseKey.fromAnsiX963Bytes(
-            type = CoseKeyType.EC2,
-            CoseEllipticCurve.P256,
-            jsonWebKey.toAnsiX963ByteArray().getOrThrow()
-        ) ?: throw SecurityException("Could not convert Key") //TODO refactor method to return result?
+        algorithm = CryptoAlgorithm.ES256
+        jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve).getOrThrow()
+        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+        val issuer = X500Name("CN=Issuer")
+        val contentSigner by lazy { JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private) }
+        val builder = X509v3CertificateBuilder(
+            /* issuer = */ issuer,
+            /* serial = */ BigInteger.valueOf(Random.nextLong()),
+            /* notBefore = */ Date(),
+            /* notAfter = */ Date.from(Instant.now().plusSeconds(60 * 60 * 24 * 365)),
+            /* subject = */ issuer,
+            /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
+        )
+        certificate = CertificateFactory.getInstance("X.509")
+            .generateCertificate(builder.build(contentSigner).encoded.inputStream()) as X509Certificate
         Napier.i("Generated new key pair with public key: '${keyPair.public.encoded.encodeToString(Base64())}'")
     }
 }

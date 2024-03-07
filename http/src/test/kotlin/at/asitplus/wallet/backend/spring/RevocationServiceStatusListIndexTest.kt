@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
@@ -7,7 +8,6 @@ import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
-import at.asitplus.wallet.lib.CryptoPublicKey
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
 import io.kotest.assertions.withClue
@@ -67,7 +67,7 @@ class RevocationServiceStatusListIndexTest {
         expirationDate = Clock.System.now() + 60.seconds
         validUntil = Clock.System.now() + 2.seconds
         bpk = UUID.randomUUID().toString()
-        subjectPublicKey = Client().jsonWebKey.toCryptoPublicKey()!!
+        subjectPublicKey = Client().jsonWebKey.toCryptoPublicKey().getOrThrow()
         credentialRepo.deleteAll()
         revokedCredentialRepo.deleteAll()
     }
