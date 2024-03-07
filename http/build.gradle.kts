@@ -54,6 +54,7 @@ dependencies {
     implementation(serialization("json"))
     implementation(bouncycastle("bcpkix"))
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.77")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
     implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")

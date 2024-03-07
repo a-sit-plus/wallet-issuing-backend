@@ -1,21 +1,16 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.wallet.backend.Extensions.sha256
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
-import at.asitplus.wallet.lib.CryptoPublicKey
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
-import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
-import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.encodeToByteArray
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
