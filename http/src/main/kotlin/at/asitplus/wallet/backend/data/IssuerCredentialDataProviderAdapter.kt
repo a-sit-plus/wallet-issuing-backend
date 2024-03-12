@@ -1,11 +1,12 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme.Attributes
-import at.asitplus.wallet.lib.CryptoPublicKey
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
@@ -15,8 +16,8 @@ import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -49,51 +50,80 @@ class IssuerCredentialDataProviderAdapter(
             return KmmResult.success(listOf())
         }
         val singleItem = when (representation) {
-            ConstantIndex.CredentialRepresentation.PLAIN_JWT -> CredentialToBeIssued.VcJwt(
-                subject = IdAustriaCredential(
-                    id = subjectPublicKey.toJsonWebKey().identifier,
-                    bpk = idToken.bpk,
-                    firstname = idToken.givenName,
-                    lastname = idToken.familyName,
-                    dateOfBirth = idToken.dateOfBirth,
-                    portrait = idToken.portrait,
-                    mainAddress = idToken.mainAddress,
-                    ageOver14 = idToken.ageOver14,
-                    ageOver16 = idToken.ageOver16,
-                    ageOver18 = idToken.ageOver18,
-                    ageOver21 = idToken.ageOver21,
-                ),
-                expiration = maxExpiration,
-            )
+            ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
+                IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, maxExpiration)
+                else -> null
+            }
 
-            ConstantIndex.CredentialRepresentation.SD_JWT -> CredentialToBeIssued.VcSd(
-                claims = buildClaims(claimNames, idToken),
-                expiration = maxExpiration
-            )
+            ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
+                IdAustriaScheme -> idaVcSd(claimNames, idToken, maxExpiration)
+                else -> null
+            }
 
-            ConstantIndex.CredentialRepresentation.ISO_MDOC -> CredentialToBeIssued.Iso(
-                issuerSignedItems = buildClaims(claimNames, idToken).mapIndexed { index, claimToBeIssued ->
-                    IssuerSignedItem(
-                        digestId = index.toUInt(),
-                        random = Random.nextBytes(16),
-                        elementIdentifier = claimToBeIssued.name,
-                        elementValue = when (val value = claimToBeIssued.value) {
-                            is String -> ElementValue(string = value)
-                            is ByteArray -> ElementValue(bytes = value)
-                            is LocalDate -> ElementValue(date = value)
-                            is Boolean -> ElementValue(boolean = value)
-                            else -> ElementValue(string = value.toString())
-                        }
-                    )
-                },
-                expiration = maxExpiration
-            )
+
+            ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
+                IdAustriaScheme -> idaIso(claimNames, idToken, maxExpiration)
+                else -> null
+            }
         }
-
-        return KmmResult.success(listOf(singleItem))
+        return singleItem?.let {
+            KmmResult.success(listOf(it))
+        } ?: KmmResult.success(listOf())
     }
 
-    private fun buildClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
+    private fun idaIso(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.Iso(
+        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed { index, claimToBeIssued ->
+            IssuerSignedItem(
+                digestId = index.toUInt(),
+                random = Random.nextBytes(16),
+                elementIdentifier = claimToBeIssued.name,
+                elementValue = when (val value = claimToBeIssued.value) {
+                    is String -> ElementValue(string = value)
+                    is ByteArray -> ElementValue(bytes = value)
+                    is LocalDate -> ElementValue(date = value)
+                    is Boolean -> ElementValue(boolean = value)
+                    else -> ElementValue(string = value.toString())
+                }
+            )
+        },
+        expiration = maxExpiration
+    )
+
+    private fun idaVcSd(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.VcSd(
+        claims = buildIdaClaims(claimNames, idToken),
+        expiration = maxExpiration
+    )
+
+    private fun idaVcJwt(
+        subjectPublicKey: CryptoPublicKey,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.VcJwt(
+        subject = IdAustriaCredential(
+            id = subjectPublicKey.toJsonWebKey().identifier,
+            bpk = idToken.bpk,
+            firstname = idToken.givenName,
+            lastname = idToken.familyName,
+            dateOfBirth = idToken.dateOfBirth,
+            portrait = idToken.portrait,
+            mainAddress = idToken.mainAddress,
+            ageOver14 = idToken.ageOver14,
+            ageOver16 = idToken.ageOver16,
+            ageOver18 = idToken.ageOver18,
+            ageOver21 = idToken.ageOver21,
+        ),
+        expiration = maxExpiration,
+    )
+
+    private fun buildIdaClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
         claim(claimNames, Attributes.BPK, idToken.bpk),
         claim(claimNames, Attributes.FIRSTNAME, idToken.givenName),
         claim(claimNames, Attributes.LASTNAME, idToken.familyName),
