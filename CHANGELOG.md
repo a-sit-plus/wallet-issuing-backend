@@ -3,7 +3,9 @@
 3.2.0:
  - Remove everything related to PupilIds
  - Remove all submodules
- - Update dependency on vclib to 3.2.0
+ - Update dependency on vclib to 3.4.0
+ - Issue ID Austria credentials
+ - Issue EU PID credentials
 
 2.0.0:
  - Implement OpenID for VerifiableCredentialIssuance, as well as App Authentication over OpenID Connect
