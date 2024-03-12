@@ -4,6 +4,8 @@ import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.eupid.EuPidCredential
+import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme.Attributes
@@ -42,27 +44,28 @@ class IssuerCredentialDataProviderAdapter(
         val maxExpiration = Clock.System.now() + lifetime
         Napier.v("getCredential for $credentialScheme and $subjectPublicKey in $representation")
         val idToken = authenticationSupplier.getCurrentUserOidcDetails()
-        if (credentialScheme != IdAustriaScheme) {
-            return KmmResult.success(listOf())
-        }
         Napier.v("getCredential user is $idToken")
         if (idToken == null) {
+            Napier.w("getCredential returns null, no IdToken in session")
             return KmmResult.success(listOf())
         }
         val singleItem = when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
                 IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, maxExpiration)
+                EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, maxExpiration)
                 else -> null
             }
 
             ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
                 IdAustriaScheme -> idaVcSd(claimNames, idToken, maxExpiration)
+                EuPidScheme -> eupidVcSd(claimNames, idToken, maxExpiration)
                 else -> null
             }
 
 
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
                 IdAustriaScheme -> idaIso(claimNames, idToken, maxExpiration)
+                EuPidScheme -> eupidIso(claimNames, idToken, maxExpiration)
                 else -> null
             }
         }
@@ -76,21 +79,33 @@ class IssuerCredentialDataProviderAdapter(
         idToken: OidcIdToken,
         maxExpiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed { index, claimToBeIssued ->
-            IssuerSignedItem(
-                digestId = index.toUInt(),
-                random = Random.nextBytes(16),
-                elementIdentifier = claimToBeIssued.name,
-                elementValue = when (val value = claimToBeIssued.value) {
-                    is String -> ElementValue(string = value)
-                    is ByteArray -> ElementValue(bytes = value)
-                    is LocalDate -> ElementValue(date = value)
-                    is Boolean -> ElementValue(boolean = value)
-                    else -> ElementValue(string = value.toString())
-                }
-            )
-        },
+        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
         expiration = maxExpiration
+    )
+
+    private fun eupidIso(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.Iso(
+        issuerSignedItems = buildEupidClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        expiration = maxExpiration
+    )
+
+    private fun buildIssuerSignedItem(
+        index: Int,
+        claimToBeIssued: ClaimToBeIssued
+    ) = IssuerSignedItem(
+        digestId = index.toUInt(),
+        random = Random.nextBytes(16),
+        elementIdentifier = claimToBeIssued.name,
+        elementValue = when (val value = claimToBeIssued.value) {
+            is String -> ElementValue(string = value)
+            is ByteArray -> ElementValue(bytes = value)
+            is LocalDate -> ElementValue(date = value)
+            is Boolean -> ElementValue(boolean = value)
+            else -> ElementValue(string = value.toString())
+        }
     )
 
     private fun idaVcSd(
@@ -99,6 +114,15 @@ class IssuerCredentialDataProviderAdapter(
         maxExpiration: Instant
     ) = CredentialToBeIssued.VcSd(
         claims = buildIdaClaims(claimNames, idToken),
+        expiration = maxExpiration
+    )
+
+    private fun eupidVcSd(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.VcSd(
+        claims = buildEupidClaims(claimNames, idToken),
         expiration = maxExpiration
     )
 
@@ -123,17 +147,39 @@ class IssuerCredentialDataProviderAdapter(
         expiration = maxExpiration,
     )
 
+    private fun eupidVcJwt(
+        subjectPublicKey: CryptoPublicKey,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.VcJwt(
+        subject = EuPidCredential(
+            id = subjectPublicKey.toJsonWebKey().identifier,
+            familyName = idToken.familyName,
+            givenName = idToken.givenName,
+            birthDate = idToken.dateOfBirth,
+            ageOver18 = idToken.ageOver18,
+        ),
+        expiration = maxExpiration,
+    )
+
     private fun buildIdaClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
         claim(claimNames, Attributes.BPK, idToken.bpk),
         claim(claimNames, Attributes.FIRSTNAME, idToken.givenName),
         claim(claimNames, Attributes.LASTNAME, idToken.familyName),
-        claim(claimNames, Attributes.DATE_OF_BIRTH, idToken.birthdate),
+        claim(claimNames, Attributes.DATE_OF_BIRTH, idToken.dateOfBirth),
         claim(claimNames, Attributes.PORTRAIT, idToken.portrait),
         claim(claimNames, Attributes.MAIN_ADDRESS, idToken.mainAddress),
         claim(claimNames, Attributes.AGE_OVER_14, idToken.ageOver14),
         claim(claimNames, Attributes.AGE_OVER_16, idToken.ageOver16),
         claim(claimNames, Attributes.AGE_OVER_18, idToken.ageOver18),
         claim(claimNames, Attributes.AGE_OVER_21, idToken.ageOver21),
+    )
+
+    private fun buildEupidClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
+        claim(claimNames, EuPidScheme.Attributes.FAMILY_NAME, idToken.familyName),
+        claim(claimNames, EuPidScheme.Attributes.GIVEN_NAME, idToken.givenName),
+        claim(claimNames, EuPidScheme.Attributes.BIRTH_DATE, idToken.dateOfBirth),
+        claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.ageOver18),
     )
 
     private fun claim(claimNames: Collection<String>?, key: String, value: Any?) =
