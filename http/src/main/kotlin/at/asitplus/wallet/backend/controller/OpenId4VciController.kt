@@ -68,7 +68,7 @@ class OpenId4VciController(
             Napier.d("/token returns $result")
             ResponseEntity.ok(Json.encodeToString(result))
         } catch (e: OAuth2Exception) {
-            Napier.w("/token error $e, $e.error")
+            Napier.w("/token error", e)
             buildOidcErrorResponse(e.error)
         }
     }
@@ -94,7 +94,7 @@ class OpenId4VciController(
             Napier.d("/credential returns $credential")
             ResponseEntity.ok(jsonSerializer.encodeToString(credential))
         } catch (e: OAuth2Exception) {
-            Napier.w("/credential error $e, $e.error")
+            Napier.w("/credential error", e)
             buildOidcErrorResponse(e.error)
         }
     }
