@@ -63,6 +63,7 @@ dependencies {
 
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
+    implementation("at.asitplus.wallet:vclib:${VersionsBackend.vclib}")
     implementation("at.asitplus.wallet:vclib-openid:${VersionsBackend.vclib}")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")

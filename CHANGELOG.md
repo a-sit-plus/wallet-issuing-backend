@@ -1,5 +1,8 @@
 # Changelog
 
+3.5.0:
+ - Update dependcny on vclib to 3.5.0
+
 3.2.0:
  - Remove everything related to PupilIds
  - Remove all submodules
