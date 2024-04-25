@@ -7,6 +7,7 @@ import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
 import io.kotest.matchers.collections.shouldBeSingleton
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
@@ -146,6 +147,25 @@ class IssuingTest {
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == EuPidScheme.Attributes.BIRTH_DATE }
+            .elementValue.date shouldBe LocalDate(1983, 6, 4)
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun mdl_iso_ok() {
+        val client = Client()
+        val credential = issuerCredentialDataProvider.getCredential(
+            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            credentialScheme = ConstantIndex.MobileDrivingLicence2023,
+            representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
+        ).getOrThrow()
+
+        credential.shouldBeSingleton()
+        val single = credential.single()
+        single.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        single.issuerSignedItems.shouldNotBeEmpty()
+        single.issuerSignedItems
+            .first { it.elementIdentifier == MobileDrivingLicenceDataElements.BIRTH_DATE }
             .elementValue.date shouldBe LocalDate(1983, 6, 4)
     }
 }
