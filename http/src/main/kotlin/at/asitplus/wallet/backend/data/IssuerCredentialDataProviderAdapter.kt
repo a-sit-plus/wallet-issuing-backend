@@ -15,6 +15,7 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.iso.ElementValue
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
+import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -66,6 +67,7 @@ class IssuerCredentialDataProviderAdapter(
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
                 IdAustriaScheme -> idaIso(claimNames, idToken, maxExpiration)
                 EuPidScheme -> eupidIso(claimNames, idToken, maxExpiration)
+                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, idToken, maxExpiration)
                 else -> null
             }
         }
@@ -89,6 +91,15 @@ class IssuerCredentialDataProviderAdapter(
         maxExpiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildEupidClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        expiration = maxExpiration
+    )
+
+    private fun mdlIso(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        maxExpiration: Instant
+    ) = CredentialToBeIssued.Iso(
+        issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
         expiration = maxExpiration
     )
 
@@ -180,6 +191,17 @@ class IssuerCredentialDataProviderAdapter(
         claim(claimNames, EuPidScheme.Attributes.GIVEN_NAME, idToken.givenName),
         claim(claimNames, EuPidScheme.Attributes.BIRTH_DATE, idToken.dateOfBirth),
         claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.ageOver18),
+    )
+
+    private fun buildMdlClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
+        claim(claimNames, MobileDrivingLicenceDataElements.FAMILY_NAME, idToken.familyName),
+        claim(claimNames, MobileDrivingLicenceDataElements.GIVEN_NAME, idToken.givenName),
+        claim(claimNames, MobileDrivingLicenceDataElements.BIRTH_DATE, idToken.dateOfBirth),
+        claim(claimNames, MobileDrivingLicenceDataElements.ISSUE_DATE, LocalDate.parse("2023-01-01")),
+        claim(claimNames, MobileDrivingLicenceDataElements.EXPIRY_DATE, LocalDate.parse("2025-12-31")),
+        claim(claimNames, MobileDrivingLicenceDataElements.DOCUMENT_NUMBER, "123456" + Random.nextLong(1000, 9999)),
+        claim(claimNames, MobileDrivingLicenceDataElements.PORTRAIT, idToken.portrait),
+        claim(claimNames, MobileDrivingLicenceDataElements.AGE_OVER_18, idToken.ageOver18),
     )
 
     private fun claim(claimNames: Collection<String>?, key: String, value: Any?) =
