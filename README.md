@@ -234,17 +234,11 @@ truststore:
 
 Clients may use [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) to retrieve credentials from this service.
 
-The credential issuer metadata is available at `/.well-known/openid-credential-issuer`, the credential endpoint at `/credential`.
+The credential issuer metadata is available at `/.well-known/openid-credential-issuer`, the credential endpoint at `/credential`, the authorization endpoint at `/authorize`, and the token endpoint at `/token`.
 
-Authorization endpoint (`/authorize`), and the token endpoint (`/token`) shall be available at the authorization server, i.e. the ID Austria System.
-
+To use the issuing process, clients need to authenticate using ID Austria first, see configuration below:
 
 ```yaml
-authorization-server:
-  public-context: "https://eid.egiz.gv.at/"
-  authorization-endpoint: "https://eid.egiz.gv.at/idp/profile/oidc/authorize"
-  token-endpoint: "https://eid.egiz.gv.at/idp/profile/oidc/token"
-  userinfo-endpoint: "https://eid.egiz.gv.at/idp/profile/oidc/userinfo"
 spring:
   security:
     oauth2:

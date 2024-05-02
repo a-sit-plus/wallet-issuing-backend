@@ -31,17 +31,6 @@ data class BackendConfigurationProperties(
      * Configure details about revocation lists for Verifiable Credentials
      */
     val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
-    /**
-     * Authorization Server for OpenId 4 Verifiable Credential Issuance
-     */
-    val authorizationServer: AuthorizationServerConfigurationProperties = AuthorizationServerConfigurationProperties(),
-)
-
-data class AuthorizationServerConfigurationProperties(
-    val publicContext: String = "http://localhost:8081/",
-    val authorizationEndpoint: String = "http://localhost:8081/authorize",
-    val tokenEndpoint: String = "http://localhost:8081/token",
-    val userinfoEndpoint: String = "http://localhost:8081/userinfo",
 )
 
 data class DebugConfigurationProperties(

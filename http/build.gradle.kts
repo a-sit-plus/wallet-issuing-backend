@@ -64,7 +64,8 @@ dependencies {
     implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
     implementation(vclib.vclib)
     implementation(vclib.vclib.openid)
-    implementation("at.asitplus.crypto:datatypes-jws:2.6.0-SNAPSHOT")
+    implementation("at.asitplus.crypto:datatypes-jws:2.6.0")
+    implementation("at.asitplus.crypto:datatypes-cose:2.6.0")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
 

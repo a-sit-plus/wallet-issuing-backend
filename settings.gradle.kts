@@ -17,11 +17,12 @@ include("http")
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     versionCatalogs {
         create("vclib") {
-            from("at.asitplus.wallet:vclib-openid-versionCatalog:3.6.0")
+            from("at.asitplus.wallet:vclib-openid-versionCatalog:3.7.0-SNAPSHOT")
         }
     }
 }

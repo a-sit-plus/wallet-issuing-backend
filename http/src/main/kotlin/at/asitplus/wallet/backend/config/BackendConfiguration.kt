@@ -34,7 +34,7 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServer
-import at.asitplus.wallet.lib.oidvci.OidcUserInfo
+import at.asitplus.wallet.lib.oidvci.SimpleAuthorizationService
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Autowired
@@ -172,9 +172,7 @@ class BackendConfiguration {
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
         revocationListBaseUrl = appendPath(
-            configurationProperties.publicContext,
-            "credentials",
-            "status"
+            configurationProperties.publicContext, "credentials", "status"
         ),
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         timePeriodProvider = timePeriodProvider(),
@@ -195,20 +193,23 @@ class BackendConfiguration {
         publicContext = configurationProperties.publicContext,
         credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, ConstantIndex.MobileDrivingLicence2023),
         authorizationService = authorizationServer,
-        buildIssuerCredentialDataProviderOverride = { oidcUserInfo: OidcUserInfo ->
+        buildIssuerCredentialDataProviderOverride = { oidcUserInfo ->
             OidcIssuerCredentialDataProvider(
-                oidcUserInfo,
+                userInfo = oidcUserInfo,
                 lifetime = configurationProperties.credentials.lifeTime,
             )
         }
     )
 
     @Bean
-    fun authorizationServer(): OAuth2AuthorizationServer = RemoteOAuth2AuthorizationServer(
-        configurationProperties.authorizationServer.publicContext,
-        configurationProperties.authorizationServer.authorizationEndpoint,
-        configurationProperties.authorizationServer.tokenEndpoint,
-        configurationProperties.authorizationServer.userinfoEndpoint
+    fun authorizationServer(
+        authenticationSupplier: AuthenticationSupplier
+    ): SimpleAuthorizationService = SimpleAuthorizationService(
+        dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
+        credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, ConstantIndex.MobileDrivingLicence2023),
+        publicContext = configurationProperties.publicContext,
+        authorizationEndpointPath = "/authorize",
+        tokenEndpointPath = "/token",
     )
 
 
