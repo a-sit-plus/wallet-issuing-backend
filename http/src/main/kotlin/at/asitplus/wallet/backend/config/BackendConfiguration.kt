@@ -17,7 +17,9 @@ import at.asitplus.wallet.backend.pki.SecurityProviderBean
 import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme
+import at.asitplus.wallet.idaustria.Initializer
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultVerifierCryptoService
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
@@ -28,8 +30,11 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
+import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
-import at.asitplus.wallet.lib.oidvci.IssuerService
+import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServer
+import at.asitplus.wallet.lib.oidvci.OidcUserInfo
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Autowired
@@ -83,7 +88,7 @@ class BackendConfiguration {
     private lateinit var resourceLoader: ResourceLoader
 
     init {
-        at.asitplus.wallet.idaustria.Initializer.initWithVcLib()
+        Initializer.initWithVcLib()
         at.asitplus.wallet.eupid.Initializer.initWithVcLib()
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
@@ -175,7 +180,7 @@ class BackendConfiguration {
         timePeriodProvider = timePeriodProvider(),
         validator = Validator.newDefaultInstance(DefaultVerifierCryptoService()),
         coseService = DefaultCoseService(issuerCryptoService),
-        cryptoAlgorithms = listOf(CryptoAlgorithm.ES256)
+        cryptoAlgorithms = setOf(CryptoAlgorithm.ES256)
     )
 
     @Bean
@@ -183,12 +188,27 @@ class BackendConfiguration {
 
     @Bean
     fun issuerService(
-        issuer: Issuer
-    ): IssuerService = IssuerService(
+        issuer: Issuer,
+        authorizationServer: OAuth2AuthorizationServer,
+    ): CredentialIssuer = CredentialIssuer(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = listOf(IdAustriaScheme),
-        authorizationServer = "https://eid2.oesterreich.gv.at/",
+        credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, ConstantIndex.MobileDrivingLicence2023),
+        authorizationService = authorizationServer,
+        buildIssuerCredentialDataProviderOverride = { oidcUserInfo: OidcUserInfo ->
+            OidcIssuerCredentialDataProvider(
+                oidcUserInfo,
+                lifetime = configurationProperties.credentials.lifeTime,
+            )
+        }
+    )
+
+    @Bean
+    fun authorizationServer(): OAuth2AuthorizationServer = RemoteOAuth2AuthorizationServer(
+        configurationProperties.authorizationServer.publicContext,
+        configurationProperties.authorizationServer.authorizationEndpoint,
+        configurationProperties.authorizationServer.tokenEndpoint,
+        configurationProperties.authorizationServer.userinfoEndpoint
     )
 
 
