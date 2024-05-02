@@ -13,3 +13,16 @@ pluginManagement {
 rootProject.name = "backend"
 
 include("http")
+
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+    versionCatalogs {
+        create("vclib") {
+            from("at.asitplus.wallet:vclib-openid-versionCatalog:3.6.0")
+        }
+    }
+}
+

@@ -54,11 +54,6 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 }
 ```
 
-### OpenID for Verifiable Credential Issuance
-
-Clients may use [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) to retrieve credentials from this service.
-
-The credential issuer metadata is available at `/.well-known/openid-credential-issuer`, the authorization endpoint at `/authorize`, the token endpoint at `/token`, and the credential endpoint at `/credential`.
 
 ### Debug
 
@@ -106,8 +101,6 @@ backend:
     enabled: false
   authn:
     attestation: [...]
-  attribute-source:
-    type: RANDOM
 ```
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
@@ -237,11 +230,21 @@ truststore:
   password: changeit               # may be null
 ```
 
-### ID Austria Authentication
+### OpenID for Verifiable Credential Issuance
 
-Clients may authenticate using OIDC and the ID Austria system.
+Clients may use [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) to retrieve credentials from this service.
+
+The credential issuer metadata is available at `/.well-known/openid-credential-issuer`, the credential endpoint at `/credential`.
+
+Authorization endpoint (`/authorize`), and the token endpoint (`/token`) shall be available at the authorization server, i.e. the ID Austria System.
+
 
 ```yaml
+authorization-server:
+  public-context: "https://eid.egiz.gv.at/"
+  authorization-endpoint: "https://eid.egiz.gv.at/idp/profile/oidc/authorize"
+  token-endpoint: "https://eid.egiz.gv.at/idp/profile/oidc/token"
+  userinfo-endpoint: "https://eid.egiz.gv.at/idp/profile/oidc/userinfo"
 spring:
   security:
     oauth2:
