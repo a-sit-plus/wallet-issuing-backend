@@ -1,15 +1,21 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.lib.oidc.AuthenticationRequestParameters
+import at.asitplus.wallet.lib.oidc.AuthenticationResponseResult
 import at.asitplus.wallet.lib.oidc.OpenIdConstants
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.CredentialRequestParameters
 import at.asitplus.wallet.lib.oidvci.IssuerMetadata
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
-import at.asitplus.wallet.lib.oidvci.OAuth2Exception
+import at.asitplus.wallet.lib.oidvci.SimpleAuthorizationService
+import at.asitplus.wallet.lib.oidvci.TokenRequestParameters
+import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
+import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.lib.oidvci.jsonSerializer
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -27,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class OpenId4VciController(
     private val credentialIssuer: CredentialIssuer,
+    private val authorizationService: SimpleAuthorizationService,
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER)
@@ -39,13 +47,45 @@ class OpenId4VciController(
     @RequestMapping("/offer", method = [RequestMethod.GET])
     fun offer(): ResponseEntity<*> = runBlocking {
         Napier.i("/offer called")
-        return@runBlocking suspendingOffer()
-    }
-
-    private suspend fun suspendingOffer(): ResponseEntity<out Any> {
         val offer = credentialIssuer.credentialOffer()
         Napier.d("/offer returns $offer")
-        return ResponseEntity.ok(jsonSerializer.encodeToString(offer))
+        return@runBlocking ResponseEntity.ok(jsonSerializer.encodeToString(offer))
+    }
+
+    @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET])
+    fun authorize(
+        @RequestParam requestParams: Map<String, String>,
+        @RequestBody requestBody: String?
+    ): ResponseEntity<*> = runBlocking {
+        Napier.i("/authorize called")
+        Napier.v("/authorize called with $requestParams and $requestBody")
+        val params: AuthenticationRequestParameters =
+            if (requestBody.isNullOrEmpty()) requestParams.decodeFromUrlQuery()
+            else requestBody.decodeFromPostBody()
+        val result = authorizationService.authorize(params).getOrElse {
+            Napier.w("/authorize got error", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        if (result !is AuthenticationResponseResult.Redirect) {
+            Napier.w("/authorize unsupported $result")
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        Napier.d("/authorize returns ${result.url}")
+        return@runBlocking buildOidcRedirect(result.url)
+    }
+
+    @RequestMapping("/token", method = [RequestMethod.POST])
+    fun token(@RequestBody requestBody: String): ResponseEntity<*> = runBlocking {
+        Napier.i("/token called")
+        Napier.v("/token called with $requestBody")
+        val params: TokenRequestParameters = requestBody.decodeFromPostBody()
+            ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        val result = authorizationService.token(params).getOrElse {
+            Napier.w("/token got error", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        Napier.d("/token returns $result")
+        return@runBlocking ResponseEntity.ok(Json.encodeToString(result))
     }
 
     @RequestMapping("/credential", method = [RequestMethod.POST])
@@ -55,23 +95,23 @@ class OpenId4VciController(
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/credential called")
         Napier.v("/credential called with $authorizationHeader and $requestBody")
-        return@runBlocking suspendingCredential(authorizationHeader, requestBody)
+        val params: CredentialRequestParameters = jsonSerializer.decodeFromString(requestBody)
+            ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+
+        val credential = credentialIssuer.credential(authorizationHeader, params).getOrElse {
+            Napier.w("/credential got error", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        Napier.d("/credential returns $credential")
+        return@runBlocking ResponseEntity.ok(jsonSerializer.encodeToString(credential))
+
     }
 
-    private suspend fun suspendingCredential(
-        authorizationHeader: String,
-        requestBody: String
-    ): ResponseEntity<out Any> {
-        val params: CredentialRequestParameters = jsonSerializer.decodeFromString(requestBody)
-            ?: return buildOidcErrorResponse("invalid_request")
-        return try {
-            val credential = credentialIssuer.credential(authorizationHeader, params)
-            Napier.d("/credential returns $credential")
-            ResponseEntity.ok(jsonSerializer.encodeToString(credential))
-        } catch (e: OAuth2Exception) {
-            Napier.w("/credential error", e)
-            buildOidcErrorResponse(e.error)
-        }
+    private fun buildOidcRedirect(location: String): ResponseEntity<String> {
+        return ResponseEntity
+            .status(HttpStatus.FOUND)
+            .header(HttpHeaders.LOCATION, location)
+            .build()
     }
 
     private fun buildOidcErrorResponse(error: String): ResponseEntity<OAuth2Error> {
