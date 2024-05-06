@@ -54,6 +54,7 @@ class IssuingTest {
         val subject = single.subject
         subject.shouldBeInstanceOf<IdAustriaCredential>()
         subject.dateOfBirth shouldBe LocalDate(1983, 6, 4)
+        subject.bpk shouldBe "ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo="
     }
 
     @Test
@@ -91,6 +92,9 @@ class IssuingTest {
         single.claims
             .first { it.name == IdAustriaScheme.Attributes.DATE_OF_BIRTH }
             .value shouldBe LocalDate(1983, 6, 4)
+        single.claims
+            .first { it.name == IdAustriaScheme.Attributes.BPK }
+            .value shouldBe "ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo="
     }
 
     @Test

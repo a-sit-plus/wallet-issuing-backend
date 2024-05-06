@@ -53,7 +53,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.parse(serializedCredential).shouldNotBeNull()
-        val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).shouldNotBeNull()
+        val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         val subject = vcJws.vc.credentialSubject.shouldBeInstanceOf<IdAustriaCredential>()
         subject.dateOfBirth shouldBe LocalDate(1983, 6, 4)
     }
@@ -71,7 +71,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.parse(serializedCredential).shouldNotBeNull()
-        val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).shouldNotBeNull()
+        val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         val subject = vcJws.vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
         subject.birthDate shouldBe LocalDate(1983, 6, 4)
     }
@@ -89,7 +89,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).shouldNotBeNull()
-        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).shouldNotBeNull()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests.size shouldBeGreaterThan 1
     }
 
@@ -106,7 +106,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).shouldNotBeNull()
-        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).shouldNotBeNull()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests.size shouldBeGreaterThan 1
     }
 
@@ -122,7 +122,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).shouldNotBeNull()
+        val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).getOrThrow()
         val numberOfClaims = issuerSigned.namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull()
         numberOfClaims shouldBeGreaterThan 1
     }
