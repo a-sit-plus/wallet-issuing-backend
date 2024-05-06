@@ -1,5 +1,9 @@
 # Changelog
 
+3.7.0:
+ - Update dependency on vclib to 3.7.0
+ - Rework OID4VCI issuing process, again
+
 3.6.0:
  - Update dependency on vclib to 3.6.0
  - Rework OID4VCI issuing process
