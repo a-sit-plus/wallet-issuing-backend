@@ -7,6 +7,9 @@ import at.asitplus.wallet.lib.oidvci.OidcAddressClaim
 import at.asitplus.wallet.lib.oidvci.OidcUserInfo
 import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
 import kotlinx.datetime.toKotlinInstant
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 class PreAuthnOAuth2DataProvider(
     private val authenticationSupplier: AuthenticationSupplier
@@ -45,7 +48,13 @@ class PreAuthnOAuth2DataProvider(
             ageOver18 = idToken.getClaimAsBoolean("age_over_18"),
             updatedAt = idToken.updatedAt?.toKotlinInstant(),
         )
-        return OidcUserInfoExtended.fromOidcUserInfo(oidcUserInfo).getOrNull()
+        return OidcUserInfoExtended(
+            oidcUserInfo,
+            JsonObject(idToken.claims.map { m ->
+                m.key to runCatching { Json.parseToJsonElement(m.value.toString()) }
+                    .getOrElse { JsonPrimitive(m.value.toString()) }
+            }.toMap())
+        )
     }
 
 }
