@@ -22,6 +22,7 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -140,7 +141,7 @@ class OidcIssuerCredentialDataProvider(
             dateOfBirth = idToken.dateOfBirth ?: LocalDate.fromEpochDays(0),
             portrait = idToken.portrait,
             mainAddress = idToken.mainAddress,
-            ageOver18 = idToken.userInfo.ageOver18,
+            ageOver18 = idToken.ageOver18,
         ),
         expiration = maxExpiration,
     )
@@ -155,7 +156,7 @@ class OidcIssuerCredentialDataProvider(
             familyName = idToken.userInfo.familyName ?: "N/A",
             givenName = idToken.userInfo.givenName ?: "N/A",
             birthDate = idToken.dateOfBirth ?: LocalDate.fromEpochDays(0),
-            ageOver18 = idToken.userInfo.ageOver18,
+            ageOver18 = idToken.ageOver18,
         ),
         expiration = maxExpiration,
     )
@@ -167,14 +168,14 @@ class OidcIssuerCredentialDataProvider(
         claim(claimNames, Attributes.DATE_OF_BIRTH, idToken.dateOfBirth),
         claim(claimNames, Attributes.PORTRAIT, idToken.portrait),
         claim(claimNames, Attributes.MAIN_ADDRESS, idToken.mainAddress),
-        claim(claimNames, Attributes.AGE_OVER_18, idToken.userInfo.ageOver18),
+        claim(claimNames, Attributes.AGE_OVER_18, idToken.ageOver18),
     )
 
     private fun buildEupidClaims(claimNames: Collection<String>?, idToken: OidcUserInfoExtended) = listOfNotNull(
         claim(claimNames, EuPidScheme.Attributes.FAMILY_NAME, idToken.userInfo.familyName),
         claim(claimNames, EuPidScheme.Attributes.GIVEN_NAME, idToken.userInfo.givenName),
         claim(claimNames, EuPidScheme.Attributes.BIRTH_DATE, idToken.dateOfBirth),
-        claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.userInfo.ageOver18),
+        claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.ageOver18),
     )
 
     private fun buildMdlClaims(claimNames: Collection<String>?, idToken: OidcUserInfoExtended) = listOfNotNull(
@@ -185,7 +186,7 @@ class OidcIssuerCredentialDataProvider(
         claim(claimNames, MobileDrivingLicenceDataElements.EXPIRY_DATE, LocalDate.parse("2025-12-31")),
         claim(claimNames, MobileDrivingLicenceDataElements.DOCUMENT_NUMBER, "123456" + Random.nextLong(1000, 9999)),
         claim(claimNames, MobileDrivingLicenceDataElements.PORTRAIT, idToken.portrait),
-        claim(claimNames, MobileDrivingLicenceDataElements.AGE_OVER_18, idToken.userInfo.ageOver18),
+        claim(claimNames, MobileDrivingLicenceDataElements.AGE_OVER_18, idToken.ageOver18),
     )
 
     private fun claim(claimNames: Collection<String>?, key: String, value: Any?) =
@@ -195,16 +196,31 @@ class OidcIssuerCredentialDataProvider(
         this == null || contains(name)
 
     private val OidcUserInfoExtended.bpk: String
-        get() = userInfo.subject // TODO this is not correct
+        get() = getValue("urn:pvpgvat:oidc.bpk") ?:  userInfo.subject
 
     private val OidcUserInfoExtended.dateOfBirth
         get() = userInfo.birthDate?.let { LocalDate.parse(it) }
 
+    private val OidcUserInfoExtended.ageOver18: Boolean?
+        get() = userInfo.ageOver18
+            ?: getValue("org.iso.18013.5.1:age_over_18")?.let { it.toBoolean() }
+
     private val OidcUserInfoExtended.portrait: ByteArray?
         get() = userInfo.picture?.decodeToByteArray(Base64())
+            ?: getValue("org.iso.18013.5.1:portrait")?.decodeToByteArray(Base64())
 
     private val OidcUserInfoExtended.mainAddress: String?
         get() = userInfo.address?.formatted
+            ?: getValue("urn:eidgvat:attributes.mainAddress")
+
+    private fun OidcUserInfoExtended.getValue(key: String): String? {
+        val element = jsonObject[key]
+        if (element is JsonPrimitive) {
+            return element.content
+        }
+        return element?.toString()
+    }
+
 
 }
 
