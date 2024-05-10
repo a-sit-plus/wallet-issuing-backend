@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
+import at.asitplus.wallet.backend.data.toElementValue
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -12,6 +13,7 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.iso.DrivingPrivilege
 import at.asitplus.wallet.lib.iso.ElementValue
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
@@ -39,7 +41,7 @@ class OidcIssuerCredentialDataProvider(
         claimNames: Collection<String>?
     ): KmmResult<List<CredentialToBeIssued>> {
         val maxExpiration = Clock.System.now() + lifetime
-        Napier.v("getCredential for $credentialScheme and $subjectPublicKey in $representation")
+        Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation, $claimNames")
         Napier.v("getCredential user is $userInfo")
         val singleItem = when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
@@ -72,7 +74,8 @@ class OidcIssuerCredentialDataProvider(
         idToken: OidcUserInfoExtended,
         maxExpiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
+            .also { Napier.v("buildIdaClaims returns $it") },
         expiration = maxExpiration
     )
 
@@ -81,7 +84,8 @@ class OidcIssuerCredentialDataProvider(
         idToken: OidcUserInfoExtended,
         maxExpiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildEupidClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        issuerSignedItems = buildEupidClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
+            .also { Napier.v("buildEupidClaims returns $it") },
         expiration = maxExpiration
     )
 
@@ -90,7 +94,8 @@ class OidcIssuerCredentialDataProvider(
         idToken: OidcUserInfoExtended,
         maxExpiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
+            .also { Napier.v("buildMdlClaims returns $it") },
         expiration = maxExpiration
     )
 
@@ -101,13 +106,7 @@ class OidcIssuerCredentialDataProvider(
         digestId = index.toUInt(),
         random = Random.nextBytes(16),
         elementIdentifier = claimToBeIssued.name,
-        elementValue = when (val value = claimToBeIssued.value) {
-            is String -> ElementValue(string = value)
-            is ByteArray -> ElementValue(bytes = value)
-            is LocalDate -> ElementValue(date = value)
-            is Boolean -> ElementValue(boolean = value)
-            else -> ElementValue(string = value.toString())
-        }
+        elementValue = claimToBeIssued.toElementValue()
     )
 
     private fun idaVcSd(
@@ -115,7 +114,8 @@ class OidcIssuerCredentialDataProvider(
         idToken: OidcUserInfoExtended,
         maxExpiration: Instant
     ) = CredentialToBeIssued.VcSd(
-        claims = buildIdaClaims(claimNames, idToken),
+        claims = buildIdaClaims(claimNames, idToken)
+            .also { Napier.v("buildMdlClaims returns $it") },
         expiration = maxExpiration
     )
 
@@ -124,7 +124,8 @@ class OidcIssuerCredentialDataProvider(
         idToken: OidcUserInfoExtended,
         maxExpiration: Instant
     ) = CredentialToBeIssued.VcSd(
-        claims = buildEupidClaims(claimNames, idToken),
+        claims = buildEupidClaims(claimNames, idToken)
+            .also { Napier.v("buildEupidClaims returns $it") },
         expiration = maxExpiration
     )
 
@@ -142,7 +143,7 @@ class OidcIssuerCredentialDataProvider(
             portrait = idToken.portrait,
             mainAddress = idToken.mainAddress,
             ageOver18 = idToken.ageOver18,
-        ),
+        ).also { Napier.v("buildIdaAustriaCredential returns $it") },
         expiration = maxExpiration,
     )
 
@@ -157,7 +158,7 @@ class OidcIssuerCredentialDataProvider(
             givenName = idToken.userInfo.givenName ?: "N/A",
             birthDate = idToken.dateOfBirth ?: LocalDate.fromEpochDays(0),
             ageOver18 = idToken.ageOver18,
-        ),
+        ).also { Napier.v("buildEuPidCredential returns $it") },
         expiration = maxExpiration,
     )
 
@@ -183,6 +184,10 @@ class OidcIssuerCredentialDataProvider(
         claim(claimNames, MobileDrivingLicenceDataElements.GIVEN_NAME, idToken.userInfo.givenName),
         claim(claimNames, MobileDrivingLicenceDataElements.BIRTH_DATE, idToken.dateOfBirth),
         claim(claimNames, MobileDrivingLicenceDataElements.ISSUE_DATE, LocalDate.parse("2023-01-01")),
+        claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_AUTHORITY, "LPD Wien"),
+        claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_COUNTRY, "AT"),
+        claim(claimNames, MobileDrivingLicenceDataElements.UN_DISTINGUISHING_SIGN, "A"),
+        claim(claimNames, MobileDrivingLicenceDataElements.DRIVING_PRIVILEGES, arrayOf(DrivingPrivilege("B", LocalDate.parse("2023-01-01"), LocalDate.parse("2025-12-31")))),
         claim(claimNames, MobileDrivingLicenceDataElements.EXPIRY_DATE, LocalDate.parse("2025-12-31")),
         claim(claimNames, MobileDrivingLicenceDataElements.DOCUMENT_NUMBER, "123456" + Random.nextLong(1000, 9999)),
         claim(claimNames, MobileDrivingLicenceDataElements.PORTRAIT, idToken.portrait),
@@ -196,7 +201,7 @@ class OidcIssuerCredentialDataProvider(
         this == null || contains(name)
 
     private val OidcUserInfoExtended.bpk: String
-        get() = getValue("urn:pvpgvat:oidc.bpk") ?:  userInfo.subject
+        get() = getValue("urn:pvpgvat:oidc.bpk") ?: userInfo.subject
 
     private val OidcUserInfoExtended.dateOfBirth
         get() = userInfo.birthDate?.let { LocalDate.parse(it) }
