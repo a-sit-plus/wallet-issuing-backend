@@ -13,6 +13,7 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.iso.DrivingPrivilege
 import at.asitplus.wallet.lib.iso.ElementValue
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
@@ -110,13 +111,7 @@ class IssuerCredentialDataProviderAdapter(
         digestId = index.toUInt(),
         random = Random.nextBytes(16),
         elementIdentifier = claimToBeIssued.name,
-        elementValue = when (val value = claimToBeIssued.value) {
-            is String -> ElementValue(string = value)
-            is ByteArray -> ElementValue(bytes = value)
-            is LocalDate -> ElementValue(date = value)
-            is Boolean -> ElementValue(boolean = value)
-            else -> ElementValue(string = value.toString())
-        }
+        elementValue = claimToBeIssued.toElementValue()
     )
 
     private fun idaVcSd(
@@ -198,6 +193,14 @@ class IssuerCredentialDataProviderAdapter(
         claim(claimNames, MobileDrivingLicenceDataElements.GIVEN_NAME, idToken.givenName),
         claim(claimNames, MobileDrivingLicenceDataElements.BIRTH_DATE, idToken.dateOfBirth),
         claim(claimNames, MobileDrivingLicenceDataElements.ISSUE_DATE, LocalDate.parse("2023-01-01")),
+        claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_AUTHORITY, "LPD Wien"),
+        claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_COUNTRY, "AT"),
+        claim(claimNames, MobileDrivingLicenceDataElements.UN_DISTINGUISHING_SIGN, "A"),
+        claim(
+            claimNames,
+            MobileDrivingLicenceDataElements.DRIVING_PRIVILEGES,
+            arrayOf(DrivingPrivilege("B", LocalDate.parse("2023-01-01"), LocalDate.parse("2025-12-31")))
+        ),
         claim(claimNames, MobileDrivingLicenceDataElements.EXPIRY_DATE, LocalDate.parse("2025-12-31")),
         claim(claimNames, MobileDrivingLicenceDataElements.DOCUMENT_NUMBER, "123456" + Random.nextLong(1000, 9999)),
         claim(claimNames, MobileDrivingLicenceDataElements.PORTRAIT, idToken.portrait),
@@ -238,4 +241,20 @@ class IssuerCredentialDataProviderAdapter(
 
 @OptIn(ExperimentalEncodingApi::class)
 private fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
+
+fun ClaimToBeIssued.toElementValue() =
+    when (val value = value) {
+        is String -> ElementValue(string = value)
+        is ByteArray -> ElementValue(bytes = value)
+        is LocalDate -> ElementValue(date = value)
+        is Boolean -> ElementValue(boolean = value)
+        is Array<*> -> {
+            val drivingPrivilege = value.filterIsInstance<DrivingPrivilege>().map { it }.toTypedArray()
+            if (drivingPrivilege.isNotEmpty())
+                ElementValue(drivingPrivilege = drivingPrivilege)
+            else
+                ElementValue(string = value.toString())
+        }
+        else -> ElementValue(string = value.toString())
+    }
 

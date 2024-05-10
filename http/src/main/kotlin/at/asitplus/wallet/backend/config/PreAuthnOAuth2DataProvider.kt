@@ -6,6 +6,7 @@ import at.asitplus.wallet.lib.oidvci.OAuth2DataProvider
 import at.asitplus.wallet.lib.oidvci.OidcAddressClaim
 import at.asitplus.wallet.lib.oidvci.OidcUserInfo
 import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -54,7 +55,7 @@ class PreAuthnOAuth2DataProvider(
                 m.key to runCatching { Json.parseToJsonElement(m.value.toString()) }
                     .getOrElse { JsonPrimitive(m.value.toString()) }
             }.toMap())
-        )
+        ).also { Napier.d("loadUserInfo: output $it") }
     }
 
 }
