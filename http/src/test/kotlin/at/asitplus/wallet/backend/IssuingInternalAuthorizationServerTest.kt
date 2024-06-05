@@ -88,7 +88,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).getOrThrow()
+        val jws = JwsSigned.parse(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests.size shouldBeGreaterThan 1
     }
@@ -105,7 +105,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).getOrThrow()
+        val jws = JwsSigned.parse(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests.size shouldBeGreaterThan 1
     }
