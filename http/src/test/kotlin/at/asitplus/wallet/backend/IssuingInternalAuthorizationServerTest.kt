@@ -52,7 +52,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.parse(serializedCredential).shouldNotBeNull()
+        val jws = JwsSigned.parse(serializedCredential).getOrThrow()
         val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         val subject = vcJws.vc.credentialSubject.shouldBeInstanceOf<IdAustriaCredential>()
         subject.dateOfBirth shouldBe LocalDate(1983, 6, 4)
@@ -70,7 +70,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.parse(serializedCredential).shouldNotBeNull()
+        val jws = JwsSigned.parse(serializedCredential).getOrThrow()
         val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         val subject = vcJws.vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
         subject.birthDate shouldBe LocalDate(1983, 6, 4)
@@ -88,7 +88,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).shouldNotBeNull()
+        val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests.size shouldBeGreaterThan 1
     }
@@ -105,7 +105,7 @@ class IssuingInternalAuthorizationServerTest {
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).shouldNotBeNull()
+        val jws = JwsSigned.parse(serializedCredential.substringBeforeLast("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests.size shouldBeGreaterThan 1
     }

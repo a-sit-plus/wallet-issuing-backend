@@ -14,7 +14,6 @@ import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.iso.DrivingPrivilege
-import at.asitplus.wallet.lib.iso.ElementValue
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
@@ -40,27 +39,28 @@ class OidcIssuerCredentialDataProvider(
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?
     ): KmmResult<List<CredentialToBeIssued>> {
-        val maxExpiration = Clock.System.now() + lifetime
+        val issuance = Clock.System.now()
+        val expiration = issuance + lifetime
         Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation, $claimNames")
         Napier.v("getCredential user is $userInfo")
         val singleItem = when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
-                IdAustriaScheme -> idaVcJwt(subjectPublicKey, userInfo, maxExpiration)
-                EuPidScheme -> eupidVcJwt(subjectPublicKey, userInfo, maxExpiration)
+                IdAustriaScheme -> idaVcJwt(subjectPublicKey, userInfo, expiration)
+                EuPidScheme -> eupidVcJwt(subjectPublicKey, userInfo, issuance, expiration)
                 else -> null
             }
 
             ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
-                IdAustriaScheme -> idaVcSd(claimNames, userInfo, maxExpiration)
-                EuPidScheme -> eupidVcSd(claimNames, userInfo, maxExpiration)
+                IdAustriaScheme -> idaVcSd(claimNames, userInfo, expiration)
+                EuPidScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
                 else -> null
             }
 
 
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
-                IdAustriaScheme -> idaIso(claimNames, userInfo, maxExpiration)
-                EuPidScheme -> eupidIso(claimNames, userInfo, maxExpiration)
-                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, userInfo, maxExpiration)
+                IdAustriaScheme -> idaIso(claimNames, userInfo, expiration)
+                EuPidScheme -> eupidIso(claimNames, userInfo, issuance, expiration)
+                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, userInfo, expiration)
                 else -> null
             }
         }
@@ -72,31 +72,37 @@ class OidcIssuerCredentialDataProvider(
     private fun idaIso(
         claimNames: Collection<String>?,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
             .also { Napier.v("buildIdaClaims returns $it") },
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun eupidIso(
         claimNames: Collection<String>?,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        issuance: Instant,
+        expiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildEupidClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
+        issuerSignedItems = buildEupidClaims(
+            claimNames,
+            idToken,
+            issuance,
+            expiration
+        ).mapIndexed(::buildIssuerSignedItem)
             .also { Napier.v("buildEupidClaims returns $it") },
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun mdlIso(
         claimNames: Collection<String>?,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
             .also { Napier.v("buildMdlClaims returns $it") },
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun buildIssuerSignedItem(
@@ -112,27 +118,28 @@ class OidcIssuerCredentialDataProvider(
     private fun idaVcSd(
         claimNames: Collection<String>?,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.VcSd(
         claims = buildIdaClaims(claimNames, idToken)
             .also { Napier.v("buildMdlClaims returns $it") },
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun eupidVcSd(
         claimNames: Collection<String>?,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        issuance: Instant,
+        expiration: Instant
     ) = CredentialToBeIssued.VcSd(
-        claims = buildEupidClaims(claimNames, idToken)
+        claims = buildEupidClaims(claimNames, idToken, issuance, expiration)
             .also { Napier.v("buildEupidClaims returns $it") },
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun idaVcJwt(
         subjectPublicKey: CryptoPublicKey,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = IdAustriaCredential(
             id = subjectPublicKey.toJsonWebKey().identifier,
@@ -144,13 +151,14 @@ class OidcIssuerCredentialDataProvider(
             mainAddress = idToken.mainAddress,
             ageOver18 = idToken.ageOver18,
         ).also { Napier.v("buildIdaAustriaCredential returns $it") },
-        expiration = maxExpiration,
+        expiration = expiration,
     )
 
     private fun eupidVcJwt(
         subjectPublicKey: CryptoPublicKey,
         idToken: OidcUserInfoExtended,
-        maxExpiration: Instant
+        issuance: Instant,
+        expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = EuPidCredential(
             id = subjectPublicKey.toJsonWebKey().identifier,
@@ -158,8 +166,12 @@ class OidcIssuerCredentialDataProvider(
             givenName = idToken.userInfo.givenName ?: "N/A",
             birthDate = idToken.dateOfBirth ?: LocalDate.fromEpochDays(0),
             ageOver18 = idToken.ageOver18,
+            issuanceDate = issuance,
+            expiryDate = expiration,
+            issuingAuthority = "AT",
+            issuingCountry = "AT",
         ).also { Napier.v("buildEuPidCredential returns $it") },
-        expiration = maxExpiration,
+        expiration = expiration,
     )
 
     private fun buildIdaClaims(claimNames: Collection<String>?, idToken: OidcUserInfoExtended) = listOfNotNull(
@@ -172,11 +184,20 @@ class OidcIssuerCredentialDataProvider(
         claim(claimNames, Attributes.AGE_OVER_18, idToken.ageOver18),
     )
 
-    private fun buildEupidClaims(claimNames: Collection<String>?, idToken: OidcUserInfoExtended) = listOfNotNull(
+    private fun buildEupidClaims(
+        claimNames: Collection<String>?,
+        idToken: OidcUserInfoExtended,
+        issuance: Instant,
+        expiration: Instant
+    ) = listOfNotNull(
         claim(claimNames, EuPidScheme.Attributes.FAMILY_NAME, idToken.userInfo.familyName),
         claim(claimNames, EuPidScheme.Attributes.GIVEN_NAME, idToken.userInfo.givenName),
         claim(claimNames, EuPidScheme.Attributes.BIRTH_DATE, idToken.dateOfBirth),
         claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.ageOver18),
+        claim(claimNames, EuPidScheme.Attributes.ISSUANCE_DATE, issuance),
+        claim(claimNames, EuPidScheme.Attributes.EXPIRY_DATE, expiration),
+        claim(claimNames, EuPidScheme.Attributes.ISSUING_AUTHORITY, "AT"),
+        claim(claimNames, EuPidScheme.Attributes.ISSUING_COUNTRY, "AT"),
     )
 
     private fun buildMdlClaims(claimNames: Collection<String>?, idToken: OidcUserInfoExtended) = listOfNotNull(
@@ -187,7 +208,11 @@ class OidcIssuerCredentialDataProvider(
         claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_AUTHORITY, "LPD Wien"),
         claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_COUNTRY, "AT"),
         claim(claimNames, MobileDrivingLicenceDataElements.UN_DISTINGUISHING_SIGN, "A"),
-        claim(claimNames, MobileDrivingLicenceDataElements.DRIVING_PRIVILEGES, arrayOf(DrivingPrivilege("B", LocalDate.parse("2023-01-01"), LocalDate.parse("2025-12-31")))),
+        claim(
+            claimNames,
+            MobileDrivingLicenceDataElements.DRIVING_PRIVILEGES,
+            arrayOf(DrivingPrivilege("B", LocalDate.parse("2023-01-01"), LocalDate.parse("2025-12-31")))
+        ),
         claim(claimNames, MobileDrivingLicenceDataElements.EXPIRY_DATE, LocalDate.parse("2025-12-31")),
         claim(claimNames, MobileDrivingLicenceDataElements.DOCUMENT_NUMBER, "123456" + Random.nextLong(1000, 9999)),
         claim(claimNames, MobileDrivingLicenceDataElements.PORTRAIT, idToken.portrait),

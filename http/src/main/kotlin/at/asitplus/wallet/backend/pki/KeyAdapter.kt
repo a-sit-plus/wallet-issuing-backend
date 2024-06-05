@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.pki
 
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.cose.CoseAlgorithm
 import at.asitplus.crypto.datatypes.cose.CoseKey
 import at.asitplus.crypto.datatypes.cose.toCoseKey
@@ -79,7 +79,7 @@ class KeyFileAdapter(
         publicKey = k
         certificate = c!!
 
-        val ecCurve = EcCurve.SECP_256_R_1
+        val ecCurve = ECCurve.SECP_256_R_1
         algorithm = CryptoAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
         coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
@@ -125,7 +125,7 @@ class KeyStoreAdapter(
         certificate = keyStore.getCertificate(alias) as X509Certificate
         publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
-        val ecCurve = EcCurve.SECP_256_R_1
+        val ecCurve = ECCurve.SECP_256_R_1
         algorithm = CryptoAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
         coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
@@ -155,7 +155,7 @@ class HsmFacadeAdapter(
         certificate = keyStore.getCertificate(config.keyStoreAlias) as X509Certificate
         publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
-        val ecCurve = EcCurve.SECP_256_R_1
+        val ecCurve = ECCurve.SECP_256_R_1
         algorithm = CryptoAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
         coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
@@ -180,7 +180,7 @@ class RandomKeyAdapter : KeyAdapter {
             .generateKeyPair()
         privateKey = keyPair.private
         publicKey = keyPair.public
-        val ecCurve = EcCurve.SECP_256_R_1
+        val ecCurve = ECCurve.SECP_256_R_1
         algorithm = CryptoAlgorithm.ES256
         jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve).getOrThrow()
         coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
