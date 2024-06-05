@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
@@ -16,6 +17,7 @@ import at.asitplus.crypto.datatypes.jws.JweAlgorithm
 import at.asitplus.crypto.datatypes.jws.JweEncryption
 import at.asitplus.crypto.datatypes.jws.jcaKeySpecName
 import at.asitplus.crypto.datatypes.jws.jcaName
+import at.asitplus.crypto.datatypes.parseFromJca
 import at.asitplus.wallet.backend.pki.KeyAdapter
 import at.asitplus.wallet.lib.agent.AuthenticatedCiphertext
 import at.asitplus.wallet.lib.agent.CryptoService
@@ -73,15 +75,13 @@ class DefaultCryptoServiceAdapter(
         Napier.i("Loaded public key with id ${jsonWebKey.identifier}")
     }
 
-    override suspend fun sign(input: ByteArray): KmmResult<CryptoSignature> = try {
+    override suspend fun sign(input: ByteArray): KmmResult<CryptoSignature> = runCatching {
         val signed = Signature.getInstance(algorithm.jcaName, provider).apply {
             initSign(privateKey)
             update(input)
         }.sign()
-        CryptoSignature.decodeFromDerSafe(signed)
-    } catch (e: Throwable) {
-        KmmResult.failure(e)
-    }
+        CryptoSignature.parseFromJca(signed, algorithm)
+    }.wrap()
 
     override fun encrypt(
         key: ByteArray,
@@ -89,7 +89,7 @@ class DefaultCryptoServiceAdapter(
         aad: ByteArray,
         input: ByteArray,
         algorithm: JweEncryption
-    ): KmmResult<AuthenticatedCiphertext> = try {
+    ): KmmResult<AuthenticatedCiphertext> = runCatching {
         val jcaCiphertext = Cipher.getInstance(algorithm.jcaName, provider).also {
             it.init(
                 Cipher.ENCRYPT_MODE,
@@ -100,10 +100,8 @@ class DefaultCryptoServiceAdapter(
         }.doFinal(input)
         val ciphertext = jcaCiphertext.dropLast(algorithm.ivLengthBits / 8).toByteArray()
         val authtag = jcaCiphertext.takeLast(algorithm.ivLengthBits / 8).toByteArray()
-        KmmResult.success(AuthenticatedCiphertext(ciphertext, authtag))
-    } catch (e: Throwable) {
-        KmmResult.failure(e)
-    }
+        AuthenticatedCiphertext(ciphertext, authtag)
+    }.wrap()
 
     override suspend fun decrypt(
         key: ByteArray,
@@ -112,8 +110,8 @@ class DefaultCryptoServiceAdapter(
         input: ByteArray,
         authTag: ByteArray,
         algorithm: JweEncryption
-    ): KmmResult<ByteArray> = try {
-        val plaintext = Cipher.getInstance(algorithm.jcaName, provider).also {
+    ): KmmResult<ByteArray> = runCatching {
+        Cipher.getInstance(algorithm.jcaName, provider).also {
             it.init(
                 Cipher.DECRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpecName),
@@ -121,55 +119,41 @@ class DefaultCryptoServiceAdapter(
             )
             it.updateAAD(aad)
         }.doFinal(input + authTag)
-        KmmResult.success(plaintext)
-    } catch (e: Throwable) {
-        KmmResult.failure(e)
-    }
+    }.wrap()
 
     override fun performKeyAgreement(
         ephemeralKey: EphemeralKeyHolder,
         recipientKey: JsonWebKey,
         algorithm: JweAlgorithm
-    ): KmmResult<ByteArray> {
+    ): KmmResult<ByteArray> = runCatching {
         require(ephemeralKey is JvmEphemeralKeyHolder) { "JVM Type expected" }
-        return try {
-            val secret = KeyAgreement.getInstance(algorithm.jcaName, provider).also {
-                it.init(ephemeralKey.keyPair.private)
-                it.doPhase(recipientKey.toCryptoPublicKey().getOrThrow().getJcaPublicKey().getOrThrow(), true)
-            }.generateSecret()
-            KmmResult.success(secret)
-        } catch (e: Throwable) {
-            KmmResult.failure(e)
-        }
-    }
+        val secret = KeyAgreement.getInstance(algorithm.jcaName, provider).also {
+            it.init(ephemeralKey.keyPair.private)
+            it.doPhase(recipientKey.toCryptoPublicKey().getOrThrow().getJcaPublicKey().getOrThrow(), true)
+        }.generateSecret()
+        secret
+    }.wrap()
 
     override fun performKeyAgreement(ephemeralKey: JsonWebKey, algorithm: JweAlgorithm): KmmResult<ByteArray> {
         val parameterSpec = ECNamedCurveTable.getParameterSpec(ephemeralKey.curve?.jcaName)
         val ecPoint = parameterSpec.curve.validatePoint(BigInteger(1, ephemeralKey.x), BigInteger(1, ephemeralKey.y))
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
         val publicKey = JCEECPublicKey("EC", ecPublicKeySpec)
-        return try {
-            val secret = KeyAgreement.getInstance(algorithm.jcaName, provider).also {
+        return runCatching {
+            KeyAgreement.getInstance(algorithm.jcaName, provider).also {
                 it.init(privateKey)
                 it.doPhase(publicKey, true)
             }.generateSecret()
-            KmmResult.success(secret)
-        } catch (e: Throwable) {
-            KmmResult.failure(e)
-        }
+        }.wrap()
     }
 
     override fun generateEphemeralKeyPair(ecCurve: ECCurve): KmmResult<EphemeralKeyHolder> {
         return KmmResult.success(JvmEphemeralKeyHolder(ecCurve))
     }
 
-    override fun messageDigest(input: ByteArray, digest: Digest): KmmResult<ByteArray> {
-        return try {
-            KmmResult.success(MessageDigest.getInstance(digest.jcaName, provider).digest(input))
-        } catch (e: Throwable) {
-            KmmResult.failure(e)
-        }
-    }
+    override fun messageDigest(input: ByteArray, digest: Digest): KmmResult<ByteArray> = runCatching {
+        MessageDigest.getInstance(digest.jcaName, provider).digest(input)
+    }.wrap()
 
     override val jwsContentSigner: JWSSigner
         get() = ECDSASigner(privateKey as ECPrivateKey).also {

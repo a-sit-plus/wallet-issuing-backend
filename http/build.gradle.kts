@@ -25,9 +25,6 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
-    all {
-        resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
-    }
 }
 
 dependencies {
