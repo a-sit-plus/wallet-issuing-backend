@@ -43,7 +43,8 @@ class IssuerCredentialDataProviderAdapter(
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?
     ): KmmResult<List<CredentialToBeIssued>> {
-        val maxExpiration = Clock.System.now() + lifetime
+        val issuance = Clock.System.now()
+        val expiration = issuance + lifetime
         Napier.v("getCredential for $credentialScheme and $subjectPublicKey in $representation")
         val idToken = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.v("getCredential user is $idToken")
@@ -53,22 +54,22 @@ class IssuerCredentialDataProviderAdapter(
         }
         val singleItem = when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
-                IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, maxExpiration)
-                EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, maxExpiration)
+                IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, expiration)
+                EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, issuance, expiration)
                 else -> null
             }
 
             ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
-                IdAustriaScheme -> idaVcSd(claimNames, idToken, maxExpiration)
-                EuPidScheme -> eupidVcSd(claimNames, idToken, maxExpiration)
+                IdAustriaScheme -> idaVcSd(claimNames, idToken, expiration)
+                EuPidScheme -> eupidVcSd(claimNames, idToken, issuance, expiration)
                 else -> null
             }
 
 
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
-                IdAustriaScheme -> idaIso(claimNames, idToken, maxExpiration)
-                EuPidScheme -> eupidIso(claimNames, idToken, maxExpiration)
-                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, idToken, maxExpiration)
+                IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
+                EuPidScheme -> eupidIso(claimNames, idToken, issuance, expiration)
+                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, idToken, expiration)
                 else -> null
             }
         }
@@ -80,28 +81,29 @@ class IssuerCredentialDataProviderAdapter(
     private fun idaIso(
         claimNames: Collection<String>?,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun eupidIso(
         claimNames: Collection<String>?,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        issuance: Instant,
+        expiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildEupidClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
-        expiration = maxExpiration
+        issuerSignedItems = buildEupidClaims(claimNames, idToken, issuance, expiration).mapIndexed(::buildIssuerSignedItem),
+        expiration = expiration
     )
 
     private fun mdlIso(
         claimNames: Collection<String>?,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun buildIssuerSignedItem(
@@ -117,25 +119,26 @@ class IssuerCredentialDataProviderAdapter(
     private fun idaVcSd(
         claimNames: Collection<String>?,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.VcSd(
         claims = buildIdaClaims(claimNames, idToken),
-        expiration = maxExpiration
+        expiration = expiration
     )
 
     private fun eupidVcSd(
         claimNames: Collection<String>?,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        issuance: Instant,
+        expiration: Instant
     ) = CredentialToBeIssued.VcSd(
-        claims = buildEupidClaims(claimNames, idToken),
-        expiration = maxExpiration
+        claims = buildEupidClaims(claimNames, idToken, issuance, expiration),
+        expiration = expiration
     )
 
     private fun idaVcJwt(
         subjectPublicKey: CryptoPublicKey,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = IdAustriaCredential(
             id = subjectPublicKey.toJsonWebKey().identifier,
@@ -150,13 +153,14 @@ class IssuerCredentialDataProviderAdapter(
             ageOver18 = idToken.ageOver18,
             ageOver21 = idToken.ageOver21,
         ),
-        expiration = maxExpiration,
+        expiration = expiration,
     )
 
     private fun eupidVcJwt(
         subjectPublicKey: CryptoPublicKey,
         idToken: OidcIdToken,
-        maxExpiration: Instant
+        issuance: Instant,
+        expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = EuPidCredential(
             id = subjectPublicKey.toJsonWebKey().identifier,
@@ -164,8 +168,12 @@ class IssuerCredentialDataProviderAdapter(
             givenName = idToken.givenName,
             birthDate = idToken.dateOfBirth,
             ageOver18 = idToken.ageOver18,
+            issuanceDate = issuance,
+            expiryDate = expiration,
+            issuingCountry = "AT",
+            issuingAuthority = "AT",
         ),
-        expiration = maxExpiration,
+        expiration = expiration,
     )
 
     private fun buildIdaClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
@@ -181,11 +189,20 @@ class IssuerCredentialDataProviderAdapter(
         claim(claimNames, Attributes.AGE_OVER_21, idToken.ageOver21),
     )
 
-    private fun buildEupidClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
+    private fun buildEupidClaims(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        issuance: Instant,
+        expiration: Instant
+    ) = listOfNotNull(
         claim(claimNames, EuPidScheme.Attributes.FAMILY_NAME, idToken.familyName),
         claim(claimNames, EuPidScheme.Attributes.GIVEN_NAME, idToken.givenName),
         claim(claimNames, EuPidScheme.Attributes.BIRTH_DATE, idToken.dateOfBirth),
         claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.ageOver18),
+        claim(claimNames, EuPidScheme.Attributes.ISSUANCE_DATE, issuance),
+        claim(claimNames, EuPidScheme.Attributes.EXPIRY_DATE, expiration),
+        claim(claimNames, EuPidScheme.Attributes.ISSUING_COUNTRY, "AT"),
+        claim(claimNames, EuPidScheme.Attributes.ISSUING_AUTHORITY, "AT"),
     )
 
     private fun buildMdlClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(

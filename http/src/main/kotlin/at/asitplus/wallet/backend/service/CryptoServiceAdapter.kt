@@ -5,7 +5,7 @@ import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.Digest
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.cose.CoseKey
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
@@ -14,7 +14,6 @@ import at.asitplus.crypto.datatypes.jcaName
 import at.asitplus.crypto.datatypes.jws.JsonWebKey
 import at.asitplus.crypto.datatypes.jws.JweAlgorithm
 import at.asitplus.crypto.datatypes.jws.JweEncryption
-import at.asitplus.crypto.datatypes.jws.JwkType
 import at.asitplus.crypto.datatypes.jws.jcaKeySpecName
 import at.asitplus.crypto.datatypes.jws.jcaName
 import at.asitplus.wallet.backend.pki.KeyAdapter
@@ -33,7 +32,10 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.math.BigInteger
-import java.security.*
+import java.security.MessageDigest
+import java.security.PrivateKey
+import java.security.Provider
+import java.security.Signature
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
@@ -63,7 +65,8 @@ class DefaultCryptoServiceAdapter(
     override val coseKey: CoseKey = keyAdapter.coseKey
     override val algorithm: CryptoAlgorithm = keyAdapter.algorithm
     override val x509Certificate = keyAdapter.certificate
-    override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate = at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromDer(keyAdapter.certificate.encoded)
+    override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate =
+        at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromDer(keyAdapter.certificate.encoded)
 
 
     init {
@@ -156,7 +159,7 @@ class DefaultCryptoServiceAdapter(
         }
     }
 
-    override fun generateEphemeralKeyPair(ecCurve: EcCurve): KmmResult<EphemeralKeyHolder> {
+    override fun generateEphemeralKeyPair(ecCurve: ECCurve): KmmResult<EphemeralKeyHolder> {
         return KmmResult.success(JvmEphemeralKeyHolder(ecCurve))
     }
 
@@ -179,13 +182,17 @@ class DefaultCryptoServiceAdapter(
             .build(privateKey)
 
     override val subjectPublicKeyInfo: SubjectPublicKeyInfo
-        get() = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.getJcaPublicKey().getOrThrow().encoded))
+        get() = SubjectPublicKeyInfo.getInstance(
+            ASN1Sequence.getInstance(
+                publicKey.getJcaPublicKey().getOrThrow().encoded
+            )
+        )
 
 }
 
-fun JsonWebKey.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: EcCurve) =
+fun JsonWebKey.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: ECCurve) =
     fromCoordinates(
         ecCurve,
-        publicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
-        publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        publicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes),
+        publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
     )
