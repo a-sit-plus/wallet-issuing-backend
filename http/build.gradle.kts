@@ -109,7 +109,7 @@ repositories {
     mavenLocal()
     gitlab(gitLabGroupId.toInt()) accessTokenFrom extra
     gitlab(119, nameOverride = "gitlabhsm")  accessTokenFrom extra
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    maven("https://oss.sonatype.org/content/repositories/snapshots/")
 }
 
 publishing {

@@ -17,12 +17,11 @@ include("http")
 
 dependencyResolutionManagement {
     repositories {
-        maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
         mavenCentral()
     }
     versionCatalogs {
         create("vclib") {
-            from("at.asitplus.wallet:vclib-openid-versionCatalog:3.7.0-SNAPSHOT")
+            from("at.asitplus.wallet:vclib-openid-versionCatalog:3.7.0")
         }
     }
 }
