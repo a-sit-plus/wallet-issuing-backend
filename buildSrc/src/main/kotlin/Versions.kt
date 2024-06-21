@@ -1,14 +1,14 @@
 object VersionsBackend {
-    const val ida = "3.4.0"
-    const val eupid = "2.0.1"
+    const val ida = "3.8.0"
+    const val eupid = "2.1.0"
+    const val mdl = "1.0.0"
     const val zxing = "3.5.2"
     const val `google-cbor` = "0.01.02"
-    const val hsmf = "0.8.3"
     const val pgsql = "42.5.0"
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val vclib = "3.7.0"
+    const val vclib = "3.8.0"
     const val attestation = "0.5.2"
     const val nimbus = "9.37.1"
 

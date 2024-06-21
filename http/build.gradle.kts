@@ -59,6 +59,7 @@ dependencies {
 
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
+    implementation("at.asitplus.wallet:mobiledrivinglicence:${VersionsBackend.mdl}")
     implementation(vclib.vclib)
     implementation(vclib.vclib.openid)
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")

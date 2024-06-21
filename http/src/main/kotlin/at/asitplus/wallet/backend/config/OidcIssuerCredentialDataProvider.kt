@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
-import at.asitplus.wallet.backend.data.toElementValue
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -13,10 +12,11 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.iso.DrivingPrivilege
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
-import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
+import at.asitplus.wallet.mdl.DrivingPrivilege
+import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
+import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -60,7 +60,7 @@ class OidcIssuerCredentialDataProvider(
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
                 IdAustriaScheme -> idaIso(claimNames, userInfo, expiration)
                 EuPidScheme -> eupidIso(claimNames, userInfo, issuance, expiration)
-                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, userInfo, expiration)
+                MobileDrivingLicenceScheme -> mdlIso(claimNames, userInfo, expiration)
                 else -> null
             }
         }
@@ -112,7 +112,7 @@ class OidcIssuerCredentialDataProvider(
         digestId = index.toUInt(),
         random = Random.nextBytes(16),
         elementIdentifier = claimToBeIssued.name,
-        elementValue = claimToBeIssued.toElementValue()
+        elementValue = claimToBeIssued.value
     )
 
     private fun idaVcSd(

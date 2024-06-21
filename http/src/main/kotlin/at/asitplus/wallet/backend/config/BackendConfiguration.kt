@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
@@ -19,7 +19,6 @@ import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme
-import at.asitplus.wallet.idaustria.Initializer
 import at.asitplus.wallet.lib.agent.CryptoService
 import at.asitplus.wallet.lib.agent.DefaultVerifierCryptoService
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
@@ -30,11 +29,11 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
-import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServer
 import at.asitplus.wallet.lib.oidvci.SimpleAuthorizationService
+import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Autowired
@@ -88,8 +87,9 @@ class BackendConfiguration {
     private lateinit var resourceLoader: ResourceLoader
 
     init {
-        Initializer.initWithVcLib()
+        at.asitplus.wallet.idaustria.Initializer.initWithVcLib()
         at.asitplus.wallet.eupid.Initializer.initWithVcLib()
+        at.asitplus.wallet.mdl.Initializer.initWithVcLib()
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
     }
@@ -152,11 +152,6 @@ class BackendConfiguration {
                 securityProviderBean
             )
 
-            KeyType.HSMFACADE -> HsmFacadeAdapter(
-                configurationProperties.issuerKey.hsmfacade!!,
-                securityProviderBean
-            )
-
             KeyType.MEMORY -> RandomKeyAdapter()
         }
     )
@@ -178,7 +173,7 @@ class BackendConfiguration {
         timePeriodProvider = timePeriodProvider(),
         validator = Validator.newDefaultInstance(DefaultVerifierCryptoService()),
         coseService = DefaultCoseService(issuerCryptoService),
-        cryptoAlgorithms = setOf(CryptoAlgorithm.ES256)
+        cryptoAlgorithms = setOf(X509SignatureAlgorithm.ES256)
     )
 
     @Bean
@@ -191,7 +186,7 @@ class BackendConfiguration {
     ): CredentialIssuer = CredentialIssuer(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, ConstantIndex.MobileDrivingLicence2023),
+        credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, MobileDrivingLicenceScheme),
         authorizationService = authorizationServer,
         buildIssuerCredentialDataProviderOverride = { oidcUserInfo ->
             OidcIssuerCredentialDataProvider(
@@ -203,14 +198,15 @@ class BackendConfiguration {
 
     @Bean
     fun authorizationServer(
-        authenticationSupplier: AuthenticationSupplier
-    ): SimpleAuthorizationService = SimpleAuthorizationService(
-        dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
-        credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, ConstantIndex.MobileDrivingLicence2023),
-        publicContext = configurationProperties.publicContext,
-        authorizationEndpointPath = "/authorize",
-        tokenEndpointPath = "/token",
-    )
+        authenticationSupplier: AuthenticationSupplier,
+    ): SimpleAuthorizationService =
+        SimpleAuthorizationService(
+            dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
+            credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, MobileDrivingLicenceScheme),
+            publicContext = configurationProperties.publicContext,
+            authorizationEndpointPath = "/authorize",
+            tokenEndpointPath = "/token",
+        )
 
 
 }

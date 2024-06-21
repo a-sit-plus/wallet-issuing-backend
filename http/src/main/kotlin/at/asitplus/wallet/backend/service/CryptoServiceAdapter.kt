@@ -2,11 +2,11 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.datatypes.ECCurve
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.cose.CoseKey
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
@@ -65,7 +65,7 @@ class DefaultCryptoServiceAdapter(
     private val provider: Provider = keyAdapter.provider
     override val jsonWebKey: JsonWebKey = keyAdapter.jsonWebKey
     override val coseKey: CoseKey = keyAdapter.coseKey
-    override val algorithm: CryptoAlgorithm = keyAdapter.algorithm
+    override val algorithm: X509SignatureAlgorithm = keyAdapter.algorithm
     override val x509Certificate = keyAdapter.certificate
     override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate =
         at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromDer(keyAdapter.certificate.encoded)
@@ -75,7 +75,7 @@ class DefaultCryptoServiceAdapter(
         Napier.i("Loaded public key with id ${jsonWebKey.identifier}")
     }
 
-    override suspend fun sign(input: ByteArray): KmmResult<CryptoSignature> = runCatching {
+    override suspend fun doSign(input: ByteArray): KmmResult<CryptoSignature> = runCatching {
         val signed = Signature.getInstance(algorithm.jcaName, provider).apply {
             initSign(privateKey)
             update(input)
