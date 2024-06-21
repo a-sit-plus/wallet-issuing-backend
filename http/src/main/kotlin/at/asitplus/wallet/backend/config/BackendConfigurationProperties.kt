@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.config
 
-import com.nimbusds.oauth2.sdk.`as`.AuthorizationServerConfigurationRequest
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import kotlin.time.Duration
@@ -19,10 +18,6 @@ data class BackendConfigurationProperties(
      * Key used for signing issued credentials
      */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
-    /**
-     * General connection information to HSM Facade
-     */
-    val hsmfacade: HsmFacadeConfiguration = HsmFacadeConfiguration(),
     /**
      * Configure debug endpoints
      */
@@ -53,37 +48,6 @@ data class CredentialConfigurationProperties(
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
 }
-
-data class HsmFacadeConfiguration(
-    /**
-     * Whether to enable connection to the HsmFacade service at all
-     */
-    val enabled: Boolean = false,
-    /**
-     * TLS root certificate used by the HsmFacade service, pinned here
-     */
-    val rootCertificate: URI? = null,
-    /**
-     * Host to connect to
-     */
-    val hostname: String? = null,
-    /**
-     * Port used for the connection
-     */
-    val port: Int? = null,
-    /**
-     * Username for authentication
-     */
-    val username: String? = null,
-    /**
-     * Password for authentication
-     */
-    val password: String? = null,
-    /**
-     * Timeout for one call to the HsmFacade service in seconds
-     */
-    val timeout: Long = 30,
-)
 
 data class RevocationListConfigurationProperties(
     /**
@@ -117,7 +81,6 @@ data class KeyConfiguration(
     val type: KeyType = KeyType.MEMORY,
     val file: KeyFileConfiguration? = null,
     val keystore: KeyStoreConfiguration? = null,
-    val hsmfacade: KeyHsmFacadeConfiguration? = null,
 )
 
 data class KeyFileConfiguration(
@@ -135,15 +98,9 @@ data class KeyStoreConfiguration(
     val aliasPassword: String? = null,
 )
 
-data class KeyHsmFacadeConfiguration(
-    val keyStoreName: String? = null,
-    val keyStoreAlias: String? = null,
-)
-
 enum class KeyType {
     FILE,
     MEMORY,
     KEYSTORE,
-    HSMFACADE,
 }
 

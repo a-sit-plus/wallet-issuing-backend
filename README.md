@@ -92,8 +92,6 @@ backend:
     regular-check-rate: PT1H
     cache-path: cache/revocation-list/
   issuer-key: {{ KEY_CONFIG }}
-  hsm-facade:
-    enabled: false
   debug:
     enabled: true
     qr-code-size: 400
@@ -192,27 +190,6 @@ keystore:
   password: changeit               # may be null
   alias: key1
   alias-password: changeit         # may be null
-```
-
-```yaml
-type: HSMFACADE
-hsmfacade:
-  key-store-name: keystore-at-hsmfacade
-  key-store-alias: key1
-```
-
-Using keys from a remote HsmFacade service also requires setting the general connection properties:
-
-```yaml
-backend:
-  hsmfacade:
-    enabled: true
-    root-certificate: file:/data/hsm-facade-root.pem
-    hostname: hsmf.example.com
-    port: 8686
-    username: user
-    password: password
-    timeout: 30
 ```
 
 Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above:

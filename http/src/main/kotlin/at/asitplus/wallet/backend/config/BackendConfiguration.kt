@@ -9,7 +9,6 @@ import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
-import at.asitplus.wallet.backend.pki.HsmFacadeAdapter
 import at.asitplus.wallet.backend.pki.KeyFileAdapter
 import at.asitplus.wallet.backend.pki.KeyStoreAdapter
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
@@ -107,7 +106,7 @@ class BackendConfiguration {
 
     @Bean
     fun securityProviderBean(): SecurityProviderBean =
-        SecurityProviderBean(configurationProperties, resourceLoader)
+        SecurityProviderBean()
 
     @Bean
     fun authenticationSupplier(): AuthenticationSupplier = SpringSecurityAuthenticationSupplier()

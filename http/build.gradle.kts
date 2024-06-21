@@ -63,7 +63,6 @@ dependencies {
     implementation(vclib.vclib)
     implementation(vclib.vclib.openid)
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
-    implementation("at.asitplus.hsmfacade:provider:${VersionsBackend.hsmf}")
 
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
     implementation("com.sksamuel.scrimage:scrimage-core:${VersionsBackend.scrimage}")
@@ -106,7 +105,6 @@ val gitLabGroupId: String by extra
 repositories {
     mavenLocal()
     gitlab(gitLabGroupId.toInt()) accessTokenFrom extra
-    gitlab(119, nameOverride = "gitlabhsm")  accessTokenFrom extra
     maven("https://oss.sonatype.org/content/repositories/snapshots/")
 }
 
