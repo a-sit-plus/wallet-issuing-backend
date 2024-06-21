@@ -13,10 +13,10 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.iso.DrivingPrivilege
-import at.asitplus.wallet.lib.iso.ElementValue
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
-import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
+import at.asitplus.wallet.mdl.DrivingPrivilege
+import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
+import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -69,7 +69,7 @@ class IssuerCredentialDataProviderAdapter(
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
                 IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
                 EuPidScheme -> eupidIso(claimNames, idToken, issuance, expiration)
-                ConstantIndex.MobileDrivingLicence2023 -> mdlIso(claimNames, idToken, expiration)
+                MobileDrivingLicenceScheme -> mdlIso(claimNames, idToken, expiration)
                 else -> null
             }
         }
@@ -93,7 +93,12 @@ class IssuerCredentialDataProviderAdapter(
         issuance: Instant,
         expiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildEupidClaims(claimNames, idToken, issuance, expiration).mapIndexed(::buildIssuerSignedItem),
+        issuerSignedItems = buildEupidClaims(
+            claimNames,
+            idToken,
+            issuance,
+            expiration
+        ).mapIndexed(::buildIssuerSignedItem),
         expiration = expiration
     )
 
@@ -113,7 +118,7 @@ class IssuerCredentialDataProviderAdapter(
         digestId = index.toUInt(),
         random = Random.nextBytes(16),
         elementIdentifier = claimToBeIssued.name,
-        elementValue = claimToBeIssued.toElementValue()
+        elementValue = claimToBeIssued.value
     )
 
     private fun idaVcSd(
@@ -258,20 +263,4 @@ class IssuerCredentialDataProviderAdapter(
 
 @OptIn(ExperimentalEncodingApi::class)
 private fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
-
-fun ClaimToBeIssued.toElementValue() =
-    when (val value = value) {
-        is String -> ElementValue(string = value)
-        is ByteArray -> ElementValue(bytes = value)
-        is LocalDate -> ElementValue(date = value)
-        is Boolean -> ElementValue(boolean = value)
-        is Array<*> -> {
-            val drivingPrivilege = value.filterIsInstance<DrivingPrivilege>().map { it }.toTypedArray()
-            if (drivingPrivilege.isNotEmpty())
-                ElementValue(drivingPrivilege = drivingPrivilege)
-            else
-                ElementValue(string = value.toString())
-        }
-        else -> ElementValue(string = value.toString())
-    }
 

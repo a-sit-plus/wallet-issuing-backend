@@ -14,6 +14,7 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.CredentialResponseParameters
 import at.asitplus.wallet.lib.oidvci.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.WalletService
+import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -90,7 +91,7 @@ class IssuingInternalAuthorizationServerTest {
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.parse(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests.size shouldBeGreaterThan 1
+        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -107,7 +108,7 @@ class IssuingInternalAuthorizationServerTest {
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.parse(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests.size shouldBeGreaterThan 1
+        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -115,7 +116,7 @@ class IssuingInternalAuthorizationServerTest {
     @WithOAuth2AuthenticationToken
     fun mdl_iso_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(
-            credentialScheme = ConstantIndex.MobileDrivingLicence2023,
+            credentialScheme = MobileDrivingLicenceScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
         )
 

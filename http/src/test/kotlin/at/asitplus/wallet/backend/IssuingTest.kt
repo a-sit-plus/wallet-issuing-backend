@@ -7,7 +7,8 @@ import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.iso.MobileDrivingLicenceDataElements
+import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
+import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import io.kotest.matchers.collections.shouldBeSingleton
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
@@ -132,7 +133,7 @@ class IssuingTest {
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == IdAustriaScheme.Attributes.DATE_OF_BIRTH }
-            .elementValue.date shouldBe LocalDate(1983, 6, 4)
+            .elementValue shouldBe LocalDate(1983, 6, 4)
     }
 
     @Test
@@ -151,7 +152,7 @@ class IssuingTest {
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == EuPidScheme.Attributes.BIRTH_DATE }
-            .elementValue.date shouldBe LocalDate(1983, 6, 4)
+            .elementValue shouldBe LocalDate(1983, 6, 4)
     }
 
     @Test
@@ -160,7 +161,7 @@ class IssuingTest {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
-            credentialScheme = ConstantIndex.MobileDrivingLicence2023,
+            credentialScheme = MobileDrivingLicenceScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
         ).getOrThrow()
 
@@ -170,7 +171,7 @@ class IssuingTest {
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == MobileDrivingLicenceDataElements.BIRTH_DATE }
-            .elementValue.date shouldBe LocalDate(1983, 6, 4)
+            .elementValue shouldBe LocalDate(1983, 6, 4)
     }
 }
 
