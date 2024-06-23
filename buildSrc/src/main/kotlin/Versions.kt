@@ -1,6 +1,6 @@
 object VersionsBackend {
-    const val ida = "3.8.0"
-    const val eupid = "2.1.0"
+    const val ida = "3.8.1"
+    const val eupid = "2.1.1"
     const val mdl = "1.0.0"
     const val zxing = "3.5.2"
     const val `google-cbor` = "0.01.02"
