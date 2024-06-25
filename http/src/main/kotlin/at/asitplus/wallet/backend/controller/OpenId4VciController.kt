@@ -14,6 +14,8 @@ import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.lib.oidvci.jsonSerializer
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -84,7 +86,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/token returns $result")
-        return@runBlocking ResponseEntity.ok(result)
+        return@runBlocking ResponseEntity.ok(Json.encodeToString(result))
     }
 
     @RequestMapping("/credential", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
@@ -102,8 +104,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/credential returns $credential")
-        return@runBlocking ResponseEntity.ok(credential)
-
+        return@runBlocking ResponseEntity.ok(Json.encodeToString(credential))
     }
 
     private fun buildOidcRedirect(location: String): ResponseEntity<String> {
