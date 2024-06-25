@@ -25,33 +25,28 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSecurityConfigEidasId {
 
     @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
-        http.csrf { it.disable() }
-            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.ALWAYS) }
-            .logout {
-                it.invalidateHttpSession(true)
-                    .clearAuthentication(true)
-                    .logoutSuccessUrl("/")
-            }.headers {
-                it.frameOptions { it.sameOrigin() }
-            }.oauth2Login {
-                it.defaultSuccessUrl("/")
-            }
-        return http.build()
-    }
+    fun filterChain(http: HttpSecurity): SecurityFilterChain = http.csrf { it.disable() }
+        .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.ALWAYS) }
+        .logout {
+            it.invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .logoutSuccessUrl("/")
+        }.headers {
+            it.frameOptions { it.sameOrigin() }
+        }.oauth2Login {
+            it.defaultSuccessUrl("/")
+        }.build()
+
 
     @Bean
-    fun sessionRepository(): MapSessionRepository {
-        return MapSessionRepository(ConcurrentHashMap())
-    }
+    fun sessionRepository() = MapSessionRepository(ConcurrentHashMap())
 
     /**
      * We need cookie-based sessions on the Web, and header-based sessions for mobile clients
      */
     @Bean
-    fun httpSessionIdResolver(): HttpSessionIdResolver {
-        return DelegatingSessionIdResolver(CookieHttpSessionIdResolver(), HeaderHttpSessionIdResolver.xAuthToken())
-    }
+    fun httpSessionIdResolver() =
+        DelegatingSessionIdResolver(CookieHttpSessionIdResolver(), HeaderHttpSessionIdResolver.xAuthToken())
 
 }
 
