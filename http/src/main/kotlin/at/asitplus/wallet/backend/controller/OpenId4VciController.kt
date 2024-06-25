@@ -14,10 +14,9 @@ import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.lib.oidvci.jsonSerializer
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -37,22 +36,22 @@ class OpenId4VciController(
     private val authorizationService: SimpleAuthorizationService,
 ) {
 
-    @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER)
+    @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
     fun metadata(): ResponseEntity<IssuerMetadata> {
         val metadata = credentialIssuer.metadata
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
         return ResponseEntity.ok(metadata)
     }
 
-    @RequestMapping("/offer", method = [RequestMethod.GET])
+    @RequestMapping("/offer", method = [RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
     fun offer(): ResponseEntity<*> = runBlocking {
         Napier.i("/offer called")
         val offer = credentialIssuer.credentialOffer()
         Napier.d("/offer returns $offer")
-        return@runBlocking ResponseEntity.ok(jsonSerializer.encodeToString(offer))
+        return@runBlocking ResponseEntity.ok(offer)
     }
 
-    @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET])
+    @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
     fun authorize(
         @RequestParam requestParams: Map<String, String>,
         @RequestBody requestBody: String?
@@ -74,7 +73,7 @@ class OpenId4VciController(
         return@runBlocking buildOidcRedirect(result.url)
     }
 
-    @RequestMapping("/token", method = [RequestMethod.POST])
+    @RequestMapping("/token", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
     fun token(@RequestBody requestBody: String): ResponseEntity<*> = runBlocking {
         Napier.i("/token called")
         Napier.v("/token called with $requestBody")
@@ -85,10 +84,10 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/token returns $result")
-        return@runBlocking ResponseEntity.ok(Json.encodeToString(result))
+        return@runBlocking ResponseEntity.ok(result)
     }
 
-    @RequestMapping("/credential", method = [RequestMethod.POST])
+    @RequestMapping("/credential", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
     fun credential(
         @RequestBody requestBody: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION) authorizationHeader: String
@@ -103,7 +102,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/credential returns $credential")
-        return@runBlocking ResponseEntity.ok(jsonSerializer.encodeToString(credential))
+        return@runBlocking ResponseEntity.ok(credential)
 
     }
 
