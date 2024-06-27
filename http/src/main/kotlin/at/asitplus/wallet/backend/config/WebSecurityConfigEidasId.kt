@@ -33,6 +33,9 @@ class WebSecurityConfigEidasId {
                 .logoutSuccessUrl("/")
         }.headers {
             it.frameOptions { it.sameOrigin() }
+        }.authorizeHttpRequests{
+            it.requestMatchers("/authorize").authenticated()
+            it.anyRequest().permitAll()
         }.oauth2Login {
             it.defaultSuccessUrl("/")
         }.build()

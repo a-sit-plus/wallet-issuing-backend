@@ -161,7 +161,7 @@ class BackendConfiguration {
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
         issuerCryptoService: CryptoService
     ): Issuer = IssuerAgent(
-        identifier = issuerCryptoService.jsonWebKey.identifier,
+        identifier = issuerCryptoService.publicKey.didEncoded,
         jwsService = DefaultJwsService(issuerCryptoService),
         issuerCredentialStore = issuerCredentialStore,
         dataProvider = issuerCredentialDataProvider,
