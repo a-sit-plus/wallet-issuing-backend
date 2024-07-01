@@ -13,6 +13,7 @@ import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.lib.oidvci.jsonSerializer
 import io.github.aakira.napier.Napier
+import jakarta.servlet.http.HttpServletRequest
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -53,10 +54,16 @@ class OpenId4VciController(
         return@runBlocking ResponseEntity.ok(offer)
     }
 
+    /**
+     * Logs out the user from the Spring Boot session, so that new requests need to be authorized again,
+     * using the configured OAuth2 AS. Subsequent requests to [token] and [credential] are secured
+     * by the authorization code returned here.
+     */
     @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
     fun authorize(
         @RequestParam requestParams: Map<String, String>,
-        @RequestBody requestBody: String?
+        @RequestBody requestBody: String?,
+        request: HttpServletRequest,
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/authorize called")
         Napier.v("/authorize called with $requestParams and $requestBody")
@@ -73,6 +80,7 @@ class OpenId4VciController(
         }
         Napier.d("/authorize returns ${result.url}")
         return@runBlocking buildOidcRedirect(result.url)
+            .also { request.logout() }
     }
 
     @RequestMapping("/token", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
@@ -92,7 +100,7 @@ class OpenId4VciController(
     @RequestMapping("/credential", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
     fun credential(
         @RequestBody requestBody: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION) authorizationHeader: String
+        @RequestHeader(HttpHeaders.AUTHORIZATION) authorizationHeader: String,
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/credential called")
         Napier.v("/credential called with $authorizationHeader and $requestBody")
