@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
@@ -42,7 +43,7 @@ class IssuerCredentialDataProviderAdapter(
         credentialScheme: ConstantIndex.CredentialScheme,
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?
-    ): KmmResult<List<CredentialToBeIssued>> {
+    ): KmmResult<List<CredentialToBeIssued>> = catching {
         val issuance = Clock.System.now()
         val expiration = issuance + lifetime
         Napier.v("getCredential for $credentialScheme and $subjectPublicKey in $representation")
@@ -50,32 +51,30 @@ class IssuerCredentialDataProviderAdapter(
         Napier.v("getCredential user is $idToken")
         if (idToken == null) {
             Napier.w("getCredential returns null, no IdToken in session")
-            return KmmResult.success(listOf())
+            listOf()
+        } else {
+            when (representation) {
+                ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
+                    IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, expiration)
+                    EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, issuance, expiration)
+                    else -> null
+                }
+
+                ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
+                    IdAustriaScheme -> idaVcSd(claimNames, idToken, expiration)
+                    EuPidScheme -> eupidVcSd(claimNames, idToken, issuance, expiration)
+                    else -> null
+                }
+
+
+                ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
+                    IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
+                    EuPidScheme -> eupidIso(claimNames, idToken, issuance, expiration)
+                    MobileDrivingLicenceScheme -> mdlIso(claimNames, idToken, expiration)
+                    else -> null
+                }
+            }?.let { listOf(it) } ?: listOf()
         }
-        val singleItem = when (representation) {
-            ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
-                IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, expiration)
-                EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, issuance, expiration)
-                else -> null
-            }
-
-            ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
-                IdAustriaScheme -> idaVcSd(claimNames, idToken, expiration)
-                EuPidScheme -> eupidVcSd(claimNames, idToken, issuance, expiration)
-                else -> null
-            }
-
-
-            ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
-                IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
-                EuPidScheme -> eupidIso(claimNames, idToken, issuance, expiration)
-                MobileDrivingLicenceScheme -> mdlIso(claimNames, idToken, expiration)
-                else -> null
-            }
-        }
-        return singleItem?.let {
-            KmmResult.success(listOf(it))
-        } ?: KmmResult.success(listOf())
     }
 
     private fun idaIso(
@@ -83,7 +82,8 @@ class IssuerCredentialDataProviderAdapter(
         idToken: OidcIdToken,
         expiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
+            .also { Napier.v("idaIso returns $it") },
         expiration = expiration
     )
 
@@ -98,7 +98,8 @@ class IssuerCredentialDataProviderAdapter(
             idToken,
             issuance,
             expiration
-        ).mapIndexed(::buildIssuerSignedItem),
+        ).mapIndexed(::buildIssuerSignedItem)
+            .also { Napier.v("eupidIso returns $it") },
         expiration = expiration
     )
 
@@ -107,7 +108,8 @@ class IssuerCredentialDataProviderAdapter(
         idToken: OidcIdToken,
         expiration: Instant
     ) = CredentialToBeIssued.Iso(
-        issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem),
+        issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
+            .also { Napier.v("mdlIso returns $it") },
         expiration = expiration
     )
 
@@ -126,7 +128,8 @@ class IssuerCredentialDataProviderAdapter(
         idToken: OidcIdToken,
         expiration: Instant
     ) = CredentialToBeIssued.VcSd(
-        claims = buildIdaClaims(claimNames, idToken),
+        claims = buildIdaClaims(claimNames, idToken)
+            .also { Napier.v("idaVcSd returns $it") },
         expiration = expiration
     )
 
@@ -136,7 +139,8 @@ class IssuerCredentialDataProviderAdapter(
         issuance: Instant,
         expiration: Instant
     ) = CredentialToBeIssued.VcSd(
-        claims = buildEupidClaims(claimNames, idToken, issuance, expiration),
+        claims = buildEupidClaims(claimNames, idToken, issuance, expiration)
+            .also { Napier.v("eupidVcSd returns $it") },
         expiration = expiration
     )
 
@@ -157,7 +161,7 @@ class IssuerCredentialDataProviderAdapter(
             ageOver16 = idToken.ageOver16,
             ageOver18 = idToken.ageOver18,
             ageOver21 = idToken.ageOver21,
-        ),
+        ).also { Napier.v("idaVcJwt returns $it") },
         expiration = expiration,
     )
 
@@ -175,9 +179,9 @@ class IssuerCredentialDataProviderAdapter(
             ageOver18 = idToken.ageOver18,
             issuanceDate = issuance,
             expiryDate = expiration,
-            issuingCountry = "AT",
             issuingAuthority = "AT",
-        ),
+            issuingCountry = "AT",
+        ).also { Napier.v("eupidVcJwt returns $it") },
         expiration = expiration,
     )
 
