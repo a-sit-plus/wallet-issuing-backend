@@ -60,6 +60,8 @@ dependencies {
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
     implementation("at.asitplus.wallet:mobiledrivinglicence:${VersionsBackend.mdl}")
+    implementation("at.asitplus.wallet:powerofrepresentation:${VersionsBackend.por}")
+    implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")
     implementation(vclib.vclib)
     implementation(vclib.vclib.openid)
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
@@ -105,7 +107,8 @@ val gitLabGroupId: String by extra
 repositories {
     mavenLocal()
     gitlab(gitLabGroupId.toInt()) accessTokenFrom extra
-    maven("https://oss.sonatype.org/content/repositories/snapshots/")
+    maven(url = uri("https://s01.oss.sonatype.org/content/repositories/atasitplus-1173/"))
+    maven(url = uri("https://s01.oss.sonatype.org/content/repositories/atasitplus-1175/"))
 }
 
 publishing {

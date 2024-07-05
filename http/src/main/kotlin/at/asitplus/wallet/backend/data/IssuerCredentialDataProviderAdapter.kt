@@ -5,6 +5,9 @@ import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
+import at.asitplus.wallet.cor.CertificateOfResidenceScheme
+import at.asitplus.wallet.cor.ResidenceAddress
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -18,12 +21,17 @@ import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
+import at.asitplus.wallet.por.PowerOfRepresentationDataElements
+import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.Json.Default.encodeToString
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
@@ -63,9 +71,10 @@ class IssuerCredentialDataProviderAdapter(
                 ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
                     IdAustriaScheme -> idaVcSd(claimNames, idToken, expiration)
                     EuPidScheme -> eupidVcSd(claimNames, idToken, issuance, expiration)
+                    PowerOfRepresentationScheme -> porVcSd(claimNames, idToken, issuance, expiration)
+                    CertificateOfResidenceScheme -> corVcSd(claimNames, idToken, issuance, expiration)
                     else -> null
                 }
-
 
                 ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
                     IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
@@ -144,6 +153,28 @@ class IssuerCredentialDataProviderAdapter(
         expiration = expiration
     )
 
+    private fun porVcSd(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        issuance: Instant,
+        expiration: Instant
+    ) = CredentialToBeIssued.VcSd(
+        claims = buildPorClaims(claimNames, idToken, issuance, expiration)
+            .also { Napier.v("porVcSd returns $it") },
+        expiration = expiration
+    )
+
+    private fun corVcSd(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        issuance: Instant,
+        expiration: Instant
+    ) = CredentialToBeIssued.VcSd(
+        claims = buildCorClaims(claimNames, idToken, issuance, expiration)
+            .also { Napier.v("corVcSd returns $it") },
+        expiration = expiration
+    )
+
     private fun idaVcJwt(
         subjectPublicKey: CryptoPublicKey,
         idToken: OidcIdToken,
@@ -179,7 +210,7 @@ class IssuerCredentialDataProviderAdapter(
             ageOver18 = idToken.ageOver18,
             issuanceDate = issuance,
             expiryDate = expiration,
-            issuingAuthority = "AT",
+            issuingAuthority = "Miniwahr",
             issuingCountry = "AT",
         ).also { Napier.v("eupidVcJwt returns $it") },
         expiration = expiration,
@@ -210,8 +241,40 @@ class IssuerCredentialDataProviderAdapter(
         claim(claimNames, EuPidScheme.Attributes.AGE_OVER_18, idToken.ageOver18),
         claim(claimNames, EuPidScheme.Attributes.ISSUANCE_DATE, issuance),
         claim(claimNames, EuPidScheme.Attributes.EXPIRY_DATE, expiration),
+        claim(claimNames, EuPidScheme.Attributes.ISSUING_AUTHORITY, "Miniwahr"),
         claim(claimNames, EuPidScheme.Attributes.ISSUING_COUNTRY, "AT"),
-        claim(claimNames, EuPidScheme.Attributes.ISSUING_AUTHORITY, "AT"),
+    )
+
+    private fun buildCorClaims(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        issuance: Instant,
+        expiration: Instant
+    ) = listOfNotNull(
+        claim(claimNames, CertificateOfResidenceDataElements.FAMILY_NAME, idToken.familyName),
+        claim(claimNames, CertificateOfResidenceDataElements.GIVEN_NAME, idToken.givenName),
+        claim(claimNames, CertificateOfResidenceDataElements.BIRTH_DATE, idToken.dateOfBirth),
+        claim(claimNames, CertificateOfResidenceDataElements.RESIDENCE_ADDRESS, idToken.residenceAddress),
+        claim(claimNames, CertificateOfResidenceDataElements.ISSUANCE_DATE, issuance),
+        claim(claimNames, CertificateOfResidenceDataElements.EXPIRY_DATE, expiration),
+        claim(claimNames, CertificateOfResidenceDataElements.ISSUING_AUTHORITY, "Miniwahr"),
+        claim(claimNames, CertificateOfResidenceDataElements.ISSUING_COUNTRY, "AT"),
+    )
+
+    private fun buildPorClaims(
+        claimNames: Collection<String>?,
+        idToken: OidcIdToken,
+        issuance: Instant,
+        expiration: Instant
+    ) = listOfNotNull(
+        claim(claimNames, PowerOfRepresentationDataElements.LEGAL_PERSON_IDENTIFIER, idToken.legalPersonIdentifier),
+        claim(claimNames, PowerOfRepresentationDataElements.LEGAL_NAME, idToken.legalName),
+        claim(claimNames, PowerOfRepresentationDataElements.FULL_POWERS, true),
+        claim(claimNames, PowerOfRepresentationDataElements.EFFECTIVE_FROM_DATE, issuance),
+        claim(claimNames, PowerOfRepresentationDataElements.ISSUANCE_DATE, issuance),
+        claim(claimNames, PowerOfRepresentationDataElements.EXPIRY_DATE, expiration),
+        claim(claimNames, PowerOfRepresentationDataElements.ISSUING_AUTHORITY, "Miniwahr"),
+        claim(claimNames, PowerOfRepresentationDataElements.ISSUING_COUNTRY, "AT"),
     )
 
     private fun buildMdlClaims(claimNames: Collection<String>?, idToken: OidcIdToken) = listOfNotNull(
@@ -219,7 +282,7 @@ class IssuerCredentialDataProviderAdapter(
         claim(claimNames, MobileDrivingLicenceDataElements.GIVEN_NAME, idToken.givenName),
         claim(claimNames, MobileDrivingLicenceDataElements.BIRTH_DATE, idToken.dateOfBirth),
         claim(claimNames, MobileDrivingLicenceDataElements.ISSUE_DATE, LocalDate.parse("2023-01-01")),
-        claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_AUTHORITY, "LPD Wien"),
+        claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_AUTHORITY, "Miniwahr"),
         claim(claimNames, MobileDrivingLicenceDataElements.ISSUING_COUNTRY, "AT"),
         claim(claimNames, MobileDrivingLicenceDataElements.UN_DISTINGUISHING_SIGN, "A"),
         claim(
@@ -238,6 +301,14 @@ class IssuerCredentialDataProviderAdapter(
 
     private fun Collection<String>?.isNullOrContains(name: String) =
         this == null || contains(name)
+
+    private val OidcIdToken.legalName: String
+        get() = getClaimAsString("urn:oid:1.2.40.0.10.2.1.1.261.84")
+            ?: fullName ?: subject
+
+    private val OidcIdToken.legalPersonIdentifier: String
+        get() = getClaimAsString("urn:oid:1.2.40.0.10.2.1.1.261.100")
+            ?: fullName ?: subject
 
     private val OidcIdToken.bpk: String
         get() = getClaimAsString("urn:pvpgvat:oidc.bpk") ?: subject
@@ -258,10 +329,25 @@ class IssuerCredentialDataProviderAdapter(
         get() = LocalDate.parse(birthdate)
 
     private val OidcIdToken.portrait: ByteArray?
-        get() = getClaimAsString("org.iso.18013.5.1:portrait")?.decodeToByteArray(Base64())
+        get() = picture?.decodeToByteArray(Base64())
+            ?: getClaimAsString("org.iso.18013.5.1:portrait")?.decodeToByteArray(Base64())
 
     private val OidcIdToken.mainAddress: String?
-        get() = getClaimAsString("urn:eidgvat:attributes.mainAddress")
+        get() = address?.formatted
+            ?: getClaimAsString("urn:eidgvat:attributes.mainAddress")
+
+    private val OidcIdToken.residenceAddress: String
+        get() = Json.encodeToString(
+            ResidenceAddress(
+                thoroughfare = address?.streetAddress ?: "Riverside Drive",
+                locatorDesignator = "1640",
+                postCode = address?.postalCode ?: "90210",
+                postName = address?.locality ?: "Hill Valley",
+                adminUnitLevel1 = "US",
+                adminUnitLevel2 = "CA",
+                fullAddress = mainAddress,
+            )
+        )
 
 }
 

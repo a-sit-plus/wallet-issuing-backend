@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
+import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -9,6 +11,8 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
+import at.asitplus.wallet.por.PowerOfRepresentationDataElements
+import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import io.kotest.matchers.collections.shouldBeSingleton
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
@@ -47,13 +51,11 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = IdAustriaScheme,
             representation = ConstantIndex.CredentialRepresentation.PLAIN_JWT,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
-        val subject = single.subject
-        subject.shouldBeInstanceOf<IdAustriaCredential>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
+
+        val subject = single.subject.shouldBeInstanceOf<IdAustriaCredential>()
         subject.dateOfBirth shouldBe LocalDate(1983, 6, 4)
         subject.bpk shouldBe "ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo="
     }
@@ -66,13 +68,11 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = EuPidScheme,
             representation = ConstantIndex.CredentialRepresentation.PLAIN_JWT,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
-        val subject = single.subject
-        subject.shouldBeInstanceOf<EuPidCredential>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
+
+        val subject = single.subject.shouldBeInstanceOf<EuPidCredential>()
         subject.birthDate shouldBe LocalDate(1983, 6, 4)
     }
 
@@ -84,11 +84,10 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = IdAustriaScheme,
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+
         single.claims.shouldNotBeEmpty()
         single.claims
             .first { it.name == IdAustriaScheme.Attributes.DATE_OF_BIRTH }
@@ -106,15 +105,50 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = EuPidScheme,
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+
         single.claims.shouldNotBeEmpty()
         single.claims
             .first { it.name == EuPidScheme.Attributes.BIRTH_DATE }
             .value shouldBe LocalDate(1983, 6, 4)
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun ida_cor_ok() {
+        val client = Client()
+        val credential = issuerCredentialDataProvider.getCredential(
+            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            credentialScheme = CertificateOfResidenceScheme,
+            representation = ConstantIndex.CredentialRepresentation.SD_JWT,
+        ).getOrThrow().shouldBeSingleton()
+
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+
+        single.claims.shouldNotBeEmpty()
+        single.claims
+            .first { it.name == CertificateOfResidenceDataElements.GIVEN_NAME }
+            .value shouldBe "XXXŐzgür"
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun ida_por_ok() {
+        val client = Client()
+        val credential = issuerCredentialDataProvider.getCredential(
+            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            credentialScheme = PowerOfRepresentationScheme,
+            representation = ConstantIndex.CredentialRepresentation.SD_JWT,
+        ).getOrThrow().shouldBeSingleton()
+
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+
+        single.claims.shouldNotBeEmpty()
+        single.claims
+            .first { it.name == PowerOfRepresentationDataElements.LEGAL_NAME }
+            .value shouldBe "IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN"
     }
 
     @Test
@@ -125,11 +159,10 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = IdAustriaScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == IdAustriaScheme.Attributes.DATE_OF_BIRTH }
@@ -144,11 +177,10 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = EuPidScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == EuPidScheme.Attributes.BIRTH_DATE }
@@ -163,11 +195,10 @@ class IssuingTest {
             subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
             credentialScheme = MobileDrivingLicenceScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
-        ).getOrThrow()
+        ).getOrThrow().shouldBeSingleton()
 
-        credential.shouldBeSingleton()
-        val single = credential.single()
-        single.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
             .first { it.elementIdentifier == MobileDrivingLicenceDataElements.BIRTH_DATE }
