@@ -2,6 +2,7 @@
 
 3.8.0:
  - Update dependency on vclib to 3.8.0
+ - Issue PoR, CoR
 
 3.7.0:
  - Update dependency on vclib to 3.7.0
