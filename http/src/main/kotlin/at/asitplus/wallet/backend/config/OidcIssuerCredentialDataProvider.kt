@@ -38,12 +38,12 @@ class OidcIssuerCredentialDataProvider(
         credentialScheme: ConstantIndex.CredentialScheme,
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?
-    ): KmmResult<List<CredentialToBeIssued>> {
+    ): KmmResult<List<CredentialToBeIssued>> = at.asitplus.catching {
         val issuance = Clock.System.now()
         val expiration = issuance + lifetime
         Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation, $claimNames")
         Napier.v("getCredential user is $userInfo")
-        val singleItem = when (representation) {
+        when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
                 IdAustriaScheme -> idaVcJwt(subjectPublicKey, userInfo, expiration)
                 EuPidScheme -> eupidVcJwt(subjectPublicKey, userInfo, issuance, expiration)
@@ -63,10 +63,7 @@ class OidcIssuerCredentialDataProvider(
                 MobileDrivingLicenceScheme -> mdlIso(claimNames, userInfo, expiration)
                 else -> null
             }
-        }
-        return singleItem?.let {
-            KmmResult.success(listOf(it))
-        } ?: KmmResult.success(listOf())
+        }?.let { listOf(it) } ?: listOf()
     }
 
     private fun idaIso(
@@ -75,7 +72,7 @@ class OidcIssuerCredentialDataProvider(
         expiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildIdaClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
-            .also { Napier.v("buildIdaClaims returns $it") },
+            .also { Napier.v("idaIso returns $it") },
         expiration = expiration
     )
 
@@ -91,7 +88,7 @@ class OidcIssuerCredentialDataProvider(
             issuance,
             expiration
         ).mapIndexed(::buildIssuerSignedItem)
-            .also { Napier.v("buildEupidClaims returns $it") },
+            .also { Napier.v("eupidIso returns $it") },
         expiration = expiration
     )
 
@@ -101,7 +98,7 @@ class OidcIssuerCredentialDataProvider(
         expiration: Instant
     ) = CredentialToBeIssued.Iso(
         issuerSignedItems = buildMdlClaims(claimNames, idToken).mapIndexed(::buildIssuerSignedItem)
-            .also { Napier.v("buildMdlClaims returns $it") },
+            .also { Napier.v("mdlIso returns $it") },
         expiration = expiration
     )
 
@@ -121,7 +118,7 @@ class OidcIssuerCredentialDataProvider(
         expiration: Instant
     ) = CredentialToBeIssued.VcSd(
         claims = buildIdaClaims(claimNames, idToken)
-            .also { Napier.v("buildMdlClaims returns $it") },
+            .also { Napier.v("idaVcSd returns $it") },
         expiration = expiration
     )
 
@@ -132,7 +129,7 @@ class OidcIssuerCredentialDataProvider(
         expiration: Instant
     ) = CredentialToBeIssued.VcSd(
         claims = buildEupidClaims(claimNames, idToken, issuance, expiration)
-            .also { Napier.v("buildEupidClaims returns $it") },
+            .also { Napier.v("eupidVcSd returns $it") },
         expiration = expiration
     )
 
@@ -149,8 +146,11 @@ class OidcIssuerCredentialDataProvider(
             dateOfBirth = idToken.dateOfBirth ?: LocalDate.fromEpochDays(0),
             portrait = idToken.portrait,
             mainAddress = idToken.mainAddress,
+            ageOver14 = idToken.ageOver14,
+            ageOver16 = idToken.ageOver16,
             ageOver18 = idToken.ageOver18,
-        ).also { Napier.v("buildIdaAustriaCredential returns $it") },
+            ageOver21 = idToken.ageOver21,
+        ).also { Napier.v("idaVcJwt returns $it") },
         expiration = expiration,
     )
 
@@ -170,7 +170,7 @@ class OidcIssuerCredentialDataProvider(
             expiryDate = expiration,
             issuingAuthority = "AT",
             issuingCountry = "AT",
-        ).also { Napier.v("buildEuPidCredential returns $it") },
+        ).also { Napier.v("eupidVcJwt returns $it") },
         expiration = expiration,
     )
 
@@ -231,9 +231,21 @@ class OidcIssuerCredentialDataProvider(
     private val OidcUserInfoExtended.dateOfBirth
         get() = userInfo.birthDate?.let { LocalDate.parse(it) }
 
+    private val OidcUserInfoExtended.ageOver14
+        get() = getValue("org.iso.18013.5.1:age_over_14")?.let { it.toBoolean() }
+            ?: ageOver16
+
+    private val OidcUserInfoExtended.ageOver16
+        get() = getValue("org.iso.18013.5.1:age_over_16")?.let { it.toBoolean() }
+            ?: ageOver18
+
     private val OidcUserInfoExtended.ageOver18: Boolean?
         get() = userInfo.ageOver18
             ?: getValue("org.iso.18013.5.1:age_over_18")?.let { it.toBoolean() }
+
+    private val OidcUserInfoExtended.ageOver21: Boolean?
+        get() = userInfo.ageOver18
+            ?: getValue("org.iso.18013.5.1:age_over_21")?.let { it.toBoolean() }
 
     private val OidcUserInfoExtended.portrait: ByteArray?
         get() = userInfo.picture?.decodeToByteArray(Base64())
