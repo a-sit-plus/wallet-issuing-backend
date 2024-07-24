@@ -26,7 +26,6 @@ import java.net.URL
 import java.nio.charset.Charset
 import java.security.*
 import java.security.cert.X509Certificate
-import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.util.*
 import kotlin.random.Random
@@ -48,24 +47,18 @@ class KeyFileAdapter(
 
     override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate?
     override val signingAlgorithm: X509SignatureAlgorithm
-    val provider = securityProviderBean.provider
     override val keyPair: KeyPair
 
     init {
         val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
         val privateKeyRead = PEMParser(StringReader(privateKeyString)).readObject()
         val privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
-
         val (jcaKey, jcaCert) = loadCertOrPubKey(config.publicKey, config.certificate, resourceLoader)
-        require(jcaKey is ECPublicKey) { "expected ECPublicKey" }
-
         certificate = at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromByteArray(jcaCert!!.encoded)!!
-
         this.signingAlgorithm = X509SignatureAlgorithm.ES256
         keyPair = KeyPair(jcaKey, privateKey)
         Napier.i("Loaded public key: '${jcaKey.encoded.encodeToString(Base64())}'")
     }
-
 }
 
 
@@ -94,11 +87,9 @@ class KeyStoreAdapter(
         val privateKey = keyStore.getKey(alias, aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
         certificate =
             at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromByteArray(keyStore.getCertificate(alias).encoded)!!
-        val publicKey = certificate.publicKey
-        require(publicKey is ECPublicKey) { "expected ECPublicKey" }
         signingAlgorithm = X509SignatureAlgorithm.ES256
         keyPair = KeyPair(keyStore.getCertificate(alias).publicKey, privateKey)
-        Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
+        Napier.i("Loaded public key from cert: '${certificate.publicKey.encodeToDer().encodeToString(Base64())}'")
     }
 
 }
