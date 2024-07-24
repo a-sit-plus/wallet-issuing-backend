@@ -1,9 +1,9 @@
 object VersionsBackend {
-    const val ida = "3.8.1"
-    const val eupid = "2.1.1"
-    const val mdl = "1.0.0"
-    const val por = "1.0.0"
-    const val cor = "1.0.0"
+    const val ida = "3.8.2"
+    const val eupid = "2.1.2"
+    const val mdl = "1.0.1"
+    const val por = "1.0.1"
+    const val cor = "1.0.1"
     const val zxing = "3.5.2"
     const val `google-cbor` = "0.01.02"
     const val pgsql = "42.5.0"
@@ -17,7 +17,6 @@ object VersionsBackend {
     object spring {
         const val boot = "3.1.9"
         const val `dependency-management` = "1.1.3"
-        const val `cloud-config-client` = "4.0.4"
         const val `admin-starter-client` = "3.1.6"
         const val doc = "1.7.0"
     }
