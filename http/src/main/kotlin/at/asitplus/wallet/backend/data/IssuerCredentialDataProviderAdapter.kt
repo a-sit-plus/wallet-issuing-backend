@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
@@ -31,7 +30,6 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.Json.Default.encodeToString
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
@@ -51,38 +49,36 @@ class IssuerCredentialDataProviderAdapter(
         credentialScheme: ConstantIndex.CredentialScheme,
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?
-    ): KmmResult<List<CredentialToBeIssued>> = catching {
+    ): KmmResult<CredentialToBeIssued> = catching {
         val issuance = Clock.System.now()
         val expiration = issuance + lifetime
         Napier.v("getCredential for $credentialScheme and $subjectPublicKey in $representation")
         val idToken = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.v("getCredential user is $idToken")
         if (idToken == null) {
-            Napier.w("getCredential returns null, no IdToken in session")
-            listOf()
-        } else {
-            when (representation) {
-                ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
-                    IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, expiration)
-                    EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, issuance, expiration)
-                    else -> null
-                }
+            throw IllegalArgumentException("idToken")
+        }
+        when (representation) {
+            ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
+                IdAustriaScheme -> idaVcJwt(subjectPublicKey, idToken, expiration)
+                EuPidScheme -> eupidVcJwt(subjectPublicKey, idToken, issuance, expiration)
+                else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
+            }
 
-                ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
-                    IdAustriaScheme -> idaVcSd(claimNames, idToken, expiration)
-                    EuPidScheme -> eupidVcSd(claimNames, idToken, issuance, expiration)
-                    PowerOfRepresentationScheme -> porVcSd(claimNames, idToken, issuance, expiration)
-                    CertificateOfResidenceScheme -> corVcSd(claimNames, idToken, issuance, expiration)
-                    else -> null
-                }
+            ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
+                IdAustriaScheme -> idaVcSd(claimNames, idToken, expiration)
+                EuPidScheme -> eupidVcSd(claimNames, idToken, issuance, expiration)
+                PowerOfRepresentationScheme -> porVcSd(claimNames, idToken, issuance, expiration)
+                CertificateOfResidenceScheme -> corVcSd(claimNames, idToken, issuance, expiration)
+                else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
+            }
 
-                ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
-                    IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
-                    EuPidScheme -> eupidIso(claimNames, idToken, issuance, expiration)
-                    MobileDrivingLicenceScheme -> mdlIso(claimNames, idToken, expiration)
-                    else -> null
-                }
-            }?.let { listOf(it) } ?: listOf()
+            ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
+                IdAustriaScheme -> idaIso(claimNames, idToken, expiration)
+                EuPidScheme -> eupidIso(claimNames, idToken, issuance, expiration)
+                MobileDrivingLicenceScheme -> mdlIso(claimNames, idToken, expiration)
+                else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
+            }
         }
     }
 
@@ -181,7 +177,7 @@ class IssuerCredentialDataProviderAdapter(
         expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = IdAustriaCredential(
-            id = subjectPublicKey.toJsonWebKey().identifier,
+            id = subjectPublicKey.didEncoded,
             bpk = idToken.bpk,
             firstname = idToken.givenName,
             lastname = idToken.familyName,
@@ -203,7 +199,7 @@ class IssuerCredentialDataProviderAdapter(
         expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = EuPidCredential(
-            id = subjectPublicKey.toJsonWebKey().identifier,
+            id = subjectPublicKey.didEncoded,
             familyName = idToken.familyName,
             givenName = idToken.givenName,
             birthDate = idToken.dateOfBirth,

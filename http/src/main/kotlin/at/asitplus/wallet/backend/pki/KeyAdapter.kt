@@ -1,14 +1,8 @@
 package at.asitplus.wallet.backend.pki
 
-import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
-import at.asitplus.crypto.datatypes.cose.CoseAlgorithm
-import at.asitplus.crypto.datatypes.cose.CoseKey
-import at.asitplus.crypto.datatypes.cose.toCoseKey
-import at.asitplus.crypto.datatypes.jws.JsonWebKey
 import at.asitplus.wallet.backend.config.KeyFileConfiguration
 import at.asitplus.wallet.backend.config.KeyStoreConfiguration
-import at.asitplus.wallet.backend.service.fromJcaKey
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -31,7 +25,6 @@ import java.net.URI
 import java.net.URL
 import java.nio.charset.Charset
 import java.security.*
-import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
@@ -39,16 +32,12 @@ import java.util.*
 import kotlin.random.Random
 
 /**
- * Interface to use different sources of cryptographic keys in the [CryptoServiceAdapter].
+ * Interface to use different sources of cryptographic keys as [KeyPairAdapter]
  */
 interface KeyAdapter {
-    val privateKey: PrivateKey
-    val publicKey: PublicKey
-    val certificate: X509Certificate
-    val jsonWebKey: JsonWebKey
-    val coseKey: CoseKey
-    val algorithm: X509SignatureAlgorithm
-    val provider: Provider
+    val keyPair: KeyPair
+    val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate?
+    val signingAlgorithm: X509SignatureAlgorithm
 }
 
 class KeyFileAdapter(
@@ -57,38 +46,31 @@ class KeyFileAdapter(
     securityProviderBean: SecurityProviderBean
 ) : KeyAdapter {
 
-
-    override val privateKey: PrivateKey
-    override val certificate: X509Certificate
-    override val publicKey: PublicKey
-    override val algorithm: X509SignatureAlgorithm
-    override val provider = securityProviderBean.provider
-    override val jsonWebKey: JsonWebKey
-    override val coseKey: CoseKey
+    override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate?
+    override val signingAlgorithm: X509SignatureAlgorithm
+    val provider = securityProviderBean.provider
+    override val keyPair: KeyPair
 
     init {
         val privateKeyString = loadResource(resourceLoader, config.privateKey.toString())
         val privateKeyRead = PEMParser(StringReader(privateKeyString)).readObject()
-        privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
+        val privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
 
-        val (k, c) = loadCertOrPubKey(config.publicKey, config.certificate, resourceLoader)
-        require(k is ECPublicKey) { "expected ECPublicKey" }
+        val (jcaKey, jcaCert) = loadCertOrPubKey(config.publicKey, config.certificate, resourceLoader)
+        require(jcaKey is ECPublicKey) { "expected ECPublicKey" }
 
-        publicKey = k
-        certificate = c!!
+        certificate = at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromByteArray(jcaCert!!.encoded)!!
 
-        val ecCurve = ECCurve.SECP_256_R_1
-        algorithm = X509SignatureAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
-        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
-        Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
+        this.signingAlgorithm = X509SignatureAlgorithm.ES256
+        keyPair = KeyPair(jcaKey, privateKey)
+        Napier.i("Loaded public key: '${jcaKey.encoded.encodeToString(Base64())}'")
     }
 
 }
 
 
 class KeyStoreAdapter(
-    override val provider: Provider,
+    provider: Provider,
     url: URL,
     type: String,
     password: String?,
@@ -102,31 +84,20 @@ class KeyStoreAdapter(
     ) : this(config.provider?.let { Security.getProvider(it) } ?: securityProviderBean.provider,
         config.path.toURL(), config.type, config.password, config.alias, config.aliasPassword)
 
-
-    override val privateKey: PrivateKey
-    override val publicKey: PublicKey
-    override val certificate: X509Certificate
-    override val algorithm: X509SignatureAlgorithm
-    override val jsonWebKey: JsonWebKey
-    override val coseKey: CoseKey
+    override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate?
+    override val signingAlgorithm: X509SignatureAlgorithm
+    override val keyPair: KeyPair
 
     init {
         val keyStore = KeyStore.getInstance(type, provider)
-        keyStore.load(
-            url.openStream(),
-            password?.toCharArray() ?: charArrayOf()
-        )
-        privateKey = keyStore.getKey(
-            alias,
-            aliasPassword?.toCharArray() ?: charArrayOf()
-        ) as PrivateKey
-        certificate = keyStore.getCertificate(alias) as X509Certificate
-        publicKey = certificate.publicKey
+        keyStore.load(url.openStream(), password?.toCharArray() ?: charArrayOf())
+        val privateKey = keyStore.getKey(alias, aliasPassword?.toCharArray() ?: charArrayOf()) as PrivateKey
+        certificate =
+            at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromByteArray(keyStore.getCertificate(alias).encoded)!!
+        val publicKey = certificate.publicKey
         require(publicKey is ECPublicKey) { "expected ECPublicKey" }
-        val ecCurve = ECCurve.SECP_256_R_1
-        algorithm = X509SignatureAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(publicKey, ecCurve).getOrThrow()
-        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+        signingAlgorithm = X509SignatureAlgorithm.ES256
+        keyPair = KeyPair(keyStore.getCertificate(alias).publicKey, privateKey)
         Napier.i("Loaded public key: '${publicKey.encoded.encodeToString(Base64())}'")
     }
 
@@ -134,24 +105,15 @@ class KeyStoreAdapter(
 
 class RandomKeyAdapter : KeyAdapter {
 
-
-    override val privateKey: PrivateKey
-    override val publicKey: PublicKey
-    override val certificate: X509Certificate
-    override val algorithm: X509SignatureAlgorithm
-    override val provider: Provider = BouncyCastleProvider().also { Security.addProvider(it) }
-    override val jsonWebKey: JsonWebKey
-    override val coseKey: CoseKey
+    override val certificate: at.asitplus.crypto.datatypes.pki.X509Certificate?
+    override val signingAlgorithm: X509SignatureAlgorithm
+    private val provider: Provider = BouncyCastleProvider().also { Security.addProvider(it) }
+    override val keyPair: KeyPair
 
     init {
-        val keyPair = KeyPairGenerator.getInstance("EC", provider).also { it.initialize(256) }
+        keyPair = KeyPairGenerator.getInstance("EC", provider).also { it.initialize(256) }
             .generateKeyPair()
-        privateKey = keyPair.private
-        publicKey = keyPair.public
-        val ecCurve = ECCurve.SECP_256_R_1
-        algorithm = X509SignatureAlgorithm.ES256
-        jsonWebKey = JsonWebKey.fromJcaKey(keyPair.public as ECPublicKey, ecCurve).getOrThrow()
-        coseKey = jsonWebKey.toCryptoPublicKey().getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+        signingAlgorithm = X509SignatureAlgorithm.ES256
         val issuer = X500Name("CN=Issuer")
         val contentSigner by lazy { JcaContentSignerBuilder("SHA256withECDSA").build(keyPair.private) }
         val builder = X509v3CertificateBuilder(
@@ -162,8 +124,8 @@ class RandomKeyAdapter : KeyAdapter {
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
         )
-        certificate = CertificateFactory.getInstance("X.509")
-            .generateCertificate(builder.build(contentSigner).encoded.inputStream()) as X509Certificate
+        certificate =
+            at.asitplus.crypto.datatypes.pki.X509Certificate.decodeFromByteArray(builder.build(contentSigner).encoded)!!
         Napier.i("Generated new key pair with public key: '${keyPair.public.encoded.encodeToString(Base64())}'")
     }
 }

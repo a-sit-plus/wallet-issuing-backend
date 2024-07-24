@@ -136,23 +136,14 @@ class IssuingInternalAuthorizationServerTest {
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oid4vciClient.createTokenRequestParameters(
             requestOptions = requestOptions,
-            code = authorizationCode.params.code!!,
-            state = requestOptions.state,
+            authorization = WalletService.AuthorizationForToken.Code(authorizationCode.params.code!!),
         )
         val accessToken = authorizationServer.token(tokenRequest).getOrThrow()
-        val credentialRequest = when (requestOptions.representation) {
-            ConstantIndex.CredentialRepresentation.ISO_MDOC -> client.oid4vciClient.createCredentialRequestCwt(
-                requestOptions = requestOptions,
-                clientNonce = accessToken.clientNonce,
-                credentialIssuer = offer.credentialIssuer
-            ).getOrThrow()
-
-            else -> client.oid4vciClient.createCredentialRequestJwt(
-                requestOptions = requestOptions,
-                clientNonce = accessToken.clientNonce,
-                credentialIssuer = offer.credentialIssuer
-            ).getOrThrow()
-        }
+        val credentialRequest = client.oid4vciClient.createCredentialRequest(
+            requestOptions = requestOptions,
+            clientNonce = accessToken.clientNonce,
+            credentialIssuer = offer.credentialIssuer
+        ).getOrThrow()
         val credential = credentialIssuer.credential(
             accessToken = accessToken.accessToken,
             params = credentialRequest,
