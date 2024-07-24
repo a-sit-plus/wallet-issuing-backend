@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import java.util.UUID
+import java.util.*
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
@@ -67,7 +67,7 @@ class RevocationServiceStatusListIndexTest {
         expirationDate = Clock.System.now() + 60.seconds
         validUntil = Clock.System.now() + 2.seconds
         bpk = UUID.randomUUID().toString()
-        subjectPublicKey = Client().jsonWebKey.toCryptoPublicKey().getOrThrow()
+        subjectPublicKey = Client().randomKeyAdapter.publicKey
         credentialRepo.deleteAll()
         revokedCredentialRepo.deleteAll()
     }

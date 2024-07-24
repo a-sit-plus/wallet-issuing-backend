@@ -1,12 +1,7 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.jws.toJsonWebKey
-import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
-import at.asitplus.wallet.backend.data.IssuedCredential
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.RevokedCredential
-import at.asitplus.wallet.backend.data.RevokedCredentialRepository
+import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
@@ -113,7 +108,7 @@ class DefaultRevocationService(
                 ) + 1
                 val issuedCredential = IssuedCredential(
                     vcId = id,
-                    subjectId = subjectPublicKey.toJsonWebKey().identifier,
+                    subjectId = subjectPublicKey.didEncoded,
                     validUntil = expirationDate.toJavaInstant(),
                     timePeriod = timePeriod,
                     attributeName = "TODO from vclib",

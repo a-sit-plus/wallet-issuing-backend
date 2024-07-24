@@ -13,7 +13,6 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
-import io.kotest.matchers.collections.shouldBeSingleton
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -48,12 +47,12 @@ class IssuingTest {
     fun ida_vc_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = IdAustriaScheme,
             representation = ConstantIndex.CredentialRepresentation.PLAIN_JWT,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
 
         val subject = single.subject.shouldBeInstanceOf<IdAustriaCredential>()
         subject.dateOfBirth shouldBe LocalDate(1983, 6, 4)
@@ -65,12 +64,12 @@ class IssuingTest {
     fun pid_vc_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = EuPidScheme,
             representation = ConstantIndex.CredentialRepresentation.PLAIN_JWT,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcJwt>()
 
         val subject = single.subject.shouldBeInstanceOf<EuPidCredential>()
         subject.birthDate shouldBe LocalDate(1983, 6, 4)
@@ -81,12 +80,12 @@ class IssuingTest {
     fun ida_sdjwt_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = IdAustriaScheme,
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
 
         single.claims.shouldNotBeEmpty()
         single.claims
@@ -102,12 +101,12 @@ class IssuingTest {
     fun pid_sdjwt_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = EuPidScheme,
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
 
         single.claims.shouldNotBeEmpty()
         single.claims
@@ -120,12 +119,12 @@ class IssuingTest {
     fun ida_cor_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = CertificateOfResidenceScheme,
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
 
         single.claims.shouldNotBeEmpty()
         single.claims
@@ -138,12 +137,12 @@ class IssuingTest {
     fun ida_por_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = PowerOfRepresentationScheme,
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
 
         single.claims.shouldNotBeEmpty()
         single.claims
@@ -156,12 +155,12 @@ class IssuingTest {
     fun ida_iso_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = IdAustriaScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
 
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
@@ -174,12 +173,12 @@ class IssuingTest {
     fun pid_iso_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = EuPidScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
 
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems
@@ -192,12 +191,12 @@ class IssuingTest {
     fun mdl_iso_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
-            subjectPublicKey = client.jsonWebKey.toCryptoPublicKey().getOrThrow(),
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
             credentialScheme = MobileDrivingLicenceScheme,
             representation = ConstantIndex.CredentialRepresentation.ISO_MDOC,
-        ).getOrThrow().shouldBeSingleton()
+        ).getOrThrow()
 
-        val single = credential.single().shouldBeInstanceOf<CredentialToBeIssued.Iso>()
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.Iso>()
 
         single.issuerSignedItems.shouldNotBeEmpty()
         single.issuerSignedItems

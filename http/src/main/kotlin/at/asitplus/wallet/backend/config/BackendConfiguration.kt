@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
@@ -13,20 +12,11 @@ import at.asitplus.wallet.backend.pki.KeyFileAdapter
 import at.asitplus.wallet.backend.pki.KeyStoreAdapter
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
 import at.asitplus.wallet.backend.pki.SecurityProviderBean
-import at.asitplus.wallet.backend.service.DefaultCryptoServiceAdapter
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme
-import at.asitplus.wallet.lib.agent.CryptoService
-import at.asitplus.wallet.lib.agent.DefaultVerifierCryptoService
-import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
-import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.IssuerAgent
-import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
-import at.asitplus.wallet.lib.agent.IssuerCredentialStore
-import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import at.asitplus.wallet.lib.agent.Validator
+import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -139,8 +129,12 @@ class BackendConfiguration {
 
     @Bean
     fun issuerCryptoService(
-        securityProviderBean: SecurityProviderBean
-    ) = DefaultCryptoServiceAdapter(
+        securityProviderBean: SecurityProviderBean,
+        issuerKeyAdapter: KeyPairAdapter
+    ) = DefaultCryptoService(issuerKeyAdapter)
+
+    @Bean
+    fun issuerKeyAdapter(securityProviderBean: SecurityProviderBean): KeyPairAdapter =
         when (configurationProperties.issuerKey.type) {
             KeyType.FILE -> KeyFileAdapter(
                 configurationProperties.issuerKey.file!!,
@@ -154,27 +148,27 @@ class BackendConfiguration {
             )
 
             KeyType.MEMORY -> RandomKeyAdapter()
+        }.run {
+            JvmKeyPairAdapter(keyPair, signingAlgorithm, certificate)
         }
-    )
 
     @Bean
     fun issuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
         issuerCredentialDataProvider: IssuerCredentialDataProvider,
-        issuerCryptoService: CryptoService
+        issuerCryptoService: CryptoService,
+        issuerKeyAdapter: KeyPairAdapter,
     ): Issuer = IssuerAgent(
-        identifier = issuerCryptoService.publicKey.didEncoded,
-        jwsService = DefaultJwsService(issuerCryptoService),
+        validator = Validator.newDefaultInstance(),
         issuerCredentialStore = issuerCredentialStore,
+        revocationListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
         dataProvider = issuerCredentialDataProvider,
-        revocationListBaseUrl = appendPath(
-            configurationProperties.publicContext, "credentials", "status"
-        ),
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
-        timePeriodProvider = timePeriodProvider(),
-        validator = Validator.newDefaultInstance(DefaultVerifierCryptoService()),
+        jwsService = DefaultJwsService(issuerCryptoService),
         coseService = DefaultCoseService(issuerCryptoService),
-        cryptoAlgorithms = setOf(X509SignatureAlgorithm.ES256)
+        keyPair = issuerKeyAdapter,
+        cryptoAlgorithms = setOf(issuerKeyAdapter.signingAlgorithm),
+        timePeriodProvider = timePeriodProvider(),
     )
 
     @Bean

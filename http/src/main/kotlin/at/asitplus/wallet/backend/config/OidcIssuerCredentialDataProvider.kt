@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.cor.ResidenceAddress
@@ -45,7 +44,7 @@ class OidcIssuerCredentialDataProvider(
         credentialScheme: ConstantIndex.CredentialScheme,
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?
-    ): KmmResult<List<CredentialToBeIssued>> = at.asitplus.catching {
+    ): KmmResult<CredentialToBeIssued> = at.asitplus.catching {
         val issuance = Clock.System.now()
         val expiration = issuance + lifetime
         Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation, $claimNames")
@@ -54,7 +53,7 @@ class OidcIssuerCredentialDataProvider(
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
                 IdAustriaScheme -> idaVcJwt(subjectPublicKey, userInfo, expiration)
                 EuPidScheme -> eupidVcJwt(subjectPublicKey, userInfo, issuance, expiration)
-                else -> null
+                else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
             }
 
             ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
@@ -62,16 +61,16 @@ class OidcIssuerCredentialDataProvider(
                 EuPidScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
                 PowerOfRepresentationScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
                 CertificateOfResidenceScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
-                else -> null
+                else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
             }
 
             ConstantIndex.CredentialRepresentation.ISO_MDOC -> when (credentialScheme) {
                 IdAustriaScheme -> idaIso(claimNames, userInfo, expiration)
                 EuPidScheme -> eupidIso(claimNames, userInfo, issuance, expiration)
                 MobileDrivingLicenceScheme -> mdlIso(claimNames, userInfo, expiration)
-                else -> null
+                else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
             }
-        }?.let { listOf(it) } ?: listOf()
+        }
     }
 
     private fun idaIso(
@@ -169,7 +168,7 @@ class OidcIssuerCredentialDataProvider(
         expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = IdAustriaCredential(
-            id = subjectPublicKey.toJsonWebKey().identifier,
+            id = subjectPublicKey.didEncoded,
             bpk = idToken.bpk,
             firstname = idToken.userInfo.givenName ?: "N/A",
             lastname = idToken.userInfo.familyName ?: "N/A",
@@ -191,7 +190,7 @@ class OidcIssuerCredentialDataProvider(
         expiration: Instant
     ) = CredentialToBeIssued.VcJwt(
         subject = EuPidCredential(
-            id = subjectPublicKey.toJsonWebKey().identifier,
+            id = subjectPublicKey.didEncoded,
             familyName = idToken.userInfo.familyName ?: "N/A",
             givenName = idToken.userInfo.givenName ?: "N/A",
             birthDate = idToken.dateOfBirth ?: LocalDate.fromEpochDays(0),
