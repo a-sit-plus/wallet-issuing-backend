@@ -59,8 +59,8 @@ class OidcIssuerCredentialDataProvider(
             ConstantIndex.CredentialRepresentation.SD_JWT -> when (credentialScheme) {
                 IdAustriaScheme -> idaVcSd(claimNames, userInfo, expiration)
                 EuPidScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
-                PowerOfRepresentationScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
-                CertificateOfResidenceScheme -> eupidVcSd(claimNames, userInfo, issuance, expiration)
+                PowerOfRepresentationScheme -> porVcSd(claimNames, userInfo, issuance, expiration)
+                CertificateOfResidenceScheme -> corVcSd(claimNames, userInfo, issuance, expiration)
                 else -> throw IllegalArgumentException(credentialScheme.schemaUri + representation.name)
             }
 
