@@ -26,6 +26,21 @@ data class BackendConfigurationProperties(
      * Configure details about revocation lists for Verifiable Credentials
      */
     val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
+    /**
+     * Configure external service for getting OTT for EPrescription credentials
+     */
+    val eprescription: EPrescriptionConfigurationProperties = EPrescriptionConfigurationProperties()
+)
+
+data class EPrescriptionConfigurationProperties(
+    /**
+     * URL of the external service
+     */
+    val url: String = "https://example.com/",
+    /**
+     * Will be sent as header `X-ApiToken` to the service at [url]
+     */
+    val apiKey: String = "",
 )
 
 data class DebugConfigurationProperties(

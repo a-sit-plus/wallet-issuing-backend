@@ -99,6 +99,9 @@ backend:
     enabled: false
   authn:
     attestation: [...]
+  eprescription:
+    url: https://example.com
+    api-key: TODO
 ```
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
@@ -107,6 +110,10 @@ Options for revocation lists for Verifiable Credentials under `backend.revocatio
  - `dirty-check-rate` to set the rate at which the service shall check for dirty (i.e. where a credential has been revoked) revocation lists that need to be written, defaults to `PT10M`, i.e. 10 minutes.
  - `regular-check-rate` to set the rate at which the service shall check for outdated revocation lists (see `regular-write-timeout`) that need to be written, defaults to `PT1H`, i.e. 1 hour.
  - `cache-path` to set the path at which the revocation lists shall be written to and read from, e.g. `cache/revocation-list/`
+
+EPrescription credentials need an OTT from an external source, which can be configured with `backend.eprescription`:
+ - `url` is the full URL of the endpoint, where the request will be posted to
+ - `api-key` will be sent in header `X-ApiToken` to that external service
 
 Key Attestation is considered a key feature, but it can be disabled for testing:
 
