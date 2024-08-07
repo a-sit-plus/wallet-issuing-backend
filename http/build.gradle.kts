@@ -1,9 +1,7 @@
 import at.asitplus.gradle.bouncycastle
 import at.asitplus.gradle.coroutines
 import at.asitplus.gradle.gitLab
-import at.asitplus.gradle.gitlab
 import at.asitplus.gradle.ktor
-import at.asitplus.gradle.napier
 import at.asitplus.gradle.serialization
 
 plugins {
@@ -62,6 +60,7 @@ dependencies {
     implementation("at.asitplus.wallet:mobiledrivinglicence:${VersionsBackend.mdl}")
     implementation("at.asitplus.wallet:powerofrepresentation:${VersionsBackend.por}")
     implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")
+    implementation("at.asitplus.wallet:eprescription:${VersionsBackend.eprescription}")
     implementation(vclib.vclib)
     implementation(vclib.vclib.openid)
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
@@ -100,15 +99,10 @@ springBoot {
     buildInfo()
 }
 
-
 val gitLabProjectId: String by extra
-val gitLabGroupId: String by extra
 
 repositories {
     mavenLocal()
-    gitlab(gitLabGroupId.toInt()) accessTokenFrom extra
-    maven(url = uri("https://s01.oss.sonatype.org/content/repositories/atasitplus-1173/"))
-    maven(url = uri("https://s01.oss.sonatype.org/content/repositories/atasitplus-1175/"))
 }
 
 publishing {

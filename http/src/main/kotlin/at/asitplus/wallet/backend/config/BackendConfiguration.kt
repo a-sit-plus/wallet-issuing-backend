@@ -4,10 +4,7 @@ import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.IssuerCredentialDataProviderAdapter
-import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
-import at.asitplus.wallet.backend.data.RevokedCredentialRepository
+import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.pki.KeyFileAdapter
 import at.asitplus.wallet.backend.pki.KeyStoreAdapter
 import at.asitplus.wallet.backend.pki.RandomKeyAdapter
@@ -25,12 +22,15 @@ import at.asitplus.wallet.lib.oidvci.SimpleAuthorizationService
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
+import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ResourceLoader
+import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.scheduling.annotation.EnableScheduling
 
 @Configuration
@@ -122,9 +122,11 @@ class BackendConfiguration {
     @Bean
     fun issuerCredentialDataProvider(
         authenticationSupplier: AuthenticationSupplier,
+        ePrescriptionLoader: EPrescriptionLoader,
     ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
         lifetime = configurationProperties.credentials.lifeTime,
         authenticationSupplier = authenticationSupplier,
+        ePrescriptionLoader = ePrescriptionLoader
     )
 
     @Bean
@@ -178,6 +180,7 @@ class BackendConfiguration {
     fun issuerService(
         issuer: Issuer,
         authorizationServer: OAuth2AuthorizationServer,
+        ePrescriptionLoader: EPrescriptionLoader,
     ): CredentialIssuer = CredentialIssuer(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
@@ -187,6 +190,7 @@ class BackendConfiguration {
             OidcIssuerCredentialDataProvider(
                 userInfo = oidcUserInfo,
                 lifetime = configurationProperties.credentials.lifeTime,
+                ePrescriptionLoader = ePrescriptionLoader
             )
         }
     )
@@ -203,7 +207,19 @@ class BackendConfiguration {
             tokenEndpointPath = "/token",
         )
 
+    @Bean
+    fun ePrescriptionLoader(restTemplateBuilder: RestTemplateBuilder): EPrescriptionLoader =
+        EPrescriptionLoader(
+            restTemplateBuilder,
+            configurationProperties.eprescription.url,
+            configurationProperties.eprescription.apiKey
+        )
 
+    @Bean
+    fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
+        KotlinSerializationJsonHttpMessageConverter(Json {
+            ignoreUnknownKeys = true
+        })
 }
 
 

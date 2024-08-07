@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
+import at.asitplus.wallet.eprescription.EPrescriptionDataElements
+import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -17,6 +19,7 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.LocalDate
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -116,7 +119,7 @@ class IssuingTest {
 
     @Test
     @WithOAuth2AuthenticationToken
-    fun ida_cor_ok() {
+    fun cor_sdjwt_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
             subjectPublicKey = client.randomKeyAdapter.publicKey,
@@ -134,7 +137,7 @@ class IssuingTest {
 
     @Test
     @WithOAuth2AuthenticationToken
-    fun ida_por_ok() {
+    fun por_sdjwt_ok() {
         val client = Client()
         val credential = issuerCredentialDataProvider.getCredential(
             subjectPublicKey = client.randomKeyAdapter.publicKey,
@@ -147,7 +150,26 @@ class IssuingTest {
         single.claims.shouldNotBeEmpty()
         single.claims
             .first { it.name == PowerOfRepresentationDataElements.LEGAL_NAME }
-            .value shouldBe "IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN"
+            .value shouldBe "XXXTüzekçi"
+    }
+
+    @Disabled("Need to enter correct URL and api-key")
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun eprescription_sdjwt_ok() {
+        val client = Client()
+        val credential = issuerCredentialDataProvider.getCredential(
+            subjectPublicKey = client.randomKeyAdapter.publicKey,
+            credentialScheme = EPrescriptionScheme,
+            representation = ConstantIndex.CredentialRepresentation.SD_JWT,
+        ).getOrThrow()
+
+        val single = credential.shouldBeInstanceOf<CredentialToBeIssued.VcSd>()
+
+        single.claims.shouldNotBeEmpty()
+        single.claims
+            .first { it.name == EPrescriptionDataElements.OTT }
+            .value shouldBe "TODO"
     }
 
     @Test

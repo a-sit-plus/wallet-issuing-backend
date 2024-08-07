@@ -2,6 +2,7 @@
 
 4.0.0:
  - Update dependency on vclib to 4.0.0
+ - Add issuance of ePrescription credentials, using external OTT service (see `backend.eprescription` configuration)
 
 3.8.0:
  - Update dependency on vclib to 3.8.0
