@@ -81,6 +81,7 @@ class BackendConfiguration {
         at.asitplus.wallet.mdl.Initializer.initWithVcLib()
         at.asitplus.wallet.cor.Initializer.initWithVcLib()
         at.asitplus.wallet.por.Initializer.initWithVcLib()
+        at.asitplus.wallet.eprescription.Initializer.initWithVcLib()
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
     }
