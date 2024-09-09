@@ -23,6 +23,7 @@ import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToByteArray
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
@@ -33,6 +34,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
@@ -260,8 +262,10 @@ val OidcUserInfoExtended.residenceAddress: String
     )
 
 private fun Collection<String>?.whenRequested(key: String, value: () -> Any?): ClaimToBeIssued? =
-    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it) } else null
+    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else null
 
 fun Collection<String>?.isNullOrContains(name: String) =
     this == null || contains(name)
 
+@OptIn(ExperimentalEncodingApi::class)
+fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
