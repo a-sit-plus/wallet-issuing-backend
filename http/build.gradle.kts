@@ -1,8 +1,5 @@
-import at.asitplus.gradle.bouncycastle
-import at.asitplus.gradle.coroutines
-import at.asitplus.gradle.gitLab
-import at.asitplus.gradle.ktor
-import at.asitplus.gradle.serialization
+
+import at.asitplus.gradle.*
 
 plugins {
     kotlin("jvm")
@@ -47,6 +44,7 @@ dependencies {
     implementation(vclib.napier)
     implementation(coroutines())
     implementation(serialization("json"))
+    implementation(serialization("cbor"))
     implementation(bouncycastle("bcpkix"))
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
@@ -61,8 +59,8 @@ dependencies {
     implementation("at.asitplus.wallet:powerofrepresentation:${VersionsBackend.por}")
     implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")
     implementation("at.asitplus.wallet:eprescription:${VersionsBackend.eprescription}")
-    implementation(vclib.vclib)
-    implementation(vclib.vclib.openid)
+    implementation(vclib.vck)
+    implementation(vclib.vck.openid)
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
 
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")

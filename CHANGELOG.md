@@ -1,5 +1,9 @@
 # Changelog
 
+5.0.0:
+ - Update dependency on vclib to 5.0.0
+ - Issue values for all claims in all credentials for testing purposes
+
 4.0.0:
  - Update dependency on vclib to 4.0.0
  - Add issuance of ePrescription credentials, using external OTT service (see `backend.eprescription` configuration)
