@@ -16,8 +16,8 @@ object VersionsBackend {
     const val nimbus = "9.37.1"
 
     object spring {
-        const val boot = "3.3.4"
-        const val `dependency-management` = "1.1.3"
+        const val boot = "3.2.10"
+        const val `dependency-management` = "1.1.6"
         const val `admin-starter-client` = "3.3.3"
         const val doc = "1.8.0"
     }
