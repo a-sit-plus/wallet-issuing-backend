@@ -1,5 +1,8 @@
 
-import at.asitplus.gradle.*
+import at.asitplus.gradle.bouncycastle
+import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.gitLab
+import at.asitplus.gradle.ktor
 
 plugins {
     kotlin("jvm")
@@ -43,8 +46,12 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.nimbus}")
     implementation(vclib.napier)
     implementation(coroutines())
-    implementation(serialization("json"))
-    implementation(serialization("cbor"))
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.2!!")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.2!!")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.7.2!!")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor-jvm:1.7.2!!")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2!!")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.7.2!!")
     implementation(bouncycastle("bcpkix"))
     implementation("com.google.zxing:core:${VersionsBackend.zxing}")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
