@@ -1,14 +1,10 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.wallet.lib.oidc.AuthenticationRequestParameters
+import at.asitplus.openid.*
+import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidc.AuthenticationResponseResult
-import at.asitplus.wallet.lib.oidc.OpenIdConstants
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.CredentialRequestParameters
-import at.asitplus.wallet.lib.oidvci.IssuerMetadata
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
-import at.asitplus.wallet.lib.oidvci.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.TokenRequestParameters
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.lib.oidvci.jsonSerializer
@@ -21,13 +17,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 /**
  * Provides endpoints in the EIDAS deployment:
@@ -49,10 +39,12 @@ class OpenId4VciController(
     @RequestMapping("/offer", method = [RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
     fun offer(): ResponseEntity<*> = runBlocking {
         Napier.i("/offer called")
-        val offer = credentialIssuer.credentialOffer()
+        val offer = credentialIssuer.credentialOfferWithAuthorizationCode()
         Napier.d("/offer returns $offer")
         return@runBlocking ResponseEntity.ok(offer)
     }
+
+    // TODO Implement credential offer with pre-authn code rendered as QR Code
 
     /**
      * Logs out the user from the Spring Boot session, so that new requests need to be authorized again,
