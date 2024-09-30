@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.auth
 
-import at.asitplus.wallet.lib.oidvci.OidcAddressClaim
-import at.asitplus.wallet.lib.oidvci.OidcUserInfo
-import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
+import at.asitplus.openid.OidcAddressClaim
+import at.asitplus.openid.OidcUserInfo
+import at.asitplus.openid.OidcUserInfoExtended
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

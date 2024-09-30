@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.data
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import kotlinx.datetime.Instant
@@ -22,7 +21,7 @@ class IssuerCredentialStoreAdapter(
 
     override fun storeGetNextIndex(
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: CryptoPublicKey,
+        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int

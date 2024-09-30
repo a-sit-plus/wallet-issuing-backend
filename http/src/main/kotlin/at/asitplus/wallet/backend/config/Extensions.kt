@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.cor.IsoSexEnum
@@ -15,7 +16,6 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
-import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
@@ -82,7 +82,7 @@ fun OidcUserInfoExtended.toIdaCredential(pubKey: CryptoPublicKey, exp: Instant) 
             bpk = bpk,
             firstname = userInfo.givenName ?: "N/A",
             lastname = userInfo.familyName ?: "N/A",
-            dateOfBirth = dateOfBirth ?: LocalDate.fromEpochDays(0),
+            dateOfBirth = dateOfBirth,
             portrait = portrait,
             mainAddress = mainAddress,
             ageOver14 = ageOver14,
@@ -99,7 +99,7 @@ fun OidcUserInfoExtended.toEuPidCredential(pubKey: CryptoPublicKey, iss: Instant
             id = pubKey.didEncoded,
             familyName = userInfo.familyName ?: "N/A",
             givenName = userInfo.givenName ?: "N/A",
-            birthDate = dateOfBirth ?: LocalDate.fromEpochDays(0),
+            birthDate = dateOfBirth,
             ageOver18 = ageOver18,
             issuanceDate = iss,
             expiryDate = exp,
@@ -162,7 +162,7 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(LEGAL_PERSON_IDENTIFIER) { legalPersonIdentifier },
             claims.whenRequested(LEGAL_NAME) { legalName },
             claims.whenRequested(FULL_POWERS) { true },
-            //claims.whenRequested(E_SERVICE) { "Dummy Service" },
+            claims.whenRequested(E_SERVICE) { "Dummy Service" },
             claims.whenRequested(EFFECTIVE_FROM_DATE) { iss },
             claims.whenRequested(EFFECTIVE_UNTIL_DATE) { exp },
             claims.whenRequested(ISSUANCE_DATE) { iss },

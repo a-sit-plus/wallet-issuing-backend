@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import io.github.aakira.napier.Napier
@@ -30,7 +29,7 @@ interface RevocationService {
         expirationDate: Instant,
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: CryptoPublicKey
+        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey
     ): Long?
 
     /**
@@ -90,12 +89,12 @@ class DefaultRevocationService(
         expirationDate: Instant,
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: CryptoPublicKey
+        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey
     ): Long? =
         runCatching {
             synchronized(CredentialRepositoriesLock) {
                 val id = credential.extractVcId()
-                    // we might store something later on ... index will not be used by vclib
+                // we might store something later on ... index will not be used by vclib
                     ?: return 0
                 if (credentialRepo.findBytimePeriodAndVcId(timePeriod, id) != null)
                     return@runCatching null.also {

@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository

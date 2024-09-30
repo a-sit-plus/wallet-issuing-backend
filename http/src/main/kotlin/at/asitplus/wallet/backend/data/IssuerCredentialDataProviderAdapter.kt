@@ -2,20 +2,15 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.config.buildClaims
-import at.asitplus.wallet.backend.config.toEuPidCredential
-import at.asitplus.wallet.backend.config.toIdaCredential
-import at.asitplus.wallet.backend.config.toIsoClaims
-import at.asitplus.wallet.backend.config.toSdJwtClaims
 import at.asitplus.wallet.backend.config.*
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.IssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.oidvci.OidcUserInfoExtended
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -100,7 +95,8 @@ private fun createCredential(
     ePrescriptionLoader: EPrescriptionLoader
 ): CredentialToBeIssued {
     if (credentialScheme.supportedRepresentations.contains(representation)) {
-        val claimsToBeIssued = credentialScheme.buildClaims(claimNames, oidcUserInfo, issuance, expiration, ePrescriptionLoader)
+        val claimsToBeIssued =
+            credentialScheme.buildClaims(claimNames, oidcUserInfo, issuance, expiration, ePrescriptionLoader)
 
         return when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
