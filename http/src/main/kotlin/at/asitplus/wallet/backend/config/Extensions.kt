@@ -4,12 +4,12 @@ import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
-import at.asitplus.wallet.cor.IsoSexEnum
 import at.asitplus.wallet.cor.ResidenceAddress
 import at.asitplus.wallet.eprescription.EPrescriptionDataElements
 import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupid.IsoIec5218Gender
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
@@ -17,6 +17,7 @@ import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
+import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
@@ -34,6 +35,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.util.*
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import kotlin.random.nextUInt
 
 fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
     IssuerSignedItem(
@@ -144,7 +146,7 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(RESIDENT_POSTAL_CODE) { userInfo.address?.postalCode ?: "90210" },
             claims.whenRequested(RESIDENT_STREET) { userInfo.address?.street ?: "Riverside Drive" },
             claims.whenRequested(RESIDENT_HOUSE_NUMBER) { "1640" },
-            claims.whenRequested(GENDER) { gender.code },
+            claims.whenRequested(GENDER) { gender },
             claims.whenRequested(NATIONALITY) { nationality },
             claims.whenRequested(ISSUANCE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
@@ -182,7 +184,7 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
             claims.whenRequested(RESIDENCE_ADDRESS) { residenceAddress },
-            claims.whenRequested(GENDER) { gender.code },
+            claims.whenRequested(GENDER) { gender },
             claims.whenRequested(BIRTH_PLACE) { birthPlace },
             claims.whenRequested(ARRIVAL_DATE) { arrivalDate },
             claims.whenRequested(NATIONALITY) { nationality },
@@ -223,16 +225,16 @@ fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
             claims.whenRequested(DRIVING_PRIVILEGES) { arrayOf(fakeDrivingPrivilege()) },
             claims.whenRequested(UN_DISTINGUISHING_SIGN) { "A" },
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            // TODO Deserializing claims.whenRequested(SEX) { gender.code },
-            // TODO Deserializing claims.whenRequested(HEIGHT) { Random.nextInt(150, 210) }, // TODO should be UInt, but doesn't serialize
-            // TODO Deserializing claims.whenRequested(WEIGHT) { Random.nextInt(60, 120) }, // TODO should be UInt, but doesn't serialize
+            claims.whenRequested(SEX) { sex },
+            claims.whenRequested(HEIGHT) { Random.nextUInt(150u, 210u) },
+            claims.whenRequested(WEIGHT) { Random.nextUInt(60u, 120u) },
             claims.whenRequested(EYE_COLOUR) { randomEyeColour() },
             claims.whenRequested(HAIR_COLOUR) { randomHairColour() },
             claims.whenRequested(BIRTH_PLACE) { birthPlace },
             claims.whenRequested(RESIDENT_ADDRESS) { userInfo.address?.locality ?: "Hill Valley" },
-            // TODO Deserializing claims.whenRequested(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
-            // TODO Deserializing claims.whenRequested(AGE_IN_YEARS) { ageInYears }, // TODO should be UInt, but doesn't serialize
-            // TODO Deserializing claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year },  // TODO should be UInt, but doesn't serialize
+            claims.whenRequested(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
+            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
+            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
             claims.whenRequested(AGE_OVER_18) { ageOver18 },
             claims.whenRequested(ISSUING_JURISDICTION) { "AT-0 " },
             claims.whenRequested(NATIONALITY) { nationality },
@@ -265,14 +267,24 @@ val OidcUserInfoExtended.dateOfBirth
     get() = userInfo.birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?: LocalDate(1970, 1, 1)
 
-val OidcUserInfoExtended.gender
+val OidcUserInfoExtended.sex
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoSexEnum()
         ?: IsoSexEnum.NOT_KNOWN
+
+val OidcUserInfoExtended.gender
+    get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoGenderEnum()
+        ?: IsoIec5218Gender.NOT_KNOWN
 
 fun String.toIsoSexEnum() = when (this) {
     "W" -> IsoSexEnum.FEMALE
     "M" -> IsoSexEnum.MALE
     else -> IsoSexEnum.NOT_KNOWN
+}
+
+fun String.toIsoGenderEnum() = when (this) {
+    "W" -> IsoIec5218Gender.FEMALE
+    "M" -> IsoIec5218Gender.MALE
+    else -> IsoIec5218Gender.NOT_KNOWN
 }
 
 val OidcUserInfoExtended.ageOver14

@@ -30,9 +30,16 @@ class OpenId4VciController(
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
-    fun metadata(): ResponseEntity<IssuerMetadata> {
+    fun issuerMetadata(): ResponseEntity<IssuerMetadata> {
         val metadata = credentialIssuer.metadata
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
+        return ResponseEntity.ok(metadata)
+    }
+
+    @GetMapping("/.well-known/openid-configuration", produces = [APPLICATION_JSON_VALUE])
+    fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
+        val metadata = authorizationService.metadata
+        Napier.i("/.well-known/openid-configuration returns $metadata")
         return ResponseEntity.ok(metadata)
     }
 
