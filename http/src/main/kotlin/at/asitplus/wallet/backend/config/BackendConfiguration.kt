@@ -27,6 +27,7 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,6 +45,7 @@ import java.net.URI
 import java.nio.charset.Charset
 import java.security.KeyStore
 import java.security.PublicKey
+import java.security.Security
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -90,6 +92,7 @@ class BackendConfiguration {
     init {
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
+        Security.addProvider(BouncyCastleProvider())
         at.asitplus.wallet.idaustria.Initializer.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
@@ -147,11 +150,12 @@ class BackendConfiguration {
         }
 
     fun loadKeyStore(config: KeyStoreConfiguration) = KeyStoreMaterial(
-        KeyStore.getInstance(config.type, config.provider).apply {
+        keyStore = KeyStore.getInstance(config.type, config.provider ?: "BC").apply {
             load(config.path.toURL().openStream(), config.password?.toCharArray() ?: charArrayOf())
         },
-        config.alias,
-        config.aliasPassword?.toCharArray() ?: charArrayOf(),
+        keyAlias = config.alias,
+        privateKeyPassword = config.aliasPassword?.toCharArray() ?: charArrayOf(),
+        certAlias = config.alias
     )
 
     fun loadKeyFile(file: KeyFileConfiguration, resourceLoader: ResourceLoader): KeyStoreMaterial {

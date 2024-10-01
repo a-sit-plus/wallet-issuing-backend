@@ -106,7 +106,8 @@ class OpenId4VciController(
         val params: CredentialRequestParameters = jsonSerializer.decodeFromString(requestBody)
             ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
 
-        val credential = credentialIssuer.credential(authorizationHeader.removePrefix("Bearer "), params).getOrElse {
+        val accessToken = authorizationHeader.removePrefix("bearer ").removePrefix("Bearer ")
+        val credential = credentialIssuer.credential(accessToken, params).getOrElse {
             Napier.w("/credential got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
