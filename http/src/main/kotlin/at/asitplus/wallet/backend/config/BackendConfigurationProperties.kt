@@ -19,10 +19,6 @@ data class BackendConfigurationProperties(
      */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
     /**
-     * Configure debug endpoints
-     */
-    val debug: DebugConfigurationProperties = DebugConfigurationProperties(),
-    /**
      * Configure details about revocation lists for Verifiable Credentials
      */
     val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
@@ -41,17 +37,6 @@ data class EPrescriptionConfigurationProperties(
      * Will be sent as header `X-ApiToken` to the service at [url]
      */
     val apiKey: String = "",
-)
-
-data class DebugConfigurationProperties(
-    /**
-     * Whether to enable debug endpoints at all
-     */
-    val enabled: Boolean = false,
-    /**
-     * Size of QR Codes, displayed only on debug endpoints
-     */
-    val qrCodeSize: Int = 400,
 )
 
 data class CredentialConfigurationProperties(
