@@ -20,8 +20,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 /**
- * Provides endpoints in the EIDAS deployment:
- * - OID4VCI for issuing credentials after a device binding
+ * Implements controller for OpenID 4 Verifiable Credential Issuance
  */
 @RestController
 class OpenId4VciController(
