@@ -227,7 +227,14 @@ class BackendConfiguration {
     ): CredentialIssuer = CredentialIssuer(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = setOf(IdAustriaScheme, EuPidScheme, MobileDrivingLicenceScheme),
+        credentialSchemes = setOf(
+            IdAustriaScheme,
+            EuPidScheme,
+            MobileDrivingLicenceScheme,
+            PowerOfRepresentationScheme,
+            EPrescriptionScheme,
+            CertificateOfResidenceScheme
+        ),
         authorizationService = authorizationServer,
         buildIssuerCredentialDataProviderOverride = { oidcUserInfo ->
             OidcIssuerCredentialDataProvider(
