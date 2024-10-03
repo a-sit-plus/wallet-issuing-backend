@@ -19,7 +19,6 @@ object VersionsBackend {
         const val boot = "3.2.10"
         const val `dependency-management` = "1.1.6"
         const val `admin-starter-client` = "3.3.3"
-        const val doc = "1.8.0"
     }
 
     object webjars {

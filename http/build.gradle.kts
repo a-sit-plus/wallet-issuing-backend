@@ -37,9 +37,6 @@ dependencies {
     implementation("org.springframework.session:spring-session-core")
     implementation("de.codecentric:spring-boot-admin-starter-client:${VersionsBackend.spring.`admin-starter-client`}")
 
-    implementation("org.springdoc:springdoc-openapi-ui:${VersionsBackend.spring.doc}")
-    implementation("org.springdoc:springdoc-openapi-kotlin:${VersionsBackend.spring.doc}")
-    implementation("org.springdoc:springdoc-openapi-security:${VersionsBackend.spring.doc}")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.httpcomponents.client5:httpclient5")
