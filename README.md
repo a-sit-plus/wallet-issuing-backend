@@ -15,8 +15,6 @@ with it's `kid` of `did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BR
 
 ## REST API
 
-The OpenAPI spec is available at <http://localhost:8080/v3/api-docs>, the Swagger UI at <http://localhost:8080/swagger-ui/index.html>. Note that access to these resources should be restricted in public deployments.
-
 `GET /credentials/status/current` returns a simple list of currently available revocation lists.
 
 `GET /credentials/status/{year}` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/). It is essentially a bitstring in which a bit is set if the verifiable credential with this `statusListIndex` is revoked. The bitstring is then zlib compressed and base64 encoded to be transported inside an JWS. The `{year}` variable may be filled with an entry from the `current` revocation lists, or is contained in an issued ID.

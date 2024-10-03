@@ -6,10 +6,6 @@ import at.asitplus.wallet.lib.agent.Issuer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.ExampleObject
-import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
@@ -34,22 +30,6 @@ class PublicController(
     private val configurationProperties: BackendConfigurationProperties,
 ) {
 
-    @Operation(
-        summary = "Get currently valid VC revocation lists",
-        description = "Get a JSON array of endpoints serving 'Revocation List 2020'-formatted revocation lists",
-        responses = [
-            ApiResponse(
-                description = "A JSON array with a list of endpoints",
-                content = [Content(
-                    examples = [ExampleObject(
-                        value = "[\"https://wallet.a-sit.at/credentials/status/2022\", " +
-                                "\"https://wallet.a-sit.at/credentials/status/2022\"]"
-                    )]
-                )]
-            ),
-            ApiResponse(responseCode = "500", ref = "errorResponse"),
-        ]
-    )
     @GetMapping("/credentials/status/current")
     fun getCurrentVcRevocationLists(): ResponseEntity<List<String>> = runBlocking {
         Napier.i("/credentials/status/current called")
@@ -58,17 +38,6 @@ class PublicController(
         ResponseEntity.ok(rl)
     }
 
-    @Operation(
-        summary = "Get the VC revocation list",
-        description = "Get a list of revoked credentials in 'Revocation List 2020' format",
-        responses = [
-            ApiResponse(
-                description = "A verifiable credential in 'Revocation List 2020' format",
-                content = [Content(examples = [ExampleObject(value = "<JWS containing RevocationList2020 payload>")])]
-            ),
-            ApiResponse(responseCode = "500", ref = "errorResponse"),
-        ]
-    )
     @GetMapping("/credentials/status/{timePeriod}")
     fun getVcRevocationList(@PathVariable timePeriod: Int, request: WebRequest): ResponseEntity<String> = runBlocking {
         Napier.i("/credentials/status/$timePeriod called")
