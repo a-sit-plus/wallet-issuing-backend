@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head th:fragment="headerfiles">
+    <meta charset="UTF-8"/>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
+</head>
+<body>
+<div th:fragment="download" class="my-4">
+    <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
+        <span th:replace="~{fragments/icons.html :: info_icon}"></span>
+        Download the mobile apps
+    </p>
+    <ul class="list-group">
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto">
+                <span class="fw-bold">Wallet App for Android</span>
+            </div>
+            <span><a th:href="@{/android/wallet.apk}" class="btn btn-primary">Download</a></span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto">
+                <span class="fw-bold">Verifier App for Android</span>
+            </div>
+            <span><a th:href="@{/android/verifier.apk}" class="btn btn-primary">Download</a></span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto">
+                <span class="fw-bold">Wallet App for iOS</span>
+            </div>
+            <span><a
+                    th:with="baseUrl='itms-services://?action=download-manifest',walletUrl=@{/ios/wallet.plist}"
+                    th:href="@{${baseUrl}(url=${walletUrl})}"
+                    class="btn btn-primary">Download</a></span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto">
+                <span class="fw-bold">Verifier App for iOS</span>
+            </div>
+            <span><a
+                    th:with="baseUrl='itms-services://?action=download-manifest',verifierUrl=@{/ios/verifier.plist}"
+                    th:href="@{${baseUrl}(url=${verifierUrl})}"
+                    class="btn btn-primary">Download</a></span>
+        </li>
+    </ul>
+</div>
+</body>
+</html>
