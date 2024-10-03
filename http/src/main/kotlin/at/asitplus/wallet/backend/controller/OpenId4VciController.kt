@@ -4,7 +4,6 @@ import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidc.AuthenticationResponseResult
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
@@ -108,10 +107,6 @@ class OpenId4VciController(
             else requestBody.decodeFromPostBody()
         val result = authorizationService.authorize(params).getOrElse {
             Napier.w("/authorize got error", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
-        }
-        if (result !is AuthenticationResponseResult.Redirect) {
-            Napier.w("/authorize unsupported $result")
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/authorize returns ${result.url}")
