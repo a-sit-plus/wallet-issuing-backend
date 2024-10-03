@@ -35,6 +35,11 @@
         keeps track of the validity of issued credentials.
     </p>
 
+    <!--/*@thymesVar id="qrcode" type="ByteArray"*/-->
+    <div th:if="${qrcode != null}">
+        <img src="${qrcode}" width="400" />
+    </div>
+
     <div class="my-4">
         <p class="alert alert-light border" style="border-left: 0.5rem solid #5bc0de !important;">
             <span th:replace="~{fragments/icons.html :: info_icon}"></span>
