@@ -19,24 +19,6 @@ class DebugController(
     private val timePeriodProvider: TimePeriodProvider,
 ) {
 
-    /**
-     * Display help page if user scans QR code
-     */
-    @GetMapping("/help/wallet")
-    fun helpWallet(model: ModelMap): ModelAndView {
-        Napier.i("/help/wallet called")
-        return ModelAndView("help_wallet", model)
-    }
-
-    /**
-     * Display help page if user scans QR code presented in Wallet App for verification
-     */
-    @GetMapping("/help/verify")
-    fun inviteVerify(model: ModelMap): ModelAndView {
-        Napier.i("/help/verify called")
-        return ModelAndView("help_verify", model)
-    }
-
     @GetMapping("/debug/credential/list")
     fun revokeList(model: ModelMap): ModelAndView {
         if (!configurationProperties.debug.enabled) return ModelAndView("index", model)
