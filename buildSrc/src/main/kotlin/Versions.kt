@@ -1,7 +1,7 @@
 object VersionsBackend {
-    const val ida = "3.9.0"
+    const val ida = "3.9.1"
     const val eupid = "2.2.0"
-    const val mdl = "1.1.0"
+    const val mdl = "1.1.1"
     const val por = "1.1.0"
     const val cor = "2.1.0"
     const val eprescription = "1.1.0"
