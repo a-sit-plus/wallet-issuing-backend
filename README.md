@@ -55,15 +55,6 @@ Sample revocation list (transported as a JWS in compact representation, exploded
 ```
 
 
-### Debug
-
-These endpoints are only enabled if `backend.debug.enabled=true` is set.
-
-`GET /debug/credential/revoke?vcId={foo}` revokes a credential.
-
-`GET /debug/credential/list` displays a web page with a list of issued credentials.
-
-
 ## Web API
 
 `GET /` displays a general information page for new users.
