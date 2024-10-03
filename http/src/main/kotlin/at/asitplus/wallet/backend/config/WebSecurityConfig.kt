@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration
 @EnableMethodSecurity
 @EnableSpringHttpSession
-class WebSecurityConfigEidasId {
+class WebSecurityConfig {
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain = http.csrf { it.disable() }
@@ -54,8 +54,7 @@ class WebSecurityConfigEidasId {
 }
 
 /**
- * Used in EIDAS deployments to set session identifier to
- * header `X-Auth-Token` and cookie `SESSION`.
+ * Set session identifier into header `X-Auth-Token` (App clients) and cookie `SESSION` (Web clients).
  */
 class DelegatingSessionIdResolver(private vararg val resolvers: HttpSessionIdResolver) : HttpSessionIdResolver {
 
