@@ -68,10 +68,6 @@ These endpoints are only enabled if `backend.debug.enabled=true` is set.
 
 `GET /` displays a general information page for new users.
 
-`GET /help/wallet` displays a help page if the user scans a debug initialization QR Code with a standard camera app (instead of the Wallet App).
-
-`GET /help/verify` displays a help page if the user scans a QR code displayed by the Wallet App for verification with a standard camera app (instead of the Verifier App).
-
 ## Configuration
 
 The default configuration file included in this service is minimal, i.e. it sets the default profile `pupilid` and disables cloud configuration.
