@@ -105,8 +105,8 @@ fun OidcUserInfoExtended.toEuPidCredential(pubKey: CryptoPublicKey, iss: Instant
             ageOver18 = ageOver18,
             issuanceDate = iss,
             expiryDate = exp,
-            issuingAuthority = "Miniwahr",
-            issuingCountry = "AT",
+            issuingAuthority = issuingAuthority,
+            issuingCountry = issuingCountry,
         ).also { Napier.v("eupidVcJwt returns $it") },
         expiration = exp,
     )
@@ -126,6 +126,12 @@ fun OidcUserInfoExtended.buildIdaClaims(claims: Collection<String>?) =
 
 fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(EuPidScheme.Attributes) {
+        val (postCode, city, state) = extractPostCodeCityState()
+        val (ourBirthCode, ourBirthCity, ourBirthState) = randomCodeCityState()
+        val locator = randomAddressLocator()
+        val street = userInfo.address?.street ?: randomStreet()
+        val country = userInfo.address?.country ?: fallbackAddressCountry
+        val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
@@ -135,27 +141,34 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
             claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claims.whenRequested(BIRTH_PLACE) { birthPlace },
-            claims.whenRequested(BIRTH_COUNTRY) { birthCountry },
-            claims.whenRequested(BIRTH_STATE) { birthState },
-            claims.whenRequested(BIRTH_CITY) { birthCity },
-            claims.whenRequested(RESIDENT_ADDRESS) { userInfo.address?.formatted ?: fullAddress },
-            claims.whenRequested(RESIDENT_COUNTRY) { userInfo.address?.country ?: "US" },
-            claims.whenRequested(RESIDENT_STATE) { userInfo.address?.region ?: "CA" },
-            claims.whenRequested(RESIDENT_CITY) { userInfo.address?.locality ?: "Hill Valley" },
-            claims.whenRequested(RESIDENT_POSTAL_CODE) { userInfo.address?.postalCode ?: "90210" },
-            claims.whenRequested(RESIDENT_STREET) { userInfo.address?.street ?: "Riverside Drive" },
-            claims.whenRequested(RESIDENT_HOUSE_NUMBER) { "1640" },
+            claims.whenRequested(BIRTH_PLACE) { randomStreet() },
+            claims.whenRequested(BIRTH_COUNTRY) { fallbackBirthCountry },
+            claims.whenRequested(BIRTH_STATE) { ourBirthState },
+            claims.whenRequested(BIRTH_CITY) { ourBirthCity },
+            claims.whenRequested(RESIDENT_ADDRESS) { formatted },
+            claims.whenRequested(RESIDENT_COUNTRY) { country },
+            claims.whenRequested(RESIDENT_STATE) { state },
+            claims.whenRequested(RESIDENT_CITY) { city },
+            claims.whenRequested(RESIDENT_POSTAL_CODE) { postCode },
+            claims.whenRequested(RESIDENT_STREET) { street },
+            claims.whenRequested(RESIDENT_HOUSE_NUMBER) { locator.toString() },
             claims.whenRequested(GENDER) { gender },
             claims.whenRequested(NATIONALITY) { nationality },
             claims.whenRequested(ISSUANCE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { "Miniwahr" },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
             claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ISSUING_COUNTRY) { "AT" },
-            claims.whenRequested(ISSUING_JURISDICTION) { "AT-0" },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
         )
+    }
+
+private fun OidcUserInfoExtended.extractPostCodeCityState() =
+    if (userInfo.address?.postalCode != null && userInfo.address?.locality != null && userInfo.address?.region != null) {
+        CodeCityState(userInfo.address?.postalCode!!, userInfo.address?.locality!!, userInfo.address?.region!!)
+    } else {
+        randomCodeCityState()
     }
 
 fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
@@ -164,18 +177,19 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(LEGAL_PERSON_IDENTIFIER) { legalPersonIdentifier },
             claims.whenRequested(LEGAL_NAME) { legalName },
             claims.whenRequested(FULL_POWERS) { true },
-            claims.whenRequested(E_SERVICE) { "Dummy Service" },
+            claims.whenRequested(E_SERVICE) { eService },
             claims.whenRequested(EFFECTIVE_FROM_DATE) { iss },
             claims.whenRequested(EFFECTIVE_UNTIL_DATE) { exp },
             claims.whenRequested(ISSUANCE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { "Miniwahr" },
-            claims.whenRequested(ISSUING_COUNTRY) { "AT" },
-            claims.whenRequested(ISSUING_JURISDICTION) { "AT-0" },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
             claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
         )
     }
+
 
 fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(CertificateOfResidenceDataElements) {
@@ -185,16 +199,16 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
             claims.whenRequested(RESIDENCE_ADDRESS) { residenceAddress },
             claims.whenRequested(GENDER) { gender },
-            claims.whenRequested(BIRTH_PLACE) { birthPlace },
+            claims.whenRequested(BIRTH_PLACE) { randomCodeCityState().city },
             claims.whenRequested(ARRIVAL_DATE) { arrivalDate },
             claims.whenRequested(NATIONALITY) { nationality },
             claims.whenRequested(ISSUANCE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { "Miniwahr" },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
             claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ISSUING_COUNTRY) { "AT" },
-            claims.whenRequested(ISSUING_JURISDICTION) { "AT-0" },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
         )
     }
 
@@ -212,51 +226,50 @@ fun OidcUserInfoExtended.buildEPrescriptionClaims(claims: Collection<String>?, l
 
 fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
     with(MobileDrivingLicenceDataElements) {
+        val (postCode, city, state) = extractPostCodeCityState()
+        val locator = randomAddressLocator()
+        val street = userInfo.address?.street ?: randomStreet()
+        val country = userInfo.address?.country ?: fallbackAddressCountry
+        val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(ISSUE_DATE) { LocalDate.parse("2023-01-01") },
-            claims.whenRequested(EXPIRY_DATE) { LocalDate.parse("2025-12-31") },
-            claims.whenRequested(ISSUING_COUNTRY) { "AT" },
-            claims.whenRequested(ISSUING_AUTHORITY) { "Miniwahr" },
+            claims.whenRequested(ISSUE_DATE) { issueDate() },
+            claims.whenRequested(EXPIRY_DATE) { expiryDate() },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
             claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(PORTRAIT) { portrait },
             claims.whenRequested(DRIVING_PRIVILEGES) { arrayOf(fakeDrivingPrivilege()) },
-            claims.whenRequested(UN_DISTINGUISHING_SIGN) { "A" },
+            claims.whenRequested(UN_DISTINGUISHING_SIGN) { unDistinguishingSign },
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(SEX) { sex },
             claims.whenRequested(HEIGHT) { Random.nextUInt(150u, 210u) },
             claims.whenRequested(WEIGHT) { Random.nextUInt(60u, 120u) },
             claims.whenRequested(EYE_COLOUR) { randomEyeColour() },
             claims.whenRequested(HAIR_COLOUR) { randomHairColour() },
-            claims.whenRequested(BIRTH_PLACE) { birthPlace },
-            claims.whenRequested(RESIDENT_ADDRESS) { userInfo.address?.locality ?: "Hill Valley" },
+            claims.whenRequested(BIRTH_PLACE) { randomCodeCityState().city },
+            claims.whenRequested(RESIDENT_ADDRESS) { formatted },
             claims.whenRequested(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
             claims.whenRequested(AGE_IN_YEARS) { ageInYears },
             claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
             claims.whenRequested(AGE_OVER_18) { ageOver18 },
-            claims.whenRequested(ISSUING_JURISDICTION) { "AT-0 " },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
             claims.whenRequested(NATIONALITY) { nationality },
-            claims.whenRequested(RESIDENT_CITY) { userInfo.address?.locality ?: "Hill Valley" },
-            claims.whenRequested(RESIDENT_STATE) { "CA" },
-            claims.whenRequested(RESIDENT_POSTAL_CODE) { userInfo.address?.postalCode ?: "90210" },
-            claims.whenRequested(RESIDENT_COUNTRY) { "US" },
+            claims.whenRequested(RESIDENT_CITY) { city },
+            claims.whenRequested(RESIDENT_STATE) { state },
+            claims.whenRequested(RESIDENT_POSTAL_CODE) { postCode },
+            claims.whenRequested(RESIDENT_COUNTRY) { country },
             claims.whenRequested(FAMILY_NAME_NATIONAL_CHARACTER) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME_NATIONAL_CHARACTER) { userInfo.givenName },
         )
     }
 
-private fun randomEyeColour() =
-    listOf("black", "blue", "brown", "dichromatic", "grey", "green", "hazel", "maroon", "pink", "unknown").random()
-
-private fun randomHairColour() =
-    listOf("bald", "black", "blond", "brown", "grey", "red", "auburn", "sandy", "white", "unknown").random()
-
 fun fakeDrivingPrivilege() = DrivingPrivilege(
     vehicleCategoryCode = "B",
-    issueDate = LocalDate.parse("2023-01-01"),
-    expiryDate = LocalDate.parse("2025-12-31")
+    issueDate = issueDate(),
+    expiryDate = expiryDate(),
 )
 
 val OidcUserInfoExtended.bpk: String
@@ -265,7 +278,7 @@ val OidcUserInfoExtended.bpk: String
 
 val OidcUserInfoExtended.dateOfBirth
     get() = userInfo.birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        ?: LocalDate(1970, 1, 1)
+        ?: randomDateOfBirth()
 
 val OidcUserInfoExtended.sex
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoSexEnum()
@@ -321,25 +334,10 @@ val OidcUserInfoExtended.mainAddress: String?
     get() = userInfo.address?.formatted
         ?: getClaimAsString("urn:eidgvat:attributes.mainAddress")
 
-val OidcUserInfoExtended.birthPlace: String
-    get() = "$birthCity, $birthState, $birthCountry"
-
-val OidcUserInfoExtended.birthCountry: String
-    get() = userInfo.address?.country
-        ?: "US"
-
-val OidcUserInfoExtended.birthState: String
-    get() = userInfo.address?.region
-        ?: "CA"
-
-val OidcUserInfoExtended.birthCity: String
-    get() = userInfo.address?.locality
-        ?: "Unterleuten"
-
 val OidcUserInfoExtended.arrivalDate: LocalDate
     get() = getClaimAsString("urn:eidgvat:attributes.mainAddressRegistrationDate")
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        ?: LocalDate(2000, 1, 1)
+        ?: LocalDate(2000, Random.nextInt(1, 12), Random.nextInt(1, 28))
 
 val OidcUserInfoExtended.nationality: String
     get() = getClaimAsString("urn:eidgvat:attributes.nationality")?.let {
@@ -382,21 +380,27 @@ fun OidcUserInfoExtended.getClaims(vararg key: String): String? {
 }
 
 val OidcUserInfoExtended.residenceAddress: String
-    get() = Json.encodeToString(
-        ResidenceAddress(
-            thoroughfare = userInfo.address?.street ?: "Riverside Drive",
-            locatorDesignator = "1640",
-            postCode = userInfo.address?.postalCode ?: "90210",
-            postName = userInfo.address?.locality ?: "Hill Valley",
-            adminUnitLevel1 = "US",
-            adminUnitLevel2 = "CA",
-            fullAddress = userInfo.address?.formatted ?: fullAddress,
+    get() {
+        val (postCode, city, state) = extractPostCodeCityState()
+        val street = userInfo.address?.street ?: randomStreet()
+        val locator = randomAddressLocator()
+        val country = userInfo.address?.country ?: fallbackAddressCountry
+        val fullAddress = formatAddress(street, locator, postCode, city)
+        return Json.encodeToString(
+            ResidenceAddress(
+                thoroughfare = street,
+                locatorDesignator = locator.toString(),
+                postCode = postCode,
+                postName = city,
+                adminUnitLevel1 = country,
+                adminUnitLevel2 = state,
+                fullAddress = fullAddress,
+            )
         )
-    )
+    }
 
-private val OidcUserInfoExtended.fullAddress
-    get() = "${userInfo.address?.street ?: "Riverside Drive"} 1640," +
-            " ${userInfo.address?.postalCode ?: "90210"} ${userInfo.address?.locality ?: "Hill Valley"}"
+private fun formatAddress(street: String, locator: Int, postalCode: String, city: String) =
+    "$street $locator, $postalCode $city"
 
 private fun Collection<String>?.whenRequested(key: String, value: () -> Any?): ClaimToBeIssued? =
     if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else null
@@ -406,3 +410,43 @@ fun Collection<String>?.isNullOrContains(name: String) =
 
 @OptIn(ExperimentalEncodingApi::class)
 fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
+
+private fun expiryDate() = LocalDate.parse("2025-12-31")
+
+private fun issueDate() = LocalDate.parse("2023-01-01")
+
+private val eService = "Dummy Service"
+private val issuingCountry = "AT"
+private val issuingJurisdiction = "AT-0"
+private val issuingAuthority = "Miniwahr"
+private val unDistinguishingSign = "A"
+private val fallbackBirthCountry = "AT"
+private val fallbackAddressCountry = "AT"
+
+private fun randomEyeColour() =
+    listOf("black", "blue", "brown", "dichromatic", "grey", "green", "hazel", "maroon", "pink", "unknown").random()
+
+private fun randomHairColour() =
+    listOf("bald", "black", "blond", "brown", "grey", "red", "auburn", "sandy", "white", "unknown").random()
+
+data class CodeCityState(val postCode: String, val city: String, val state: String)
+
+private fun randomCodeCityState(): CodeCityState =
+    listOf(
+        CodeCityState("6900", "Bregenz", "Vorarlberg"),
+        CodeCityState("6010", "Innsbruck", "Tirol"),
+        CodeCityState("5010", "Salzburg", "Salzburg"),
+        CodeCityState("4020", "Linz", "Oberösterreich"),
+        CodeCityState("3100", "St. Pölten", "Niederösterreich"),
+        CodeCityState("1010", "Wien", "Wien"),
+        CodeCityState("8010", "Graz", "Steiermark"),
+        CodeCityState("7000", "Eisenstadt", "Burgenland"),
+        CodeCityState("9020", "Klagenfurt", "Kärnten")
+    ).random()
+
+private fun randomAddressLocator() = Random.nextInt(1, 99)
+
+private fun randomStreet() =
+    listOf("Hauptstraße", "Herrengasse", "Hauptplatz", "Landstraße").random()
+
+private fun randomDateOfBirth() = LocalDate(Random.nextInt(1970, 2000), Random.nextInt(1, 12), Random.nextInt(1, 28))
