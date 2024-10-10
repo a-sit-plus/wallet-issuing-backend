@@ -80,7 +80,7 @@ class OpenId4VciController(
             val offer = credentialIssuer.credentialOfferWithPreAuthnForUser(principal)
             val nonce = uuid4().toString().also { mapNonceToOffer[it] = offer }
             val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
-            val url = "oid4vci://credential_offer_uri=$credentialOfferUrl"
+            val url = "oid4vci://wallet.a-sit.at/offer?credential_offer_uri=$credentialOfferUrl"
             Napier.d("/index sets credential offer URL $url")
             model["qrcode"] = QRCode.ofSquares().build(url).render().getBytes()
                 .also { Napier.d("/index generates QR code with ${it.size} bytes") }
