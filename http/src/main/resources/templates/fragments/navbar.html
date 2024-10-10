@@ -15,8 +15,11 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarText">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item ms-2">
+                <li class="nav-item ms-2" sec:authorize="isAnonymous()">
                     <a th:href="@{/login}" class="nav-link">Login</a>
+                </li>
+                <li class="nav-item ms-2" sec:authorize="isAuthenticated()">
+                    <a th:href="@{/logout}" class="nav-link">Logout</a>
                 </li>
             </ul>
         </div>
