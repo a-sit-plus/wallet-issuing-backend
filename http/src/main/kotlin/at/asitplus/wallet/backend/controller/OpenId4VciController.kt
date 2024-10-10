@@ -94,12 +94,13 @@ class OpenId4VciController(
      * using the configured OAuth2 AS. Subsequent requests to [token] and [credential] are secured
      * by the authorization code returned here.
      */
-    @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
+    @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET])
     fun authorize(
         @RequestParam requestParams: Map<String, String>,
         @RequestBody requestBody: String?,
         request: HttpServletRequest,
-    ): ResponseEntity<*> = runBlocking {
+        model: ModelMap,
+    ) = runBlocking {
         Napier.i("/authorize called")
         Napier.v("/authorize called with $requestParams and $requestBody")
         val params: AuthenticationRequestParameters =
@@ -110,9 +111,16 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/authorize returns ${result.url}")
-        return@runBlocking buildOidcRedirect(result.url)
-            .also { request.logout() }
+        val userAgent = request.getHeader(HttpHeaders.USER_AGENT)
+        return@runBlocking if (userAgent?.isSafariOniPhone() == true) {
+            model["url"] = result.url
+            ModelAndView("iphone-redirect")
+        } else {
+            buildOidcRedirect(result.url)
+        }.also { request.logout() }
     }
+
+    private fun String.isSafariOniPhone() = contains("Safari") && contains("iPhone")
 
     @RequestMapping("/token", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
     fun token(@RequestBody requestBody: String): ResponseEntity<*> = runBlocking {
