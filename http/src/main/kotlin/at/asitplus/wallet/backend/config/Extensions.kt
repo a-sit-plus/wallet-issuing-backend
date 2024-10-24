@@ -61,53 +61,72 @@ fun ConstantIndex.CredentialScheme.buildClaims(
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
 fun List<ClaimToBeIssued>.toIsoClaims(
+    pubKey: CryptoPublicKey,
     exp: Instant,
+    scheme: ConstantIndex.CredentialScheme,
 ) = CredentialToBeIssued.Iso(
     issuerSignedItems = this
         .mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
-    expiration = exp
+    expiration = exp,
+    scheme = scheme,
+    subjectPublicKey = pubKey,
 )
 
 fun List<ClaimToBeIssued>.toSdJwtClaims(
+    pubKey: CryptoPublicKey,
     exp: Instant,
+    scheme: ConstantIndex.CredentialScheme,
 ) = CredentialToBeIssued.VcSd(
     claims = this,
-    expiration = exp
+    expiration = exp,
+    scheme = scheme,
+    subjectPublicKey = pubKey,
 )
 
-fun OidcUserInfoExtended.toIdaCredential(pubKey: CryptoPublicKey, exp: Instant) =
-    CredentialToBeIssued.VcJwt(
-        subject = IdAustriaCredential(
-            id = pubKey.didEncoded,
-            bpk = bpk,
-            firstname = userInfo.givenName ?: "N/A",
-            lastname = userInfo.familyName ?: "N/A",
-            dateOfBirth = dateOfBirth,
-            portrait = portrait,
-            mainAddress = mainAddress,
-            ageOver14 = ageOver14,
-            ageOver16 = ageOver16,
-            ageOver18 = ageOver18,
-            ageOver21 = ageOver21,
-        ).also { Napier.v("idaVcJwt returns $it") },
-        expiration = exp,
-    )
+fun OidcUserInfoExtended.toIdaCredential(
+    pubKey: CryptoPublicKey,
+    exp: Instant,
+    scheme: ConstantIndex.CredentialScheme
+) = CredentialToBeIssued.VcJwt(
+    subject = IdAustriaCredential(
+        id = pubKey.didEncoded,
+        bpk = bpk,
+        firstname = userInfo.givenName ?: "N/A",
+        lastname = userInfo.familyName ?: "N/A",
+        dateOfBirth = dateOfBirth,
+        portrait = portrait,
+        mainAddress = mainAddress,
+        ageOver14 = ageOver14,
+        ageOver16 = ageOver16,
+        ageOver18 = ageOver18,
+        ageOver21 = ageOver21,
+    ).also { Napier.v("idaVcJwt returns $it") },
+    expiration = exp,
+    scheme = scheme,
+    subjectPublicKey = pubKey,
+)
 
-fun OidcUserInfoExtended.toEuPidCredential(pubKey: CryptoPublicKey, iss: Instant, exp: Instant) =
-    CredentialToBeIssued.VcJwt(
-        subject = EuPidCredential(
-            id = pubKey.didEncoded,
-            familyName = userInfo.familyName ?: "N/A",
-            givenName = userInfo.givenName ?: "N/A",
-            birthDate = dateOfBirth,
-            ageOver18 = ageOver18,
-            issuanceDate = iss,
-            expiryDate = exp,
-            issuingAuthority = issuingAuthority,
-            issuingCountry = issuingCountry,
-        ).also { Napier.v("eupidVcJwt returns $it") },
-        expiration = exp,
-    )
+fun OidcUserInfoExtended.toEuPidCredential(
+    pubKey: CryptoPublicKey,
+    iss: Instant,
+    exp: Instant,
+    scheme: ConstantIndex.CredentialScheme
+) = CredentialToBeIssued.VcJwt(
+    subject = EuPidCredential(
+        id = pubKey.didEncoded,
+        familyName = userInfo.familyName ?: "N/A",
+        givenName = userInfo.givenName ?: "N/A",
+        birthDate = dateOfBirth,
+        ageOver18 = ageOver18,
+        issuanceDate = iss,
+        expiryDate = exp,
+        issuingAuthority = issuingAuthority,
+        issuingCountry = issuingCountry,
+    ).also { Napier.v("eupidVcJwt returns $it") },
+    expiration = exp,
+    scheme = scheme,
+    subjectPublicKey = pubKey
+)
 
 fun OidcUserInfoExtended.buildIdaClaims(claims: Collection<String>?) =
     with(IdAustriaScheme.Attributes) {

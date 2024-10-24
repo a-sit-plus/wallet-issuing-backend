@@ -1,5 +1,8 @@
 # Changelog
 
+5.1.0:
+ - Update dependency on vclib to 5.1.0
+
 5.0.0:
  - Update dependency on vclib to 5.0.0
  - Issue values for all claims in all credentials for testing purposes
