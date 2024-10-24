@@ -28,10 +28,8 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
+import java.nio.charset.Charset
 import java.util.*
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
@@ -126,10 +124,8 @@ fun OidcUserInfoExtended.buildIdaClaims(claims: Collection<String>?) =
 
 fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(EuPidScheme.Attributes) {
-        val (postCode, city, state) = extractPostCodeCityState()
-        val (ourBirthCode, ourBirthCity, ourBirthState) = randomCodeCityState()
-        val locator = randomAddressLocator()
-        val street = userInfo.address?.street ?: randomStreet()
+        val (postCode, city, state, street, locator) = addressOrRandom()
+        val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -141,7 +137,7 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
             claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claims.whenRequested(BIRTH_PLACE) { randomStreet() },
+            claims.whenRequested(BIRTH_PLACE) { ourBirthStreet },
             claims.whenRequested(BIRTH_COUNTRY) { fallbackBirthCountry },
             claims.whenRequested(BIRTH_STATE) { ourBirthState },
             claims.whenRequested(BIRTH_CITY) { ourBirthCity },
@@ -164,12 +160,44 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
         )
     }
 
-private fun OidcUserInfoExtended.extractPostCodeCityState() =
-    if (userInfo.address?.postalCode != null && userInfo.address?.locality != null && userInfo.address?.region != null) {
-        CodeCityState(userInfo.address?.postalCode!!, userInfo.address?.locality!!, userInfo.address?.region!!)
-    } else {
-        randomCodeCityState()
-    }
+private fun OidcUserInfoExtended.addressOrRandom() = if (userInfo.address?.postalCode != null
+    && userInfo.address?.locality != null
+    && userInfo.address?.region != null
+    && userInfo.address?.street != null
+) {
+    Address(
+        postCode = userInfo.address!!.postalCode!!,
+        city = userInfo.address!!.locality!!,
+        state = userInfo.address!!.region!!,
+        street = userInfo.address!!.street!!.substringBefore(" "),
+        locator = userInfo.address!!.street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator()
+    )
+} else {
+    getClaimAsString("urn:eidgvat:attributes.mainAddress")?.let { idaAddress ->
+        runCatching {
+            val json = Json.parseToJsonElement(
+                idaAddress.decodeToByteArray(Base64()).toString(Charset.defaultCharset())
+            ) as? JsonObject
+            val postCode = json.getPrimitiveContent("Postleitzahl")
+            val city = json.getPrimitiveContent("Ortschaft")
+            val street = json.getPrimitiveContent("Strasse")
+            val locator = json.getPrimitiveContent("Hausnummer")
+            if (postCode != null && city != null && street != null && locator != null) {
+                Address(
+                    postCode = postCode,
+                    city = city,
+                    state = postCode.toState(),
+                    street = street,
+                    locator = locator.toIntOrNull() ?: randomAddressLocator()
+                )
+            } else {
+                null
+            }
+        }.getOrNull()
+    } ?: randomAddress()
+}
+
+private fun JsonObject?.getPrimitiveContent(key: String) = (this?.get(key) as? JsonPrimitive)?.content
 
 fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(PowerOfRepresentationDataElements) {
@@ -199,7 +227,7 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
             claims.whenRequested(RESIDENCE_ADDRESS) { residenceAddress },
             claims.whenRequested(GENDER) { gender },
-            claims.whenRequested(BIRTH_PLACE) { randomCodeCityState().city },
+            claims.whenRequested(BIRTH_PLACE) { randomAddress().city },
             claims.whenRequested(ARRIVAL_DATE) { arrivalDate },
             claims.whenRequested(NATIONALITY) { nationality },
             claims.whenRequested(ISSUANCE_DATE) { iss },
@@ -226,9 +254,7 @@ fun OidcUserInfoExtended.buildEPrescriptionClaims(claims: Collection<String>?, l
 
 fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
     with(MobileDrivingLicenceDataElements) {
-        val (postCode, city, state) = extractPostCodeCityState()
-        val locator = randomAddressLocator()
-        val street = userInfo.address?.street ?: randomStreet()
+        val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -249,7 +275,7 @@ fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
             claims.whenRequested(WEIGHT) { Random.nextUInt(60u, 120u) },
             claims.whenRequested(EYE_COLOUR) { randomEyeColour() },
             claims.whenRequested(HAIR_COLOUR) { randomHairColour() },
-            claims.whenRequested(BIRTH_PLACE) { randomCodeCityState().city },
+            claims.whenRequested(BIRTH_PLACE) { randomAddress().city },
             claims.whenRequested(RESIDENT_ADDRESS) { formatted },
             claims.whenRequested(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
             claims.whenRequested(AGE_IN_YEARS) { ageInYears },
@@ -381,9 +407,7 @@ fun OidcUserInfoExtended.getClaims(vararg key: String): String? {
 
 val OidcUserInfoExtended.residenceAddress: String
     get() {
-        val (postCode, city, state) = extractPostCodeCityState()
-        val street = userInfo.address?.street ?: randomStreet()
-        val locator = randomAddressLocator()
+        val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val fullAddress = formatAddress(street, locator, postCode, city)
         return Json.encodeToString(
@@ -423,30 +447,43 @@ private val unDistinguishingSign = "A"
 private val fallbackBirthCountry = "AT"
 private val fallbackAddressCountry = "AT"
 
+private fun String.toState(): String = when {
+    this.startsWith("1") -> "Wien"
+    this.startsWith("2") -> "Niederösterreich"
+    this.startsWith("3") -> "Niederösterreich"
+    this.startsWith("4") -> "Oberösterreich"
+    this.startsWith("5") -> "Salzburg"
+    this.startsWith("6") -> "Tirol"
+    this.startsWith("7") -> "Burgenland"
+    this.startsWith("8") -> "Steiermark"
+    this.startsWith("9") -> "Kärnten"
+    else -> "Österreich"
+}
+
 private fun randomEyeColour() =
     listOf("black", "blue", "brown", "dichromatic", "grey", "green", "hazel", "maroon", "pink", "unknown").random()
 
 private fun randomHairColour() =
     listOf("bald", "black", "blond", "brown", "grey", "red", "auburn", "sandy", "white", "unknown").random()
 
-data class CodeCityState(val postCode: String, val city: String, val state: String)
+data class Address(val postCode: String, val city: String, val state: String, val street: String, val locator: Int)
 
-private fun randomCodeCityState(): CodeCityState =
+private fun randomAddress(): Address =
     listOf(
-        CodeCityState("6900", "Bregenz", "Vorarlberg"),
-        CodeCityState("6010", "Innsbruck", "Tirol"),
-        CodeCityState("5010", "Salzburg", "Salzburg"),
-        CodeCityState("4020", "Linz", "Oberösterreich"),
-        CodeCityState("3100", "St. Pölten", "Niederösterreich"),
-        CodeCityState("1010", "Wien", "Wien"),
-        CodeCityState("8010", "Graz", "Steiermark"),
-        CodeCityState("7000", "Eisenstadt", "Burgenland"),
-        CodeCityState("9020", "Klagenfurt", "Kärnten")
+        Address("6900", "Bregenz", "Vorarlberg", randomStreet(), randomAddressLocator()),
+        Address("6010", "Innsbruck", "Tirol", randomStreet(), randomAddressLocator()),
+        Address("5010", "Salzburg", "Salzburg", randomStreet(), randomAddressLocator()),
+        Address("4020", "Linz", "Oberösterreich", randomStreet(), randomAddressLocator()),
+        Address("3100", "St. Pölten", "Niederösterreich", randomStreet(), randomAddressLocator()),
+        Address("1010", "Wien", "Wien", randomStreet(), randomAddressLocator()),
+        Address("8010", "Graz", "Steiermark", randomStreet(), randomAddressLocator()),
+        Address("7000", "Eisenstadt", "Burgenland", randomStreet(), randomAddressLocator()),
+        Address("9020", "Klagenfurt", "Kärnten", randomStreet(), randomAddressLocator())
     ).random()
 
 private fun randomAddressLocator() = Random.nextInt(1, 99)
 
 private fun randomStreet() =
-    listOf("Hauptstraße", "Herrengasse", "Hauptplatz", "Landstraße").random()
+    listOf("Hauptstraße", "Herrengasse", "Hauptplatz", "Landstraße", "Dorfstraße").random()
 
 private fun randomDateOfBirth() = LocalDate(Random.nextInt(1970, 2000), Random.nextInt(1, 12), Random.nextInt(1, 28))
