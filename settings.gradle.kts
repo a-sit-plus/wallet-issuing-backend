@@ -6,6 +6,7 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
+        maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     }
 }
 
@@ -17,11 +18,12 @@ include("http")
 
 dependencyResolutionManagement {
     repositories {
+        maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")}
         mavenCentral()
     }
     versionCatalogs {
         create("vclib") {
-            from("at.asitplus.wallet:vck-openid-versionCatalog:5.0.0")
+            from("at.asitplus.wallet:vck-openid-versionCatalog:5.1.0")
         }
     }
 }

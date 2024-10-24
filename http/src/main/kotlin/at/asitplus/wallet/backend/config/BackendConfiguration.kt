@@ -4,7 +4,10 @@ import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
+import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
@@ -132,16 +135,6 @@ class BackendConfiguration {
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
-    fun issuerCredentialDataProvider(
-        authenticationSupplier: AuthenticationSupplier,
-        ePrescriptionLoader: EPrescriptionLoader,
-    ): IssuerCredentialDataProvider = IssuerCredentialDataProviderAdapter(
-        lifetime = configurationProperties.credentials.lifeTime,
-        authenticationSupplier = authenticationSupplier,
-        ePrescriptionLoader = ePrescriptionLoader
-    )
-
-    @Bean
     fun issuerKeyAdapter(): KeyMaterial =
         when (configurationProperties.issuerKey.type) {
             KeyType.FILE -> loadKeyFile(configurationProperties.issuerKey.file!!, resourceLoader)
@@ -201,13 +194,11 @@ class BackendConfiguration {
     @Bean
     fun issuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
-        issuerCredentialDataProvider: IssuerCredentialDataProvider,
         keyMaterial: KeyMaterial,
     ): Issuer = IssuerAgent(
         validator = Validator(),
         issuerCredentialStore = issuerCredentialStore,
         revocationListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
-        dataProvider = issuerCredentialDataProvider,
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         jwsService = DefaultJwsService(DefaultCryptoService(keyMaterial)),
         coseService = DefaultCoseService(DefaultCryptoService(keyMaterial)),
@@ -236,13 +227,10 @@ class BackendConfiguration {
             CertificateOfResidenceScheme
         ),
         authorizationService = authorizationServer,
-        buildIssuerCredentialDataProviderOverride = { oidcUserInfo ->
-            OidcIssuerCredentialDataProvider(
-                userInfo = oidcUserInfo,
-                lifetime = configurationProperties.credentials.lifeTime,
-                ePrescriptionLoader = ePrescriptionLoader
-            )
-        }
+        credentialProvider = OidcIssuerCredentialDataProvider(
+            lifetime = configurationProperties.credentials.lifeTime,
+            ePrescriptionLoader = ePrescriptionLoader
+        )
     )
 
     @Bean
