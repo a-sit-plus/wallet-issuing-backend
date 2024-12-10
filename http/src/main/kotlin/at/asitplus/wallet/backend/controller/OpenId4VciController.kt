@@ -4,7 +4,10 @@ import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.*
+import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OAuth2Error
+import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
+import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
@@ -46,6 +49,18 @@ class OpenId4VciController(
     fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
         val metadata = authorizationService.metadata
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $metadata")
+        return ResponseEntity.ok(metadata)
+    }
+
+    @GetMapping(
+        value = [OpenIdConstants.PATH_WELL_KNOWN_JWT_VC_ISSUER_METADATA,
+            OpenIdConstants.PATH_WELL_KNOWN_JWT_VC_ISSUER_METADATA + "/*"
+        ],
+        produces = [APPLICATION_JSON_VALUE]
+    )
+    fun jwtVcMetadata(): ResponseEntity<JwtVcIssuerMetadata> {
+        val metadata = credentialIssuer.jwtVcMetadata
+        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_JWT_VC_ISSUER_METADATA} returns $metadata")
         return ResponseEntity.ok(metadata)
     }
 
@@ -137,9 +152,10 @@ class OpenId4VciController(
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/credential called")
         Napier.v("/credential called with $authorizationHeader and $requestBody")
-        val params: CredentialRequestParameters = jsonSerializer.decodeFromString(requestBody)
-            ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
-
+        val params = CredentialRequestParameters.deserialize(requestBody).getOrElse {
+            Napier.w("/credential can't parse request", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
         val accessToken = authorizationHeader.removePrefix("bearer ").removePrefix("Bearer ")
         val credential = credentialIssuer.credential(accessToken, params).getOrElse {
             Napier.w("/credential got error", it)

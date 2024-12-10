@@ -97,6 +97,7 @@ class BackendConfiguration {
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
         Security.addProvider(BouncyCastleProvider())
+        at.asitplus.wallet.lib.Initializer.initOpenIdModule()
         at.asitplus.wallet.idaustria.Initializer.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
@@ -207,6 +208,7 @@ class BackendConfiguration {
         keyMaterial = keyMaterial,
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
+        identifier = configurationProperties.publicContext
     )
 
     @Bean
