@@ -1,5 +1,8 @@
 # Changelog
 
+5.2.0:
+ - Update dependency on vc-k to 5.2.0
+
 5.1.1:
  - Add issuance of company registration credentials
 
