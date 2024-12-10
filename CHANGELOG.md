@@ -1,5 +1,8 @@
 # Changelog
 
+5.1.1:
+ - Add issuance of company registration credentials
+
 5.1.0:
  - Update dependency on vclib to 5.1.0
 

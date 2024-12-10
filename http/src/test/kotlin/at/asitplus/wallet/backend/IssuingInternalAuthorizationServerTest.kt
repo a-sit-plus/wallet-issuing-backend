@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidCredential
@@ -128,6 +129,19 @@ class IssuingInternalAuthorizationServerTest {
     @WithOAuth2AuthenticationToken
     fun por_sdjwt_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(PowerOfRepresentationScheme, SD_JWT)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credential.shouldNotBeNull()
+        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
+        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun cr_sdjwt_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(CompanyRegistrationScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 

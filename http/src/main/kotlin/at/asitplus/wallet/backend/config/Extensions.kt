@@ -2,6 +2,9 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.wallet.companyregistration.CompanyActivity
+import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
+import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.cor.ResidenceAddress
@@ -57,6 +60,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
         is EPrescriptionScheme -> userInfo.buildEPrescriptionClaims(claims, loader)
+        is CompanyRegistrationScheme -> userInfo.buildComapnyRegistrationClaims(claims, iss, exp)
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
@@ -238,6 +242,49 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
     }
 
 
+fun OidcUserInfoExtended.buildComapnyRegistrationClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+    with(CompanyRegistrationDataElements) {
+        listOfNotNull(
+            claims.whenRequested(COMPANY_NAME) { legalName },
+            claims.whenRequested(COMPANY_TYPE) { "Einzelunternehmen" },
+            claims.whenRequested(COMPANY_STATUS) { "economically active" },
+            claims.whenRequested(COMPANY_ACTIVITY) {
+                with(CompanyRegistrationDataElements.CompanyActivity) {
+                    listOf(
+                        ClaimToBeIssued(NACE_CODE, "7500"),
+                        ClaimToBeIssued(ACTIVITY_DESCRIPTION, "7500")
+                    )
+                }
+            },
+            claims.whenRequested(REGISTRATION_DATE) { LocalDate(2020, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
+            claims.whenRequested(COMPANY_END_DATE) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
+            claims.whenRequested(COMPANY_EUID) { "ATCHCUSP.90000${Random.nextInt(100, 999)}" },
+            claims.whenRequested(VAT_NUMBER) { "9999${Random.nextInt(1000, 9999)}" },
+            claims.whenRequested(COMPANY_CONTACT_DATA) {
+                with(CompanyRegistrationDataElements.ContactData) {
+                    listOf(
+                        ClaimToBeIssued(EMAIL, "${userInfo.givenName}@example.com"),
+                        ClaimToBeIssued(TELEPHONE, "+43-555-${Random.nextInt(1, 9999)}")
+                    )
+                }
+            },
+            claims.whenRequested(REGISTERED_ADDRESS) {
+                with(CompanyRegistrationDataElements.Address) {
+                    with(randomAddress()) {
+                        listOf(
+                            ClaimToBeIssued(THOROUGHFARE, street),
+                            ClaimToBeIssued(LOCATOR_DESIGNATOR, locator.toString()),
+                            ClaimToBeIssued(POST_CODE, postCode),
+                            ClaimToBeIssued(POST_NAME, city),
+                            ClaimToBeIssued(ADMIN_UNIT_L_1, "AT"),
+                            ClaimToBeIssued(ADMIN_UNIT_L_2, state)
+                        )
+                    }
+                }
+            },
+        )
+    }
+
 fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(CertificateOfResidenceDataElements) {
         listOfNotNull(
@@ -258,6 +305,7 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
         )
     }
+
 
 fun OidcUserInfoExtended.buildEPrescriptionClaims(claims: Collection<String>?, loader: EPrescriptionLoader) =
     with(EPrescriptionDataElements) {
@@ -405,12 +453,16 @@ val OidcUserInfoExtended.legalName: String
             "urn:pvpgvat:oidc.mandator_natural_person_given_name",
             "urn:pvpgvat:oidc.mandator_natural_person_family_name"
         )
-        ?: userInfo.name ?: userInfo.familyName ?: userInfo.subject
+        ?: userInfo.givenName?.let {
+            (userInfo.givenName + " " + userInfo.familyName)
+        } ?: userInfo.name
+        ?: userInfo.subject
+
 
 val OidcUserInfoExtended.legalPersonIdentifier: String
     get() = getClaimAsString("urn:pvpgvat:oidc.mandator_legal_person_source_pin")
         ?: getClaimAsString("urn:pvpgvat:oidc.mandator_natural_person_bpk")
-        ?: userInfo.name ?: userInfo.familyName ?: userInfo.subject
+        ?: userInfo.subject
 
 fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
     val element = jsonObject[key]

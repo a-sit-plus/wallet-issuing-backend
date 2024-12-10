@@ -10,6 +10,7 @@ import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidScheme
@@ -102,6 +103,7 @@ class BackendConfiguration {
         at.asitplus.wallet.cor.Initializer.initWithVCK()
         at.asitplus.wallet.por.Initializer.initWithVCK()
         at.asitplus.wallet.eprescription.Initializer.initWithVCK()
+        at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
     }
 
     @PostConstruct
@@ -224,7 +226,8 @@ class BackendConfiguration {
             MobileDrivingLicenceScheme,
             PowerOfRepresentationScheme,
             EPrescriptionScheme,
-            CertificateOfResidenceScheme
+            CertificateOfResidenceScheme,
+            CompanyRegistrationScheme
         ),
         authorizationService = authorizationServer,
         credentialProvider = OidcIssuerCredentialDataProvider(
@@ -246,7 +249,8 @@ class BackendConfiguration {
                     MobileDrivingLicenceScheme,
                     PowerOfRepresentationScheme,
                     EPrescriptionScheme,
-                    CertificateOfResidenceScheme
+                    CertificateOfResidenceScheme,
+                    CompanyRegistrationScheme
                 ),
             ),
             publicContext = configurationProperties.publicContext,

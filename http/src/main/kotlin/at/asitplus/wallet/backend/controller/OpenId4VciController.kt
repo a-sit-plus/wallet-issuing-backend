@@ -4,11 +4,7 @@ import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.OAuth2Error
-import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
-import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
-import at.asitplus.wallet.lib.oidvci.jsonSerializer
+import at.asitplus.wallet.lib.oidvci.*
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
@@ -49,11 +45,11 @@ class OpenId4VciController(
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
     fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
         val metadata = authorizationService.metadata
-        Napier.i("/.well-known/openid-configuration returns $metadata")
+        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $metadata")
         return ResponseEntity.ok(metadata)
     }
 
-    @RequestMapping("/offer", method = [RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/offer", produces = [APPLICATION_JSON_VALUE])
     fun offer(): ResponseEntity<CredentialOffer> = runBlocking {
         Napier.i("/offer called")
         val offer = credentialIssuer.credentialOfferWithAuthorizationCode()
@@ -61,8 +57,7 @@ class OpenId4VciController(
         return@runBlocking ResponseEntity.ok(offer)
     }
 
-    @RequestMapping("/offer/{nonce}", method = [RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
-    @ResponseBody
+    @GetMapping("/offer/{nonce}", produces = [APPLICATION_JSON_VALUE])
     fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
         Napier.i("/offer/$nonce called")
         mapNonceToOffer[nonce]?.let {
@@ -71,8 +66,7 @@ class OpenId4VciController(
         } ?: ResponseEntity.notFound().build()
     }
 
-    @RequestMapping("/", method = [RequestMethod.GET], produces = [APPLICATION_JSON_VALUE])
-    @ResponseBody
+    @GetMapping("/", produces = [APPLICATION_JSON_VALUE])
     fun index(model: ModelMap): ModelAndView = runBlocking {
         val principal = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.i("/index called with $principal")
@@ -122,7 +116,7 @@ class OpenId4VciController(
 
     private fun String.isSafariOniPhone() = contains("Safari") && contains("iPhone")
 
-    @RequestMapping("/token", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
+    @PostMapping("/token", produces = [APPLICATION_JSON_VALUE])
     fun token(@RequestBody requestBody: String): ResponseEntity<*> = runBlocking {
         Napier.i("/token called")
         Napier.v("/token called with $requestBody")
@@ -136,7 +130,7 @@ class OpenId4VciController(
         return@runBlocking ResponseEntity.ok(Json.encodeToString(result))
     }
 
-    @RequestMapping("/credential", method = [RequestMethod.POST], produces = [APPLICATION_JSON_VALUE])
+    @PostMapping("/credential", produces = [APPLICATION_JSON_VALUE])
     fun credential(
         @RequestBody requestBody: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION) authorizationHeader: String,
