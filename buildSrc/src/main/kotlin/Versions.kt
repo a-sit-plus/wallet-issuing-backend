@@ -5,6 +5,7 @@ object VersionsBackend {
     const val por = "1.1.0"
     const val cor = "2.1.0"
     const val eprescription = "1.1.0"
+    const val cr = "1.0.0"
     const val qrcode = "4.1.1"
     const val `google-cbor` = "0.01.02"
     const val pgsql = "42.5.0"
