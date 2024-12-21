@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
@@ -142,7 +143,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/token returns $result")
-        return@runBlocking ResponseEntity.ok(Json.encodeToString(result))
+        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
     }
 
     @PostMapping("/credential", produces = [APPLICATION_JSON_VALUE])
@@ -162,7 +163,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/credential returns $credential")
-        return@runBlocking ResponseEntity.ok(Json.encodeToString(credential))
+        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(credential))
     }
 
     private fun buildOidcRedirect(location: String): ResponseEntity<String> {
