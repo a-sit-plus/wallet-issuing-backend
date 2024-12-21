@@ -1,5 +1,8 @@
 # Changelog
 
+5.2.1:
+- Update dependency on vc-k to 5.2.1
+
 5.2.0:
  - Update dependency on vc-k to 5.2.0
 
