@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.wallet.companyregistration.CompanyActivity
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
@@ -18,6 +17,7 @@ import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
@@ -47,20 +47,25 @@ fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
     )
 
 fun ConstantIndex.CredentialScheme.buildClaims(
+    representation: ConstantIndex.CredentialRepresentation,
     claims: Collection<String>?,
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
-    loader: EPrescriptionLoader
+    loader: EPrescriptionLoader,
 ): List<ClaimToBeIssued> =
     when (this) {
         is IdAustriaScheme -> userInfo.buildIdaClaims(claims)
-        is EuPidScheme -> userInfo.buildEupidClaims(claims, iss, exp)
+        is EuPidScheme -> if (representation == CredentialRepresentation.SD_JWT)
+            userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
+        else
+            userInfo.buildEupidClaims(claims, iss, exp)
+
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
         is EPrescriptionScheme -> userInfo.buildEPrescriptionClaims(claims, loader)
-        is CompanyRegistrationScheme -> userInfo.buildComapnyRegistrationClaims(claims, iss, exp)
+        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(claims, iss, exp)
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
@@ -90,7 +95,7 @@ fun List<ClaimToBeIssued>.toSdJwtClaims(
 fun OidcUserInfoExtended.toIdaCredential(
     pubKey: CryptoPublicKey,
     exp: Instant,
-    scheme: ConstantIndex.CredentialScheme
+    scheme: ConstantIndex.CredentialScheme,
 ) = CredentialToBeIssued.VcJwt(
     subject = IdAustriaCredential(
         id = pubKey.didEncoded,
@@ -114,14 +119,18 @@ fun OidcUserInfoExtended.toEuPidCredential(
     pubKey: CryptoPublicKey,
     iss: Instant,
     exp: Instant,
-    scheme: ConstantIndex.CredentialScheme
+    scheme: ConstantIndex.CredentialScheme,
 ) = CredentialToBeIssued.VcJwt(
     subject = EuPidCredential(
         id = pubKey.didEncoded,
         familyName = userInfo.familyName ?: "N/A",
         givenName = userInfo.givenName ?: "N/A",
         birthDate = dateOfBirth,
+        ageOver12 = ageOver12,
+        ageOver14 = ageOver14,
+        ageOver16 = ageOver16,
         ageOver18 = ageOver18,
+        ageOver21 = ageOver21,
         issuanceDate = iss,
         expiryDate = exp,
         issuingAuthority = issuingAuthority,
@@ -141,8 +150,89 @@ fun OidcUserInfoExtended.buildIdaClaims(claims: Collection<String>?) =
             claims.whenRequested(DATE_OF_BIRTH) { dateOfBirth },
             claims.whenRequested(PORTRAIT) { portrait },
             claims.whenRequested(MAIN_ADDRESS) { mainAddress },
+            claims.whenRequested(AGE_OVER_14) { ageOver14 },
+            claims.whenRequested(AGE_OVER_16) { ageOver16 },
             claims.whenRequested(AGE_OVER_18) { ageOver18 },
+            claims.whenRequested(AGE_OVER_21) { ageOver21 },
+            claims.whenRequested(GENDER) { genderText },
         )
+    }
+
+fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss: Instant, exp: Instant) =
+    with(EuPidScheme.SdJwtAttributes) {
+        val (postCode, city, state, street, locator) = addressOrRandom()
+        val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
+        val country = userInfo.address?.country ?: fallbackAddressCountry
+        val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
+        val claimsWithNewNames = listOfNotNull(
+            claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
+            claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
+            claims.whenRequested(BIRTH_DATE) { dateOfBirth },
+            claims.whenRequested(PREFIX_AGE_EQUAL_OR_OVER) {
+                with(EuPidScheme.SdJwtAttributes.AgeEqualOrOver) {
+                    listOf(
+                        ClaimToBeIssued(EQUAL_OR_OVER_12, ageOver12),
+                        ClaimToBeIssued(EQUAL_OR_OVER_14, ageOver14),
+                        ClaimToBeIssued(EQUAL_OR_OVER_16, ageOver16),
+                        ClaimToBeIssued(EQUAL_OR_OVER_18, ageOver18),
+                        ClaimToBeIssued(EQUAL_OR_OVER_21, ageOver21),
+                    )
+                }
+            },
+            claims.whenRequested(AGE_EQUAL_OR_OVER_12) { ageOver12 },
+            claims.whenRequested(AGE_EQUAL_OR_OVER_14) { ageOver14 },
+            claims.whenRequested(AGE_EQUAL_OR_OVER_16) { ageOver16 },
+            claims.whenRequested(AGE_EQUAL_OR_OVER_18) { ageOver18 },
+            claims.whenRequested(AGE_EQUAL_OR_OVER_21) { ageOver21 },
+            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
+            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
+            claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
+            claims.whenRequested(PREFIX_PLACE_OF_BIRTH) {
+                with(EuPidScheme.SdJwtAttributes.PlaceOfBirth) {
+                    listOf(
+                        ClaimToBeIssued(COUNTRY, fallbackBirthCountry),
+                        ClaimToBeIssued(REGION, ourBirthState),
+                        ClaimToBeIssued(LOCALITY, ourBirthCity),
+                    )
+                }
+            },
+            claims.whenRequested(PLACE_OF_BIRTH_COUNTRY) { fallbackBirthCountry },
+            claims.whenRequested(PLACE_OF_BIRTH_REGION) { ourBirthState },
+            claims.whenRequested(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
+            claims.whenRequested(PREFIX_PLACE_OF_BIRTH) {
+                with(EuPidScheme.SdJwtAttributes.Address) {
+                    listOf(
+                        ClaimToBeIssued(FORMATTED, formatted),
+                        ClaimToBeIssued(COUNTRY, country),
+                        ClaimToBeIssued(REGION, state),
+                        ClaimToBeIssued(LOCALITY, city),
+                        ClaimToBeIssued(POSTAL_CODE, postCode),
+                        ClaimToBeIssued(STREET, street),
+                        ClaimToBeIssued(HOUSE_NUMBER, locator.toString()),
+                    )
+                }
+            },
+            claims.whenRequested(ADDRESS_FORMATTED) { formatted },
+            claims.whenRequested(ADDRESS_COUNTRY) { country },
+            claims.whenRequested(ADDRESS_REGION) { state },
+            claims.whenRequested(ADDRESS_LOCALITY) { city },
+            claims.whenRequested(ADDRESS_POSTAL_CODE) { postCode },
+            claims.whenRequested(ADDRESS_STREET) { street },
+            claims.whenRequested(ADDRESS_HOUSE_NUMBER) { locator.toString() },
+            claims.whenRequested(GENDER) { genderText },
+            claims.whenRequested(NATIONALITIES) { listOf(nationality) },
+            claims.whenRequested(ISSUANCE_DATE) { iss },
+            claims.whenRequested(EXPIRY_DATE) { exp },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
+            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
+        )
+        claimsWithNewNames + buildEupidClaims(claims, iss, exp).filter {
+            it.name !in claimsWithNewNames.map { it.name }
+        }// for backwards compatibility with older wallets
     }
 
 fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
@@ -155,7 +245,11 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
+            claims.whenRequested(AGE_OVER_12) { ageOver12 },
+            claims.whenRequested(AGE_OVER_14) { ageOver14 },
+            claims.whenRequested(AGE_OVER_16) { ageOver16 },
             claims.whenRequested(AGE_OVER_18) { ageOver18 },
+            claims.whenRequested(AGE_OVER_21) { ageOver21 },
             claims.whenRequested(AGE_IN_YEARS) { ageInYears },
             claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
             claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
@@ -242,7 +336,7 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
     }
 
 
-fun OidcUserInfoExtended.buildComapnyRegistrationClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildCompanyRegistrationClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(CompanyRegistrationDataElements) {
         listOfNotNull(
             claims.whenRequested(COMPANY_NAME) { legalName },
@@ -347,7 +441,11 @@ fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
             claims.whenRequested(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
             claims.whenRequested(AGE_IN_YEARS) { ageInYears },
             claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claims.whenRequested(AGE_OVER_12) { ageOver12 },
+            claims.whenRequested(AGE_OVER_14) { ageOver14 },
+            claims.whenRequested(AGE_OVER_16) { ageOver16 },
             claims.whenRequested(AGE_OVER_18) { ageOver18 },
+            claims.whenRequested(AGE_OVER_21) { ageOver21 },
             claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
             claims.whenRequested(NATIONALITY) { nationality },
             claims.whenRequested(RESIDENT_CITY) { city },
@@ -377,6 +475,10 @@ val OidcUserInfoExtended.sex
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoSexEnum()
         ?: IsoSexEnum.NOT_KNOWN
 
+val OidcUserInfoExtended.genderText
+    get() = getClaimAsString("urn:eidgvat:attributes.gender")
+        ?: "unknown"
+
 val OidcUserInfoExtended.gender
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoGenderEnum()
         ?: IsoIec5218Gender.NOT_KNOWN
@@ -392,6 +494,10 @@ fun String.toIsoGenderEnum() = when (this) {
     "M" -> IsoIec5218Gender.MALE
     else -> IsoIec5218Gender.NOT_KNOWN
 }
+
+val OidcUserInfoExtended.ageOver12
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_12")?.toBoolean()
+        ?: ageOver14
 
 val OidcUserInfoExtended.ageOver14
     get() = getClaimAsString("org.iso.18013.5.1:age_over_14")?.toBoolean()

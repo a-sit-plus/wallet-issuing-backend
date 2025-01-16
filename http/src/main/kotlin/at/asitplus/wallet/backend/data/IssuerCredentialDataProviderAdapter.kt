@@ -25,7 +25,7 @@ class OidcIssuerCredentialDataProvider(
         subjectPublicKey: CryptoPublicKey,
         credentialScheme: ConstantIndex.CredentialScheme,
         representation: ConstantIndex.CredentialRepresentation,
-        claimNames: Collection<String>?
+        claimNames: Collection<String>?,
     ): KmmResult<CredentialToBeIssued> = catching {
         val issuance = Clock.System.now()
         val expiration = issuance + lifetime
@@ -53,11 +53,17 @@ private fun createCredential(
     expiration: Instant,
     issuance: Instant,
     claimNames: Collection<String>?,
-    ePrescriptionLoader: EPrescriptionLoader
+    ePrescriptionLoader: EPrescriptionLoader,
 ): CredentialToBeIssued {
     if (credentialScheme.supportedRepresentations.contains(representation)) {
-        val claimsToBeIssued =
-            credentialScheme.buildClaims(claimNames, oidcUserInfo, issuance, expiration, ePrescriptionLoader)
+        val claimsToBeIssued = credentialScheme.buildClaims(
+            representation,
+            claimNames,
+            oidcUserInfo,
+            issuance,
+            expiration,
+            ePrescriptionLoader
+        )
 
         return when (representation) {
             ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {

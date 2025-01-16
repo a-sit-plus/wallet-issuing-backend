@@ -114,6 +114,19 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     @WithOAuth2AuthenticationToken
+    fun pid_iso_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(EuPidScheme, ISO_MDOC)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credential.shouldNotBeNull()
+        val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).getOrThrow()
+        val numberOfClaims = issuerSigned.namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull()
+        numberOfClaims shouldBeGreaterThan 1
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
     fun cor_sdjwt_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(CertificateOfResidenceScheme, SD_JWT)
 
