@@ -1,10 +1,15 @@
 # Changelog
 
+5.2.2
+ - Update dependency on VC-K to 5.2.2
+ - Issue EU PID in SD-JWT with mapped claim names from <https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework/pull/160>
+ - Update credentials to issue more `age_over_NN` attributes
+
 5.2.1:
-- Update dependency on vc-k to 5.2.1
+ - Update dependency on VC-K to 5.2.1
 
 5.2.0:
- - Update dependency on vc-k to 5.2.0
+ - Update dependency on VC-K to 5.2.0
 
 5.1.1:
  - Add issuance of company registration credentials

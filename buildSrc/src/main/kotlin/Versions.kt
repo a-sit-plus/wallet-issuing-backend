@@ -1,7 +1,7 @@
 object VersionsBackend {
     const val ida = "3.9.2"
-    const val eupid = "2.2.2"
-    const val mdl = "1.1.2"
+    const val eupid = "2.3.0-SNAPSHOT"
+    const val mdl = "1.1.4"
     const val por = "1.1.1"
     const val cor = "2.1.1"
     const val eprescription = "1.1.1"
@@ -12,7 +12,7 @@ object VersionsBackend {
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val vclib = "5.2.1"
+    const val vclib = "5.2.2"
     const val attestation = "0.5.2"
     const val nimbus = "9.37.1"
 
