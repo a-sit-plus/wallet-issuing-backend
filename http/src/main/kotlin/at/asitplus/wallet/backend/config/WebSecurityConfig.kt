@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.core.userdetails.User
+import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.session.MapSessionRepository
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession
@@ -38,8 +40,18 @@ class WebSecurityConfig {
             it.anyRequest().permitAll()
         }.oauth2Login {
             it.defaultSuccessUrl("/")
-        }.build()
+        }.formLogin {
+        }
+        .build()
 
+    @Bean
+    fun userDetailsService() = InMemoryUserDetailsManager(
+        User.withDefaultPasswordEncoder()
+            .username("user")
+            .password("password")
+            .roles("USER")
+            .build()
+    )
 
     @Bean
     fun sessionRepository() = MapSessionRepository(ConcurrentHashMap())
