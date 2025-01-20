@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <title>A-SIT Plus Wallet Issuing M5</title>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
+    <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
+    <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
+    <script>
+        $(document).ready(function () {
+
+        });
+    </script>
+</head>
+<body style="" class="bg-light">
+<div th:replace="~{fragments/navbar.html :: navbar}"></div>
+<div class="container py-4">
+
+    <h2>Login with username and password:</h2>
+    <div class="lead mt-4 mb-5">
+        <p th:if="${loginError}" class="error">Wrong user or password</p>
+        <form th:action="@{/login}" method="post" class="form-signin">
+            <label for="username">Username</label>:
+            <input class="form-control" placeholder="User" type="text" id="username" name="username"
+                   autofocus="autofocus"/>
+            <br/>
+            <label for="password">Password</label>:
+            <input class="form-control" placeholder="Password" type="password" id="password" name="password"/> <br/>
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+        </form>
+    </div>
+
+    <h2>Login with ID Austria:</h2>
+    <div class="lead mt-4 mb-5 list-group">
+        <p th:each="url : ${oauthUrls}">
+            <a th:text="${url.name}" th:href="${url.url}">Client</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

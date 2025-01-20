@@ -39,8 +39,9 @@ class WebSecurityConfig {
             it.requestMatchers("/authorize").authenticated()
             it.anyRequest().permitAll()
         }.oauth2Login {
-            it.defaultSuccessUrl("/")
+            it.defaultSuccessUrl("/").loginPage("/login")
         }.formLogin {
+            it.loginPage("/login")
         }
         .build()
 
