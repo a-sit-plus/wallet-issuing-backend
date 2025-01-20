@@ -1,50 +1,52 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta charset="UTF-8">
-    <title>A-SIT Plus Wallet</title>
+    <title>A-SIT Plus Wallet Issuing M5</title>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
     <script>
         $(document).ready(function () {
-            $('.tour_btn').click(function () {
-                $('html,body').animate({scrollTop: $('#collapseInstructions').offset().top}, 'slow');
-            });
+
         });
     </script>
 </head>
-<body style="background: #ececec;">
+<body style="" class="bg-light">
 <div th:replace="~{fragments/navbar.html :: navbar}"></div>
 <div class="container py-4">
     <div class="row align-items-start">
-        <h1 class="display-4 col">Wallet Backend</h1>
-        <div class="col"></div>
-        <p class="col-auto mt-auto tour_btn">
-            <button class="btn btn-primary" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseInstructions"
-                    aria-expanded="false" aria-controls="collapseInstructions">
-                Take a Tour <span th:replace="~{fragments/icons.html :: play_icon}"></span>
-            </button>
-        </p>
+        <h1 class="display-4 col">A-SIT Plus Wallet Issuing Backend (M5)</h1>
     </div>
 
     <p class="lead mt-4 mb-5">
-        Welcome to the A-SIT Plus Wallet System. This is the Backend, which orchestrates issuing of credentials and
-        keeps track of the validity of issued credentials.
+        This service implements <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html">OpenID for Verifiable Credential Issuance</a> to load attributes from the national E-ID of Austria (<a href="https://www.oesterreich.gv.at/id-austria.html">ID Austria</a>) and transform them into credentials suitable for Wallet Apps. Credentials include <a href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework/blob/main/docs/annexes/annex-3/annex-3.01-pid-rulebook.md">EU PIDs in SD-JWT</a> and <a href="https://www.iso.org/standard/69084.html">Mobile Driving Licences in ISO/IEC 18013-5:2021 format</a>, see <a href="https://github.com/a-sit-plus/credentials-collection">the list of supported credentials</a>.
     </p>
 
     <p>
-        For the custom verifier, starting SIOPv2 requests, see <a href="https://apps.egiz.gv.at/customverifier/">https://apps.egiz.gv.at/customverifier</a>.
+        Either use the URL of this service to load credentials (starting the wallet-initiated variation of OID4VCI)<span sec:authorize="isAnonymous()">, or <a th:href="@{/login}">login</a> to generate a QR Code for a credential offer to start the issuer-initiated variation of OID4VCI.</span><span sec:authorize="isAuthenticated()">, or scan the QR Code below for the credential offer.</span>
+    </p>
+
+    <p sec:authorize="isAnonymous()">
+        Use username and password from <a href="https://eid.egiz.gv.at/anbindung/testidentitaeten/vordefinierte-testidentitaeten/">ID Austria test credentials</a> (or your national E-ID via eIDAS) to login at this service.
     </p>
 
     <!--/*@thymesVar id="qrcode" type="ByteArray"*/-->
     <div th:if="${qrcode != null}">
-        <img th:src="|data:image/png;base64,${qrcode}|" width="500"/>
+        <p>
+            <img th:src="|data:image/png;base64,${qrcode}|" width="500"/>
+        </p>
     </div>
 
-    <div th:replace="~{fragments/donwload.html :: download}"></div>
+    <p>
+        The OpenID metadata is available at <a href="https://wallet.a-sit.at/m5/.well-known/openid-configuration">.well-known/openid-configuration</a>. The Credential Issuer metadata is available at <a href="https://wallet.a-sit.at/m5/.well-known/openid-credential-issuer">.well-known/openid-credential-issuer</a>.
+    </p>
+
+    <p>
+        For an overview, as well as downloads for the apps, see <a href="https://wallet.a-sit.at/">wallet.a-sit.at</a>.
+    </p>
+
 </div>
 </body>
 </html>
