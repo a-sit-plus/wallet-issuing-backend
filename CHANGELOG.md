@@ -1,5 +1,9 @@
 # Changelog
 
+5.2.3
+ - Update dependency on VC-K to 5.2.3
+ - Enable form login for easy testing
+
 5.2.2
  - Update dependency on VC-K to 5.2.2
  - Issue EU PID in SD-JWT with mapped claim names from <https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework/pull/160>
