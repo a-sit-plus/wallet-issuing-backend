@@ -34,7 +34,7 @@
     <h2>Login with ID Austria:</h2>
     <div class="lead mt-4 mb-5 list-group">
         <p th:each="url : ${oauthUrls}">
-            <a th:text="${url.name}" th:href="${url.url}">Client</a>
+            <a th:text="${url.name}" th:href="@{${url.url}}">Client</a>
         </p>
     </div>
 </div>
