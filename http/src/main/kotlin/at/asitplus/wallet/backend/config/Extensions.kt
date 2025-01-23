@@ -164,11 +164,11 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
         val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
-        val claimsWithNewNames = listOfNotNull(
-            claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
-            claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(PREFIX_AGE_EQUAL_OR_OVER) {
+        listOfNotNull(
+            claims.whenRequestedIssueIsoName(FAMILY_NAME) { userInfo.familyName },
+            claims.whenRequestedIssueIsoName(GIVEN_NAME) { userInfo.givenName },
+            claims.whenRequestedIssueIsoName(BIRTH_DATE) { dateOfBirth },
+            claims.whenRequestedIssueIsoName(PREFIX_AGE_EQUAL_OR_OVER) {
                 with(EuPidScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
                         ClaimToBeIssued(EQUAL_OR_OVER_12, ageOver12),
@@ -179,16 +179,16 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
                     )
                 }
             },
-            claims.whenRequested(AGE_EQUAL_OR_OVER_12) { ageOver12 },
-            claims.whenRequested(AGE_EQUAL_OR_OVER_14) { ageOver14 },
-            claims.whenRequested(AGE_EQUAL_OR_OVER_16) { ageOver16 },
-            claims.whenRequested(AGE_EQUAL_OR_OVER_18) { ageOver18 },
-            claims.whenRequested(AGE_EQUAL_OR_OVER_21) { ageOver21 },
-            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
-            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
-            claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claims.whenRequested(PREFIX_PLACE_OF_BIRTH) {
+            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_12) { ageOver12 },
+            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_14) { ageOver14 },
+            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_16) { ageOver16 },
+            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_18) { ageOver18 },
+            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_21) { ageOver21 },
+            claims.whenRequestedIssueIsoName(AGE_IN_YEARS) { ageInYears },
+            claims.whenRequestedIssueIsoName(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claims.whenRequestedIssueIsoName(FAMILY_NAME_BIRTH) { userInfo.familyName },
+            claims.whenRequestedIssueIsoName(GIVEN_NAME_BIRTH) { userInfo.givenName },
+            claims.whenRequestedIssueIsoName(PREFIX_PLACE_OF_BIRTH) {
                 with(EuPidScheme.SdJwtAttributes.PlaceOfBirth) {
                     listOf(
                         ClaimToBeIssued(COUNTRY, fallbackBirthCountry),
@@ -197,10 +197,10 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
                     )
                 }
             },
-            claims.whenRequested(PLACE_OF_BIRTH_COUNTRY) { fallbackBirthCountry },
-            claims.whenRequested(PLACE_OF_BIRTH_REGION) { ourBirthState },
-            claims.whenRequested(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
-            claims.whenRequested(PREFIX_PLACE_OF_BIRTH) {
+            claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_COUNTRY) { fallbackBirthCountry },
+            claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_REGION) { ourBirthState },
+            claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
+            claims.whenRequestedIssueIsoName(PREFIX_PLACE_OF_BIRTH) {
                 with(EuPidScheme.SdJwtAttributes.Address) {
                     listOf(
                         ClaimToBeIssued(FORMATTED, formatted),
@@ -213,26 +213,23 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
                     )
                 }
             },
-            claims.whenRequested(ADDRESS_FORMATTED) { formatted },
-            claims.whenRequested(ADDRESS_COUNTRY) { country },
-            claims.whenRequested(ADDRESS_REGION) { state },
-            claims.whenRequested(ADDRESS_LOCALITY) { city },
-            claims.whenRequested(ADDRESS_POSTAL_CODE) { postCode },
-            claims.whenRequested(ADDRESS_STREET) { street },
-            claims.whenRequested(ADDRESS_HOUSE_NUMBER) { locator.toString() },
-            claims.whenRequested(GENDER) { genderText },
-            claims.whenRequested(NATIONALITIES) { listOf(nationality) },
-            claims.whenRequested(ISSUANCE_DATE) { iss },
-            claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claims.whenRequestedIssueIsoName(ADDRESS_FORMATTED) { formatted },
+            claims.whenRequestedIssueIsoName(ADDRESS_COUNTRY) { country },
+            claims.whenRequestedIssueIsoName(ADDRESS_REGION) { state },
+            claims.whenRequestedIssueIsoName(ADDRESS_LOCALITY) { city },
+            claims.whenRequestedIssueIsoName(ADDRESS_POSTAL_CODE) { postCode },
+            claims.whenRequestedIssueIsoName(ADDRESS_STREET) { street },
+            claims.whenRequestedIssueIsoName(ADDRESS_HOUSE_NUMBER) { locator.toString() },
+            claims.whenRequestedIssueIsoName(GENDER) { genderText },
+            claims.whenRequestedIssueIsoName(NATIONALITIES) { listOf(nationality) },
+            claims.whenRequestedIssueIsoName(ISSUANCE_DATE) { iss },
+            claims.whenRequestedIssueIsoName(EXPIRY_DATE) { exp },
+            claims.whenRequestedIssueIsoName(ISSUING_AUTHORITY) { issuingAuthority },
+            claims.whenRequestedIssueIsoName(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequestedIssueIsoName(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequestedIssueIsoName(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequestedIssueIsoName(ISSUING_JURISDICTION) { issuingJurisdiction },
         )
-        claimsWithNewNames + buildEupidClaims(claims, iss, exp).filter {
-            it.name !in claimsWithNewNames.map { it.name }
-        }// for backwards compatibility with older wallets
     }
 
 fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
@@ -605,6 +602,33 @@ private fun formatAddress(street: String, locator: Int, postalCode: String, city
 
 private fun Collection<String>?.whenRequested(key: String, value: () -> Any?): ClaimToBeIssued? =
     if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else null
+
+
+// TODO when PR#160 will be used, replace with whenRequested
+private fun Collection<String>?.whenRequestedIssueIsoName(sdJwtName: String, value: () -> Any?): ClaimToBeIssued? {
+    val attrName = EuPidScheme.mapIsoToSdJwtAttributes.entries.firstOrNull { it.value == sdJwtName }?.key
+        ?: sdJwtName
+    return if (isNullOrContains(sdJwtName)) {
+        value()?.let { ClaimToBeIssued(attrName, it.encodeIfNeeded()) }
+    } else if (attrName != sdJwtName && isNullOrContains(attrName)) {
+        value()?.let { ClaimToBeIssued(attrName, it.encodeIfNeeded()) }
+    } else {
+        null
+    }
+}
+
+/**
+ * Wallet App may request SD-JWT claim names, but we want to issue the ISO claim names
+ */
+private fun Collection<String>?.whenRequestedOrAltName(key: String, value: () -> Any?): ClaimToBeIssued? =
+    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else
+        EuPidScheme.mapIsoToSdJwtAttributes[key]?.let { newKey ->
+            if (isNullOrContains(newKey)) value()?.let {
+                ClaimToBeIssued(key, it.encodeIfNeeded())
+            } else {
+                null
+            }
+        }
 
 fun Collection<String>?.isNullOrContains(name: String) =
     this == null || contains(name)
