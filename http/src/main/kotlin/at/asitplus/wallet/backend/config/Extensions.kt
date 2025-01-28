@@ -60,7 +60,6 @@ fun ConstantIndex.CredentialScheme.buildClaims(
             userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
         else
             userInfo.buildEupidClaims(claims, iss, exp)
-
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
@@ -126,6 +125,7 @@ fun OidcUserInfoExtended.toEuPidCredential(
         familyName = userInfo.familyName ?: "N/A",
         givenName = userInfo.givenName ?: "N/A",
         birthDate = dateOfBirth,
+        portrait = portrait,
         ageOver12 = ageOver12,
         ageOver14 = ageOver14,
         ageOver16 = ageOver16,
@@ -168,6 +168,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
             claims.whenRequestedIssueIsoName(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequestedIssueIsoName(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequestedIssueIsoName(BIRTH_DATE) { dateOfBirth },
+            claims.whenRequestedIssueIsoName(PORTRAIT) { portrait },
             claims.whenRequestedIssueIsoName(PREFIX_AGE_EQUAL_OR_OVER) {
                 with(EuPidScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
@@ -229,6 +230,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
             claims.whenRequestedIssueIsoName(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequestedIssueIsoName(ISSUING_COUNTRY) { issuingCountry },
             claims.whenRequestedIssueIsoName(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claims.whenRequestedIssueIsoName(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
         )
     }
 
@@ -242,6 +244,7 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
+            claims.whenRequested(PORTRAIT) { portrait },
             claims.whenRequested(AGE_OVER_12) { ageOver12 },
             claims.whenRequested(AGE_OVER_14) { ageOver14 },
             claims.whenRequested(AGE_OVER_16) { ageOver16 },
@@ -271,6 +274,7 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
             claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claims.whenRequested(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
         )
     }
 
