@@ -382,11 +382,32 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(claims: Collection<Strin
 
 fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(CertificateOfResidenceDataElements) {
+        val (postCode, city, state, street, locator) = addressOrRandom()
+        val country = userInfo.address?.country ?: fallbackAddressCountry
+        val fullAddress = formatAddress(street, locator, postCode, city)
+        val residenceAddress = Json.encodeToString(
+            ResidenceAddress(
+                thoroughfare = street,
+                locatorDesignator = locator.toString(),
+                postCode = postCode,
+                postName = city,
+                adminUnitLevel1 = country,
+                adminUnitLevel2 = state,
+                fullAddress = fullAddress,
+            )
+        )
         listOfNotNull(
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
             claims.whenRequested(RESIDENCE_ADDRESS) { residenceAddress },
+            claims.whenRequested(RESIDENCE_ADDRESS_THOROUGHFARE) { street },
+            claims.whenRequested(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR) { locator },
+            claims.whenRequested(RESIDENCE_ADDRESS_POST_CODE) { postCode },
+            claims.whenRequested(RESIDENCE_ADDRESS_POST_NAME) { city },
+            claims.whenRequested(RESIDENCE_ADDRESS_ADMIN_UNIT_L_1) { country },
+            claims.whenRequested(RESIDENCE_ADDRESS_ADMIN_UNIT_L_2) { state },
+            claims.whenRequested(RESIDENCE_ADDRESS_FULL_ADDRESS) { fullAddress },
             claims.whenRequested(GENDER) { gender },
             claims.whenRequested(BIRTH_PLACE) { randomAddress().city },
             claims.whenRequested(ARRIVAL_DATE) { arrivalDate },
@@ -582,24 +603,6 @@ fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
 fun OidcUserInfoExtended.getClaims(vararg key: String): String? {
     return key.mapNotNull { getClaimAsString(it) }.ifEmpty { null }?.joinToString(" ")
 }
-
-val OidcUserInfoExtended.residenceAddress: String
-    get() {
-        val (postCode, city, state, street, locator) = addressOrRandom()
-        val country = userInfo.address?.country ?: fallbackAddressCountry
-        val fullAddress = formatAddress(street, locator, postCode, city)
-        return Json.encodeToString(
-            ResidenceAddress(
-                thoroughfare = street,
-                locatorDesignator = locator.toString(),
-                postCode = postCode,
-                postName = city,
-                adminUnitLevel1 = country,
-                adminUnitLevel2 = state,
-                fullAddress = fullAddress,
-            )
-        )
-    }
 
 private fun formatAddress(street: String, locator: Int, postalCode: String, city: String) =
     "$street $locator, $postalCode $city"

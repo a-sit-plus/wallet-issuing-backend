@@ -2,6 +2,7 @@
 
 5.2.4
  - Issue EU PID in SD-JWT with ISO claim names, so *do not* use claim names from <https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework/pull/160>
+ - Update Certificate of Residence to issue complex SD-JWT claims (in dot-notation)
 
 5.2.3
  - Update dependency on VC-K to 5.2.3

@@ -3,7 +3,7 @@ object VersionsBackend {
     const val eupid = "2.3.2"
     const val mdl = "1.1.4"
     const val por = "1.1.1"
-    const val cor = "2.1.1"
+    const val cor = "2.1.2"
     const val eprescription = "1.1.1"
     const val cr = "1.0.0"
     const val qrcode = "4.1.1"
