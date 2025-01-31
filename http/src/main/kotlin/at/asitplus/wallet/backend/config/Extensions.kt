@@ -11,6 +11,7 @@ import at.asitplus.wallet.eprescription.EPrescriptionDataElements
 import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupid.EuPidScheme.Attributes.BIRTH_PLACE
 import at.asitplus.wallet.eupid.IsoIec5218Gender
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
@@ -198,6 +199,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
                     )
                 }
             },
+            claims.whenRequested(BIRTH_PLACE) { ourBirthStreet },
             claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_COUNTRY) { fallbackBirthCountry },
             claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_REGION) { ourBirthState },
             claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
@@ -222,7 +224,8 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
             claims.whenRequestedIssueIsoName(ADDRESS_STREET) { street },
             claims.whenRequestedIssueIsoName(ADDRESS_HOUSE_NUMBER) { locator.toString() },
             claims.whenRequestedIssueIsoName(GENDER) { genderText },
-            claims.whenRequestedIssueIsoName(NATIONALITIES) { listOf(nationality) },
+            claims.whenRequested(NATIONALITIES) { listOf(nationality) },
+            claims.whenRequested(EuPidScheme.Attributes.NATIONALITY) { nationality },
             claims.whenRequestedIssueIsoName(ISSUANCE_DATE) { iss },
             claims.whenRequestedIssueIsoName(EXPIRY_DATE) { exp },
             claims.whenRequestedIssueIsoName(ISSUING_AUTHORITY) { issuingAuthority },
