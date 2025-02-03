@@ -31,7 +31,6 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import java.nio.charset.Charset
 import java.util.*
@@ -388,7 +387,7 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
         val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val fullAddress = formatAddress(street, locator, postCode, city)
-        val residenceAddress = Json.encodeToString(
+        val residenceAddress = Json.encodeToJsonElement(
             ResidenceAddress(
                 thoroughfare = street,
                 locatorDesignator = locator.toString(),
@@ -404,6 +403,7 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
             claims.whenRequested(RESIDENCE_ADDRESS) { residenceAddress },
+            ClaimToBeIssued(RESIDENCE_ADDRESS, residenceAddress),
             claims.whenRequested(RESIDENCE_ADDRESS_THOROUGHFARE) { street },
             claims.whenRequested(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR) { locator },
             claims.whenRequested(RESIDENCE_ADDRESS_POST_CODE) { postCode },
