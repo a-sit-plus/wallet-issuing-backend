@@ -23,32 +23,32 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("vclib") {
-            from("at.asitplus.wallet:vck-openid-versionCatalog:5.2.1")
+            from("at.asitplus.wallet:vck-openid-versionCatalog:5.2.4-SNAPSHOT")
         }
     }
 }
 
 
 
-//If we have a working composite build, use it!
-if (File("../kmm-vc-library/signum").isDirectory && File("../kmm-vc-library/signum/build.gradle.kts").exists()) {
-    logger.warn("Detected VC-K in ${File("../kmm-vc-library").absolutePath}.")
-    logger.warn("Including VC-K and Signum as composite build.")
-    logger.warn("If you do not want this, move the VC-K to another location!")
-    includeBuild("../kmm-vc-library/signum") {
-        dependencySubstitution {
-            substitute(module("at.asitplus.wallet:indispensable")).using(project(":indispensable"))
-            substitute(module("at.asitplus.signum:indispensable-josef")).using(project(":indispensable-josef"))
-            substitute(module("at.asitplus.signum:indispensable-cosef")).using(project(":indispensable-cosef"))
-            substitute(module("at.asitplus.signum:supreme")).using(project(":supreme"))
-        }
-    }
-    includeBuild("../kmm-vc-library") {
-        dependencySubstitution {
-            substitute(module("at.asitplus.wallet:vck")).using(project(":vck"))
-            substitute(module("at.asitplus.wallet:vck-openid")).using(project(":vck-openid"))
-            substitute(module("at.asitplus.wallet:vck-openid-ktor")).using(project(":vck-openid-ktor"))
-            substitute(module("at.asitplus.wallet:openid-data-classes")).using(project(":openid-data-classes"))
-        }
-    }
-}
+// //If we have a working composite build, use it!
+// if (File("../kmm-vc-library/signum").isDirectory && File("../kmm-vc-library/signum/build.gradle.kts").exists()) {
+//     logger.warn("Detected VC-K in ${File("../kmm-vc-library").absolutePath}.")
+//     logger.warn("Including VC-K and Signum as composite build.")
+//     logger.warn("If you do not want this, move the VC-K to another location!")
+//     includeBuild("../kmm-vc-library/signum") {
+//         dependencySubstitution {
+//             substitute(module("at.asitplus.wallet:indispensable")).using(project(":indispensable"))
+//             substitute(module("at.asitplus.signum:indispensable-josef")).using(project(":indispensable-josef"))
+//             substitute(module("at.asitplus.signum:indispensable-cosef")).using(project(":indispensable-cosef"))
+//             substitute(module("at.asitplus.signum:supreme")).using(project(":supreme"))
+//         }
+//     }
+//     includeBuild("../kmm-vc-library") {
+//         dependencySubstitution {
+//             substitute(module("at.asitplus.wallet:vck")).using(project(":vck"))
+//             substitute(module("at.asitplus.wallet:vck-openid")).using(project(":vck-openid"))
+//             substitute(module("at.asitplus.wallet:vck-openid-ktor")).using(project(":vck-openid-ktor"))
+//             substitute(module("at.asitplus.wallet:openid-data-classes")).using(project(":openid-data-classes"))
+//         }
+//     }
+// }
