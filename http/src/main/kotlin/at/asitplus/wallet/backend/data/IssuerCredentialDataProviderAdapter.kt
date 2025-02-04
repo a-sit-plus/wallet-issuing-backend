@@ -13,6 +13,9 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuerDataProvider
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
+import java.time.temporal.ChronoUnit
 import kotlin.time.Duration
 
 
@@ -27,8 +30,8 @@ class OidcIssuerCredentialDataProvider(
         representation: ConstantIndex.CredentialRepresentation,
         claimNames: Collection<String>?,
     ): KmmResult<CredentialToBeIssued> = catching {
-        val issuance = Clock.System.now()
-        val expiration = issuance + lifetime
+        val issuance = Clock.System.now().toJavaInstant().truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+        val expiration = (issuance + lifetime).toJavaInstant().truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
         Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation, $claimNames")
         Napier.v("getCredential user is $userInfo")
         createCredential(
