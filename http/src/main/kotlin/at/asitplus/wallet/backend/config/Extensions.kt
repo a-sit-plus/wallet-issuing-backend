@@ -18,7 +18,6 @@ import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
 import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
@@ -56,9 +55,10 @@ fun ConstantIndex.CredentialScheme.buildClaims(
 ): List<ClaimToBeIssued> =
     when (this) {
         is IdAustriaScheme -> userInfo.buildIdaClaims(claims)
-        is EuPidScheme -> if (representation == CredentialRepresentation.SD_JWT)
+        is EuPidScheme -> /* // TODO Use this once ARF PR#160 is through
+        if (representation == CredentialRepresentation.SD_JWT)
             userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
-        else
+        else*/
             userInfo.buildEupidClaims(claims, iss, exp)
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
@@ -267,7 +267,7 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(RESIDENT_POSTAL_CODE) { postCode },
             claims.whenRequested(RESIDENT_STREET) { street },
             claims.whenRequested(RESIDENT_HOUSE_NUMBER) { locator.toString() },
-            claims.whenRequested(GENDER) { gender },
+            claims.whenRequested(GENDER) { gender.code },
             claims.whenRequested(NATIONALITY) { nationality },
             claims.whenRequested(ISSUANCE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
