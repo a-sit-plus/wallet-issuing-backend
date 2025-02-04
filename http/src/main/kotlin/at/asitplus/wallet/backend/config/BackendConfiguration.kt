@@ -14,7 +14,6 @@ import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
 import at.asitplus.wallet.lib.jws.DefaultJwsService
@@ -223,7 +222,6 @@ class BackendConfiguration {
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
         credentialSchemes = setOf(
-            IdAustriaScheme,
             EuPidScheme,
             MobileDrivingLicenceScheme,
             PowerOfRepresentationScheme,
@@ -246,7 +244,6 @@ class BackendConfiguration {
             strategy = CredentialAuthorizationServiceStrategy(
                 dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
                 credentialSchemes = setOf(
-                    IdAustriaScheme,
                     EuPidScheme,
                     MobileDrivingLicenceScheme,
                     PowerOfRepresentationScheme,
