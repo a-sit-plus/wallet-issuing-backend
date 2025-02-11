@@ -2,16 +2,13 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import kotlin.io.path.Path
-import kotlin.io.path.createDirectories
-import kotlin.io.path.createTempFile
-import kotlin.io.path.moveTo
-import kotlin.io.path.pathString
-import kotlin.io.path.writeText
+import kotlin.io.path.*
 
 @Service
 class RevocationListWriter(
@@ -33,12 +30,13 @@ class RevocationListWriter(
                 log.info("Writing revocation list for $timePeriod")
                 Path(configurationProperties.revocationList.path).createDirectories()
                 val destinationFile = Path(configurationProperties.revocationList.path, timePeriod.toString())
-                issuer.issueRevocationListCredential(timePeriod)?.let { list ->
+                issuer.buildStatusList(timePeriod)?.let { list ->
+                    val text = vckJsonSerializer.encodeToString(list)
                     createTempFile().apply {
-                        writeText(list)
+                        writeText(text)
                         moveTo(destinationFile, true)
                     }
-                    log.info("Wrote revocation list for $timePeriod to ${destinationFile.pathString} with ${list.length} chars")
+                    log.info("Wrote revocation list for $timePeriod to ${destinationFile.pathString} with ${text.length} chars")
                 }
             }
         }

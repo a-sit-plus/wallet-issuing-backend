@@ -200,7 +200,8 @@ class BackendConfiguration {
     ): Issuer = IssuerAgent(
         validator = Validator(),
         issuerCredentialStore = issuerCredentialStore,
-        revocationListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
+        statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
+        statusListAggregationUrl = appendPath(configurationProperties.publicContext, "credentials", "status", "current"),
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         jwsService = DefaultJwsService(DefaultCryptoService(keyMaterial)),
         coseService = DefaultCoseService(DefaultCryptoService(keyMaterial)),

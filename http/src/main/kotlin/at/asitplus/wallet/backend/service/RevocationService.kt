@@ -2,6 +2,9 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -12,11 +15,13 @@ import java.lang.Long.max
 
 interface RevocationService {
 
-    /**
-     * Revokes one credential, specified by its [vcId] (which is a unique identifier
-     * for one verifiable credential, in the form of `urn:uuid:${uuid4()}`)
-     */
-    fun revokeCredentialsByVcId(vcId: String, timePeriod: Int): Int
+    fun setStatus(
+        vcId: String,
+        status: TokenStatus,
+        timePeriod: Int,
+    ): Boolean
+
+    fun getStatusListView(timePeriod: Int): StatusListView
 
     /**
      * Stores the verifiable credential that is about to be issued,
@@ -29,7 +34,7 @@ interface RevocationService {
         expirationDate: Instant,
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey
+        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
     ): Long?
 
     /**
@@ -89,7 +94,7 @@ class DefaultRevocationService(
         expirationDate: Instant,
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey
+        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
     ): Long? =
         runCatching {
             synchronized(CredentialRepositoriesLock) {
@@ -110,7 +115,7 @@ class DefaultRevocationService(
                     subjectId = subjectPublicKey.didEncoded,
                     validUntil = expirationDate.toJavaInstant(),
                     timePeriod = timePeriod,
-                    attributeName = "TODO from vclib",
+                    attributeName = credential.attributeName(),
                     revocationListIndex = revocationListIndex
                 )
                 val savedCredential = credentialRepo.save(issuedCredential)
@@ -124,25 +129,37 @@ class DefaultRevocationService(
         is IssuerCredentialStore.Credential.VcSd -> vcId
     }
 
-    /**
-     * Revokes one credential, specified by its [vcId] (which is a unique identifier
-     * for one verifiable credential, in the form of `urn:uuid:${uuid4()}`)
-     */
-    override fun revokeCredentialsByVcId(vcId: String, timePeriod: Int): Int {
-        val credential =
-            credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) ?: return 0
-        return revokeAllCredentials(listOf(credential))
+    override fun setStatus(
+        vcId: String,
+        status: TokenStatus,
+        timePeriod: Int,
+    ): Boolean {
+        val credential = credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId)
+            ?: return false
+        return revokeAllCredentials(listOf(credential), status) == 1
     }
 
-    private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>): Int {
+    private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>, status: TokenStatus): Int {
         synchronized(CredentialRepositoriesLock) {
-            revokedCredentialRepo.saveAll(toRevoke.map { RevokedCredential(it.timePeriod, it.revocationListIndex) })
+            revokedCredentialRepo.saveAll(toRevoke.map {
+                RevokedCredential(
+                    it.revocationListIndex,
+                    it.timePeriod,
+                    status.value
+                )
+            })
             credentialRepo.deleteAllInBatch(toRevoke)
             toRevoke.map { it.timePeriod }.toSet()
                 .forEach { applicationEventPublisher.publishEvent(RevocationEvent(this, it)) }
             return toRevoke.count()
         }
     }
+
+    override fun getStatusListView(timePeriod: Int): StatusListView =
+        StatusListView.fromTokenStatuses(
+            revokedCredentialRepo.getByTimePeriod(timePeriod).map { TokenStatus(it.status) },
+            TokenStatusBitSize.ONE
+        )
 
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
@@ -171,4 +188,10 @@ class DefaultRevocationService(
         }
         return list.size
     }
+}
+
+private fun IssuerCredentialStore.Credential.attributeName(): String = when (this) {
+    is IssuerCredentialStore.Credential.Iso -> this.scheme.schemaUri
+    is IssuerCredentialStore.Credential.VcJwt -> this.scheme.schemaUri
+    is IssuerCredentialStore.Credential.VcSd -> this.scheme.schemaUri
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+5.3.0
+ - Update to VC-K 5.3.0, switching from [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/) to [Token Status List](https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/06/)
+
 5.2.4
  - Issue EU PID in SD-JWT with ISO claim names, so *do not* use claim names from <https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework/pull/160>
  - Update Certificate of Residence to issue complex SD-JWT claims (in dot-notation)

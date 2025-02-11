@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.spring
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
@@ -63,7 +64,7 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
+        revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod)
     }
 
     @Test
@@ -74,7 +75,7 @@ class RevocationServiceRepositoryTest {
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 0
+        revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod) shouldBe false
     }
 
     private fun createIssuedCredential(): IssuedCredential =
