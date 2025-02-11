@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -11,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import org.apache.tomcat.websocket.AuthenticationException
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
@@ -37,10 +39,10 @@ class PublicController(
     private val clientRegistrations: InMemoryClientRegistrationRepository,
 ) {
 
-    @GetMapping("/credentials/status/current")
-    fun getCurrentVcRevocationLists(): ResponseEntity<List<String>> = runBlocking {
+    @GetMapping("/credentials/status/current", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getStatutsListAggregation(): ResponseEntity<StatusListAggregation> = runBlocking {
         Napier.i("/credentials/status/current called")
-        val rl = issuer.compileCurrentRevocationLists()
+        val rl = issuer.provideStatusListAggregation()
         Napier.i("/credentials/status/current returns $rl")
         ResponseEntity.ok(rl)
     }

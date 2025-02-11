@@ -10,6 +10,7 @@ import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -83,7 +84,7 @@ class RevocationServiceStatusListIndexTest {
             subjectPublicKey
         )
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
-        revocationService.revokeCredentialsByVcId(vcId, timePeriod) shouldBe 1
+        revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod) shouldBe true
         revocationService.isRevoked(vcId, timePeriod) shouldBe true
     }
 
@@ -179,7 +180,7 @@ class RevocationServiceStatusListIndexTest {
                 )
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)
-                revocationService.revokeCredentialsByVcId(vcId, timePeriod)
+                revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod)
             }
         }
         return expectedRevocationList

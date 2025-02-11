@@ -23,14 +23,14 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("vclib") {
-            from("at.asitplus.wallet:vck-openid-versionCatalog:5.2.4-SNAPSHOT")
+            from("at.asitplus.wallet:vck-openid-versionCatalog:5.3.3")
         }
     }
 }
 
 
 
-// //If we have a working composite build, use it!
+//If we have a working composite build, use it!
 // if (File("../kmm-vc-library/signum").isDirectory && File("../kmm-vc-library/signum/build.gradle.kts").exists()) {
 //     logger.warn("Detected VC-K in ${File("../kmm-vc-library").absolutePath}.")
 //     logger.warn("Including VC-K and Signum as composite build.")
