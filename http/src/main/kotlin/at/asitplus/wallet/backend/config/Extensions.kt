@@ -60,6 +60,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
             userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
         else*/
             userInfo.buildEupidClaims(claims, iss, exp)
+
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
@@ -325,7 +326,7 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(LEGAL_PERSON_IDENTIFIER) { legalPersonIdentifier },
             claims.whenRequested(LEGAL_NAME) { legalName },
             claims.whenRequested(FULL_POWERS) { true },
-            claims.whenRequested(E_SERVICE) { eService },
+            //claims.whenRequested(E_SERVICE) { eService },
             claims.whenRequested(EFFECTIVE_FROM_DATE) { iss },
             claims.whenRequested(EFFECTIVE_UNTIL_DATE) { exp },
             claims.whenRequested(ISSUANCE_DATE) { iss },
@@ -348,35 +349,33 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(claims: Collection<Strin
             claims.whenRequested(COMPANY_ACTIVITY) {
                 with(CompanyRegistrationDataElements.CompanyActivity) {
                     listOf(
-                        ClaimToBeIssued(NACE_CODE, "7500"),
-                        ClaimToBeIssued(ACTIVITY_DESCRIPTION, "7500")
+                        ClaimToBeIssued(NACE_CODE, "J62"),
+                        //ClaimToBeIssued(ACTIVITY_DESCRIPTION, "7500")
                     )
                 }
             },
-            claims.whenRequested(REGISTRATION_DATE) { LocalDate(2020, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
-            claims.whenRequested(COMPANY_END_DATE) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
-            claims.whenRequested(COMPANY_EUID) { "ATCHCUSP.90000${Random.nextInt(100, 999)}" },
-            claims.whenRequested(VAT_NUMBER) { "9999${Random.nextInt(1000, 9999)}" },
+            claims.whenRequested(REGISTRATION_DATE) { LocalDate(2015, 6, 25) },
+            //claims.whenRequested(COMPANY_END_DATE) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
+            claims.whenRequested(COMPANY_EUID) { "ATCHCUSP.69743824" },
+            claims.whenRequested(VAT_NUMBER) { "ATU69743824" },
             claims.whenRequested(COMPANY_CONTACT_DATA) {
                 with(CompanyRegistrationDataElements.ContactData) {
                     listOf(
-                        ClaimToBeIssued(EMAIL, "${userInfo.givenName}@example.com"),
+                        ClaimToBeIssued(EMAIL, "office@a-sit.at"),
                         ClaimToBeIssued(TELEPHONE, "+43-555-${Random.nextInt(1, 9999)}")
                     )
                 }
             },
             claims.whenRequested(REGISTERED_ADDRESS) {
                 with(CompanyRegistrationDataElements.Address) {
-                    with(randomAddress()) {
-                        listOf(
-                            ClaimToBeIssued(THOROUGHFARE, street),
-                            ClaimToBeIssued(LOCATOR_DESIGNATOR, locator.toString()),
-                            ClaimToBeIssued(POST_CODE, postCode),
-                            ClaimToBeIssued(POST_NAME, city),
-                            ClaimToBeIssued(ADMIN_UNIT_L_1, "AT"),
-                            ClaimToBeIssued(ADMIN_UNIT_L_2, state)
-                        )
-                    }
+                    listOf(
+                        ClaimToBeIssued(THOROUGHFARE, "Seidlgasse"),
+                        ClaimToBeIssued(LOCATOR_DESIGNATOR, "22/9"),
+                        ClaimToBeIssued(POST_CODE, "1030"),
+                        ClaimToBeIssued(POST_NAME, "Wien"),
+                        ClaimToBeIssued(ADMIN_UNIT_L_1, "AT"),
+                        ClaimToBeIssued(ADMIN_UNIT_L_2, "Wien")
+                    )
                 }
             },
         )
@@ -580,20 +579,11 @@ fun String.mapToAlpha2() = when (this) {
 
 val OidcUserInfoExtended.legalName: String
     get() = getClaimAsString("urn:pvpgvat:oidc.mandator_legal_person_full_name")
-        ?: getClaims(
-            "urn:pvpgvat:oidc.mandator_natural_person_given_name",
-            "urn:pvpgvat:oidc.mandator_natural_person_family_name"
-        )
-        ?: userInfo.givenName?.let {
-            (userInfo.givenName + " " + userInfo.familyName)
-        } ?: userInfo.name
-        ?: userInfo.subject
-
+        ?: "A-SIT Plus GmbH"
 
 val OidcUserInfoExtended.legalPersonIdentifier: String
     get() = getClaimAsString("urn:pvpgvat:oidc.mandator_legal_person_source_pin")
-        ?: getClaimAsString("urn:pvpgvat:oidc.mandator_natural_person_bpk")
-        ?: userInfo.subject
+        ?: "XFN+436920f"
 
 fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
     val element = jsonObject[key]
@@ -650,7 +640,6 @@ private fun expiryDate() = LocalDate.parse("2025-12-31")
 
 private fun issueDate() = LocalDate.parse("2023-01-01")
 
-private val eService = "Dummy Service"
 private val issuingCountry = "AT"
 private val issuingJurisdiction = "AT-0"
 private val issuingAuthority = "Miniwahr"
