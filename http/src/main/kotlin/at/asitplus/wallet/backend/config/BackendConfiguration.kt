@@ -23,6 +23,7 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
 import kotlinx.serialization.json.Json
@@ -98,6 +99,7 @@ class BackendConfiguration {
         Security.addProvider(BouncyCastleProvider())
         at.asitplus.wallet.lib.Initializer.initOpenIdModule()
         at.asitplus.wallet.idaustria.Initializer.initWithVCK()
+        at.asitplus.wallet.taxid.Initializer.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
         at.asitplus.wallet.cor.Initializer.initWithVCK()
@@ -228,7 +230,8 @@ class BackendConfiguration {
             PowerOfRepresentationScheme,
             EPrescriptionScheme,
             CertificateOfResidenceScheme,
-            CompanyRegistrationScheme
+            CompanyRegistrationScheme,
+            TaxIdScheme
         ),
         authorizationService = authorizationServer,
         credentialProvider = OidcIssuerCredentialDataProvider(

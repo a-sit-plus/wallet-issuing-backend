@@ -21,6 +21,7 @@ import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -169,6 +170,20 @@ class IssuingInternalAuthorizationServerTest {
     @WithOAuth2AuthenticationToken
     fun eprescription_sdjwt_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(EPrescriptionScheme, SD_JWT)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credential.shouldNotBeNull()
+        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
+        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+    }
+
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun taxid_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(TaxIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 

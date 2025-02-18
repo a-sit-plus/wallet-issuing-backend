@@ -25,6 +25,7 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -60,7 +61,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
             userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
         else*/
             userInfo.buildEupidClaims(claims, iss, exp)
-
+        is TaxIdScheme -> userInfo.buildTaxIdClaims(claims, iss, exp)
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
@@ -329,6 +330,28 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
             //claims.whenRequested(E_SERVICE) { eService },
             claims.whenRequested(EFFECTIVE_FROM_DATE) { iss },
             claims.whenRequested(EFFECTIVE_UNTIL_DATE) { exp },
+            claims.whenRequested(ISSUANCE_DATE) { iss },
+            claims.whenRequested(EXPIRY_DATE) { exp },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+        )
+    }
+fun OidcUserInfoExtended.buildTaxIdClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+    with(TaxIdScheme.Attributes) {
+        listOfNotNull(
+            claims.whenRequested(TAX_NUMBER) { "ATU12345678" },
+            claims.whenRequested(AFFILIATION_COUNTRY) { "AT" },
+            claims.whenRequested(REGISTERED_GIVEN_NAME) { userInfo.givenName },
+            claims.whenRequested(REGISTERED_FAMILY_NAME) { userInfo.familyName },
+            //claims.whenRequested(E_SERVICE) { eService },
+            claims.whenRequested(RESIDENT_ADDRESS) { addressOrRandom().let { it.street+" "+it.locator + ", "+ it.postCode+" "+ it.city  } },
+            claims.whenRequested(BIRTH_DATE) { userInfo.birthDate?.let { it.split("-").reversed().joinToString("-") } },
+            claims.whenRequested(CHURCH_TAX_ID) { "ATU13339991" },
+            claims.whenRequested(IBAN) { "AT023200051286875134" },
+            claims.whenRequested(PID_ID) { "PID12345678" },
             claims.whenRequested(ISSUANCE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
             claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },

@@ -56,6 +56,7 @@ dependencies {
     implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
     implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
     implementation("io.github.g0dkar:qrcode-kotlin:${VersionsBackend.qrcode}")
+    implementation("at.asitplus.wallet:taxid:${VersionsBackend.taxid}")
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
     implementation("at.asitplus.wallet:mobiledrivinglicence:${VersionsBackend.mdl}")

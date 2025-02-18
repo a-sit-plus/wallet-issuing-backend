@@ -2,6 +2,7 @@ object VersionsBackend {
     const val ida = "3.9.2"
     const val eupid = "2.3.2"
     const val mdl = "1.1.4"
+    const val taxid = "1.0.0"
     const val por = "1.1.1"
     const val cor = "2.1.2"
     const val eprescription = "1.1.1"
