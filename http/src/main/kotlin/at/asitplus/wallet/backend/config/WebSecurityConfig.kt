@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.User
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.session.MapSessionRepository
@@ -27,23 +28,32 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSecurityConfig {
 
     @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain = http.csrf { it.disable() }
-        .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.ALWAYS) }
-        .logout {
-            it.invalidateHttpSession(true)
-                .clearAuthentication(true)
-                .logoutSuccessUrl("/")
-        }.headers {
-            it.frameOptions { it.sameOrigin() }
-        }.authorizeHttpRequests{
-            it.requestMatchers("/authorize").authenticated()
-            it.anyRequest().permitAll()
-        }.oauth2Login {
-            it.defaultSuccessUrl("/").loginPage("/login")
-        }.formLogin {
-            it.loginPage("/login")
+    fun filterChain(
+        http: HttpSecurity,
+        clientRegistrations: InMemoryClientRegistrationRepository?
+    ): SecurityFilterChain {
+        val builder = http.csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.ALWAYS) }
+            .logout {
+                it.invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                    .logoutSuccessUrl("/")
+            }.headers {
+                it.frameOptions { it.sameOrigin() }
+            }.authorizeHttpRequests {
+                it.requestMatchers("/authorize").authenticated()
+                it.anyRequest().permitAll()
+            }.formLogin {
+                it.loginPage("/login")
+            }
+        if (clientRegistrations != null) {
+            builder.oauth2Login {
+                it.defaultSuccessUrl("/").loginPage("/login")
+            }
         }
-        .build()
+        return builder
+            .build()
+    }
 
     @Bean
     fun userDetailsService() = InMemoryUserDetailsManager(

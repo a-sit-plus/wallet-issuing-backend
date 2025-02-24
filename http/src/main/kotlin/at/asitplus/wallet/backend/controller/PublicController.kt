@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
@@ -36,7 +37,7 @@ import kotlin.time.toJavaDuration
 class PublicController(
     private val issuer: Issuer,
     private val configurationProperties: BackendConfigurationProperties,
-    private val clientRegistrations: InMemoryClientRegistrationRepository,
+    private val clientRegistrations: InMemoryClientRegistrationRepository?,
 ) {
 
     @GetMapping("/credentials/status/current", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -57,7 +58,7 @@ class PublicController(
         request: HttpServletRequest,
         @RequestParam("error", required = false) error: String? = null,
     ): ModelAndView {
-        model["oauthUrls"] = clientRegistrations.map {
+        model["oauthUrls"] = clientRegistrations?.map {
             OAuth2ClientRegistration(it.clientName, it.loginUrl())
         }
         if (error != null) {
@@ -91,11 +92,13 @@ class PublicController(
             Napier.d("/credentials/status/$timePeriod returns HTTP 304")
             return@runBlocking ResponseEntity.status(HttpStatus.NOT_MODIFIED)
                 .cacheControl(cacheControl)
+                .contentType(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT))
                 .build()
         }
         Napier.i("/credentials/status/$timePeriod returns ${content.count()} chars")
         return@runBlocking ResponseEntity.ok()
             .cacheControl(cacheControl)
+            .contentType(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT))
             .body(content)
     }
 
