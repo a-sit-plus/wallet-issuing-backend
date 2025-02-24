@@ -7,12 +7,11 @@ import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.cor.ResidenceAddress
-import at.asitplus.wallet.eprescription.EPrescriptionDataElements
-import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.EuPidScheme.Attributes.BIRTH_PLACE
 import at.asitplus.wallet.eupid.IsoIec5218Gender
+import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
@@ -61,11 +60,11 @@ fun ConstantIndex.CredentialScheme.buildClaims(
             userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
         else*/
             userInfo.buildEupidClaims(claims, iss, exp)
+        is HealthIdScheme -> userInfo.buildHealthIdClaims(claims, iss, exp, loader)
         is TaxIdScheme -> userInfo.buildTaxIdClaims(claims, iss, exp)
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
-        is EPrescriptionScheme -> userInfo.buildEPrescriptionClaims(claims, loader)
         is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(claims, iss, exp)
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
@@ -339,6 +338,7 @@ fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instan
             claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
         )
     }
+
 fun OidcUserInfoExtended.buildTaxIdClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(TaxIdScheme.Attributes) {
         listOfNotNull(
@@ -347,12 +347,30 @@ fun OidcUserInfoExtended.buildTaxIdClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(REGISTERED_GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(REGISTERED_FAMILY_NAME) { userInfo.familyName },
             //claims.whenRequested(E_SERVICE) { eService },
-            claims.whenRequested(RESIDENT_ADDRESS) { addressOrRandom().let { it.street+" "+it.locator + ", "+ it.postCode+" "+ it.city  } },
+            claims.whenRequested(RESIDENT_ADDRESS) { addressOrRandom().let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city } },
             claims.whenRequested(BIRTH_DATE) { userInfo.birthDate?.let { it.split("-").reversed().joinToString("-") } },
             claims.whenRequested(CHURCH_TAX_ID) { "ATU13339991" },
             claims.whenRequested(IBAN) { "AT023200051286875134" },
             claims.whenRequested(PID_ID) { "PID12345678" },
             claims.whenRequested(ISSUANCE_DATE) { iss },
+            claims.whenRequested(EXPIRY_DATE) { exp },
+            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
+            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+        )
+    }
+
+fun OidcUserInfoExtended.buildHealthIdClaims(claims: Collection<String>?, iss: Instant, exp: Instant, loader: EPrescriptionLoader) =
+    with(HealthIdScheme.Attributes) {
+        val ottElement =
+            loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
+                ?: throw IllegalArgumentException("No data from EPrescriptionLoader")
+        listOfNotNull(
+            claims.whenRequested(ONE_TIME_TOKEN) { ottElement.oneTimeToken },
+            claims.whenRequested(AFFILIATION_COUNTRY) { ottElement.countryCode },
+            claims.whenRequested(ISSUE_DATE) { iss },
             claims.whenRequested(EXPIRY_DATE) { exp },
             claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
             claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
@@ -447,18 +465,6 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
         )
     }
 
-
-fun OidcUserInfoExtended.buildEPrescriptionClaims(claims: Collection<String>?, loader: EPrescriptionLoader) =
-    with(EPrescriptionDataElements) {
-        val ottElement =
-            loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
-                ?: throw IllegalArgumentException("No data from EPrescriptionLoader")
-        listOfNotNull(
-            claims.whenRequested(OTT) { ottElement.oneTimeToken },
-            claims.whenRequested(COUNTRY_CODE) { ottElement.countryCode },
-            claims.whenRequested(VALID_UNTIL) { ottElement.ottValidUntil },
-        )
-    }
 
 fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
     with(MobileDrivingLicenceDataElements) {
