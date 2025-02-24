@@ -12,8 +12,8 @@ import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
-import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
 import at.asitplus.wallet.lib.jws.DefaultJwsService
@@ -104,7 +104,7 @@ class BackendConfiguration {
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
         at.asitplus.wallet.cor.Initializer.initWithVCK()
         at.asitplus.wallet.por.Initializer.initWithVCK()
-        at.asitplus.wallet.eprescription.Initializer.initWithVCK()
+        at.asitplus.wallet.healthid.Initializer.initWithVCK()
         at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
     }
 
@@ -228,7 +228,7 @@ class BackendConfiguration {
             EuPidScheme,
             MobileDrivingLicenceScheme,
             PowerOfRepresentationScheme,
-            EPrescriptionScheme,
+            HealthIdScheme,
             CertificateOfResidenceScheme,
             CompanyRegistrationScheme,
             TaxIdScheme
@@ -251,7 +251,7 @@ class BackendConfiguration {
                     EuPidScheme,
                     MobileDrivingLicenceScheme,
                     PowerOfRepresentationScheme,
-                    EPrescriptionScheme,
+                    HealthIdScheme,
                     CertificateOfResidenceScheme,
                     CompanyRegistrationScheme
                 ),

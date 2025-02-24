@@ -5,9 +5,9 @@ import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
-import at.asitplus.wallet.eprescription.EPrescriptionScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
@@ -168,8 +168,8 @@ class IssuingInternalAuthorizationServerTest {
     @Disabled("Need to enter correct URL and api-key")
     @Test
     @WithOAuth2AuthenticationToken
-    fun eprescription_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EPrescriptionScheme, SD_JWT)
+    fun healthid_sdjwt_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(HealthIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
