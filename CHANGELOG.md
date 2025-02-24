@@ -2,6 +2,7 @@
 
 5.4.0
 - Update to VC-K 5.4.0
+- Fix encoding of status list in JWT or CWT
 
 5.3.0
  - Update to VC-K 5.3.0, switching from [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/) to [Token Status List](https://datatracker.ietf.org/doc/draft-ietf-oauth-status-list/06/)

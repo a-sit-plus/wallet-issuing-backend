@@ -75,6 +75,8 @@ data class RevocationListConfigurationProperties(
     val regularWriteTimeoutDuration: Duration = Duration.parse(regularWriteTimeout)
     val dirtyCheckRateDuration: Duration = Duration.parse(dirtyCheckRate)
     val regularCheckRateDuration: Duration = Duration.parse(regularCheckRate)
+    val cwtPath = path.apply { if (endsWith("/")) this else "$this/" } + "cwt/"
+    val jwtPath = path.apply { if (endsWith("/")) this else "$this/" } + "jwt/"
 }
 
 data class KeyConfiguration(

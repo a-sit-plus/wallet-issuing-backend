@@ -25,7 +25,7 @@ class PublicControllerWebClientTest {
     private lateinit var timePeriodProvider: TimePeriodProvider
 
     @Test
-    fun `GET VC status list with If-None-Match in second request`() {
+    fun `GET status list with If-None-Match in second request`() {
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
         val firstResult = webClient.get().uri("/credentials/status/$timePeriod")
             .exchange()
@@ -42,7 +42,7 @@ class PublicControllerWebClientTest {
     }
 
     @Test
-    fun `GET VC status list with If-None-Match with gzip suffix in second request`() {
+    fun `GET status list with If-None-Match with gzip suffix in second request`() {
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
         val firstResult = webClient.get().uri("/credentials/status/$timePeriod")
             .header(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
