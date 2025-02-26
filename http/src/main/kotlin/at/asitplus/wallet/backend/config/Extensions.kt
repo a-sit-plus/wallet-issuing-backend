@@ -10,6 +10,8 @@ import at.asitplus.wallet.cor.ResidenceAddress
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.EuPidScheme.Attributes.BIRTH_PLACE
+import at.asitplus.wallet.eupid.EuPidScheme.Attributes.EMAIL_ADDRESS
+import at.asitplus.wallet.eupid.EuPidScheme.Attributes.MOBILE_PHONE_NUMBER
 import at.asitplus.wallet.eupid.IsoIec5218Gender
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -193,15 +195,11 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
             claims.whenRequestedIssueIsoName(PREFIX_PLACE_OF_BIRTH) {
                 with(EuPidScheme.SdJwtAttributes.PlaceOfBirth) {
                     listOf(
-                        ClaimToBeIssued(COUNTRY, fallbackBirthCountry),
-                        ClaimToBeIssued(REGION, ourBirthState),
                         ClaimToBeIssued(LOCALITY, ourBirthCity),
                     )
                 }
             },
-            claims.whenRequested(BIRTH_PLACE) { ourBirthStreet },
-            claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_COUNTRY) { fallbackBirthCountry },
-            claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_REGION) { ourBirthState },
+            claims.whenRequested(BIRTH_PLACE) { ourBirthCity },
             claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
             claims.whenRequestedIssueIsoName(PREFIX_PLACE_OF_BIRTH) {
                 with(EuPidScheme.SdJwtAttributes.Address) {
@@ -224,16 +222,16 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss:
             claims.whenRequestedIssueIsoName(ADDRESS_STREET) { street },
             claims.whenRequestedIssueIsoName(ADDRESS_HOUSE_NUMBER) { locator.toString() },
             claims.whenRequestedIssueIsoName(GENDER) { genderText },
-            claims.whenRequested(NATIONALITIES) { listOf(nationality) },
-            claims.whenRequested(EuPidScheme.Attributes.NATIONALITY) { nationality },
+            claims.whenRequestedIssueIsoName(EuPidScheme.Attributes.NATIONALITY) { setOf(nationality) },
             claims.whenRequestedIssueIsoName(ISSUANCE_DATE) { iss },
             claims.whenRequestedIssueIsoName(EXPIRY_DATE) { exp },
             claims.whenRequestedIssueIsoName(ISSUING_AUTHORITY) { issuingAuthority },
             claims.whenRequestedIssueIsoName(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequestedIssueIsoName(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequestedIssueIsoName(ISSUING_COUNTRY) { issuingCountry },
             claims.whenRequestedIssueIsoName(ISSUING_JURISDICTION) { issuingJurisdiction },
             claims.whenRequestedIssueIsoName(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequestedIssueIsoName(EMAIL_ADDRESS) { email },
+            claims.whenRequestedIssueIsoName(MOBILE_PHONE_NUMBER) { phoneNumber },
         )
     }
 
@@ -247,20 +245,8 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(PORTRAIT) { portrait },
-            claims.whenRequested(AGE_OVER_12) { ageOver12 },
-            claims.whenRequested(AGE_OVER_14) { ageOver14 },
-            claims.whenRequested(AGE_OVER_16) { ageOver16 },
-            claims.whenRequested(AGE_OVER_18) { ageOver18 },
-            claims.whenRequested(AGE_OVER_21) { ageOver21 },
-            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
-            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
-            claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claims.whenRequested(BIRTH_PLACE) { ourBirthStreet },
-            claims.whenRequested(BIRTH_COUNTRY) { fallbackBirthCountry },
-            claims.whenRequested(BIRTH_STATE) { ourBirthState },
-            claims.whenRequested(BIRTH_CITY) { ourBirthCity },
+            claims.whenRequested(BIRTH_PLACE) { ourBirthCity },
+            claims.whenRequested(NATIONALITY) { setOf(nationality) },
             claims.whenRequested(RESIDENT_ADDRESS) { formatted },
             claims.whenRequested(RESIDENT_COUNTRY) { country },
             claims.whenRequested(RESIDENT_STATE) { state },
@@ -268,16 +254,26 @@ fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Inst
             claims.whenRequested(RESIDENT_POSTAL_CODE) { postCode },
             claims.whenRequested(RESIDENT_STREET) { street },
             claims.whenRequested(RESIDENT_HOUSE_NUMBER) { locator.toString() },
-            claims.whenRequested(GENDER) { gender.code },
-            claims.whenRequested(NATIONALITY) { nationality },
-            claims.whenRequested(ISSUANCE_DATE) { iss },
+            claims.whenRequested(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(PORTRAIT) { portrait },
+            claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
+            claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
+            claims.whenRequested(SEX) { gender.code },
+            claims.whenRequested(EMAIL_ADDRESS) { email },
+            claims.whenRequested(MOBILE_PHONE_NUMBER) { phoneNumber },
             claims.whenRequested(EXPIRY_DATE) { exp },
             claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
+            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
             claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequested(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(ISSUANCE_DATE) { iss },
+            claims.whenRequested(AGE_OVER_12) { ageOver12 },
+            claims.whenRequested(AGE_OVER_14) { ageOver14 },
+            claims.whenRequested(AGE_OVER_16) { ageOver16 },
+            claims.whenRequested(AGE_OVER_18) { ageOver18 },
+            claims.whenRequested(AGE_OVER_21) { ageOver21 },
+            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
+            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
         )
     }
 
@@ -523,6 +519,14 @@ val OidcUserInfoExtended.bpk: String
 val OidcUserInfoExtended.dateOfBirth
     get() = userInfo.birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?: randomDateOfBirth()
+
+val OidcUserInfoExtended.email
+    get() = userInfo.email
+        ?: "info@example.com"
+
+val OidcUserInfoExtended.phoneNumber
+    get() = userInfo.phoneNumber
+        ?: "+49-89-99998-001"
 
 val OidcUserInfoExtended.sex
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoSexEnum()
