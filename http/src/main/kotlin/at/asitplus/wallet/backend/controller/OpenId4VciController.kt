@@ -4,6 +4,7 @@ import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
@@ -11,6 +12,7 @@ import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
+import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
@@ -98,6 +100,39 @@ class OpenId4VciController(
         ModelAndView("index")
     }
 
+    @PostMapping("/par", produces = [APPLICATION_JSON_VALUE])
+    fun par(
+        @RequestBody requestBody: String,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> = runBlocking {
+        Napier.i("/par called")
+        Napier.v("/par called with $requestBody")
+        val params: AuthenticationRequestParameters = requestBody.decodeFromPostBody()
+            ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        val result = authorizationService.par(
+            params,
+            request.getHeader("OAuth-Client-Attestation"),
+            request.getHeader("OAuth-Client-Attestation-PoP"),
+        ).getOrElse {
+            Napier.w("/par got error", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        Napier.d("/par returns $result")
+        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
+    }
+
+    @PostMapping("/nonce", produces = [APPLICATION_JSON_VALUE])
+    fun nonce(
+    ): ResponseEntity<*> = runBlocking {
+        Napier.i("/nonce called")
+        val result = credentialIssuer.nonce().getOrElse {
+            Napier.w("/nonce got error", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        Napier.d("/nonce returns $result")
+        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
+    }
+
     /**
      * Logs out the user from the Spring Boot session, so that new requests need to be authorized again,
      * using the configured OAuth2 AS. Subsequent requests to [token] and [credential] are secured
@@ -132,12 +167,18 @@ class OpenId4VciController(
     private fun String.isSafariOniPhone() = contains("Safari") && contains("iPhone")
 
     @PostMapping("/token", produces = [APPLICATION_JSON_VALUE])
-    fun token(@RequestBody requestBody: String): ResponseEntity<*> = runBlocking {
+    fun token(
+        @RequestBody requestBody: String,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> = runBlocking {
         Napier.i("/token called")
         Napier.v("/token called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromPostBody()
             ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
-        val result = authorizationService.token(params).getOrElse {
+        val result = authorizationService.token(
+            request = params,
+            httpRequest = request.toRequestInfo()
+        ).getOrElse {
             Napier.w("/token got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
@@ -145,19 +186,32 @@ class OpenId4VciController(
         return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
     }
 
+    private fun HttpServletRequest.toRequestInfo() = RequestInfo(
+        url = requestURL.toString(),
+        method = HttpMethod.parse(method),
+        dpop = getHeader("DPoP"),
+        clientAttestation = getHeader("OAuth-Client-Attestation"),
+        clientAttestationPop = getHeader("OAuth-Client-Attestation-PoP"),
+    )
+
     @PostMapping("/credential", produces = [APPLICATION_JSON_VALUE])
     fun credential(
         @RequestBody requestBody: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION) authorizationHeader: String,
+        request: HttpServletRequest,
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/credential called")
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         Napier.v("/credential called with $authorizationHeader and $requestBody")
         val params = CredentialRequestParameters.deserialize(requestBody).getOrElse {
             Napier.w("/credential can't parse request", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
-        val accessToken = authorizationHeader.removePrefix("bearer ").removePrefix("Bearer ")
-        val credential = credentialIssuer.credential(accessToken, params).getOrElse {
+
+        val credential = credentialIssuer.credential(
+            authorizationHeader = authorizationHeader,
+            params = params,
+            request = request.toRequestInfo()
+        ).getOrElse {
             Napier.w("/credential got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }

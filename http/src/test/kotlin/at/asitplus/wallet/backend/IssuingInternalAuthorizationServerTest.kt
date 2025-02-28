@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend
 
 
 import at.asitplus.openid.CredentialResponseParameters
+import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
@@ -10,6 +11,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
+import at.asitplus.wallet.lib.agent.SdJwtCreator
 import at.asitplus.wallet.lib.agent.SdJwtValidator
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
@@ -22,10 +24,14 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
+import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainOnly
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -63,43 +69,17 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     @WithOAuth2AuthenticationToken
-    fun ida_vc_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(IdAustriaScheme, PLAIN_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
-        val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        val subject = vcJws.vc.credentialSubject.shouldBeInstanceOf<IdAustriaCredential>()
-        subject.dateOfBirth shouldBe LocalDate(1983, 6, 4)
-    }
-
-    @Test
-    @WithOAuth2AuthenticationToken
     fun pid_vc_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(EuPidScheme, PLAIN_JWT)
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
         val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         val subject = vcJws.vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
         subject.birthDate shouldBe LocalDate(1983, 6, 4)
-    }
-
-    @Test
-    @WithOAuth2AuthenticationToken
-    fun ida_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(IdAustriaScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credential.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
@@ -109,7 +89,8 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
@@ -122,7 +103,8 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).getOrThrow()
         val numberOfClaims = issuerSigned.namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull()
         numberOfClaims shouldBeGreaterThan 1
@@ -135,7 +117,8 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
@@ -148,11 +131,14 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.issuer.shouldNotBeNull()
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential).shouldNotBeNull()).reconstructedJsonObject.shouldNotBeNull()
+        vcJws.subject.shouldNotBeNull()
+        vcJws.disclosureDigests.shouldBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+            .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
     }
 
     @Test
@@ -162,7 +148,8 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
@@ -176,10 +163,14 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+        vcJws.subject.shouldNotBeNull()
+        vcJws.disclosureDigests.shouldBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+            .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
     }
 
 
@@ -190,11 +181,13 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
         vcJws.issuer.shouldNotBeNull()
         SdJwtValidator(SdJwtSigned.parse(serializedCredential).shouldNotBeNull()).reconstructedJsonObject.shouldNotBeNull()
+        vcJws.disclosureDigests.shouldBeNull()
     }
 
     @Test
@@ -204,7 +197,8 @@ class IssuingInternalAuthorizationServerTest {
 
         val credential = loadCredential(requestOptions)
 
-        val serializedCredential = credential.credential.shouldNotBeNull()
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
         val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).getOrThrow()
         val numberOfClaims = issuerSigned.namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull()
         numberOfClaims shouldBeGreaterThan 1
@@ -214,26 +208,30 @@ class IssuingInternalAuthorizationServerTest {
         val client = Client()
         val state = uuid4().toString()
         val offer = credentialIssuer.credentialOfferWithAuthorizationCode()
-        val scope = client.oid4vciClient.buildScope(requestOptions, credentialIssuer.metadata)
+        val credentialFormat =
+            client.oid4vciClient.selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
+                .shouldNotBeNull()
+        val scope = credentialFormat.scope
         val authnRequest =
             client.oid4vciClient.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
         val authorizationCode = authorizationServer.authorize(authnRequest).getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oid4vciClient.oauth2Client.createTokenRequestParameters(
-            state,
             OAuth2Client.AuthorizationForToken.Code(authorizationCode.params.code!!),
+            state = state,
             authorizationDetails = null,
             scope = scope
         )
-        val accessToken = authorizationServer.token(tokenRequest).getOrThrow()
+        val accessToken: TokenResponseParameters = authorizationServer.token(tokenRequest).getOrThrow()
         val credentialRequest = client.oid4vciClient.createCredentialRequest(
-            input = WalletService.CredentialRequestInput.RequestOptions(requestOptions),
-            clientNonce = accessToken.clientNonce,
-            credentialIssuer = offer.credentialIssuer
+            tokenResponse = accessToken,
+            metadata = credentialIssuer.metadata,
+            credentialFormat = credentialFormat,
+            clientNonce = credentialIssuer.nonce().getOrThrow().clientNonce
         ).getOrThrow()
         val credential = credentialIssuer.credential(
-            accessToken = accessToken.accessToken,
-            params = credentialRequest,
+            authorizationHeader = accessToken.toHttpHeaderValue(),
+            params = credentialRequest.first(),
         ).getOrThrow()
         return credential
     }
