@@ -41,7 +41,6 @@ class OidcIssuerCredentialDataProvider(
             subjectPublicKey,
             expiration,
             issuance,
-            claimNames,
             ePrescriptionLoader
         )
     }
@@ -55,13 +54,11 @@ private fun createCredential(
     subjectPublicKey: CryptoPublicKey,
     expiration: Instant,
     issuance: Instant,
-    claimNames: Collection<String>?,
     ePrescriptionLoader: EPrescriptionLoader,
 ): CredentialToBeIssued {
     if (credentialScheme.supportedRepresentations.contains(representation)) {
         val claimsToBeIssued = credentialScheme.buildClaims(
             representation,
-            claimNames,
             oidcUserInfo,
             issuance,
             expiration,

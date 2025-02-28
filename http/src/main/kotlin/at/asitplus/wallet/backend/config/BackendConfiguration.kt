@@ -135,7 +135,7 @@ class BackendConfiguration {
 
     @Bean
     fun issuerCredentialStoreAdapter(
-        revocationService: RevocationService
+        revocationService: RevocationService,
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
 
     @Bean
@@ -174,7 +174,7 @@ class BackendConfiguration {
     private fun loadCertOrPubKey(
         publicKey: URI?,
         certificate: URI?,
-        resourceLoader: ResourceLoader
+        resourceLoader: ResourceLoader,
     ): Pair<PublicKey, java.security.cert.X509Certificate?> {
         if (publicKey == null && certificate == null) throw RuntimeException("Neither cert nor public key configured. Set one!")
         if (publicKey != null && certificate != null) throw RuntimeException("Both public key and certificate set. Set either but not both!")
@@ -203,7 +203,12 @@ class BackendConfiguration {
         validator = Validator(),
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
-        statusListAggregationUrl = appendPath(configurationProperties.publicContext, "credentials", "status", "current"),
+        statusListAggregationUrl = appendPath(
+            configurationProperties.publicContext,
+            "credentials",
+            "status",
+            "current"
+        ),
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         jwsService = DefaultJwsService(DefaultCryptoService(keyMaterial)),
         coseService = DefaultCoseService(DefaultCryptoService(keyMaterial)),
@@ -239,22 +244,22 @@ class BackendConfiguration {
         credentialProvider = OidcIssuerCredentialDataProvider(
             lifetime = configurationProperties.credentials.lifeTime,
             ePrescriptionLoader = ePrescriptionLoader
-        )
+        ),
+        credentialEndpointPath = "/credential",
+        nonceEndpointPath = "/nonce",
     )
 
     @Bean
     fun authorizationServer(
         authenticationSupplier: AuthenticationSupplier,
-    ): SimpleAuthorizationService =
-        SimpleAuthorizationService(
-            strategy = CredentialAuthorizationServiceStrategy(
-                dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
-                credentialSchemes = credentialSchemes,
-            ),
-            publicContext = configurationProperties.publicContext,
-            authorizationEndpointPath = "/authorize",
-            tokenEndpointPath = "/token",
-        )
+    ): OAuth2AuthorizationServerAdapter = SimpleAuthorizationService(
+        dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
+        strategy = CredentialAuthorizationServiceStrategy(credentialSchemes,),
+        publicContext = configurationProperties.publicContext,
+        authorizationEndpointPath = "/authorize",
+        tokenEndpointPath = "/token",
+        pushedAuthorizationRequestEndpointPath = "/par",
+    )
 
     @Bean
     fun ePrescriptionLoader(restTemplateBuilder: RestTemplateBuilder): EPrescriptionLoader =

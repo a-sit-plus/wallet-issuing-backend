@@ -1,5 +1,9 @@
 # Changelog
 
+5.5.0:
+ - Update to VC-K 5.5.0
+ - Update issuing process to OID4VCI Draft 15
+
 5.4.3:
  - tbd
 

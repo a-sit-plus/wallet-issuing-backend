@@ -48,25 +48,25 @@ fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
 
 fun ConstantIndex.CredentialScheme.buildClaims(
     representation: ConstantIndex.CredentialRepresentation,
-    claims: Collection<String>?,
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
     loader: EPrescriptionLoader,
 ): List<ClaimToBeIssued> =
     when (this) {
-        is IdAustriaScheme -> userInfo.buildIdaClaims(claims)
+        is IdAustriaScheme -> userInfo.buildIdaClaims()
         is EuPidScheme -> /* // TODO Use this once ARF PR#160 is through
         if (representation == CredentialRepresentation.SD_JWT)
             userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
         else*/
-            userInfo.buildEupidClaims(claims, iss, exp)
-        is HealthIdScheme -> userInfo.buildHealthIdClaims(claims, iss, exp, loader)
-        is TaxIdScheme -> userInfo.buildTaxIdClaims(claims, iss, exp)
-        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(claims)
-        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(claims, iss, exp)
-        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(claims, iss, exp)
-        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(claims, iss, exp)
+            userInfo.buildEupidClaims(iss, exp)
+
+        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, exp, loader)
+        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp)
+        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims()
+        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp)
+        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp)
+        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims()
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
@@ -143,136 +143,136 @@ fun OidcUserInfoExtended.toEuPidCredential(
     subjectPublicKey = pubKey
 )
 
-fun OidcUserInfoExtended.buildIdaClaims(claims: Collection<String>?) =
+fun OidcUserInfoExtended.buildIdaClaims() =
     with(IdAustriaScheme.Attributes) {
         listOfNotNull(
-            claims.whenRequested(BPK) { bpk },
-            claims.whenRequested(FIRSTNAME) { userInfo.givenName },
-            claims.whenRequested(LASTNAME) { userInfo.familyName },
-            claims.whenRequested(DATE_OF_BIRTH) { dateOfBirth },
-            claims.whenRequested(PORTRAIT) { portrait },
-            claims.whenRequested(MAIN_ADDRESS) { mainAddress },
-            claims.whenRequested(AGE_OVER_14) { ageOver14 },
-            claims.whenRequested(AGE_OVER_16) { ageOver16 },
-            claims.whenRequested(AGE_OVER_18) { ageOver18 },
-            claims.whenRequested(AGE_OVER_21) { ageOver21 },
-            claims.whenRequested(GENDER) { genderText },
+            claim(BPK) { bpk },
+            claim(FIRSTNAME) { userInfo.givenName },
+            claim(LASTNAME) { userInfo.familyName },
+            claim(DATE_OF_BIRTH) { dateOfBirth },
+            claim(PORTRAIT) { portrait },
+            claim(MAIN_ADDRESS) { mainAddress },
+            claim(AGE_OVER_14) { ageOver14 },
+            claim(AGE_OVER_16) { ageOver16 },
+            claim(AGE_OVER_18) { ageOver18 },
+            claim(AGE_OVER_21) { ageOver21 },
+            claim(GENDER) { genderText },
         )
     }
 
-fun OidcUserInfoExtended.buildEupidClaimsSdJwt(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant) =
     with(EuPidScheme.SdJwtAttributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claims.whenRequestedIssueIsoName(FAMILY_NAME) { userInfo.familyName },
-            claims.whenRequestedIssueIsoName(GIVEN_NAME) { userInfo.givenName },
-            claims.whenRequestedIssueIsoName(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequestedIssueIsoName(PORTRAIT) { portrait },
-            claims.whenRequestedIssueIsoName(PREFIX_AGE_EQUAL_OR_OVER) {
+            claim(FAMILY_NAME) { userInfo.familyName },
+            claim(GIVEN_NAME) { userInfo.givenName },
+            claim(BIRTH_DATE) { dateOfBirth },
+            claim(PORTRAIT) { portrait },
+            claim(PREFIX_AGE_EQUAL_OR_OVER) {
                 with(EuPidScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
-                        ClaimToBeIssued(EQUAL_OR_OVER_12, ageOver12),
-                        ClaimToBeIssued(EQUAL_OR_OVER_14, ageOver14),
-                        ClaimToBeIssued(EQUAL_OR_OVER_16, ageOver16),
-                        ClaimToBeIssued(EQUAL_OR_OVER_18, ageOver18),
-                        ClaimToBeIssued(EQUAL_OR_OVER_21, ageOver21),
+                        claim(EQUAL_OR_OVER_12) { ageOver12 },
+                        claim(EQUAL_OR_OVER_14) { ageOver14 },
+                        claim(EQUAL_OR_OVER_16) { ageOver16 },
+                        claim(EQUAL_OR_OVER_18) { ageOver18 },
+                        claim(EQUAL_OR_OVER_21) { ageOver21 },
                     )
                 }
             },
-            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_12) { ageOver12 },
-            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_14) { ageOver14 },
-            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_16) { ageOver16 },
-            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_18) { ageOver18 },
-            claims.whenRequestedIssueIsoName(AGE_EQUAL_OR_OVER_21) { ageOver21 },
-            claims.whenRequestedIssueIsoName(AGE_IN_YEARS) { ageInYears },
-            claims.whenRequestedIssueIsoName(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
-            claims.whenRequestedIssueIsoName(FAMILY_NAME_BIRTH) { userInfo.familyName },
-            claims.whenRequestedIssueIsoName(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claims.whenRequestedIssueIsoName(PREFIX_PLACE_OF_BIRTH) {
+            claim(AGE_EQUAL_OR_OVER_12) { ageOver12 },
+            claim(AGE_EQUAL_OR_OVER_14) { ageOver14 },
+            claim(AGE_EQUAL_OR_OVER_16) { ageOver16 },
+            claim(AGE_EQUAL_OR_OVER_18) { ageOver18 },
+            claim(AGE_EQUAL_OR_OVER_21) { ageOver21 },
+            claim(AGE_IN_YEARS) { ageInYears },
+            claim(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claim(FAMILY_NAME_BIRTH) { userInfo.familyName },
+            claim(GIVEN_NAME_BIRTH) { userInfo.givenName },
+            claim(PREFIX_PLACE_OF_BIRTH) {
                 with(EuPidScheme.SdJwtAttributes.PlaceOfBirth) {
                     listOf(
-                        ClaimToBeIssued(LOCALITY, ourBirthCity),
+                        claim(LOCALITY) { ourBirthCity }
                     )
                 }
             },
-            claims.whenRequested(BIRTH_PLACE) { ourBirthCity },
-            claims.whenRequestedIssueIsoName(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
-            claims.whenRequestedIssueIsoName(PREFIX_PLACE_OF_BIRTH) {
+            claim(BIRTH_PLACE) { ourBirthCity },
+            claim(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
+            claim(PREFIX_PLACE_OF_BIRTH) {
                 with(EuPidScheme.SdJwtAttributes.Address) {
                     listOf(
-                        ClaimToBeIssued(FORMATTED, formatted),
-                        ClaimToBeIssued(COUNTRY, country),
-                        ClaimToBeIssued(REGION, state),
-                        ClaimToBeIssued(LOCALITY, city),
-                        ClaimToBeIssued(POSTAL_CODE, postCode),
-                        ClaimToBeIssued(STREET, street),
-                        ClaimToBeIssued(HOUSE_NUMBER, locator.toString()),
+                        claim(FORMATTED) { formatted },
+                        claim(COUNTRY) { country },
+                        claim(REGION) { state },
+                        claim(LOCALITY) { city },
+                        claim(POSTAL_CODE) { postCode },
+                        claim(STREET) { street },
+                        claim(HOUSE_NUMBER) { locator }.toString(),
                     )
                 }
             },
-            claims.whenRequestedIssueIsoName(ADDRESS_FORMATTED) { formatted },
-            claims.whenRequestedIssueIsoName(ADDRESS_COUNTRY) { country },
-            claims.whenRequestedIssueIsoName(ADDRESS_REGION) { state },
-            claims.whenRequestedIssueIsoName(ADDRESS_LOCALITY) { city },
-            claims.whenRequestedIssueIsoName(ADDRESS_POSTAL_CODE) { postCode },
-            claims.whenRequestedIssueIsoName(ADDRESS_STREET) { street },
-            claims.whenRequestedIssueIsoName(ADDRESS_HOUSE_NUMBER) { locator.toString() },
-            claims.whenRequestedIssueIsoName(GENDER) { genderText },
-            claims.whenRequestedIssueIsoName(EuPidScheme.Attributes.NATIONALITY) { setOf(nationality) },
-            claims.whenRequestedIssueIsoName(ISSUANCE_DATE) { iss },
-            claims.whenRequestedIssueIsoName(EXPIRY_DATE) { exp },
-            claims.whenRequestedIssueIsoName(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequestedIssueIsoName(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequestedIssueIsoName(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequestedIssueIsoName(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequestedIssueIsoName(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequestedIssueIsoName(EMAIL_ADDRESS) { email },
-            claims.whenRequestedIssueIsoName(MOBILE_PHONE_NUMBER) { phoneNumber },
+            claim(ADDRESS_FORMATTED) { formatted },
+            claim(ADDRESS_COUNTRY) { country },
+            claim(ADDRESS_REGION) { state },
+            claim(ADDRESS_LOCALITY) { city },
+            claim(ADDRESS_POSTAL_CODE) { postCode },
+            claim(ADDRESS_STREET) { street },
+            claim(ADDRESS_HOUSE_NUMBER) { locator.toString() },
+            claim(GENDER) { genderText },
+            claim(NATIONALITIES) { setOf(nationality) },
+            claim(ISSUANCE_DATE) { iss },
+            claim(EXPIRY_DATE) { exp },
+            claim(ISSUING_AUTHORITY) { issuingAuthority },
+            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claim(ISSUING_COUNTRY) { issuingCountry },
+            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claim(EMAIL_ADDRESS) { email },
+            claim(MOBILE_PHONE_NUMBER) { phoneNumber },
         )
     }
 
-fun OidcUserInfoExtended.buildEupidClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant) =
     with(EuPidScheme.Attributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
-            claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(BIRTH_PLACE) { ourBirthCity },
-            claims.whenRequested(NATIONALITY) { setOf(nationality) },
-            claims.whenRequested(RESIDENT_ADDRESS) { formatted },
-            claims.whenRequested(RESIDENT_COUNTRY) { country },
-            claims.whenRequested(RESIDENT_STATE) { state },
-            claims.whenRequested(RESIDENT_CITY) { city },
-            claims.whenRequested(RESIDENT_POSTAL_CODE) { postCode },
-            claims.whenRequested(RESIDENT_STREET) { street },
-            claims.whenRequested(RESIDENT_HOUSE_NUMBER) { locator.toString() },
-            claims.whenRequested(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(PORTRAIT) { portrait },
-            claims.whenRequested(FAMILY_NAME_BIRTH) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claims.whenRequested(SEX) { gender.code },
-            claims.whenRequested(EMAIL_ADDRESS) { email },
-            claims.whenRequested(MOBILE_PHONE_NUMBER) { phoneNumber },
-            claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequested(ISSUANCE_DATE) { iss },
-            claims.whenRequested(AGE_OVER_12) { ageOver12 },
-            claims.whenRequested(AGE_OVER_14) { ageOver14 },
-            claims.whenRequested(AGE_OVER_16) { ageOver16 },
-            claims.whenRequested(AGE_OVER_18) { ageOver18 },
-            claims.whenRequested(AGE_OVER_21) { ageOver21 },
-            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
-            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claim(FAMILY_NAME) { userInfo.familyName },
+            claim(GIVEN_NAME) { userInfo.givenName },
+            claim(BIRTH_DATE) { dateOfBirth },
+            claim(BIRTH_PLACE) { ourBirthCity },
+            claim(NATIONALITY) { setOf(nationality) },
+            claim(RESIDENT_ADDRESS) { formatted },
+            claim(RESIDENT_COUNTRY) { country },
+            claim(RESIDENT_STATE) { state },
+            claim(RESIDENT_CITY) { city },
+            claim(RESIDENT_POSTAL_CODE) { postCode },
+            claim(RESIDENT_STREET) { street },
+            claim(RESIDENT_HOUSE_NUMBER) { locator.toString() },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claim(PORTRAIT) { portrait },
+            claim(FAMILY_NAME_BIRTH) { userInfo.familyName },
+            claim(GIVEN_NAME_BIRTH) { userInfo.givenName },
+            claim(SEX) { gender.code },
+            claim(EMAIL_ADDRESS) { email },
+            claim(MOBILE_PHONE_NUMBER) { phoneNumber },
+            claim(EXPIRY_DATE) { exp },
+            claim(ISSUING_AUTHORITY) { issuingAuthority },
+            claim(ISSUING_COUNTRY) { issuingCountry },
+            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claim(ISSUANCE_DATE) { iss },
+            claim(AGE_OVER_12) { ageOver12 },
+            claim(AGE_OVER_14) { ageOver14 },
+            claim(AGE_OVER_16) { ageOver16 },
+            claim(AGE_OVER_18) { ageOver18 },
+            claim(AGE_OVER_21) { ageOver21 },
+            claim(AGE_IN_YEARS) { ageInYears },
+            claim(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
         )
     }
 
@@ -315,117 +315,118 @@ private fun OidcUserInfoExtended.addressOrRandom() = if (userInfo.address?.posta
 
 private fun JsonObject?.getPrimitiveContent(key: String) = (this?.get(key) as? JsonPrimitive)?.content
 
-fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant) =
     with(PowerOfRepresentationDataElements) {
         listOfNotNull(
-            claims.whenRequested(LEGAL_PERSON_IDENTIFIER, false) { legalPersonIdentifier },
-            claims.whenRequested(LEGAL_NAME, false) { legalName },
-            claims.whenRequested(FULL_POWERS, false) { true },
-            //claims.whenRequested(E_SERVICE, false) { eService },
-            claims.whenRequested(EFFECTIVE_FROM_DATE, false) { iss },
-            claims.whenRequested(EFFECTIVE_UNTIL_DATE, false) { exp },
-            claims.whenRequested(ISSUANCE_DATE, false) { iss },
-            claims.whenRequested(EXPIRY_DATE, false) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY, false) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY, false) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION, false) { issuingJurisdiction },
-            claims.whenRequested(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(LEGAL_PERSON_IDENTIFIER, false) { legalPersonIdentifier },
+            claim(LEGAL_NAME, false) { legalName },
+            claim(FULL_POWERS, false) { true },
+            //claim(E_SERVICE, false) { eService },
+            claim(EFFECTIVE_FROM_DATE, false) { iss },
+            claim(EFFECTIVE_UNTIL_DATE, false) { exp },
+            claim(ISSUANCE_DATE, false) { iss },
+            claim(EXPIRY_DATE, false) { exp },
+            claim(ISSUING_AUTHORITY, false) { issuingAuthority },
+            claim(ISSUING_COUNTRY, false) { issuingCountry },
+            claim(ISSUING_JURISDICTION, false) { issuingJurisdiction },
+            claim(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
         )
     }
 
-fun OidcUserInfoExtended.buildTaxIdClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant) =
     with(TaxIdScheme.Attributes) {
         listOfNotNull(
-            claims.whenRequested(TAX_NUMBER, false) { "ATU12345678" },
-            claims.whenRequested(AFFILIATION_COUNTRY, false) { "AT" },
-            claims.whenRequested(REGISTERED_GIVEN_NAME, false) { userInfo.givenName },
-            claims.whenRequested(REGISTERED_FAMILY_NAME, false) { userInfo.familyName },
-            claims.whenRequested(RESIDENT_ADDRESS, false) { addressOrRandom().let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city } },
-            claims.whenRequested(BIRTH_DATE, false) { dateOfBirth },
-            claims.whenRequested(CHURCH_TAX_ID, false) { "ATU13339991" },
-            claims.whenRequested(IBAN, false) { "AT023200051286875134" },
-            claims.whenRequested(PID_ID, false) { "PID12345678" },
-            claims.whenRequested(ISSUANCE_DATE, false) { iss },
-            claims.whenRequested(EXPIRY_DATE, false) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY, false) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY, false) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION, false) { issuingJurisdiction },
-            claims.whenRequested(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(TAX_NUMBER, false) { "ATU12345678" },
+            claim(AFFILIATION_COUNTRY, false) { "AT" },
+            claim(REGISTERED_GIVEN_NAME, false) { userInfo.givenName },
+            claim(REGISTERED_FAMILY_NAME, false) { userInfo.familyName },
+            //claim(E_SERVICE, false) { eService },
+            claim(RESIDENT_ADDRESS, false) { addressOrRandom().let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city } },
+            claim(BIRTH_DATE, false) { dateOfBirth },
+            claim(CHURCH_TAX_ID, false) { "ATU13339991" },
+            claim(IBAN, false) { "AT023200051286875134" },
+            claim(PID_ID, false) { "PID12345678" },
+            claim(ISSUANCE_DATE, false) { iss },
+            claim(EXPIRY_DATE, false) { exp },
+            claim(ISSUING_AUTHORITY, false) { issuingAuthority },
+            claim(ISSUING_COUNTRY, false) { issuingCountry },
+            claim(ISSUING_JURISDICTION, false) { issuingJurisdiction },
+            claim(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
         )
     }
 
-fun OidcUserInfoExtended.buildHealthIdClaims(claims: Collection<String>?, iss: Instant, exp: Instant, loader: EPrescriptionLoader) =
+fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, exp: Instant, loader: EPrescriptionLoader) =
     with(HealthIdScheme.Attributes) {
         val ottElement =
             loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
                 ?: throw IllegalArgumentException("No data from EPrescriptionLoader")
         listOfNotNull(
-            claims.whenRequested(ONE_TIME_TOKEN, false) { ottElement.oneTimeToken },
-            claims.whenRequested(AFFILIATION_COUNTRY, false) { ottElement.countryCode },
-            claims.whenRequested(ISSUE_DATE, false) { iss },
-            claims.whenRequested(EXPIRY_DATE, false) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY, false) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY, false) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION, false) { issuingJurisdiction },
-            claims.whenRequested(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(ONE_TIME_TOKEN, false) { ottElement.oneTimeToken },
+            claim(AFFILIATION_COUNTRY, false) { ottElement.countryCode },
+            claim(ISSUE_DATE, false) { iss },
+            claim(EXPIRY_DATE, false) { exp },
+            claim(ISSUING_AUTHORITY, false) { issuingAuthority },
+            claim(ISSUING_COUNTRY, false) { issuingCountry },
+            claim(ISSUING_JURISDICTION, false) { issuingJurisdiction },
+            claim(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
         )
     }
 
 
-fun OidcUserInfoExtended.buildCompanyRegistrationClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildCompanyRegistrationClaims() =
     with(CompanyRegistrationDataElements) {
         listOfNotNull(
-            claims.whenRequested(COMPANY_NAME) { legalName },
-            claims.whenRequested(COMPANY_TYPE) { "Einzelunternehmen" },
-            claims.whenRequested(COMPANY_STATUS) { "economically active" },
-            claims.whenRequested(COMPANY_ACTIVITY) {
+            claim(COMPANY_NAME) { legalName },
+            claim(COMPANY_TYPE) { "Einzelunternehmen" },
+            claim(COMPANY_STATUS) { "economically active" },
+            claim(COMPANY_ACTIVITY) {
                 with(CompanyRegistrationDataElements.CompanyActivity) {
                     listOf(
-                        ClaimToBeIssued(NACE_CODE, "J62"),
-                        //ClaimToBeIssued(ACTIVITY_DESCRIPTION, "7500")
+                        claim(NACE_CODE) { "J62" },
+                        //claim(ACTIVITY_DESCRIPTION){"7500"}
                     )
                 }
             },
-            claims.whenRequested(REGISTRATION_DATE) { LocalDate(2015, 6, 25) },
-            //claims.whenRequested(COMPANY_END_DATE) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
-            claims.whenRequested(COMPANY_EUID) { "ATCHCUSP.69743824" },
-            claims.whenRequested(VAT_NUMBER) { "ATU69743824" },
-            claims.whenRequested(COMPANY_CONTACT_DATA) {
+            claim(REGISTRATION_DATE) { LocalDate(2015, 6, 25) },
+            //claim(COMPANY_END_DATE) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
+            claim(COMPANY_EUID) { "ATCHCUSP.69743824" },
+            claim(VAT_NUMBER) { "ATU69743824" },
+            claim(COMPANY_CONTACT_DATA) {
                 with(CompanyRegistrationDataElements.ContactData) {
                     listOf(
-                        ClaimToBeIssued(EMAIL, "office@a-sit.at"),
-                        ClaimToBeIssued(TELEPHONE, "+43-555-${Random.nextInt(1, 9999)}")
+                        claim(EMAIL) { "office@a-sit.at" },
+                        claim(TELEPHONE) { "+43-555-${Random.nextInt(1, 9999)}" }
                     )
                 }
             },
-            claims.whenRequested(REGISTERED_ADDRESS) {
+            claim(REGISTERED_ADDRESS) {
                 with(CompanyRegistrationDataElements.Address) {
                     listOf(
-                        ClaimToBeIssued(THOROUGHFARE, "Seidlgasse"),
-                        ClaimToBeIssued(LOCATOR_DESIGNATOR, "22/9"),
-                        ClaimToBeIssued(POST_CODE, "1030"),
-                        ClaimToBeIssued(POST_NAME, "Wien"),
-                        ClaimToBeIssued(ADMIN_UNIT_L_1, "AT"),
-                        ClaimToBeIssued(ADMIN_UNIT_L_2, "Wien")
+                        claim(THOROUGHFARE) { "Seidlgasse" },
+                        claim(LOCATOR_DESIGNATOR) { "22/9" },
+                        claim(POST_CODE) { "1030" },
+                        claim(POST_NAME) { "Wien" },
+                        claim(ADMIN_UNIT_L_1) { "AT" },
+                        claim(ADMIN_UNIT_L_2) { "Wien" }
                     )
                 }
             },
         )
     }
 
-fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant) =
     with(CertificateOfResidenceDataElements) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val fullAddress = formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
-            claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(RESIDENCE_ADDRESS) {
+            claim(FAMILY_NAME) { userInfo.familyName },
+            claim(GIVEN_NAME) { userInfo.givenName },
+            claim(BIRTH_DATE) { dateOfBirth },
+            claim(RESIDENCE_ADDRESS) {
                 with(CertificateOfResidenceDataElements.Address) {
                     listOf(
                         claim(THOROUGHFARE) { street },
@@ -438,69 +439,69 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
                     )
                 }
             },
-            claims.whenRequested(RESIDENCE_ADDRESS_THOROUGHFARE) { street },
-            claims.whenRequested(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR) { locator },
-            claims.whenRequested(RESIDENCE_ADDRESS_POST_CODE) { postCode },
-            claims.whenRequested(RESIDENCE_ADDRESS_POST_NAME) { city },
-            claims.whenRequested(RESIDENCE_ADDRESS_ADMIN_UNIT_L_1) { country },
-            claims.whenRequested(RESIDENCE_ADDRESS_ADMIN_UNIT_L_2) { state },
-            claims.whenRequested(RESIDENCE_ADDRESS_FULL_ADDRESS) { fullAddress },
-            claims.whenRequested(GENDER) { gender },
-            claims.whenRequested(BIRTH_PLACE) { randomAddress().city },
-            claims.whenRequested(ARRIVAL_DATE) { arrivalDate },
-            claims.whenRequested(NATIONALITY) { nationality },
-            claims.whenRequested(ISSUANCE_DATE) { iss },
-            claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claim(RESIDENCE_ADDRESS_THOROUGHFARE) { street },
+            claim(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR) { locator },
+            claim(RESIDENCE_ADDRESS_POST_CODE) { postCode },
+            claim(RESIDENCE_ADDRESS_POST_NAME) { city },
+            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_1) { country },
+            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_2) { state },
+            claim(RESIDENCE_ADDRESS_FULL_ADDRESS) { fullAddress },
+            claim(GENDER) { gender },
+            claim(BIRTH_PLACE) { randomAddress().city },
+            claim(ARRIVAL_DATE) { arrivalDate },
+            claim(NATIONALITY) { nationality },
+            claim(ISSUANCE_DATE) { iss },
+            claim(EXPIRY_DATE) { exp },
+            claim(ISSUING_AUTHORITY) { issuingAuthority },
+            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claim(ISSUING_COUNTRY) { issuingCountry },
+            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
         )
     }
 
 
-fun OidcUserInfoExtended.buildMdlClaims(claims: Collection<String>?) =
+fun OidcUserInfoExtended.buildMdlClaims() =
     with(MobileDrivingLicenceDataElements) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
-            claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(ISSUE_DATE) { issueDate() },
-            claims.whenRequested(EXPIRY_DATE) { expiryDate() },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(PORTRAIT) { portrait },
-            claims.whenRequested(DRIVING_PRIVILEGES) { arrayOf(fakeDrivingPrivilege()) },
-            claims.whenRequested(UN_DISTINGUISHING_SIGN) { unDistinguishingSign },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(SEX) { sex },
-            claims.whenRequested(HEIGHT) { Random.nextUInt(150u, 210u) },
-            claims.whenRequested(WEIGHT) { Random.nextUInt(60u, 120u) },
-            claims.whenRequested(EYE_COLOUR) { randomEyeColour() },
-            claims.whenRequested(HAIR_COLOUR) { randomHairColour() },
-            claims.whenRequested(BIRTH_PLACE) { randomAddress().city },
-            claims.whenRequested(RESIDENT_ADDRESS) { formatted },
-            claims.whenRequested(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
-            claims.whenRequested(AGE_IN_YEARS) { ageInYears },
-            claims.whenRequested(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
-            claims.whenRequested(AGE_OVER_12) { ageOver12 },
-            claims.whenRequested(AGE_OVER_14) { ageOver14 },
-            claims.whenRequested(AGE_OVER_16) { ageOver16 },
-            claims.whenRequested(AGE_OVER_18) { ageOver18 },
-            claims.whenRequested(AGE_OVER_21) { ageOver21 },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequested(NATIONALITY) { nationality },
-            claims.whenRequested(RESIDENT_CITY) { city },
-            claims.whenRequested(RESIDENT_STATE) { state },
-            claims.whenRequested(RESIDENT_POSTAL_CODE) { postCode },
-            claims.whenRequested(RESIDENT_COUNTRY) { country },
-            claims.whenRequested(FAMILY_NAME_NATIONAL_CHARACTER) { userInfo.familyName },
-            claims.whenRequested(GIVEN_NAME_NATIONAL_CHARACTER) { userInfo.givenName },
+            claim(FAMILY_NAME) { userInfo.familyName },
+            claim(GIVEN_NAME) { userInfo.givenName },
+            claim(BIRTH_DATE) { dateOfBirth },
+            claim(ISSUE_DATE) { issueDate() },
+            claim(EXPIRY_DATE) { expiryDate() },
+            claim(ISSUING_COUNTRY) { issuingCountry },
+            claim(ISSUING_AUTHORITY) { issuingAuthority },
+            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
+            claim(PORTRAIT) { portrait },
+            claim(DRIVING_PRIVILEGES) { arrayOf(fakeDrivingPrivilege()) },
+            claim(UN_DISTINGUISHING_SIGN) { unDistinguishingSign },
+            claim(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claim(SEX) { sex },
+            claim(HEIGHT) { Random.nextUInt(150u, 210u) },
+            claim(WEIGHT) { Random.nextUInt(60u, 120u) },
+            claim(EYE_COLOUR) { randomEyeColour() },
+            claim(HAIR_COLOUR) { randomHairColour() },
+            claim(BIRTH_PLACE) { randomAddress().city },
+            claim(RESIDENT_ADDRESS) { formatted },
+            claim(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
+            claim(AGE_IN_YEARS) { ageInYears },
+            claim(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claim(AGE_OVER_12) { ageOver12 },
+            claim(AGE_OVER_14) { ageOver14 },
+            claim(AGE_OVER_16) { ageOver16 },
+            claim(AGE_OVER_18) { ageOver18 },
+            claim(AGE_OVER_21) { ageOver21 },
+            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claim(NATIONALITY) { nationality },
+            claim(RESIDENT_CITY) { city },
+            claim(RESIDENT_STATE) { state },
+            claim(RESIDENT_POSTAL_CODE) { postCode },
+            claim(RESIDENT_COUNTRY) { country },
+            claim(FAMILY_NAME_NATIONAL_CHARACTER) { userInfo.familyName },
+            claim(GIVEN_NAME_NATIONAL_CHARACTER) { userInfo.givenName },
         )
     }
 
@@ -624,51 +625,11 @@ fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
     return element?.toString()
 }
 
-fun OidcUserInfoExtended.getClaims(vararg key: String): String? {
-    return key.mapNotNull { getClaimAsString(it) }.ifEmpty { null }?.joinToString(" ")
-}
-
 private fun formatAddress(street: String, locator: Int, postalCode: String, city: String) =
     "$street $locator, $postalCode $city"
 
-private fun Collection<String>?.whenRequested(key: String, value: () -> Any?): ClaimToBeIssued? =
-    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else null
-
 private fun claim(key: String, value: () -> Any?): ClaimToBeIssued? =
     value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) }
-
-private fun Collection<String>?.whenRequested(key: String, selectivelyDisclosable: Boolean, value: () -> Any?): ClaimToBeIssued? =
-    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded(), selectivelyDisclosable) } else null
-
-
-// TODO when PR#160 will be used, replace with whenRequested
-private fun Collection<String>?.whenRequestedIssueIsoName(sdJwtName: String, value: () -> Any?): ClaimToBeIssued? {
-    val attrName = EuPidScheme.mapIsoToSdJwtAttributes.entries.firstOrNull { it.value == sdJwtName }?.key
-        ?: sdJwtName
-    return if (isNullOrContains(sdJwtName)) {
-        value()?.let { ClaimToBeIssued(attrName, it.encodeIfNeeded()) }
-    } else if (attrName != sdJwtName && isNullOrContains(attrName)) {
-        value()?.let { ClaimToBeIssued(attrName, it.encodeIfNeeded()) }
-    } else {
-        null
-    }
-}
-
-/**
- * Wallet App may request SD-JWT claim names, but we want to issue the ISO claim names
- */
-private fun Collection<String>?.whenRequestedOrAltName(key: String, value: () -> Any?): ClaimToBeIssued? =
-    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else
-        EuPidScheme.mapIsoToSdJwtAttributes[key]?.let { newKey ->
-            if (isNullOrContains(newKey)) value()?.let {
-                ClaimToBeIssued(key, it.encodeIfNeeded())
-            } else {
-                null
-            }
-        }
-
-fun Collection<String>?.isNullOrContains(name: String) =
-    this == null || contains(name)
 
 @OptIn(ExperimentalEncodingApi::class)
 fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
