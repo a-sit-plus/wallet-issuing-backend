@@ -93,6 +93,10 @@ tasks.test {
 }
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    //we just warn here, so the duplicates are printed.
+    //this is only relevant for a composite build and will nicely print out the warning that
+    //the VC-K jar from the composite build overwrites the one from the gradle cache, just like we want it
+    duplicatesStrategy = DuplicatesStrategy.WARN
     launchScript()
 }
 
