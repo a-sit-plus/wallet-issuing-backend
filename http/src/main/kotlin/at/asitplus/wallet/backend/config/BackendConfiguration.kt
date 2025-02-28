@@ -16,6 +16,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
@@ -26,7 +27,6 @@ import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
-import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -216,6 +216,16 @@ class BackendConfiguration {
     @Bean
     fun timePeriodProvider(): TimePeriodProvider = FixedTimePeriodProvider
 
+    private val credentialSchemes = setOf(
+        EuPidScheme,
+        MobileDrivingLicenceScheme,
+        PowerOfRepresentationScheme,
+        HealthIdScheme,
+        CertificateOfResidenceScheme,
+        CompanyRegistrationScheme,
+        TaxIdScheme
+    )
+
     @Bean
     fun issuerService(
         issuer: Issuer,
@@ -224,15 +234,7 @@ class BackendConfiguration {
     ): CredentialIssuer = CredentialIssuer(
         issuer = issuer,
         publicContext = configurationProperties.publicContext,
-        credentialSchemes = setOf(
-            EuPidScheme,
-            MobileDrivingLicenceScheme,
-            PowerOfRepresentationScheme,
-            HealthIdScheme,
-            CertificateOfResidenceScheme,
-            CompanyRegistrationScheme,
-            TaxIdScheme
-        ),
+        credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
         credentialProvider = OidcIssuerCredentialDataProvider(
             lifetime = configurationProperties.credentials.lifeTime,
@@ -247,14 +249,7 @@ class BackendConfiguration {
         SimpleAuthorizationService(
             strategy = CredentialAuthorizationServiceStrategy(
                 dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
-                credentialSchemes = setOf(
-                    EuPidScheme,
-                    MobileDrivingLicenceScheme,
-                    PowerOfRepresentationScheme,
-                    HealthIdScheme,
-                    CertificateOfResidenceScheme,
-                    CompanyRegistrationScheme
-                ),
+                credentialSchemes = credentialSchemes,
             ),
             publicContext = configurationProperties.publicContext,
             authorizationEndpointPath = "/authorize",
@@ -271,9 +266,7 @@ class BackendConfiguration {
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
-        KotlinSerializationJsonHttpMessageConverter(Json {
-            ignoreUnknownKeys = true
-        })
+        KotlinSerializationJsonHttpMessageConverter(vckJsonSerializer)
 }
 
 
