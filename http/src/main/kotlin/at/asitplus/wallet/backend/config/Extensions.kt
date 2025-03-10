@@ -6,7 +6,6 @@ import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
-import at.asitplus.wallet.cor.ResidenceAddress
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.EuPidScheme.Attributes.BIRTH_PLACE
@@ -319,42 +318,41 @@ private fun JsonObject?.getPrimitiveContent(key: String) = (this?.get(key) as? J
 fun OidcUserInfoExtended.buildPorClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(PowerOfRepresentationDataElements) {
         listOfNotNull(
-            claims.whenRequested(LEGAL_PERSON_IDENTIFIER) { legalPersonIdentifier },
-            claims.whenRequested(LEGAL_NAME) { legalName },
-            claims.whenRequested(FULL_POWERS) { true },
-            //claims.whenRequested(E_SERVICE) { eService },
-            claims.whenRequested(EFFECTIVE_FROM_DATE) { iss },
-            claims.whenRequested(EFFECTIVE_UNTIL_DATE) { exp },
-            claims.whenRequested(ISSUANCE_DATE) { iss },
-            claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(LEGAL_PERSON_IDENTIFIER, false) { legalPersonIdentifier },
+            claims.whenRequested(LEGAL_NAME, false) { legalName },
+            claims.whenRequested(FULL_POWERS, false) { true },
+            //claims.whenRequested(E_SERVICE, false) { eService },
+            claims.whenRequested(EFFECTIVE_FROM_DATE, false) { iss },
+            claims.whenRequested(EFFECTIVE_UNTIL_DATE, false) { exp },
+            claims.whenRequested(ISSUANCE_DATE, false) { iss },
+            claims.whenRequested(EXPIRY_DATE, false) { exp },
+            claims.whenRequested(ISSUING_AUTHORITY, false) { issuingAuthority },
+            claims.whenRequested(ISSUING_COUNTRY, false) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION, false) { issuingJurisdiction },
+            claims.whenRequested(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
+            claims.whenRequested(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
         )
     }
 
 fun OidcUserInfoExtended.buildTaxIdClaims(claims: Collection<String>?, iss: Instant, exp: Instant) =
     with(TaxIdScheme.Attributes) {
         listOfNotNull(
-            claims.whenRequested(TAX_NUMBER) { "ATU12345678" },
-            claims.whenRequested(AFFILIATION_COUNTRY) { "AT" },
-            claims.whenRequested(REGISTERED_GIVEN_NAME) { userInfo.givenName },
-            claims.whenRequested(REGISTERED_FAMILY_NAME) { userInfo.familyName },
-            //claims.whenRequested(E_SERVICE) { eService },
-            claims.whenRequested(RESIDENT_ADDRESS) { addressOrRandom().let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city } },
-            claims.whenRequested(BIRTH_DATE) { userInfo.birthDate?.let { it.split("-").reversed().joinToString("-") } },
-            claims.whenRequested(CHURCH_TAX_ID) { "ATU13339991" },
-            claims.whenRequested(IBAN) { "AT023200051286875134" },
-            claims.whenRequested(PID_ID) { "PID12345678" },
-            claims.whenRequested(ISSUANCE_DATE) { iss },
-            claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(TAX_NUMBER, false) { "ATU12345678" },
+            claims.whenRequested(AFFILIATION_COUNTRY, false) { "AT" },
+            claims.whenRequested(REGISTERED_GIVEN_NAME, false) { userInfo.givenName },
+            claims.whenRequested(REGISTERED_FAMILY_NAME, false) { userInfo.familyName },
+            claims.whenRequested(RESIDENT_ADDRESS, false) { addressOrRandom().let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city } },
+            claims.whenRequested(BIRTH_DATE, false) { dateOfBirth },
+            claims.whenRequested(CHURCH_TAX_ID, false) { "ATU13339991" },
+            claims.whenRequested(IBAN, false) { "AT023200051286875134" },
+            claims.whenRequested(PID_ID, false) { "PID12345678" },
+            claims.whenRequested(ISSUANCE_DATE, false) { iss },
+            claims.whenRequested(EXPIRY_DATE, false) { exp },
+            claims.whenRequested(ISSUING_AUTHORITY, false) { issuingAuthority },
+            claims.whenRequested(ISSUING_COUNTRY, false) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION, false) { issuingJurisdiction },
+            claims.whenRequested(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
+            claims.whenRequested(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
         )
     }
 
@@ -364,15 +362,15 @@ fun OidcUserInfoExtended.buildHealthIdClaims(claims: Collection<String>?, iss: I
             loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
                 ?: throw IllegalArgumentException("No data from EPrescriptionLoader")
         listOfNotNull(
-            claims.whenRequested(ONE_TIME_TOKEN) { ottElement.oneTimeToken },
-            claims.whenRequested(AFFILIATION_COUNTRY) { ottElement.countryCode },
-            claims.whenRequested(ISSUE_DATE) { iss },
-            claims.whenRequested(EXPIRY_DATE) { exp },
-            claims.whenRequested(ISSUING_AUTHORITY) { issuingAuthority },
-            claims.whenRequested(ISSUING_COUNTRY) { issuingCountry },
-            claims.whenRequested(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claims.whenRequested(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claims.whenRequested(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
+            claims.whenRequested(ONE_TIME_TOKEN, false) { ottElement.oneTimeToken },
+            claims.whenRequested(AFFILIATION_COUNTRY, false) { ottElement.countryCode },
+            claims.whenRequested(ISSUE_DATE, false) { iss },
+            claims.whenRequested(EXPIRY_DATE, false) { exp },
+            claims.whenRequested(ISSUING_AUTHORITY, false) { issuingAuthority },
+            claims.whenRequested(ISSUING_COUNTRY, false) { issuingCountry },
+            claims.whenRequested(ISSUING_JURISDICTION, false) { issuingJurisdiction },
+            claims.whenRequested(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
+            claims.whenRequested(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
         )
     }
 
@@ -423,23 +421,23 @@ fun OidcUserInfoExtended.buildCorClaims(claims: Collection<String>?, iss: Instan
         val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val fullAddress = formatAddress(street, locator, postCode, city)
-        val residenceAddress = Json.encodeToJsonElement(
-            ResidenceAddress(
-                thoroughfare = street,
-                locatorDesignator = locator.toString(),
-                postCode = postCode,
-                postName = city,
-                adminUnitLevel1 = country,
-                adminUnitLevel2 = state,
-                fullAddress = fullAddress,
-            )
-        )
         listOfNotNull(
             claims.whenRequested(FAMILY_NAME) { userInfo.familyName },
             claims.whenRequested(GIVEN_NAME) { userInfo.givenName },
             claims.whenRequested(BIRTH_DATE) { dateOfBirth },
-            claims.whenRequested(RESIDENCE_ADDRESS) { residenceAddress },
-            ClaimToBeIssued(RESIDENCE_ADDRESS, residenceAddress),
+            claims.whenRequested(RESIDENCE_ADDRESS) {
+                with(CertificateOfResidenceDataElements.Address) {
+                    listOf(
+                        claim(THOROUGHFARE) { street },
+                        claim(LOCATOR_DESIGNATOR) { locator },
+                        claim(POST_CODE) { postCode },
+                        claim(POST_NAME) { city },
+                        claim(ADMIN_UNIT_L_1) { country },
+                        claim(ADMIN_UNIT_L_2) { state },
+                        claim(FULL_ADDRESS) { fullAddress },
+                    )
+                }
+            },
             claims.whenRequested(RESIDENCE_ADDRESS_THOROUGHFARE) { street },
             claims.whenRequested(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR) { locator },
             claims.whenRequested(RESIDENCE_ADDRESS_POST_CODE) { postCode },
@@ -635,6 +633,12 @@ private fun formatAddress(street: String, locator: Int, postalCode: String, city
 
 private fun Collection<String>?.whenRequested(key: String, value: () -> Any?): ClaimToBeIssued? =
     if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) } else null
+
+private fun claim(key: String, value: () -> Any?): ClaimToBeIssued? =
+    value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) }
+
+private fun Collection<String>?.whenRequested(key: String, selectivelyDisclosable: Boolean, value: () -> Any?): ClaimToBeIssued? =
+    if (isNullOrContains(key)) value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded(), selectivelyDisclosable) } else null
 
 
 // TODO when PR#160 will be used, replace with whenRequested
