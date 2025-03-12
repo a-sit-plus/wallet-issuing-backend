@@ -54,21 +54,29 @@ fun ConstantIndex.CredentialScheme.buildClaims(
     loader: EPrescriptionLoader,
 ): List<ClaimToBeIssued> =
     when (this) {
-        is IdAustriaScheme -> userInfo.buildIdaClaims()
+        is IdAustriaScheme -> userInfo.buildIdaClaims(this.useSd())
         is EuPidScheme -> /* // TODO Use this once ARF PR#160 is through
         if (representation == CredentialRepresentation.SD_JWT)
-            userInfo.buildEupidClaimsSdJwt(claims, iss, exp)
+            userInfo.buildEupidClaimsSdJwt(claims, iss, exp, this.useSd())
         else*/
-            userInfo.buildEupidClaims(iss, exp)
+            userInfo.buildEupidClaims(iss, exp, this.useSd())
 
-        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, exp, loader)
-        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp)
-        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims()
-        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp)
-        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp)
-        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims()
+        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, exp, loader, this.useSd())
+        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
+        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
+        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
+        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
+        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(this.useSd())
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
+
+fun ConstantIndex.CredentialScheme.useSd() = when (this) {
+    is HealthIdScheme -> false
+    is TaxIdScheme -> false
+    is PowerOfRepresentationScheme -> false
+    is CompanyRegistrationScheme -> false
+    else -> true
+}
 
 fun List<ClaimToBeIssued>.toIsoClaims(
     pubKey: CryptoPublicKey,
@@ -143,365 +151,363 @@ fun OidcUserInfoExtended.toEuPidCredential(
     subjectPublicKey = pubKey
 )
 
-fun OidcUserInfoExtended.buildIdaClaims() =
+fun OidcUserInfoExtended.buildIdaClaims(useSd: Boolean) =
     with(IdAustriaScheme.Attributes) {
         listOfNotNull(
-            claim(BPK) { bpk },
-            claim(FIRSTNAME) { userInfo.givenName },
-            claim(LASTNAME) { userInfo.familyName },
-            claim(DATE_OF_BIRTH) { dateOfBirth },
-            claim(PORTRAIT) { portrait },
-            claim(MAIN_ADDRESS) { mainAddress },
-            claim(AGE_OVER_14) { ageOver14 },
-            claim(AGE_OVER_16) { ageOver16 },
-            claim(AGE_OVER_18) { ageOver18 },
-            claim(AGE_OVER_21) { ageOver21 },
-            claim(GENDER) { genderText },
+            claim(BPK, useSd) { bpk },
+            claim(FIRSTNAME, useSd) { userInfo.givenName },
+            claim(LASTNAME, useSd) { userInfo.familyName },
+            claim(DATE_OF_BIRTH, useSd) { dateOfBirth },
+            claim(PORTRAIT, useSd) { portrait },
+            claim(MAIN_ADDRESS, useSd) { mainAddress },
+            claim(AGE_OVER_14, useSd) { ageOver14 },
+            claim(AGE_OVER_16, useSd) { ageOver16 },
+            claim(AGE_OVER_18, useSd) { ageOver18 },
+            claim(AGE_OVER_21, useSd) { ageOver21 },
+            claim(GENDER, useSd) { genderText },
         )
     }
 
-fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd: Boolean) =
     with(EuPidScheme.SdJwtAttributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claim(FAMILY_NAME) { userInfo.familyName },
-            claim(GIVEN_NAME) { userInfo.givenName },
-            claim(BIRTH_DATE) { dateOfBirth },
-            claim(PORTRAIT) { portrait },
-            claim(PREFIX_AGE_EQUAL_OR_OVER) {
+            claim(FAMILY_NAME, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME, useSd) { userInfo.givenName },
+            claim(BIRTH_DATE, useSd) { dateOfBirth },
+            claim(PORTRAIT, useSd) { portrait },
+            claim(PREFIX_AGE_EQUAL_OR_OVER, useSd) {
                 with(EuPidScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
-                        claim(EQUAL_OR_OVER_12) { ageOver12 },
-                        claim(EQUAL_OR_OVER_14) { ageOver14 },
-                        claim(EQUAL_OR_OVER_16) { ageOver16 },
-                        claim(EQUAL_OR_OVER_18) { ageOver18 },
-                        claim(EQUAL_OR_OVER_21) { ageOver21 },
+                        claim(EQUAL_OR_OVER_12, useSd) { ageOver12 },
+                        claim(EQUAL_OR_OVER_14, useSd) { ageOver14 },
+                        claim(EQUAL_OR_OVER_16, useSd) { ageOver16 },
+                        claim(EQUAL_OR_OVER_18, useSd) { ageOver18 },
+                        claim(EQUAL_OR_OVER_21, useSd) { ageOver21 },
                     )
                 }
             },
-            claim(AGE_EQUAL_OR_OVER_12) { ageOver12 },
-            claim(AGE_EQUAL_OR_OVER_14) { ageOver14 },
-            claim(AGE_EQUAL_OR_OVER_16) { ageOver16 },
-            claim(AGE_EQUAL_OR_OVER_18) { ageOver18 },
-            claim(AGE_EQUAL_OR_OVER_21) { ageOver21 },
-            claim(AGE_IN_YEARS) { ageInYears },
-            claim(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
-            claim(FAMILY_NAME_BIRTH) { userInfo.familyName },
-            claim(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claim(PREFIX_PLACE_OF_BIRTH) {
+            claim(AGE_EQUAL_OR_OVER_12, useSd) { ageOver12 },
+            claim(AGE_EQUAL_OR_OVER_14, useSd) { ageOver14 },
+            claim(AGE_EQUAL_OR_OVER_16, useSd) { ageOver16 },
+            claim(AGE_EQUAL_OR_OVER_18, useSd) { ageOver18 },
+            claim(AGE_EQUAL_OR_OVER_21, useSd) { ageOver21 },
+            claim(AGE_IN_YEARS, useSd) { ageInYears },
+            claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
+            claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
+            claim(PREFIX_PLACE_OF_BIRTH, useSd) {
                 with(EuPidScheme.SdJwtAttributes.PlaceOfBirth) {
                     listOf(
-                        claim(LOCALITY) { ourBirthCity }
+                        claim(LOCALITY, useSd) { ourBirthCity }
                     )
                 }
             },
-            claim(BIRTH_PLACE) { ourBirthCity },
-            claim(PLACE_OF_BIRTH_LOCALITY) { ourBirthCity },
-            claim(PREFIX_PLACE_OF_BIRTH) {
+            claim(BIRTH_PLACE, useSd) { ourBirthCity },
+            claim(PLACE_OF_BIRTH_LOCALITY, useSd) { ourBirthCity },
+            claim(PREFIX_PLACE_OF_BIRTH, useSd) {
                 with(EuPidScheme.SdJwtAttributes.Address) {
                     listOf(
-                        claim(FORMATTED) { formatted },
-                        claim(COUNTRY) { country },
-                        claim(REGION) { state },
-                        claim(LOCALITY) { city },
-                        claim(POSTAL_CODE) { postCode },
-                        claim(STREET) { street },
-                        claim(HOUSE_NUMBER) { locator }.toString(),
+                        claim(FORMATTED, useSd) { formatted },
+                        claim(COUNTRY, useSd) { country },
+                        claim(REGION, useSd) { state },
+                        claim(LOCALITY, useSd) { city },
+                        claim(POSTAL_CODE, useSd) { postCode },
+                        claim(STREET, useSd) { street },
+                        claim(HOUSE_NUMBER, useSd) { locator }.toString(),
                     )
                 }
             },
-            claim(ADDRESS_FORMATTED) { formatted },
-            claim(ADDRESS_COUNTRY) { country },
-            claim(ADDRESS_REGION) { state },
-            claim(ADDRESS_LOCALITY) { city },
-            claim(ADDRESS_POSTAL_CODE) { postCode },
-            claim(ADDRESS_STREET) { street },
-            claim(ADDRESS_HOUSE_NUMBER) { locator.toString() },
-            claim(GENDER) { genderText },
-            claim(NATIONALITIES) { setOf(nationality) },
-            claim(ISSUANCE_DATE) { iss },
-            claim(EXPIRY_DATE) { exp },
-            claim(ISSUING_AUTHORITY) { issuingAuthority },
-            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claim(ISSUING_COUNTRY) { issuingCountry },
-            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claim(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claim(EMAIL_ADDRESS) { email },
-            claim(MOBILE_PHONE_NUMBER) { phoneNumber },
+            claim(ADDRESS_FORMATTED, useSd) { formatted },
+            claim(ADDRESS_COUNTRY, useSd) { country },
+            claim(ADDRESS_REGION, useSd) { state },
+            claim(ADDRESS_LOCALITY, useSd) { city },
+            claim(ADDRESS_POSTAL_CODE, useSd) { postCode },
+            claim(ADDRESS_STREET, useSd) { street },
+            claim(ADDRESS_HOUSE_NUMBER, useSd) { locator.toString() },
+            claim(GENDER, useSd) { genderText },
+            claim(NATIONALITIES, useSd) { setOf(nationality) },
+            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(EMAIL_ADDRESS, useSd) { email },
+            claim(MOBILE_PHONE_NUMBER, useSd) { phoneNumber },
         )
     }
 
-fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(EuPidScheme.Attributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claim(FAMILY_NAME) { userInfo.familyName },
-            claim(GIVEN_NAME) { userInfo.givenName },
-            claim(BIRTH_DATE) { dateOfBirth },
-            claim(BIRTH_PLACE) { ourBirthCity },
-            claim(NATIONALITY) { setOf(nationality) },
-            claim(RESIDENT_ADDRESS) { formatted },
-            claim(RESIDENT_COUNTRY) { country },
-            claim(RESIDENT_STATE) { state },
-            claim(RESIDENT_CITY) { city },
-            claim(RESIDENT_POSTAL_CODE) { postCode },
-            claim(RESIDENT_STREET) { street },
-            claim(RESIDENT_HOUSE_NUMBER) { locator.toString() },
-            claim(PERSONAL_ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claim(PORTRAIT) { portrait },
-            claim(FAMILY_NAME_BIRTH) { userInfo.familyName },
-            claim(GIVEN_NAME_BIRTH) { userInfo.givenName },
-            claim(SEX) { gender.code },
-            claim(EMAIL_ADDRESS) { email },
-            claim(MOBILE_PHONE_NUMBER) { phoneNumber },
-            claim(EXPIRY_DATE) { exp },
-            claim(ISSUING_AUTHORITY) { issuingAuthority },
-            claim(ISSUING_COUNTRY) { issuingCountry },
-            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claim(ISSUANCE_DATE) { iss },
-            claim(AGE_OVER_12) { ageOver12 },
-            claim(AGE_OVER_14) { ageOver14 },
-            claim(AGE_OVER_16) { ageOver16 },
-            claim(AGE_OVER_18) { ageOver18 },
-            claim(AGE_OVER_21) { ageOver21 },
-            claim(AGE_IN_YEARS) { ageInYears },
-            claim(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
+            claim(FAMILY_NAME, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME, useSd) { userInfo.givenName },
+            claim(BIRTH_DATE, useSd) { dateOfBirth },
+            claim(BIRTH_PLACE, useSd) { ourBirthCity },
+            claim(NATIONALITY, useSd) { setOf(nationality) },
+            claim(RESIDENT_ADDRESS, useSd) { formatted },
+            claim(RESIDENT_COUNTRY, useSd) { country },
+            claim(RESIDENT_STATE, useSd) { state },
+            claim(RESIDENT_CITY, useSd) { city },
+            claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
+            claim(RESIDENT_STREET, useSd) { street },
+            claim(RESIDENT_HOUSE_NUMBER, useSd) { locator.toString() },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(PORTRAIT, useSd) { portrait },
+            claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
+            claim(SEX, useSd) { gender.code },
+            claim(EMAIL_ADDRESS, useSd) { email },
+            claim(MOBILE_PHONE_NUMBER, useSd) { phoneNumber },
+            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(AGE_OVER_12, useSd) { ageOver12 },
+            claim(AGE_OVER_14, useSd) { ageOver14 },
+            claim(AGE_OVER_16, useSd) { ageOver16 },
+            claim(AGE_OVER_18, useSd) { ageOver18 },
+            claim(AGE_OVER_21, useSd) { ageOver21 },
+            claim(AGE_IN_YEARS, useSd) { ageInYears },
+            claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
         )
     }
 
-private fun OidcUserInfoExtended.addressOrRandom() = if (userInfo.address?.postalCode != null
-    && userInfo.address?.locality != null
-    && userInfo.address?.region != null
-    && userInfo.address?.street != null
-) {
-    Address(
-        postCode = userInfo.address!!.postalCode!!,
-        city = userInfo.address!!.locality!!,
-        state = userInfo.address!!.region!!,
-        street = userInfo.address!!.street!!.substringBefore(" "),
-        locator = userInfo.address!!.street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator()
-    )
-} else {
-    getClaimAsString("urn:eidgvat:attributes.mainAddress")?.let { idaAddress ->
-        runCatching {
-            val json = Json.parseToJsonElement(
-                idaAddress.decodeToByteArray(Base64()).toString(Charset.defaultCharset())
-            ) as? JsonObject
-            val postCode = json.getPrimitiveContent("Postleitzahl")
-            val city = json.getPrimitiveContent("Ortschaft")
-            val street = json.getPrimitiveContent("Strasse")
-            val locator = json.getPrimitiveContent("Hausnummer")
-            if (postCode != null && city != null && street != null && locator != null) {
-                Address(
-                    postCode = postCode,
-                    city = city,
-                    state = postCode.toState(),
-                    street = street,
-                    locator = locator.toIntOrNull() ?: randomAddressLocator()
-                )
-            } else {
-                null
-            }
-        }.getOrNull()
-    } ?: randomAddress()
-}
+private fun OidcUserInfoExtended.addressOrRandom(): Address = userInfo.address?.let {
+    if (it.postalCode != null && it.locality != null && it.region != null && it.street != null) {
+        Address(
+            postCode = it.postalCode!!,
+            city = it.locality!!,
+            state = it.region!!,
+            street = it.street!!.substringBefore(" "),
+            locator = it.street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator()
+        )
+    } else null
+} ?: getClaimAsString("urn:eidgvat:attributes.mainAddress")?.let { idaAddress ->
+    runCatching {
+        val json = Json.parseToJsonElement(
+            idaAddress.decodeToByteArray(Base64()).toString(Charset.defaultCharset())
+        ) as? JsonObject
+        val postCode = json.getPrimitiveContent("Postleitzahl")
+        val city = json.getPrimitiveContent("Ortschaft")
+        val street = json.getPrimitiveContent("Strasse")
+        val locator = json.getPrimitiveContent("Hausnummer")
+        if (postCode != null && city != null && street != null && locator != null) {
+            Address(
+                postCode = postCode,
+                city = city,
+                state = postCode.toState(),
+                street = street,
+                locator = locator.toIntOrNull() ?: randomAddressLocator()
+            )
+        } else {
+            null
+        }
+    }.getOrNull()
+} ?: randomAddress()
 
 private fun JsonObject?.getPrimitiveContent(key: String) = (this?.get(key) as? JsonPrimitive)?.content
 
-fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(PowerOfRepresentationDataElements) {
         listOfNotNull(
-            claim(LEGAL_PERSON_IDENTIFIER, false) { legalPersonIdentifier },
-            claim(LEGAL_NAME, false) { legalName },
-            claim(FULL_POWERS, false) { true },
-            //claim(E_SERVICE, false) { eService },
-            claim(EFFECTIVE_FROM_DATE, false) { iss },
-            claim(EFFECTIVE_UNTIL_DATE, false) { exp },
-            claim(ISSUANCE_DATE, false) { iss },
-            claim(EXPIRY_DATE, false) { exp },
-            claim(ISSUING_AUTHORITY, false) { issuingAuthority },
-            claim(ISSUING_COUNTRY, false) { issuingCountry },
-            claim(ISSUING_JURISDICTION, false) { issuingJurisdiction },
-            claim(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(LEGAL_PERSON_IDENTIFIER, useSd) { legalPersonIdentifier },
+            claim(LEGAL_NAME, useSd) { legalName },
+            claim(FULL_POWERS, useSd) { true },
+            //claim(E_SERVICE, useSd) { eService },
+            claim(EFFECTIVE_FROM_DATE, useSd) { iss },
+            claim(EFFECTIVE_UNTIL_DATE, useSd) { exp },
+            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
         )
     }
 
-fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(TaxIdScheme.Attributes) {
         listOfNotNull(
-            claim(TAX_NUMBER, false) { "ATU12345678" },
-            claim(AFFILIATION_COUNTRY, false) { "AT" },
-            claim(REGISTERED_GIVEN_NAME, false) { userInfo.givenName },
-            claim(REGISTERED_FAMILY_NAME, false) { userInfo.familyName },
-            //claim(E_SERVICE, false) { eService },
-            claim(RESIDENT_ADDRESS, false) { addressOrRandom().let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city } },
-            claim(BIRTH_DATE, false) { dateOfBirth },
-            claim(CHURCH_TAX_ID, false) { "ATU13339991" },
-            claim(IBAN, false) { "AT023200051286875134" },
-            claim(PID_ID, false) { "PID12345678" },
-            claim(ISSUANCE_DATE, false) { iss },
-            claim(EXPIRY_DATE, false) { exp },
-            claim(ISSUING_AUTHORITY, false) { issuingAuthority },
-            claim(ISSUING_COUNTRY, false) { issuingCountry },
-            claim(ISSUING_JURISDICTION, false) { issuingJurisdiction },
-            claim(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(TAX_NUMBER, useSd) { "ATU12345678" },
+            claim(AFFILIATION_COUNTRY, useSd) { "AT" },
+            claim(REGISTERED_GIVEN_NAME, useSd) { userInfo.givenName },
+            claim(REGISTERED_FAMILY_NAME, useSd) { userInfo.familyName },
+            claim(RESIDENT_ADDRESS, useSd) {
+                addressOrRandom()
+                    .let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city }
+            },
+            claim(BIRTH_DATE, useSd) { dateOfBirth },
+            claim(CHURCH_TAX_ID, useSd) { "ATU13339991" },
+            claim(IBAN, useSd) { "AT023200051286875134" },
+            claim(PID_ID, useSd) { "PID12345678" },
+            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
         )
     }
 
-fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, exp: Instant, loader: EPrescriptionLoader) =
+fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, exp: Instant, loader: EPrescriptionLoader, useSd: Boolean) =
     with(HealthIdScheme.Attributes) {
         val ottElement =
             loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
                 ?: throw IllegalArgumentException("No data from EPrescriptionLoader")
         listOfNotNull(
-            claim(ONE_TIME_TOKEN, false) { ottElement.oneTimeToken },
-            claim(AFFILIATION_COUNTRY, false) { ottElement.countryCode },
-            claim(ISSUE_DATE, false) { iss },
-            claim(EXPIRY_DATE, false) { exp },
-            claim(ISSUING_AUTHORITY, false) { issuingAuthority },
-            claim(ISSUING_COUNTRY, false) { issuingCountry },
-            claim(ISSUING_JURISDICTION, false) { issuingJurisdiction },
-            claim(DOCUMENT_NUMBER, false) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, false) { UUID.randomUUID().toString() },
+            claim(ONE_TIME_TOKEN, useSd) { ottElement.oneTimeToken },
+            claim(AFFILIATION_COUNTRY, useSd) { ottElement.countryCode },
+            claim(ISSUE_DATE, useSd) { iss },
+            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
         )
     }
 
 
-fun OidcUserInfoExtended.buildCompanyRegistrationClaims() =
+fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
     with(CompanyRegistrationDataElements) {
         listOfNotNull(
-            claim(COMPANY_NAME) { legalName },
-            claim(COMPANY_TYPE) { "Einzelunternehmen" },
-            claim(COMPANY_STATUS) { "economically active" },
-            claim(COMPANY_ACTIVITY) {
+            claim(COMPANY_NAME, useSd) { legalName },
+            claim(COMPANY_TYPE, useSd) { "Einzelunternehmen" },
+            claim(COMPANY_STATUS, useSd) { "economically active" },
+            claim(COMPANY_ACTIVITY, useSd) {
                 with(CompanyRegistrationDataElements.CompanyActivity) {
                     listOf(
-                        claim(NACE_CODE) { "J62" },
-                        //claim(ACTIVITY_DESCRIPTION){"7500"}
+                        claim(NACE_CODE, useSd) { "J62" },
+                        //claim(ACTIVITY_DESCRIPTION, useSd){"7500"}
                     )
                 }
             },
-            claim(REGISTRATION_DATE) { LocalDate(2015, 6, 25) },
-            //claim(COMPANY_END_DATE) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
-            claim(COMPANY_EUID) { "ATCHCUSP.69743824" },
-            claim(VAT_NUMBER) { "ATU69743824" },
-            claim(COMPANY_CONTACT_DATA) {
+            claim(REGISTRATION_DATE, useSd) { LocalDate(2015, 6, 25) },
+            //claim(COMPANY_END_DATE, useSd) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
+            claim(COMPANY_EUID, useSd) { "ATCHCUSP.69743824" },
+            claim(VAT_NUMBER, useSd) { "ATU69743824" },
+            claim(COMPANY_CONTACT_DATA, useSd) {
                 with(CompanyRegistrationDataElements.ContactData) {
                     listOf(
-                        claim(EMAIL) { "office@a-sit.at" },
-                        claim(TELEPHONE) { "+43-555-${Random.nextInt(1, 9999)}" }
+                        claim(EMAIL, useSd) { "office@a-sit.at" },
+                        claim(TELEPHONE, useSd) { "+43-555-${Random.nextInt(1, 9999)}" }
                     )
                 }
             },
-            claim(REGISTERED_ADDRESS) {
+            claim(REGISTERED_ADDRESS, useSd) {
                 with(CompanyRegistrationDataElements.Address) {
                     listOf(
-                        claim(THOROUGHFARE) { "Seidlgasse" },
-                        claim(LOCATOR_DESIGNATOR) { "22/9" },
-                        claim(POST_CODE) { "1030" },
-                        claim(POST_NAME) { "Wien" },
-                        claim(ADMIN_UNIT_L_1) { "AT" },
-                        claim(ADMIN_UNIT_L_2) { "Wien" }
+                        claim(THOROUGHFARE, useSd) { "Seidlgasse" },
+                        claim(LOCATOR_DESIGNATOR, useSd) { "22/9" },
+                        claim(POST_CODE, useSd) { "1030" },
+                        claim(POST_NAME, useSd) { "Wien" },
+                        claim(ADMIN_UNIT_L_1, useSd) { "AT" },
+                        claim(ADMIN_UNIT_L_2, useSd) { "Wien" }
                     )
                 }
             },
         )
     }
 
-fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant) =
+fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(CertificateOfResidenceDataElements) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val fullAddress = formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claim(FAMILY_NAME) { userInfo.familyName },
-            claim(GIVEN_NAME) { userInfo.givenName },
-            claim(BIRTH_DATE) { dateOfBirth },
-            claim(RESIDENCE_ADDRESS) {
+            claim(FAMILY_NAME, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME, useSd) { userInfo.givenName },
+            claim(BIRTH_DATE, useSd) { dateOfBirth },
+            claim(RESIDENCE_ADDRESS, useSd) {
                 with(CertificateOfResidenceDataElements.Address) {
                     listOf(
-                        claim(THOROUGHFARE) { street },
-                        claim(LOCATOR_DESIGNATOR) { locator },
-                        claim(POST_CODE) { postCode },
-                        claim(POST_NAME) { city },
-                        claim(ADMIN_UNIT_L_1) { country },
-                        claim(ADMIN_UNIT_L_2) { state },
-                        claim(FULL_ADDRESS) { fullAddress },
+                        claim(THOROUGHFARE, useSd) { street },
+                        claim(LOCATOR_DESIGNATOR, useSd) { locator },
+                        claim(POST_CODE, useSd) { postCode },
+                        claim(POST_NAME, useSd) { city },
+                        claim(ADMIN_UNIT_L_1, useSd) { country },
+                        claim(ADMIN_UNIT_L_2, useSd) { state },
+                        claim(FULL_ADDRESS, useSd) { fullAddress },
                     )
                 }
             },
-            claim(RESIDENCE_ADDRESS_THOROUGHFARE) { street },
-            claim(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR) { locator },
-            claim(RESIDENCE_ADDRESS_POST_CODE) { postCode },
-            claim(RESIDENCE_ADDRESS_POST_NAME) { city },
-            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_1) { country },
-            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_2) { state },
-            claim(RESIDENCE_ADDRESS_FULL_ADDRESS) { fullAddress },
-            claim(GENDER) { gender },
-            claim(BIRTH_PLACE) { randomAddress().city },
-            claim(ARRIVAL_DATE) { arrivalDate },
-            claim(NATIONALITY) { nationality },
-            claim(ISSUANCE_DATE) { iss },
-            claim(EXPIRY_DATE) { exp },
-            claim(ISSUING_AUTHORITY) { issuingAuthority },
-            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claim(ISSUING_COUNTRY) { issuingCountry },
-            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
+            claim(RESIDENCE_ADDRESS_THOROUGHFARE, useSd) { street },
+            claim(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR, useSd) { locator },
+            claim(RESIDENCE_ADDRESS_POST_CODE, useSd) { postCode },
+            claim(RESIDENCE_ADDRESS_POST_NAME, useSd) { city },
+            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_1, useSd) { country },
+            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_2, useSd) { state },
+            claim(RESIDENCE_ADDRESS_FULL_ADDRESS, useSd) { fullAddress },
+            claim(GENDER, useSd) { gender },
+            claim(BIRTH_PLACE, useSd) { randomAddress().city },
+            claim(ARRIVAL_DATE, useSd) { arrivalDate },
+            claim(NATIONALITY, useSd) { nationality },
+            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
         )
     }
 
 
-fun OidcUserInfoExtended.buildMdlClaims() =
+fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
     with(MobileDrivingLicenceDataElements) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
-            claim(FAMILY_NAME) { userInfo.familyName },
-            claim(GIVEN_NAME) { userInfo.givenName },
-            claim(BIRTH_DATE) { dateOfBirth },
-            claim(ISSUE_DATE) { issueDate() },
-            claim(EXPIRY_DATE) { expiryDate() },
-            claim(ISSUING_COUNTRY) { issuingCountry },
-            claim(ISSUING_AUTHORITY) { issuingAuthority },
-            claim(DOCUMENT_NUMBER) { UUID.randomUUID().toString() },
-            claim(PORTRAIT) { portrait },
-            claim(DRIVING_PRIVILEGES) { arrayOf(fakeDrivingPrivilege()) },
-            claim(UN_DISTINGUISHING_SIGN) { unDistinguishingSign },
-            claim(ADMINISTRATIVE_NUMBER) { UUID.randomUUID().toString() },
-            claim(SEX) { sex },
-            claim(HEIGHT) { Random.nextUInt(150u, 210u) },
-            claim(WEIGHT) { Random.nextUInt(60u, 120u) },
-            claim(EYE_COLOUR) { randomEyeColour() },
-            claim(HAIR_COLOUR) { randomHairColour() },
-            claim(BIRTH_PLACE) { randomAddress().city },
-            claim(RESIDENT_ADDRESS) { formatted },
-            claim(PORTRAIT_CAPTURE_DATE) { portraitCaptureDate },
-            claim(AGE_IN_YEARS) { ageInYears },
-            claim(AGE_BIRTH_YEAR) { dateOfBirth.year.toUInt() },
-            claim(AGE_OVER_12) { ageOver12 },
-            claim(AGE_OVER_14) { ageOver14 },
-            claim(AGE_OVER_16) { ageOver16 },
-            claim(AGE_OVER_18) { ageOver18 },
-            claim(AGE_OVER_21) { ageOver21 },
-            claim(ISSUING_JURISDICTION) { issuingJurisdiction },
-            claim(NATIONALITY) { nationality },
-            claim(RESIDENT_CITY) { city },
-            claim(RESIDENT_STATE) { state },
-            claim(RESIDENT_POSTAL_CODE) { postCode },
-            claim(RESIDENT_COUNTRY) { country },
-            claim(FAMILY_NAME_NATIONAL_CHARACTER) { userInfo.familyName },
-            claim(GIVEN_NAME_NATIONAL_CHARACTER) { userInfo.givenName },
+            claim(FAMILY_NAME, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME, useSd) { userInfo.givenName },
+            claim(BIRTH_DATE, useSd) { dateOfBirth },
+            claim(ISSUE_DATE, useSd) { issueDate() },
+            claim(EXPIRY_DATE, useSd) { expiryDate() },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(PORTRAIT, useSd) { portrait },
+            claim(DRIVING_PRIVILEGES, useSd) { arrayOf(fakeDrivingPrivilege()) },
+            claim(UN_DISTINGUISHING_SIGN, useSd) { unDistinguishingSign },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(SEX, useSd) { sex },
+            claim(HEIGHT, useSd) { Random.nextUInt(150u, 210u) },
+            claim(WEIGHT, useSd) { Random.nextUInt(60u, 120u) },
+            claim(EYE_COLOUR, useSd) { randomEyeColour() },
+            claim(HAIR_COLOUR, useSd) { randomHairColour() },
+            claim(BIRTH_PLACE, useSd) { randomAddress().city },
+            claim(RESIDENT_ADDRESS, useSd) { formatted },
+            claim(PORTRAIT_CAPTURE_DATE, useSd) { portraitCaptureDate },
+            claim(AGE_IN_YEARS, useSd) { ageInYears },
+            claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
+            claim(AGE_OVER_12, useSd) { ageOver12 },
+            claim(AGE_OVER_14, useSd) { ageOver14 },
+            claim(AGE_OVER_16, useSd) { ageOver16 },
+            claim(AGE_OVER_18, useSd) { ageOver18 },
+            claim(AGE_OVER_21, useSd) { ageOver21 },
+            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            claim(NATIONALITY, useSd) { nationality },
+            claim(RESIDENT_CITY, useSd) { city },
+            claim(RESIDENT_STATE, useSd) { state },
+            claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
+            claim(RESIDENT_COUNTRY, useSd) { country },
+            claim(FAMILY_NAME_NATIONAL_CHARACTER, useSd) { userInfo.familyName },
+            claim(GIVEN_NAME_NATIONAL_CHARACTER, useSd) { userInfo.givenName },
         )
     }
 
@@ -628,8 +634,8 @@ fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
 private fun formatAddress(street: String, locator: Int, postalCode: String, city: String) =
     "$street $locator, $postalCode $city"
 
-private fun claim(key: String, value: () -> Any?): ClaimToBeIssued? =
-    value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded()) }
+private fun claim(key: String, useSd: Boolean, value: () -> Any?): ClaimToBeIssued? =
+    value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded(), useSd) }
 
 @OptIn(ExperimentalEncodingApi::class)
 fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
