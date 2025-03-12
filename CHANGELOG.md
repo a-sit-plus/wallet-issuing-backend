@@ -3,9 +3,7 @@
 5.5.0:
  - Update to VC-K 5.5.0
  - Update issuing process to OID4VCI Draft 15
-
-5.4.3:
- - tbd
+ - Do not issue Company Registration with selectively disclosable claims
 
 5.4.2:
  - Include indexes for all credentials in token status list

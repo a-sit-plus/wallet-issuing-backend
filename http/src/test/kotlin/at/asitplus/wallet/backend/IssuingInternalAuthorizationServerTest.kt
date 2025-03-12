@@ -4,6 +4,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eupid.EuPidCredential
@@ -152,7 +153,10 @@ class IssuingInternalAuthorizationServerTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+        vcJws.subject.shouldNotBeNull()
+        vcJws.disclosureDigests.shouldBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+            .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
     @Disabled("Need to enter correct URL and api-key")
