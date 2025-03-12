@@ -11,7 +11,6 @@ plugins {
     kotlin("plugin.jpa")
     kotlin("plugin.allopen")
     id("org.springframework.boot") version VersionsBackend.spring.boot
-    id("io.spring.dependency-management") version VersionsBackend.spring.`dependency-management`
     id("at.asitplus.gradle.conventions")
 }
 
@@ -25,7 +24,12 @@ configurations {
     }
 }
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:${VersionsBackend.spring.boot}"))
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -43,12 +47,6 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.nimbus}")
     implementation(vclib.napier)
     implementation(coroutines())
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.0!!")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.8.0!!")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.8.0!!")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-cbor-jvm:1.8.0!!")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0!!")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.8.0!!")
     implementation(bouncycastle("bcpkix"))
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
@@ -64,8 +62,8 @@ dependencies {
     implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")
     implementation("at.asitplus.wallet:healthid:${VersionsBackend.healthId}")
     implementation("at.asitplus.wallet:company-registration:${VersionsBackend.cr}")
-    implementation(vclib.vck)
-    implementation(vclib.vck.openid)
+    implementation("at.asitplus.wallet:vck-jvm:${VersionsBackend.vck}")
+    implementation("at.asitplus.wallet:vck-openid-jvm:${VersionsBackend.vck}")
     implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
 
     implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
