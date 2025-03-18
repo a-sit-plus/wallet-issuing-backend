@@ -19,6 +19,9 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
     @Query("select max(i.revocationListIndex) from IssuedCredential i where i.timePeriod = :timePeriod")
     fun getMaxRevocationListIndex(@Param("timePeriod") timePeriod: Int): Long?
 
+    @Query("select i from IssuedCredential i where i.timePeriod = :timePeriod order by i.revocationListIndex")
+    fun getByTimePeriod(@Param("timePeriod") timePeriod: Int): Collection<IssuedCredential>
+
     fun findAllByValidUntilBefore(cutoff: Instant): Collection<IssuedCredential>
 
 
