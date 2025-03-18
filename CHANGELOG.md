@@ -1,7 +1,9 @@
 # Changelog
 
 5.4.2:
- - tbd
+ - Include indexes for all credentials in token status list
+ - Update Power of Representation credential to 1.2.0, fixing the `sdJwtType`
+ - Update Company Registration credential to 1.1.0, fixing the `sdJwtType`
 
 5.4.1
  - Do not issue all credentials in SD-JWT with disclosures, some are not selectively disclosable
