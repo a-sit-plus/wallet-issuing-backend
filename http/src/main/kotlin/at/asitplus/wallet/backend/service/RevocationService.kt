@@ -156,25 +156,21 @@ class DefaultRevocationService(
     }
 
     override fun getStatusListView(timePeriod: Int): StatusListView =
-        StatusListView.fromTokenStatuses(
-            allCredentials(timePeriod).sortedBy { it.revocationListIndex }.map { TokenStatus(it.status) },
-            TokenStatusBitSize.ONE
+        StatusListView.fromTokenStatuses(tokenStatusForAllIndexes(timePeriod), TokenStatusBitSize.ONE)
+
+    private fun tokenStatusForAllIndexes(timePeriod: Int): List<TokenStatus> {
+        val revoked = revokedCredentialRepo.getByTimePeriod(timePeriod)
+        val maxRevocationListIndex = max(
+            credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+            revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
         )
+        return List(maxRevocationListIndex.toInt()) { listIndex ->
+            TokenStatus(revoked.findIndex(listIndex)?.status ?: TokenStatus.Valid.value)
+        }
+    }
 
-    data class IntermediateView(
-        val revocationListIndex: Long,
-        val status: UByte,
-    )
-
-    private fun allCredentials(timePeriod: Int): List<IntermediateView> =
-        revokedCredentialRepo.getByTimePeriod(timePeriod).map { it.toIntermediate() } +
-                credentialRepo.getByTimePeriod(timePeriod).map { it.toIntermediate() }
-
-    private fun RevokedCredential.toIntermediate(): IntermediateView =
-        IntermediateView(revocationListIndex, status)
-
-    private fun IssuedCredential.toIntermediate(): IntermediateView =
-        IntermediateView(revocationListIndex, TokenStatus.Valid.value)
+    private fun Collection<RevokedCredential>.findIndex(listIndex: Int): RevokedCredential? =
+        find { it.revocationListIndex == listIndex.toLong() }
 
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
