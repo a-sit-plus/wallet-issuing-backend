@@ -157,9 +157,24 @@ class DefaultRevocationService(
 
     override fun getStatusListView(timePeriod: Int): StatusListView =
         StatusListView.fromTokenStatuses(
-            revokedCredentialRepo.getByTimePeriod(timePeriod).map { TokenStatus(it.status) },
+            allCredentials(timePeriod).sortedBy { it.revocationListIndex }.map { TokenStatus(it.status) },
             TokenStatusBitSize.ONE
         )
+
+    data class IntermediateView(
+        val revocationListIndex: Long,
+        val status: UByte,
+    )
+
+    private fun allCredentials(timePeriod: Int): List<IntermediateView> =
+        revokedCredentialRepo.getByTimePeriod(timePeriod).map { it.toIntermediate() } +
+                credentialRepo.getByTimePeriod(timePeriod).map { it.toIntermediate() }
+
+    private fun RevokedCredential.toIntermediate(): IntermediateView =
+        IntermediateView(revocationListIndex, status)
+
+    private fun IssuedCredential.toIntermediate(): IntermediateView =
+        IntermediateView(revocationListIndex, TokenStatus.Valid.value)
 
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
