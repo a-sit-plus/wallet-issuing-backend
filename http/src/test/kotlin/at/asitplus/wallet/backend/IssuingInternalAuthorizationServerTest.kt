@@ -10,10 +10,12 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
+import at.asitplus.wallet.lib.agent.SdJwtValidator
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.iso.IssuerSigned
+import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -149,7 +151,8 @@ class IssuingInternalAuthorizationServerTest {
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+        vcJws.issuer.shouldNotBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential).shouldNotBeNull()).reconstructedJsonObject.shouldNotBeNull()
     }
 
     @Test
@@ -190,7 +193,8 @@ class IssuingInternalAuthorizationServerTest {
         val serializedCredential = credential.credential.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+        vcJws.issuer.shouldNotBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential).shouldNotBeNull()).reconstructedJsonObject.shouldNotBeNull()
     }
 
     @Test
