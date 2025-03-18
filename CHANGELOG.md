@@ -1,5 +1,8 @@
 # Changelog
 
+5.4.3:
+ - tbd
+
 5.4.2:
  - Include indexes for all credentials in token status list
  - Update Power of Representation credential to 1.2.0, fixing the `sdJwtType`
