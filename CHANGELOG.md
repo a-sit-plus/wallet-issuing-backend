@@ -1,5 +1,8 @@
 # Changelog
 
+5.4.1
+ - Do not issue all credentials in SD-JWT with disclosures, some are not selectively disclosable
+
 5.4.0
 - Update to VC-K 5.4.0
 - Fix encoding of status list in JWT or CWT
