@@ -1,5 +1,8 @@
 # Changelog
 
+5.4.2:
+ - tbd
+
 5.4.1
  - Do not issue all credentials in SD-JWT with disclosures, some are not selectively disclosable
 
