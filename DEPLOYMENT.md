@@ -1,34 +1,110 @@
-# PupilId Backend Service
+# Wallet Issuing Service
 
-This backend service for provisioning and revoking PupilIds runs at <https://wallet.a-sit.at/>.
+This backend service for provisioning and revoking verifiable credentials runs at <https://wallet.a-sit.at/m6>.
 
-The configuration used there is the following to load the configuration via the Spring Cloud Config Server from the repository at <https://extgit.iaik.tugraz.at/ckollmann/spring-cloud-config>:
+Some notable configuration properties (aside from the usual setting of context paths, ports and logging) are:
 
 ```yaml
+backend:
+  pki:
+    internal:
+      key:
+        type: MEMORY
+  issuer-key:
+    type: KEYSTORE
+    keystore:
+      path: "file:/srv/wallet-backend-m6/data/keystore.p12"
+      type: PKCS12
+  eprescription:
+    url: https://test.baumann.at/sites/ott-service/
+    api-key: TODO
 spring:
-  profiles:
-    active: pupilid
-  application:
-    name: wallet
-  config:
-    import: optional:configserver:http://localhost:9910/
-  cloud:
-    config:
-      enabled: true
+  jpa:
+    database: H2
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: "org.hibernate.dialect.H2Dialect"
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  datasource:
+    driver-class: "org.h2.Driver"
+    url: "jdbc:h2:file:/srv/wallet-backend-m6/data/h2.db"
+    platform: h2
+    username: sa
+    password: sa
+  security:
+    oauth2:
+      client:
+        registration:
+          idaq:
+            client-id: "https://wallet.a-sit.at/m6"
+            client-secret: "TODO"
+            scope: "openid, profile"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "https://wallet.a-sit.at/m6/login/oauth2/code/idaq"
+            client-name: "ID Austria"
+          idaqv:
+            client-id: "https://wallet.a-sit.at/m6v"
+            client-secret: "TODO"
+            scope: "openid, profile"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "https://wallet.a-sit.at/m6/login/oauth2/code/idaqv"
+            client-name: "ID Austria in Vertretung"
+        provider:
+          idaq:
+            issuer-uri: "https://eid2.oesterreich.gv.at"
+          idaqv:
+            issuer-uri: "https://eid2.oesterreich.gv.at"
 ```
 
-Additional configuration (e.g. of the reverse proxy) is documented in the [Software Guidebook](https://gitlab.iaik.tugraz.at/groups/wallet/-/wikis/Software-Guidebook-Sch%C3%BClerausweis).
+There are some settings necessary for the reverse proxy, in this case Apache2:
 
-To update the service running at <https://wallet.a-sit.at> perform the following steps:
+```
+<Location "/m6">
+  ProxyPass "http://localhost:9860/m6"
+  ProxyPassReverse "http://localhost:9860/m6"
+  ProxyPreserveHost On
+  RequestHeader set X-Forwarded-Proto https
+  RequestHeader set X-Forwarded-Port 443
+</Location>
 
-- Develop the changes on a local `feature/*` branch
-- Push that branch to GitLab
-- Run the CI step `publishSnapshot` manually for that pipeline, see [GitLab UI](https://gitlab.iaik.tugraz.at/wallet/backend/-/pipelines)
-- Once the code is merged to `development`, a `publish` job will run automatically
-- The outcome is a package in the [GitLab Package Registry](https://gitlab.iaik.tugraz.at/wallet/backend/-/packages)
-- Create a [personal access token](https://gitlab.iaik.tugraz.at/-/profile/personal_access_tokens) with scope `read_api`, needed for the deploy script
-- Locally (because we'll need a VPN connection) run `./deploy.sh 1.0.0-SNAPSHOT YOUR_PERSONAL_ACCESS_TOKEN`
+<Location "/m6/android">
+  ProxyPass "!"
+</Location>
 
-## libwebp
+Alias /.well-known /var/www/wallet/html/.well-known
 
-See (libpweb/README.md)[libwebp/README.md].
+<Directory /var/www/wallet/html/.well-known>
+  AllowOverride All
+</Directory>
+```
+
+Inside `/var/www/wallet/html/.well-known` put this `.htaccess` file, to forward requests to well-known URLs:
+
+```
+RewriteEngine On
+
+RewriteRule ^jwt-vc-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteRule ^mdoc-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteRule ^jar-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteCond %{REQUEST_FILENAME} -d
+
+<Files "apple-app-site-association">
+    Header set Content-type 'application/json'
+</Files>
+<Files "wallet-metadata">
+    Header set Content-type 'application/json'
+</Files>
+<Files "assetlinks.json">
+    Header set Content-type 'application/json'
+</Files>
+
+Options -Indexes
+```
+
+There needs to be self-signed certificate attached to the key used to sign credentials (see above in `backend.issuer-key`).
