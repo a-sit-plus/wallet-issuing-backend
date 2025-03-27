@@ -1,4 +1,4 @@
-# Wallet Backend Service
+# Wallet Issuing Service
 
 This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing `IdAustriaCredentials` or anything else.
 
