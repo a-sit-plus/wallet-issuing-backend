@@ -17,7 +17,6 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -26,6 +25,7 @@ import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.ModelAndView
 import qrcode.QRCode
+
 
 /**
  * Implements controller for OpenID 4 Verifiable Credential Issuance
@@ -111,8 +111,8 @@ class OpenId4VciController(
             ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         val result = authorizationService.par(
             params,
-            request.getHeader("OAuth-Client-Attestation"),
-            request.getHeader("OAuth-Client-Attestation-PoP"),
+            request.getHeader(O_AUTH_CLIENT_ATTESTATION),
+            request.getHeader(O_AUTH_CLIENT_ATTESTATION_POP),
         ).getOrElse {
             Napier.w("/par got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
@@ -190,8 +190,8 @@ class OpenId4VciController(
         url = requestURL.toString(),
         method = HttpMethod.parse(method),
         dpop = getHeader("DPoP"),
-        clientAttestation = getHeader("OAuth-Client-Attestation"),
-        clientAttestationPop = getHeader("OAuth-Client-Attestation-PoP"),
+        clientAttestation = getHeader(O_AUTH_CLIENT_ATTESTATION),
+        clientAttestationPop = getHeader(O_AUTH_CLIENT_ATTESTATION_POP),
     )
 
     @PostMapping("/credential", produces = [APPLICATION_JSON_VALUE])
@@ -234,3 +234,7 @@ class OpenId4VciController(
 
 }
 
+
+private const val O_AUTH_CLIENT_ATTESTATION = "OAuth-Client-Attestation"
+
+private const val O_AUTH_CLIENT_ATTESTATION_POP = "OAuth-Client-Attestation-PoP"
