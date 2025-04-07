@@ -34,7 +34,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.*
 import java.nio.charset.Charset
 import java.util.*
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlin.random.nextUInt
 
@@ -636,10 +635,7 @@ private fun formatAddress(street: String, locator: Int, postalCode: String, city
     "$street $locator, $postalCode $city"
 
 private fun claim(key: String, useSd: Boolean, value: () -> Any?): ClaimToBeIssued? =
-    value()?.let { ClaimToBeIssued(key, it.encodeIfNeeded(), useSd) }
-
-@OptIn(ExperimentalEncodingApi::class)
-fun Any.encodeIfNeeded() = if (this is ByteArray) kotlin.io.encoding.Base64.encode(this) else this
+    value()?.let { ClaimToBeIssued(key, it, useSd) }
 
 private fun expiryDate() = LocalDate.parse("2025-12-31")
 
