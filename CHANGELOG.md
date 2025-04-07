@@ -1,6 +1,7 @@
 # Changelog
 
 5.5.1:
+ - Update to VC-K 5.5.1
  - define a revocation identifier for non-empty MDOC credentials
  - expose revocation identifier 
 
