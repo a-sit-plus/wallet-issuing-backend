@@ -117,6 +117,8 @@ class DefaultRevocationService(
                 revocationListIndex = revocationListIndex
             )
             val savedCredential = credentialRepo.save(issuedCredential)
+            // trigger writing new revocation list, because we'll need the new index on the list!
+            applicationEventPublisher.publishEvent(RevocationEvent(this, timePeriod))
             return@runCatching savedCredential.revocationListIndex
         }
     }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
