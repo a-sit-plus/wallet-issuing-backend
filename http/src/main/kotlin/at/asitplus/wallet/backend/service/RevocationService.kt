@@ -5,6 +5,7 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
+import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -95,39 +96,30 @@ class DefaultRevocationService(
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
         subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
-    ): Long? =
-        runCatching {
-            synchronized(CredentialRepositoriesLock) {
-                val id = credential.extractVcId()
-                // we might store something later on ... index will not be used by vclib
-                    ?: return 0
-                if (credentialRepo.findBytimePeriodAndVcId(timePeriod, id) != null)
-                    return@runCatching null.also {
-                        Napier.e("Tried to store a new credential for existing vcId")
-                        Napier.v("vcId: '$id'")
-                    }
-                val revocationListIndex = max(
-                    (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
-                    revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-                ) + 1
-                val issuedCredential = IssuedCredential(
-                    vcId = id,
-                    subjectId = subjectPublicKey.didEncoded,
-                    validUntil = expirationDate.toJavaInstant(),
-                    timePeriod = timePeriod,
-                    attributeName = credential.attributeName(),
-                    revocationListIndex = revocationListIndex
-                )
-                val savedCredential = credentialRepo.save(issuedCredential)
-                return@runCatching savedCredential.revocationListIndex
-            }
-        }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
-
-    private fun IssuerCredentialStore.Credential.extractVcId() = when (this) {
-        is IssuerCredentialStore.Credential.Iso -> null
-        is IssuerCredentialStore.Credential.VcJwt -> vcId
-        is IssuerCredentialStore.Credential.VcSd -> vcId
-    }
+    ): Long? = runCatching {
+        synchronized(CredentialRepositoriesLock) {
+            val vcId = credential.revocationIdentifier
+            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
+                return@runCatching null.also {
+                    Napier.e("Tried to store a new credential for existing vcId")
+                    Napier.v("vcId: '$vcId'")
+                }
+            val revocationListIndex = max(
+                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
+                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
+            ) + 1
+            val issuedCredential = IssuedCredential(
+                vcId = vcId,
+                subjectId = subjectPublicKey.didEncoded,
+                validUntil = expirationDate.toJavaInstant(),
+                timePeriod = timePeriod,
+                attributeName = credential.attributeName(),
+                revocationListIndex = revocationListIndex
+            )
+            val savedCredential = credentialRepo.save(issuedCredential)
+            return@runCatching savedCredential.revocationListIndex
+        }
+    }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
 
     override fun setStatus(
         vcId: String,
@@ -206,3 +198,10 @@ private fun IssuerCredentialStore.Credential.attributeName(): String = when (thi
     is IssuerCredentialStore.Credential.VcJwt -> this.scheme.schemaUri
     is IssuerCredentialStore.Credential.VcSd -> this.scheme.schemaUri
 }
+
+val IssuerCredentialStore.Credential.revocationIdentifier: String
+    get() = when (this) {
+        is IssuerCredentialStore.Credential.Iso -> "urn:uuid:${uuid4()}"
+        is IssuerCredentialStore.Credential.VcJwt -> vcId
+        is IssuerCredentialStore.Credential.VcSd -> vcId
+    }
