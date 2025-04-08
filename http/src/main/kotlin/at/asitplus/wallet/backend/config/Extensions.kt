@@ -8,9 +8,6 @@ import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.eupid.EuPidScheme.Attributes.BIRTH_PLACE
-import at.asitplus.wallet.eupid.EuPidScheme.Attributes.EMAIL_ADDRESS
-import at.asitplus.wallet.eupid.EuPidScheme.Attributes.MOBILE_PHONE_NUMBER
 import at.asitplus.wallet.eupid.IsoIec5218Gender
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
@@ -205,7 +202,6 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
                     )
                 }
             },
-            claim(BIRTH_PLACE, useSd) { ourBirthCity },
             claim(PLACE_OF_BIRTH_LOCALITY, useSd) { ourBirthCity },
             claim(PREFIX_PLACE_OF_BIRTH, useSd) {
                 with(EuPidScheme.SdJwtAttributes.Address) {
@@ -236,8 +232,10 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
-            claim(EMAIL_ADDRESS, useSd) { email },
-            claim(MOBILE_PHONE_NUMBER, useSd) { phoneNumber },
+            claim(EMAIL, useSd) { email },
+            claim(PHONE_NUMBER, useSd) { phoneNumber },
+            claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
+            claim(LOCATION_STATUS, useSd) { "https://wallet.a-sit.at/" },
         )
     }
 
@@ -280,6 +278,8 @@ fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(AGE_OVER_21, useSd) { ageOver21 },
             claim(AGE_IN_YEARS, useSd) { ageInYears },
             claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
+            claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
+            claim(LOCATION_STATUS, useSd) { "https://wallet.a-sit.at/" },
         )
     }
 
