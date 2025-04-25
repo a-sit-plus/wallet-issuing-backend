@@ -9,10 +9,8 @@ import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
-import at.asitplus.wallet.idaustria.IdAustriaCredential
-import at.asitplus.wallet.idaustria.IdAustriaScheme
-import at.asitplus.wallet.lib.agent.SdJwtCreator
 import at.asitplus.wallet.lib.agent.SdJwtValidator
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
@@ -30,7 +28,6 @@ import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
-import io.kotest.matchers.collections.shouldContainOnly
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -87,6 +84,20 @@ class IssuingInternalAuthorizationServerTest {
     @WithOAuth2AuthenticationToken
     fun pid_sdjwt_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(EuPidScheme, SD_JWT)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
+        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
+        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun pid_new_sdjwt_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(EuPidSdJwtScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 

@@ -57,6 +57,7 @@ dependencies {
     implementation("at.asitplus.wallet:taxid:${VersionsBackend.taxid}")
     implementation("at.asitplus.wallet:idacredential:${VersionsBackend.ida}")
     implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
+    implementation("at.asitplus.wallet:eupidcredential-sdjwt:${VersionsBackend.`eupid-sdjwt`}")
     implementation("at.asitplus.wallet:mobiledrivinglicence:${VersionsBackend.mdl}")
     implementation("at.asitplus.wallet:powerofrepresentation:${VersionsBackend.por}")
     implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")

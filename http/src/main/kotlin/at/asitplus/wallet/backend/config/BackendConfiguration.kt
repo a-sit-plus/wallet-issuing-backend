@@ -13,6 +13,7 @@ import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.cbor.DefaultCoseService
@@ -101,6 +102,7 @@ class BackendConfiguration {
         at.asitplus.wallet.idaustria.Initializer.initWithVCK()
         at.asitplus.wallet.taxid.Initializer.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
+        at.asitplus.wallet.eupidsdjwt.Initializer.initWithVCK()
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
         at.asitplus.wallet.cor.Initializer.initWithVCK()
         at.asitplus.wallet.por.Initializer.initWithVCK()
@@ -223,6 +225,7 @@ class BackendConfiguration {
 
     private val credentialSchemes = setOf(
         EuPidScheme,
+        EuPidSdJwtScheme,
         MobileDrivingLicenceScheme,
         PowerOfRepresentationScheme,
         HealthIdScheme,
