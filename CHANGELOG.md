@@ -1,5 +1,9 @@
 # Changelog
 
+5.5.3:
+ - Update to VC-K 5.5.3
+ - Issue claims for EU PID credential with vct `urn:eudi:pid:1`
+
 5.5.2:
  - Update to VC-K 5.5.2
 

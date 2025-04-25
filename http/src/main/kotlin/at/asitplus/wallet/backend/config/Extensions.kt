@@ -9,6 +9,7 @@ import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.IsoIec5218Gender
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.idaustria.IdAustriaCredential
 import at.asitplus.wallet.idaustria.IdAustriaScheme
@@ -27,7 +28,6 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.*
-import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.*
 import java.nio.charset.Charset
 import java.util.*
@@ -51,12 +51,8 @@ fun ConstantIndex.CredentialScheme.buildClaims(
 ): List<ClaimToBeIssued> =
     when (this) {
         is IdAustriaScheme -> userInfo.buildIdaClaims(this.useSd())
-        is EuPidScheme -> /* // TODO Use this once ARF PR#160 is through
-        if (representation == CredentialRepresentation.SD_JWT)
-            userInfo.buildEupidClaimsSdJwt(claims, iss, exp, this.useSd())
-        else*/
-            userInfo.buildEupidClaims(iss, exp, this.useSd())
-
+        is EuPidScheme -> userInfo.buildEupidClaims(iss, exp, this.useSd())
+        is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(iss, exp, this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, exp, loader, this.useSd())
         is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
@@ -165,7 +161,7 @@ fun OidcUserInfoExtended.buildIdaClaims(useSd: Boolean) =
     }
 
 fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd: Boolean) =
-    with(EuPidScheme.SdJwtAttributes) {
+    with(EuPidSdJwtScheme.SdJwtAttributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
         val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
@@ -176,7 +172,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(BIRTH_DATE, useSd) { dateOfBirth },
             claim(PORTRAIT, useSd) { portrait },
             claim(PREFIX_AGE_EQUAL_OR_OVER, useSd) {
-                with(EuPidScheme.SdJwtAttributes.AgeEqualOrOver) {
+                with(EuPidSdJwtScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
                         claim(EQUAL_OR_OVER_12, useSd) { ageOver12 },
                         claim(EQUAL_OR_OVER_14, useSd) { ageOver14 },
@@ -196,15 +192,17 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
             claim(PREFIX_PLACE_OF_BIRTH, useSd) {
-                with(EuPidScheme.SdJwtAttributes.PlaceOfBirth) {
+                with(EuPidSdJwtScheme.SdJwtAttributes.PlaceOfBirth) {
                     listOf(
-                        claim(LOCALITY, useSd) { ourBirthCity }
+                        claim(LOCALITY, useSd) { ourBirthCity },
+                        claim(COUNTRY, useSd) { country },
+                        claim(REGION, useSd) { ourBirthState },
                     )
                 }
             },
             claim(PLACE_OF_BIRTH_LOCALITY, useSd) { ourBirthCity },
             claim(PREFIX_PLACE_OF_BIRTH, useSd) {
-                with(EuPidScheme.SdJwtAttributes.Address) {
+                with(EuPidSdJwtScheme.SdJwtAttributes.Address) {
                     listOf(
                         claim(FORMATTED, useSd) { formatted },
                         claim(COUNTRY, useSd) { country },
@@ -223,7 +221,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(ADDRESS_POSTAL_CODE, useSd) { postCode },
             claim(ADDRESS_STREET, useSd) { street },
             claim(ADDRESS_HOUSE_NUMBER, useSd) { locator.toString() },
-            claim(GENDER, useSd) { genderText },
+            claim(SEX, useSd) { gender },
             claim(NATIONALITIES, useSd) { setOf(nationality) },
             claim(ISSUANCE_DATE, useSd) { iss },
             claim(EXPIRY_DATE, useSd) { exp },
@@ -235,7 +233,6 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(EMAIL, useSd) { email },
             claim(PHONE_NUMBER, useSd) { phoneNumber },
             claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
-            claim(LOCATION_STATUS, useSd) { "https://wallet.a-sit.at/" },
         )
     }
 
