@@ -1,5 +1,8 @@
 # Changelog
 
+5.5.2:
+ - Update to VC-K 5.5.2
+
 5.5.1:
  - Issue claims with byte arrays without encoding them to Base64
  - Update to VC-K 5.5.1
