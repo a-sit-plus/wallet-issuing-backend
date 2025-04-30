@@ -20,6 +20,7 @@ import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
+import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements.PORTRAIT_CAPTURE_DATE
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
@@ -28,6 +29,7 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.*
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.*
 import java.nio.charset.Charset
 import java.util.*
@@ -129,10 +131,16 @@ fun OidcUserInfoExtended.toEuPidCredential(
         birthDate = dateOfBirth,
         portrait = portrait,
         ageOver12 = ageOver12,
+        ageOver13 = ageOver13,
         ageOver14 = ageOver14,
         ageOver16 = ageOver16,
         ageOver18 = ageOver18,
         ageOver21 = ageOver21,
+        ageOver25 = ageOver25,
+        ageOver60 = ageOver60,
+        ageOver62 = ageOver62,
+        ageOver65 = ageOver65,
+        ageOver68 = ageOver68,
         issuanceDate = iss,
         expiryDate = exp,
         issuingAuthority = issuingAuthority,
@@ -175,18 +183,30 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
                 with(EuPidSdJwtScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
                         claim(EQUAL_OR_OVER_12, useSd) { ageOver12 },
+                        claim(EQUAL_OR_OVER_13, useSd) { ageOver13 },
                         claim(EQUAL_OR_OVER_14, useSd) { ageOver14 },
                         claim(EQUAL_OR_OVER_16, useSd) { ageOver16 },
                         claim(EQUAL_OR_OVER_18, useSd) { ageOver18 },
                         claim(EQUAL_OR_OVER_21, useSd) { ageOver21 },
+                        claim(EQUAL_OR_OVER_25, useSd) { ageOver25 },
+                        claim(EQUAL_OR_OVER_60, useSd) { ageOver60 },
+                        claim(EQUAL_OR_OVER_62, useSd) { ageOver62 },
+                        claim(EQUAL_OR_OVER_65, useSd) { ageOver65 },
+                        claim(EQUAL_OR_OVER_68, useSd) { ageOver68 },
                     )
                 }
             },
             claim(AGE_EQUAL_OR_OVER_12, useSd) { ageOver12 },
+            claim(AGE_EQUAL_OR_OVER_13, useSd) { ageOver13 },
             claim(AGE_EQUAL_OR_OVER_14, useSd) { ageOver14 },
             claim(AGE_EQUAL_OR_OVER_16, useSd) { ageOver16 },
             claim(AGE_EQUAL_OR_OVER_18, useSd) { ageOver18 },
             claim(AGE_EQUAL_OR_OVER_21, useSd) { ageOver21 },
+            claim(AGE_EQUAL_OR_OVER_25, useSd) { ageOver25 },
+            claim(AGE_EQUAL_OR_OVER_60, useSd) { ageOver60 },
+            claim(AGE_EQUAL_OR_OVER_62, useSd) { ageOver62 },
+            claim(AGE_EQUAL_OR_OVER_65, useSd) { ageOver65 },
+            claim(AGE_EQUAL_OR_OVER_68, useSd) { ageOver68 },
             claim(AGE_IN_YEARS, useSd) { ageInYears },
             claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
@@ -257,6 +277,7 @@ fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(RESIDENT_HOUSE_NUMBER, useSd) { locator.toString() },
             claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(PORTRAIT, useSd) { portrait },
+            claim(PORTRAIT_CAPTURE_DATE, useSd) { portraitCaptureDate },
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
             claim(SEX, useSd) { gender.code },
@@ -269,10 +290,16 @@ fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(ISSUANCE_DATE, useSd) { iss },
             claim(AGE_OVER_12, useSd) { ageOver12 },
+            claim(AGE_OVER_13, useSd) { ageOver13 },
             claim(AGE_OVER_14, useSd) { ageOver14 },
             claim(AGE_OVER_16, useSd) { ageOver16 },
             claim(AGE_OVER_18, useSd) { ageOver18 },
             claim(AGE_OVER_21, useSd) { ageOver21 },
+            claim(AGE_OVER_25, useSd) { ageOver25 },
+            claim(AGE_OVER_60, useSd) { ageOver60 },
+            claim(AGE_OVER_62, useSd) { ageOver62 },
+            claim(AGE_OVER_65, useSd) { ageOver65 },
+            claim(AGE_OVER_68, useSd) { ageOver68 },
             claim(AGE_IN_YEARS, useSd) { ageInYears },
             claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
             claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
@@ -492,10 +519,16 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(AGE_IN_YEARS, useSd) { ageInYears },
             claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
             claim(AGE_OVER_12, useSd) { ageOver12 },
+            claim(AGE_OVER_13, useSd) { ageOver13 },
             claim(AGE_OVER_14, useSd) { ageOver14 },
             claim(AGE_OVER_16, useSd) { ageOver16 },
             claim(AGE_OVER_18, useSd) { ageOver18 },
             claim(AGE_OVER_21, useSd) { ageOver21 },
+            claim(AGE_OVER_25, useSd) { ageOver25 },
+            claim(AGE_OVER_60, useSd) { ageOver60 },
+            claim(AGE_OVER_62, useSd) { ageOver62 },
+            claim(AGE_OVER_65, useSd) { ageOver65 },
+            claim(AGE_OVER_68, useSd) { ageOver68 },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(NATIONALITY, useSd) { nationality },
             claim(RESIDENT_CITY, useSd) { city },
@@ -504,7 +537,11 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(RESIDENT_COUNTRY, useSd) { country },
             claim(FAMILY_NAME_NATIONAL_CHARACTER, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_NATIONAL_CHARACTER, useSd) { userInfo.givenName },
-            claim(SIGNATURE_USUAL_MARK, useSd) { signature() }
+            claim(SIGNATURE_USUAL_MARK, useSd) { signature() },
+            claim(BIOMETRIC_TEMPLATE_FACE, useSd) { signature() },
+            claim(BIOMETRIC_TEMPLATE_FINGER, useSd) { signature() },
+            claim(BIOMETRIC_TEMPLATE_SIGNATURE_SIGN, useSd) { signature() },
+            claim(BIOMETRIC_TEMPLATE_IRIS, useSd) { signature() },
         )
     }
 
@@ -556,26 +593,50 @@ fun String.toIsoGenderEnum() = when (this) {
 
 val OidcUserInfoExtended.ageOver12
     get() = getClaimAsString("org.iso.18013.5.1:age_over_12")?.toBoolean()
-        ?: ageOver14
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(12)))
+
+val OidcUserInfoExtended.ageOver13
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_13")?.toBoolean()
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(13)))
 
 val OidcUserInfoExtended.ageOver14
     get() = getClaimAsString("org.iso.18013.5.1:age_over_14")?.toBoolean()
-        ?: ageOver16
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(14)))
 
 val OidcUserInfoExtended.ageOver16
     get() = getClaimAsString("org.iso.18013.5.1:age_over_16")?.toBoolean()
-        ?: ageOver18
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(16)))
 
 val OidcUserInfoExtended.ageOver18: Boolean
     get() = userInfo.ageOver18
         ?: getClaimAsString("org.iso.18013.5.1:age_over_18")?.toBoolean()
-        ?: ageOver21
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(18)))
 
 fun Instant.toLocalDate() = toLocalDateTime(TimeZone.currentSystemDefault()).date
 
 val OidcUserInfoExtended.ageOver21: Boolean
     get() = getClaimAsString("org.iso.18013.5.1:age_over_21")?.toBoolean()
         ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(21)))
+
+val OidcUserInfoExtended.ageOver25: Boolean
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_25")?.toBoolean()
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(25)))
+
+val OidcUserInfoExtended.ageOver60: Boolean
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_60")?.toBoolean()
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(60)))
+
+val OidcUserInfoExtended.ageOver62: Boolean
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_62")?.toBoolean()
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(62)))
+
+val OidcUserInfoExtended.ageOver65: Boolean
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_65")?.toBoolean()
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(65)))
+
+val OidcUserInfoExtended.ageOver68: Boolean
+    get() = getClaimAsString("org.iso.18013.5.1:age_over_68")?.toBoolean()
+        ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(68)))
 
 val OidcUserInfoExtended.ageInYears: UInt
     get() = (Clock.System.now().toLocalDate().minus(dateOfBirth)).years.toUInt()
@@ -587,6 +648,7 @@ val OidcUserInfoExtended.portrait: ByteArray?
 val OidcUserInfoExtended.portraitCaptureDate: LocalDate?
     get() = getClaimAsString("org.iso.18013.5.1:portrait_capture_date")
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        ?: LocalDate(2020, Random.nextInt(1, 12), Random.nextInt(1, 28))
 
 val OidcUserInfoExtended.mainAddress: String?
     get() = userInfo.address?.formatted
