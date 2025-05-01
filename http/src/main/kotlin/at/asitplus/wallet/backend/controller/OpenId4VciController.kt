@@ -69,7 +69,7 @@ class OpenId4VciController(
     @GetMapping("/offer", produces = [APPLICATION_JSON_VALUE])
     fun offer(): ResponseEntity<CredentialOffer> = runBlocking {
         Napier.i("/offer called")
-        val offer = credentialIssuer.credentialOfferWithAuthorizationCode()
+        val offer = authorizationService.credentialOfferWithAuthorizationCode(credentialIssuer.metadata.credentialIssuer)
         Napier.d("/offer returns $offer")
         return@runBlocking ResponseEntity.ok(offer)
     }
@@ -88,7 +88,7 @@ class OpenId4VciController(
         val principal = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.i("/index called with $principal")
         principal?.let {
-            val offer = credentialIssuer.credentialOfferWithPreAuthnForUser(principal)
+            val offer = authorizationService.credentialOfferWithPreAuthnForUser(principal, credentialIssuer.metadata.credentialIssuer)
             val nonce = uuid4().toString().also { mapNonceToOffer[it] = offer }
             val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
             val url = "oid4vci://wallet.a-sit.at/offer?credential_offer_uri=$credentialOfferUrl"
