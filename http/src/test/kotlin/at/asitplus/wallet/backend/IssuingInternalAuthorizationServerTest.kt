@@ -222,7 +222,6 @@ class IssuingInternalAuthorizationServerTest {
     private suspend fun loadCredential(requestOptions: WalletService.RequestOptions): CredentialResponseParameters {
         val client = Client()
         val state = uuid4().toString()
-        val offer = credentialIssuer.credentialOfferWithAuthorizationCode()
         val credentialFormat =
             client.oid4vciClient.selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
                 .shouldNotBeNull()
