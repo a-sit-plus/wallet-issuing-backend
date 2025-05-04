@@ -2,6 +2,7 @@
 
 5.6.0:
  - Update to VC-K 5.6.0
+ - Update Tax ID credential to 1.1.1, fixing the `sdJwtType`
 
 5.5.3:
  - Update to VC-K 5.5.3

@@ -20,10 +20,10 @@ import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
-import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements.PORTRAIT_CAPTURE_DATE
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
+import at.asitplus.wallet.taxid.TaxId2025Scheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
@@ -57,6 +57,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(iss, exp, this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, exp, loader, this.useSd())
         is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
+        is TaxId2025Scheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
@@ -67,6 +68,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is HealthIdScheme -> false
     is TaxIdScheme -> false
+    is TaxId2025Scheme -> false
     is PowerOfRepresentationScheme -> false
     is CompanyRegistrationScheme -> false
     else -> true
@@ -362,7 +364,7 @@ fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant, useSd: Boole
     }
 
 fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boolean) =
-    with(TaxIdScheme.Attributes) {
+    with(TaxId2025Scheme.Attributes) {
         listOfNotNull(
             claim(TAX_NUMBER, useSd) { "ATU12345678" },
             claim(AFFILIATION_COUNTRY, useSd) { "AT" },
