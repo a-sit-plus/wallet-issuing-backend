@@ -25,6 +25,7 @@ import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
+import at.asitplus.wallet.taxid.TaxId2025Scheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
@@ -188,11 +189,26 @@ class IssuingInternalAuthorizationServerTest {
             .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
     }
 
-
     @Test
     @WithOAuth2AuthenticationToken
     fun taxid_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(TaxIdScheme, SD_JWT)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
+        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
+        vcJws.issuer.shouldNotBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential).shouldNotBeNull()).reconstructedJsonObject.shouldNotBeNull()
+        vcJws.disclosureDigests.shouldBeNull()
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun taxid2025_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(TaxId2025Scheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 

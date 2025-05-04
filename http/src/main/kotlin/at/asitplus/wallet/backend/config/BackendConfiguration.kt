@@ -25,6 +25,7 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
+import at.asitplus.wallet.taxid.TaxId2025Scheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
@@ -101,6 +102,7 @@ class BackendConfiguration {
         at.asitplus.wallet.lib.Initializer.initOpenIdModule()
         at.asitplus.wallet.idaustria.Initializer.initWithVCK()
         at.asitplus.wallet.taxid.Initializer.initWithVCK()
+        at.asitplus.wallet.taxid.Initializer2025.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
         at.asitplus.wallet.eupidsdjwt.Initializer.initWithVCK()
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
@@ -231,7 +233,8 @@ class BackendConfiguration {
         HealthIdScheme,
         CertificateOfResidenceScheme,
         CompanyRegistrationScheme,
-        TaxIdScheme
+        TaxIdScheme,
+        TaxId2025Scheme,
     )
 
     @Bean
