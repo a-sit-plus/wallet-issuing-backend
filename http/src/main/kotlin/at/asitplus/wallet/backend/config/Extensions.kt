@@ -55,7 +55,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is IdAustriaScheme -> userInfo.buildIdaClaims(this.useSd())
         is EuPidScheme -> userInfo.buildEupidClaims(iss, exp, this.useSd())
         is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(iss, exp, this.useSd())
-        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, exp, loader, this.useSd())
+        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
         is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is TaxId2025Scheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
@@ -388,7 +388,7 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
         )
     }
 
-fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, exp: Instant, loader: EPrescriptionLoader, useSd: Boolean) =
+fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, loader: EPrescriptionLoader, useSd: Boolean) =
     with(HealthIdScheme.Attributes) {
         val ottElement =
             loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
@@ -397,7 +397,7 @@ fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, exp: Instant, loader:
             claim(ONE_TIME_TOKEN, useSd) { ottElement.oneTimeToken },
             claim(AFFILIATION_COUNTRY, useSd) { ottElement.countryCode },
             claim(ISSUE_DATE, useSd) { iss },
-            claim(EXPIRY_DATE, useSd) { exp },
+            claim(EXPIRY_DATE, useSd) { ottElement.ottValidUntil },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
