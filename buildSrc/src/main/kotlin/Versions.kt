@@ -8,6 +8,7 @@ object VersionsBackend {
     const val cor = "2.1.2"
     const val eprescription = "1.1.1"
     const val healthId = "2.0.0"
+    const val ehic =  "1.0.1-SNAPSHOT"
     const val cr = "1.1.0"
     const val qrcode = "4.1.1"
     const val `google-cbor` = "0.01.02"

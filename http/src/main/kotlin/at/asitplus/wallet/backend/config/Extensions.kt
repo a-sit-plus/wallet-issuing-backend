@@ -6,6 +6,7 @@ import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
+import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.IsoIec5218Gender
@@ -25,6 +26,7 @@ import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
 import at.asitplus.wallet.taxid.TaxIdScheme
+import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -62,11 +64,13 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
         is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(this.useSd())
+        is EhicScheme -> userInfo.buildEhicClaims(iss, exp, this.useSd())
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is HealthIdScheme -> false
+    is EhicScheme -> false
     is TaxIdScheme -> false
     is TaxId2025Scheme -> false
     is PowerOfRepresentationScheme -> false
@@ -450,6 +454,25 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
                     )
                 }
             },
+        )
+    }
+
+fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Boolean): List<ClaimToBeIssued> =
+    with(EhicScheme.Attributes) {
+        listOfNotNull(
+            claim(ISSUING_COUNTRY, useSd) { "dummyValue1" },
+            claim(SOCIAL_SECURITY_NUMBER, useSd) { "dummyValue2" },
+            claim(DOCUMENT_NUMBER, useSd) { "dummyValue3" },
+            claim(PREFIX_ISSUING_AUTHORITY, useSd) {
+                with(EhicScheme.Attributes.IssuingAuthority) {
+                    listOf(
+                        claim(id, useSd) { uuid4() },
+                        claim(name, useSd) { "dummyValue4" }
+                    )
+                }
+            },
+            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(EXPIRY_DATE, useSd) { exp }
         )
     }
 

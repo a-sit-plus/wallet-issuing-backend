@@ -62,6 +62,7 @@ dependencies {
     implementation("at.asitplus.wallet:powerofrepresentation:${VersionsBackend.por}")
     implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")
     implementation("at.asitplus.wallet:healthid:${VersionsBackend.healthId}")
+    implementation("at.asitplus.wallet:ehic:${VersionsBackend.ehic}")
     implementation("at.asitplus.wallet:company-registration:${VersionsBackend.cr}")
     implementation("at.asitplus.wallet:vck-jvm:${VersionsBackend.vck}")
     implementation("at.asitplus.wallet:vck-openid-jvm:${VersionsBackend.vck}")
