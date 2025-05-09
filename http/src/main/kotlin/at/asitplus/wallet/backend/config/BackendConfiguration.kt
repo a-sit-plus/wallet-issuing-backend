@@ -12,6 +12,7 @@ import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
+import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
@@ -110,6 +111,7 @@ class BackendConfiguration {
         at.asitplus.wallet.por.Initializer.initWithVCK()
         at.asitplus.wallet.healthid.Initializer.initWithVCK()
         at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
+        at.asitplus.wallet.ehic.Initializer.initWithVCK()
     }
 
     @PostConstruct
@@ -235,6 +237,7 @@ class BackendConfiguration {
         CompanyRegistrationScheme,
         TaxIdScheme,
         TaxId2025Scheme,
+        EhicScheme
     )
 
     @Bean

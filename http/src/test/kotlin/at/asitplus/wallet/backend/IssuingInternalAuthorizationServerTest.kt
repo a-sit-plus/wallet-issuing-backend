@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
+import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
@@ -187,6 +188,22 @@ class IssuingInternalAuthorizationServerTest {
         vcJws.disclosureDigests.shouldBeNull()
         SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun ehic_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(EhicScheme, SD_JWT)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
+        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
+        val vcJws = VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
+        vcJws.issuer.shouldNotBeNull()
+        SdJwtValidator(SdJwtSigned.parse(serializedCredential).shouldNotBeNull()).reconstructedJsonObject.shouldNotBeNull()
+        vcJws.disclosureDigests.shouldBeNull()
     }
 
     @Test
