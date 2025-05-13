@@ -466,8 +466,8 @@ fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Bool
             claim(PREFIX_ISSUING_AUTHORITY, useSd) {
                 with(EhicScheme.Attributes.IssuingAuthority) {
                     listOf(
-                        claim(id, useSd) { uuid4() },
-                        claim(name, useSd) { "dummyValue4" }
+                        claim(ID, useSd) { uuid4() },
+                        claim(NAME, useSd) { "dummyValue4" }
                     )
                 }
             },
