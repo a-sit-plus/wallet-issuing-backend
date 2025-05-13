@@ -64,7 +64,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
         is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(this.useSd())
-        is EhicScheme -> userInfo.buildEhicClaims(iss, exp, this.useSd())
+        is EhicScheme -> userInfo.buildEhicClaims(this.useSd())
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
@@ -457,22 +457,28 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
         )
     }
 
-fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Boolean): List<ClaimToBeIssued> =
+fun OidcUserInfoExtended.buildEhicClaims(useSd: Boolean): List<ClaimToBeIssued> =
     with(EhicScheme.Attributes) {
         listOfNotNull(
-            claim(ISSUING_COUNTRY, useSd) { "dummyValue1" },
-            claim(SOCIAL_SECURITY_NUMBER, useSd) { "dummyValue2" },
-            claim(DOCUMENT_NUMBER, useSd) { "dummyValue3" },
+            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
+            claim(SOCIAL_SECURITY_NUMBER, useSd) {
+                "1111" + dateOfBirth.format(LocalDate.Format {
+                    dayOfMonth()
+                    monthNumber()
+                    year()
+                })
+            },
+            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(PREFIX_ISSUING_AUTHORITY, useSd) {
                 with(EhicScheme.Attributes.IssuingAuthority) {
                     listOf(
-                        claim(ID, useSd) { uuid4() },
-                        claim(NAME, useSd) { "dummyValue4" }
+                        claim(ID, useSd) { UUID.randomUUID().toString() },
+                        claim(NAME, useSd) { issuingAuthority }
                     )
                 }
             },
-            claim(ISSUANCE_DATE, useSd) { iss },
-            claim(EXPIRY_DATE, useSd) { exp }
+            claim(ISSUANCE_DATE, useSd) { issueDate() },
+            claim(EXPIRY_DATE, useSd) { expiryDate() }
         )
     }
 
