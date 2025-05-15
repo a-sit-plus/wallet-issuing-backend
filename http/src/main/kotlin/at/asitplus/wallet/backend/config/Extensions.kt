@@ -26,7 +26,6 @@ import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
 import at.asitplus.wallet.taxid.TaxIdScheme
-import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -459,6 +458,7 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
 
 fun OidcUserInfoExtended.buildEhicClaims(useSd: Boolean): List<ClaimToBeIssued> =
     with(EhicScheme.Attributes) {
+        val issuingAuthorityId = UUID.randomUUID().toString()
         listOfNotNull(
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(SOCIAL_SECURITY_NUMBER, useSd) {
@@ -469,10 +469,12 @@ fun OidcUserInfoExtended.buildEhicClaims(useSd: Boolean): List<ClaimToBeIssued> 
                 })
             },
             claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ISSUING_AUTHORITY_ID, useSd) { issuingAuthorityId },
+            claim(ISSUING_AUTHORITY_NAME, useSd) { issuingAuthority },
             claim(PREFIX_ISSUING_AUTHORITY, useSd) {
                 with(EhicScheme.Attributes.IssuingAuthority) {
                     listOf(
-                        claim(ID, useSd) { UUID.randomUUID().toString() },
+                        claim(ID, useSd) { issuingAuthorityId },
                         claim(NAME, useSd) { issuingAuthority }
                     )
                 }
