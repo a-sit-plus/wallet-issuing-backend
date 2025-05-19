@@ -226,7 +226,9 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
                 }
             },
             claim(PLACE_OF_BIRTH_LOCALITY, useSd) { ourBirthCity },
-            claim(PREFIX_PLACE_OF_BIRTH, useSd) {
+            claim(PLACE_OF_BIRTH_COUNTRY, useSd) { country },
+            claim(PLACE_OF_BIRTH_REGION, useSd) { ourBirthState },
+            claim(PREFIX_ADDRESS, useSd) {
                 with(EuPidSdJwtScheme.SdJwtAttributes.Address) {
                     listOf(
                         claim(FORMATTED, useSd) { formatted },
