@@ -15,7 +15,7 @@ class EPrescriptionLoader(
     apiKey: String,
 ) {
     private val restTemplate = restTemplateBuilder
-        .defaultHeader("X-ApiToken", apiKey)
+        .defaultHeader("X-API-Key", apiKey)
         .build()
 
     fun load(bpk: String, givenName: String, familyName: String, birthDate: String): Result<OttResponse?> =

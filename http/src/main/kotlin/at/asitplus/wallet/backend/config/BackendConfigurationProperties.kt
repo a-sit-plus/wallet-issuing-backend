@@ -34,7 +34,7 @@ data class EPrescriptionConfigurationProperties(
      */
     val url: String = "https://example.com/",
     /**
-     * Will be sent as header `X-ApiToken` to the service at [url]
+     * Will be sent as header `X-API-Key` to the service at [url]
      */
     val apiKey: String = "",
 )
