@@ -3,6 +3,8 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.openid.OidcAddressClaim
 import at.asitplus.openid.OidcUserInfo
 import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.wallet.backend.controller.ApiItem
+import at.asitplus.wallet.backend.controller.Siop2User
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.json.Json
@@ -30,6 +32,8 @@ class SpringSecurityAuthenticationSupplier : AuthenticationSupplier {
         val principal = authn.principal
         if (principal is OidcUser)
             return principal.idToken.toOidcUserInfoExtended()
+        if (principal is Siop2User)
+            return principal.apiItem.toOidcUserInfoExtended()
         return fakeOidcUserInfoExtended()
     }
 
@@ -68,6 +72,17 @@ class SpringSecurityAuthenticationSupplier : AuthenticationSupplier {
             m.key to runCatching { Json.parseToJsonElement(m.value.toString()) }
                 .getOrElse { JsonPrimitive(m.value.toString()) }
         }.toMap())
+    )
+
+    private fun ApiItem.toOidcUserInfoExtended() = OidcUserInfoExtended(
+        OidcUserInfo(
+            subject = id,
+            name = firstname + " " + lastname,
+            givenName = firstname,
+            familyName = lastname,
+            picture = imageDataBase64?.removePrefix("data:image;base64,"),
+        ),
+        credentials.first().allFields ?: JsonObject(emptyMap())
     )
 
     private fun fakeOidcUserInfoExtended(): OidcUserInfoExtended? =

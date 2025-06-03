@@ -277,7 +277,7 @@ fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(BIRTH_COUNTRY, useSd) { fallbackBirthCountry },
             claim(BIRTH_STATE, useSd) { ourBirthState },
             claim(BIRTH_PLACE, useSd) { ourBirthCity },
-            claim(NATIONALITY, useSd) { setOf(nationality) },
+            claim(NATIONALITY, useSd) { nationality }, // TODO Different for mdoc and SD-JWT?
             claim(RESIDENT_ADDRESS, useSd) { formatted },
             claim(RESIDENT_COUNTRY, useSd) { country },
             claim(RESIDENT_STATE, useSd) { state },
@@ -539,7 +539,7 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(ISSUE_DATE, useSd) { issueDate() },
+            claim(ISSUE_DATE, useSd) { issueDate() }, // TODO with timestamp? says IN Groupe
             claim(EXPIRY_DATE, useSd) { expiryDate() },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },

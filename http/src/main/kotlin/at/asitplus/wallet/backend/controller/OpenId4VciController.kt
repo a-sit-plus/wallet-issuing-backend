@@ -69,7 +69,8 @@ class OpenId4VciController(
     @GetMapping("/offer", produces = [APPLICATION_JSON_VALUE])
     fun offer(): ResponseEntity<CredentialOffer> = runBlocking {
         Napier.i("/offer called")
-        val offer = authorizationService.credentialOfferWithAuthorizationCode(credentialIssuer.metadata.credentialIssuer)
+        val offer =
+            authorizationService.credentialOfferWithAuthorizationCode(credentialIssuer.metadata.credentialIssuer)
         Napier.d("/offer returns $offer")
         return@runBlocking ResponseEntity.ok(offer)
     }
@@ -88,10 +89,13 @@ class OpenId4VciController(
         val principal = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.i("/index called with $principal")
         principal?.let {
-            val offer = authorizationService.credentialOfferWithPreAuthnForUser(principal, credentialIssuer.metadata.credentialIssuer)
+            val offer = authorizationService.credentialOfferWithPreAuthnForUser(
+                principal,
+                credentialIssuer.metadata.credentialIssuer
+            )
             val nonce = uuid4().toString().also { mapNonceToOffer[it] = offer }
             val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
-            val url = "oid4vci://wallet.a-sit.at/offer?credential_offer_uri=$credentialOfferUrl"
+            val url = "openid-credential-offer://?credential_offer_uri=$credentialOfferUrl"
             Napier.d("/index sets credential offer URL $url")
             model["qrcode"] = QRCode.ofSquares().build(url).render().getBytes()
                 .also { Napier.d("/index generates QR code with ${it.size} bytes") }
@@ -118,7 +122,9 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/par returns $result")
-        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
+        return@runBlocking ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(vckJsonSerializer.encodeToString(result))
     }
 
     @PostMapping("/nonce", produces = [APPLICATION_JSON_VALUE])
@@ -219,18 +225,14 @@ class OpenId4VciController(
         return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(credential))
     }
 
-    private fun buildOidcRedirect(location: String): ResponseEntity<String> {
-        return ResponseEntity
-            .status(HttpStatus.FOUND)
-            .header(HttpHeaders.LOCATION, location)
-            .build()
-    }
+    private fun buildOidcRedirect(location: String): ResponseEntity<String> = ResponseEntity
+        .status(HttpStatus.FOUND)
+        .header(HttpHeaders.LOCATION, location)
+        .build()
 
-    private fun buildOidcErrorResponse(error: String): ResponseEntity<OAuth2Error> {
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(OAuth2Error(error = error))
-    }
+    private fun buildOidcErrorResponse(error: String): ResponseEntity<OAuth2Error> = ResponseEntity
+        .status(HttpStatus.BAD_REQUEST)
+        .body(OAuth2Error(error = error))
 
 }
 

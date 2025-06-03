@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.User
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler
 import org.springframework.session.MapSessionRepository
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession
 import org.springframework.session.web.http.CookieHttpSessionIdResolver
@@ -74,6 +75,8 @@ class WebSecurityConfig {
     fun httpSessionIdResolver() =
         DelegatingSessionIdResolver(CookieHttpSessionIdResolver(), HeaderHttpSessionIdResolver.xAuthToken())
 
+    @Bean
+    fun successHandler() = SavedRequestAwareAuthenticationSuccessHandler()
 }
 
 /**
