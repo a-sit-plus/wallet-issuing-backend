@@ -17,9 +17,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.cbor.DefaultCoseService
 import at.asitplus.wallet.lib.data.vckJsonSerializer
-import at.asitplus.wallet.lib.jws.DefaultJwsService
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -206,6 +204,7 @@ class BackendConfiguration {
         issuerCredentialStore: IssuerCredentialStore,
         keyMaterial: KeyMaterial,
     ): Issuer = IssuerAgent(
+        keyMaterial = keyMaterial,
         validator = Validator(),
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
@@ -216,9 +215,6 @@ class BackendConfiguration {
             "current"
         ),
         revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
-        jwsService = DefaultJwsService(DefaultCryptoService(keyMaterial)),
-        coseService = DefaultCoseService(DefaultCryptoService(keyMaterial)),
-        keyMaterial = keyMaterial,
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
         identifier = configurationProperties.publicContext
