@@ -8,7 +8,7 @@ object VersionsBackend {
     const val cor = "2.1.2"
     const val eprescription = "1.1.1"
     const val healthId = "2.0.0"
-    const val ehic =  "1.0.0"
+    const val ehic =  "1.1.0"
     const val cr = "1.1.0"
     const val qrcode = "4.1.1"
     const val `google-cbor` = "0.01.02"
@@ -16,7 +16,7 @@ object VersionsBackend {
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val vck = "5.6.0"
+    const val vck = "5.6.6"
     const val attestation = "0.5.2"
     const val nimbus = "9.37.1"
 

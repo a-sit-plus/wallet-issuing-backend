@@ -46,7 +46,6 @@ fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
     )
 
 fun ConstantIndex.CredentialScheme.buildClaims(
-    representation: ConstantIndex.CredentialRepresentation,
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
@@ -63,7 +62,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
         is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(this.useSd())
-        is EhicScheme -> userInfo.buildEhicClaims(this.useSd())
+        is EhicScheme -> userInfo.buildEhicClaims(iss, exp, this.useSd())
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
@@ -458,18 +457,14 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
         )
     }
 
-fun OidcUserInfoExtended.buildEhicClaims(useSd: Boolean): List<ClaimToBeIssued> =
+fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Boolean): List<ClaimToBeIssued> =
     with(EhicScheme.Attributes) {
         val issuingAuthorityId = UUID.randomUUID().toString()
+        val authenticSourceId = UUID.randomUUID().toString()
         listOfNotNull(
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
-            claim(SOCIAL_SECURITY_NUMBER, useSd) {
-                "1111" + dateOfBirth.format(LocalDate.Format {
-                    dayOfMonth()
-                    monthNumber()
-                    year()
-                })
-            },
+            claim(SOCIAL_SECURITY_NUMBER, useSd) { socialSecurityNumber },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { socialSecurityNumber },
             claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(ISSUING_AUTHORITY_ID, useSd) { issuingAuthorityId },
             claim(ISSUING_AUTHORITY_NAME, useSd) { issuingAuthority },
@@ -481,8 +476,22 @@ fun OidcUserInfoExtended.buildEhicClaims(useSd: Boolean): List<ClaimToBeIssued> 
                     )
                 }
             },
-            claim(ISSUANCE_DATE, useSd) { issueDate() },
-            claim(EXPIRY_DATE, useSd) { expiryDate() }
+            claim(AUTHENTIC_SOURCE_ID, useSd) { authenticSourceId },
+            claim(AUTHENTIC_SOURCE_NAME, useSd) { authenticSource },
+            claim(PREFIX_AUTHENTIC_SOURCE, useSd) {
+                with(EhicScheme.Attributes.AuthenticSource) {
+                    listOf(
+                        claim(ID, useSd) { authenticSourceId },
+                        claim(NAME, useSd) { authenticSource }
+                    )
+                }
+            },
+            claim(ISSUANCE_DATE, useSd) { iss.toLocalDate() },
+            claim(DATE_OF_ISSUANCE, useSd) { iss.toLocalDate() },
+            claim(EXPIRY_DATE, useSd) { exp.toLocalDate() },
+            claim(DATE_OF_EXPIRY, useSd) { exp.toLocalDate() },
+            claim(STARTING_DATE, useSd) { expiryDate() },
+            claim(ENDING_DATE, useSd) { expiryDate() },
         )
     }
 
@@ -575,8 +584,8 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(RESIDENT_STATE, useSd) { state },
             claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
             claim(RESIDENT_COUNTRY, useSd) { country },
-            claim(FAMILY_NAME_NATIONAL_CHARACTER, useSd) { userInfo.familyName },
-            claim(GIVEN_NAME_NATIONAL_CHARACTER, useSd) { userInfo.givenName },
+            claim(FAMILY_NAME_NATIONAL_CHARACTER, useSd) { userInfo.familyName + " \uD83E\uDD84" },
+            claim(GIVEN_NAME_NATIONAL_CHARACTER, useSd) { userInfo.givenName + " \uD83E\uDD84" },
             claim(SIGNATURE_USUAL_MARK, useSd) { signature() },
             claim(BIOMETRIC_TEMPLATE_FACE, useSd) { signature() },
             claim(BIOMETRIC_TEMPLATE_FINGER, useSd) { signature() },
@@ -730,6 +739,13 @@ fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
     return element?.toString()
 }
 
+val OidcUserInfoExtended.socialSecurityNumber: String
+    get() = "1111" + dateOfBirth.format(LocalDate.Format {
+        dayOfMonth()
+        monthNumber()
+        year()
+    })
+
 private fun formatAddress(street: String, locator: Int, postalCode: String, city: String) =
     "$street $locator, $postalCode $city"
 
@@ -743,6 +759,7 @@ private fun issueDate() = LocalDate.parse("2023-01-01")
 private val issuingCountry = "AT"
 private val issuingJurisdiction = "AT-0"
 private val issuingAuthority = "Miniwahr"
+private val authenticSource = "Ministry of Love"
 private val unDistinguishingSign = "A"
 private val fallbackBirthCountry = "AT"
 private val fallbackAddressCountry = "AT"

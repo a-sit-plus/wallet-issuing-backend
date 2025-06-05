@@ -3,17 +3,21 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.openid.AuthenticationRequestParameters
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.josef.JsonWebKey
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.pki.SubjectAltNameImplicitTags
+import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.KeyStoreMaterial
-import at.asitplus.wallet.lib.agent.Validator
-import at.asitplus.wallet.lib.agent.VerifierAgent
+import at.asitplus.wallet.lib.agent.*
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
@@ -92,19 +96,41 @@ class PublicController(
             level = LogLevel.ALL
         }
     }
-    private val verifierKeyMaterial = KeyStoreMaterial(
-        keyStore = KeyStore.getInstance("PKCS12").apply {
-            load(File("verifier.p12").inputStream(), "changeit".toCharArray())
-        },
-        keyAlias = "verifier",
-        privateKeyPassword = "changeit".toCharArray(),
-        certAlias = "verifier",
-    )
+    private val clientIdDnsName =
+        (UriComponentsBuilder.fromUriString(configurationProperties.publicContext).build().host
+            ?: "wallet.a-sit.at")
+    private val verifierKeyMaterial = File("verifier.p12").run {
+        if (exists()) {
+            KeyStoreMaterial(
+                keyStore = KeyStore.getInstance("PKCS12").apply {
+                    load(inputStream(), "changeit".toCharArray())
+                },
+                keyAlias = "verifier",
+                privateKeyPassword = "changeit".toCharArray(),
+                certAlias = "verifier",
+            )
+        } else {
+            EphemeralKeyWithSelfSignedCert(
+                extensions = listOf(
+                    X509CertificateExtension(
+                        KnownOIDs.subjectAltName_2_5_29_17,
+                        critical = false,
+                        Asn1EncapsulatingOctetString(
+                            listOf(
+                                Asn1.Sequence {
+                                    +Asn1Primitive(
+                                        SubjectAltNameImplicitTags.dNSName,
+                                        Asn1String.UTF8(clientIdDnsName).encodeToTlv().content
+                                    )
+                                }
+                            ))))
+            )
+        }
+    }
     val clientIdScheme = runBlocking {
         ClientIdScheme.CertificateSanDns(
             chain = listOf(verifierKeyMaterial.getCertificate()!!),
-            clientIdDnsName = UriComponentsBuilder.fromUriString(configurationProperties.publicContext).build().host
-                ?: "wallet.a-sit.at",
+            clientIdDnsName = clientIdDnsName,
             redirectUri = configurationProperties.publicContext,
             useDeprecatedClientIdScheme = true,
         )

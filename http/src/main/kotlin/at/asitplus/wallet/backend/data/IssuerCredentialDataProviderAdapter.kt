@@ -58,7 +58,6 @@ private fun createCredential(
 ): CredentialToBeIssued {
     if (credentialScheme.supportedRepresentations.contains(representation)) {
         val claimsToBeIssued = credentialScheme.buildClaims(
-            representation,
             oidcUserInfo,
             issuance,
             expiration,
