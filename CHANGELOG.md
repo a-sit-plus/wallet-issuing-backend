@@ -1,5 +1,9 @@
 # Changelog
 
+5.6.1:
+ - Update to VC-K 5.6.6
+ - Update EHIC credential to 1.1.0, adding new claims
+
 5.6.0:
  - Update to VC-K 5.6.0
  - Update Tax ID credential to 1.1.1, fixing the `sdJwtType`
