@@ -66,7 +66,6 @@ dependencies {
     implementation("at.asitplus.wallet:company-registration:${VersionsBackend.cr}")
     implementation("at.asitplus.wallet:vck-jvm:${VersionsBackend.vck}")
     implementation("at.asitplus.wallet:vck-openid-ktor-jvm:${VersionsBackend.vck}")
-    implementation("at.asitplus:attestation-service:${VersionsBackend.attestation}")
     implementation(ktor("http"))
     implementation(ktor("client-cio"))
     implementation(ktor("client-logging"))

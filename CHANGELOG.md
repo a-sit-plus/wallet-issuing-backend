@@ -1,5 +1,8 @@
 # Changelog
 
+5.7.0:
+ - Update to VC-K 5.7.0
+
 5.6.1:
  - Update to VC-K 5.6.6
  - Update EHIC credential to 1.1.0, adding new claims
