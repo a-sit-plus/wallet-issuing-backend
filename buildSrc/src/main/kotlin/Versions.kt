@@ -16,13 +16,12 @@ object VersionsBackend {
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val vck = "5.6.6"
-    const val attestation = "0.5.2"
+    const val vck = "5.7.0-SNAPSHOT"
     const val nimbus = "9.37.1"
 
     object spring {
-        const val boot = "3.4.3"
-        const val `admin-starter-client` = "3.3.3"
+        const val boot = "3.4.6"
+        const val `admin-starter-client` = "3.4.7"
     }
 
     object webjars {
