@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.iso.IssuerSignedItem
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
@@ -17,7 +18,6 @@ import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
@@ -25,7 +25,6 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
-import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -45,6 +44,7 @@ fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
         elementValue = value
     )
 
+@Suppress("DEPRECATION")
 fun ConstantIndex.CredentialScheme.buildClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
@@ -56,7 +56,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is EuPidScheme -> userInfo.buildEupidClaims(iss, exp, this.useSd())
         is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(iss, exp, this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
-        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
+        is at.asitplus.wallet.taxid.TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is TaxId2025Scheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
@@ -66,10 +66,11 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         else -> TODO("$this is not implemented in buildClaims()")
     }.also { Napier.v("${this}.buildClaims returns $it") }
 
+@Suppress("DEPRECATION")
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is HealthIdScheme -> false
     is EhicScheme -> false
-    is TaxIdScheme -> false
+    is at.asitplus.wallet.taxid.TaxIdScheme -> false
     is TaxId2025Scheme -> false
     is PowerOfRepresentationScheme -> false
     is CompanyRegistrationScheme -> false
@@ -262,6 +263,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
         )
     }
 
+@Suppress("DEPRECATION")
 fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(EuPidScheme.Attributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
@@ -457,6 +459,7 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
         )
     }
 
+@Suppress("DEPRECATION")
 fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Boolean): List<ClaimToBeIssued> =
     with(EhicScheme.Attributes) {
         val issuingAuthorityId = UUID.randomUUID().toString()

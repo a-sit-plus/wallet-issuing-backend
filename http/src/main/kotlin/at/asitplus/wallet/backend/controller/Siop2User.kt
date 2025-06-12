@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.iso.IssuerSignedItem
 import at.asitplus.openid.dcql.DCQLCredentialQueryIdentifier
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.wallet.eupid.EuPidCredential
@@ -7,7 +8,6 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.data.CredentialToJsonConverter.toJsonElement
 import at.asitplus.wallet.lib.data.VerifiablePresentationParsed
 import at.asitplus.wallet.lib.data.vckJsonSerializer
-import at.asitplus.wallet.lib.iso.IssuerSignedItem
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.AuthnResponseResult.*
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
@@ -101,13 +101,13 @@ fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toApiItemCredentials
 fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toSiop2User(): Siop2User? =
     this.toApiItemCredentials().toSiop2User()
 
-fun VerifiablePresentationParsed.toApiItemCredential(): ApiItemCredential? = verifiableCredentials
-    .map { it.vc.credentialSubject }
+fun VerifiablePresentationParsed.toApiItemCredential(): ApiItemCredential? = freshVerifiableCredentials
+    .map { it.vcJws.vc.credentialSubject }
     .filterIsInstance<EuPidCredential>()
     .firstOrNull()?.toApiItemCredential()
 
-fun VerifiablePresentationParsed.toSiop2User() = verifiableCredentials
-    .map { it.vc.credentialSubject }
+fun VerifiablePresentationParsed.toSiop2User() = freshVerifiableCredentials
+    .map { it.vcJws.vc.credentialSubject }
     .filterIsInstance<EuPidCredential>()
     .firstOrNull()?.toApiItemCredential()?.toSiop2User()
 
@@ -144,4 +144,3 @@ private fun IssuerSignedItem.elementValueToString() = when (elementValue) {
     is Array<*> -> (elementValue as Array<*>).contentToString()
     else -> elementValue.toString()
 }
-
