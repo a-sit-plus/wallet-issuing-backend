@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.TokenResponseParameters
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
@@ -27,7 +28,6 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
-import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -39,6 +39,7 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.decodeFromByteArray
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +56,7 @@ import org.springframework.security.test.context.support.WithSecurityContextFact
 import java.time.Instant
 
 /**
- * Tests the issuing process,
+ * Tests the issuing process
  * by facilitating the external authorization server.
  */
 @SpringBootTest
@@ -119,7 +120,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).getOrThrow()
+        val issuerSigned = coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
         val numberOfClaims = issuerSigned.namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull()
         numberOfClaims shouldBeGreaterThan 1
     }
@@ -206,10 +207,11 @@ class IssuingInternalAuthorizationServerTest {
         vcJws.disclosureDigests.shouldBeNull()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     @WithOAuth2AuthenticationToken
     fun taxid_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(TaxIdScheme, SD_JWT)
+        val requestOptions = WalletService.RequestOptions(at.asitplus.wallet.taxid.TaxIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -247,7 +249,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val issuerSigned = IssuerSigned.deserialize(serializedCredential.decodeToByteArray(Base64())).getOrThrow()
+        val issuerSigned = coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
         val numberOfClaims = issuerSigned.namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull()
         numberOfClaims shouldBeGreaterThan 1
     }

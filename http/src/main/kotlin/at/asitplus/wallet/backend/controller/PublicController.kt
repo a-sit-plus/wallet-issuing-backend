@@ -18,11 +18,15 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidator
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.seconds
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.*
 import com.benasher44.uuid.uuid4
@@ -141,7 +145,7 @@ class PublicController(
             publicKeyLookup = { jwsSigned ->
                 buildPotentialKeyLookup(jwsSigned)
             }
-        )
+        ),
     )
 
     private fun buildPotentialKeyLookup(jwsSigned: JwsSigned<*>): Set<JsonWebKey>? =

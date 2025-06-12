@@ -2,8 +2,6 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.junit.jupiter.api.BeforeEach
