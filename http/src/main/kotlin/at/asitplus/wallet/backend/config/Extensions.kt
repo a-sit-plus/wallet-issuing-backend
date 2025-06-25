@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.iso.IssuerSignedItem
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
@@ -18,6 +19,7 @@ import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.data.LocalDateOrInstant
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
@@ -28,6 +30,7 @@ import at.asitplus.wallet.taxid.TaxId2025Scheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.*
@@ -146,8 +149,8 @@ fun OidcUserInfoExtended.toEuPidCredential(
         ageOver62 = ageOver62,
         ageOver65 = ageOver65,
         ageOver68 = ageOver68,
-        issuanceDate = iss,
-        expiryDate = exp,
+        issuanceDate = LocalDateOrInstant.LocalDate(issueDate()),
+        expiryDate = LocalDateOrInstant.LocalDate(expiryDate()),
         issuingAuthority = issuingAuthority,
         issuingCountry = issuingCountry,
     ).also { Napier.v("eupidVcJwt returns $it") },
@@ -183,7 +186,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(PORTRAIT, useSd) { portrait },
+            claim(PORTRAIT, useSd) { portrait?.let { "data:image/jpeg;base64,${it.encodeToString(Base64Strict)}" } },
             claim(PREFIX_AGE_EQUAL_OR_OVER, useSd) {
                 with(EuPidSdJwtScheme.SdJwtAttributes.AgeEqualOrOver) {
                     listOf(
@@ -250,8 +253,8 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
             claim(ADDRESS_HOUSE_NUMBER, useSd) { locator.toString() },
             claim(SEX, useSd) { gender },
             claim(NATIONALITIES, useSd) { setOf(nationality) },
-            claim(ISSUANCE_DATE, useSd) { iss },
-            claim(EXPIRY_DATE, useSd) { exp },
+            claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
+            claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate()) },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
             claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
@@ -278,7 +281,7 @@ fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(BIRTH_COUNTRY, useSd) { fallbackBirthCountry },
             claim(BIRTH_STATE, useSd) { ourBirthState },
             claim(BIRTH_PLACE, useSd) { ourBirthCity },
-            claim(NATIONALITY, useSd) { nationality }, // TODO Different for mdoc and SD-JWT?
+            claim(NATIONALITY, useSd) { setOf(nationality) },
             claim(RESIDENT_ADDRESS, useSd) { formatted },
             claim(RESIDENT_COUNTRY, useSd) { country },
             claim(RESIDENT_STATE, useSd) { state },
@@ -296,12 +299,12 @@ fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(SEX, useSd) { gender.code },
             claim(EMAIL_ADDRESS, useSd) { email },
             claim(MOBILE_PHONE_NUMBER, useSd) { phoneNumber },
-            claim(EXPIRY_DATE, useSd) { exp },
+            claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate()) },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
-            claim(ISSUANCE_DATE, useSd) { iss },
+            claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
             claim(AGE_OVER_12, useSd) { ageOver12 },
             claim(AGE_OVER_13, useSd) { ageOver13 },
             claim(AGE_OVER_14, useSd) { ageOver14 },
@@ -440,7 +443,7 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
                 with(CompanyRegistrationDataElements.ContactData) {
                     listOf(
                         claim(EMAIL, useSd) { "office@a-sit.at" },
-                        claim(TELEPHONE, useSd) { "+43-555-${Random.nextInt(1, 9999)}" }
+                        claim(TELEPHONE, useSd) { "+43555${Random.nextInt(1000, 9999)}" }
                     )
                 }
             },
@@ -551,7 +554,7 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(ISSUE_DATE, useSd) { issueDate() }, // TODO with timestamp? says IN Groupe
+            claim(ISSUE_DATE, useSd) { issueDate() },
             claim(EXPIRY_DATE, useSd) { expiryDate() },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
@@ -616,8 +619,8 @@ val OidcUserInfoExtended.email
         ?: "info@example.com"
 
 val OidcUserInfoExtended.phoneNumber
-    get() = userInfo.phoneNumber
-        ?: "+49-89-99998-001"
+    get() = userInfo.phoneNumber?.replace("-", "")
+        ?: "+498999998001"
 
 val OidcUserInfoExtended.sex
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoSexEnum()
@@ -755,7 +758,7 @@ private fun formatAddress(street: String, locator: Int, postalCode: String, city
 private fun claim(key: String, useSd: Boolean, value: () -> Any?): ClaimToBeIssued? =
     value()?.let { ClaimToBeIssued(key, it, useSd) }
 
-private fun expiryDate() = LocalDate.parse("2025-12-31")
+private fun expiryDate() = LocalDate.parse("2026-12-31")
 
 private fun issueDate() = LocalDate.parse("2023-01-01")
 
