@@ -7,10 +7,21 @@
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
-    <script>
-        $(document).ready(function () {
-
-        });
+    <script th:inline="javascript">
+        function sendRevocationPost(id) {
+            var contextPath = /*[[@{/revoke}]]*/ '';
+            fetch(contextPath + '/' + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }).then(data => {
+                console.log(data);
+                location.reload();
+            }).catch(error => {
+                console.error("Error:", error);
+            });
+        }
     </script>
 </head>
 <body style="" class="bg-light">
@@ -33,6 +44,7 @@
                     <th scope="col">Schema</th>
                     <th scope="col">List</th>
                     <th scope="col">Idx</th>
+                    <th scope="col">Revoke</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -42,6 +54,9 @@
                     <td th:text="${credential.attributeName}"></td>
                     <td th:text="${credential.timePeriod}"></td>
                     <td th:text="${credential.revocationListIndex}"></td>
+                    <td>
+                        <button type="button" class="btn btn-warning" th:onclick="'sendRevocationPost(' + ${credential.id} + ')'">Revoke</button>
+                    </td>
                 </tr>
                 </tbody>
             </table>
