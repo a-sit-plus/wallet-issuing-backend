@@ -22,6 +22,7 @@ interface RevokedCredentialRepository : JpaRepository<RevokedCredential, Long> {
     @Query("select max(i.revocationListIndex) from RevokedCredential i where i.timePeriod = :timePeriod")
     fun getMaxRevocationListIndex(@Param("timePeriod") timePeriod: Int): Long?
 
+    fun findAllByUserInfoSubject(userInfoSubject: String?): Collection<RevokedCredential>
 }
 
 internal object CredentialRepositoriesLock
@@ -33,10 +34,12 @@ class RevokedCredential() {
         revocationListIndex: Long,
         timePeriod: Int,
         status: UByte,
+        userInfoSubject: String?,
     ) : this() {
         this.timePeriod = timePeriod
         this.revocationListIndex = revocationListIndex
         this.status = status
+        this.userInfoSubject = userInfoSubject
     }
 
     @Id
@@ -48,11 +51,15 @@ class RevokedCredential() {
     @Column
     var status: UByte = 0u
 
+    @Column
+    var userInfoSubject: String? = null
+
     override fun toString(): String {
         return "RevokedCredential(" +
                 "revocationListIndex=$revocationListIndex, " +
                 "timePeriod=$timePeriod, " +
-                "status=$status" +
+                "status=$status, " +
+                "userInfoSubject=$userInfoSubject" +
                 ")"
     }
 

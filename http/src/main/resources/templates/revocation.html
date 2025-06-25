@@ -23,7 +23,6 @@
     <div sec:authorize="isAuthenticated()" class="lead mt-5 mb-5">
         <p>List of your credentials:</p>
         <!--/*@thymesVar id="credentials" type="List"*/-->
-        <!--/*@thymesVar id="revokedCredentials" type="List"*/-->
 
         <div class="table-responsive">
             <table class="table table-striped table-hover">
@@ -31,24 +30,51 @@
                 <tr>
                     <th scope="col">ID</th>
                     <th scope="col">VC ID</th>
-                    <th scope="col">Subject ID</th>
-                    <th scope="col">Attribute Name</th>
+                    <th scope="col">Schema</th>
+                    <th scope="col">List</th>
+                    <th scope="col">Idx</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="credential : ${credentials}">
                     <td th:text="${credential.id}"></td>
                     <td th:text="${credential.vcId}"></td>
-                    <td th:text="${credential.subjectId}"></td>
                     <td th:text="${credential.attributeName}"></td>
+                    <td th:text="${credential.timePeriod}"></td>
+                    <td th:text="${credential.revocationListIndex}"></td>
                 </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- Display message when no credentials are available -->
         <div th:if="${#lists.isEmpty(credentials)}" class="alert alert-info">
             <p>No credentials found.</p>
+        </div>
+    </div>
+
+    <div sec:authorize="isAuthenticated()" class="lead mt-5 mb-5">
+        <p>List of your revoked credentials:</p>
+        <!--/*@thymesVar id="revokedCredentials" type="List"*/-->
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th scope="col">List</th>
+                    <th scope="col">Idx</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="revokedCredential : ${revokedCredentials}">
+                    <td th:text="${revokedCredential.timePeriod}"></td>
+                    <td th:text="${revokedCredential.revocationListIndex}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${#lists.isEmpty(revokedCredentials)}" class="alert alert-info">
+            <p>No revoked credentials found.</p>
         </div>
     </div>
 
