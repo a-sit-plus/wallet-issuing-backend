@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta charset="UTF-8">
-    <title>A-SIT Plus Wallet Issuing M5</title>
+    <title>A-SIT Plus Wallet Issuing M6</title>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
@@ -17,7 +17,7 @@
 <div th:replace="~{fragments/navbar.html :: navbar}"></div>
 <div class="container py-4">
     <div class="row align-items-start">
-        <h1 class="display-4 col">A-SIT Plus Wallet Issuing Backend (M5)</h1>
+        <h1 class="display-4 col">A-SIT Plus Wallet Issuing Backend (M6)</h1>
     </div>
 
     <p class="lead mt-4 mb-5">
@@ -33,14 +33,16 @@
     </p>
 
     <!--/*@thymesVar id="qrcode" type="ByteArray"*/-->
-    <div th:if="${qrcode != null}">
-        <p>
-            <img th:src="|data:image/png;base64,${qrcode}|" width="500"/>
-        </p>
+    <div sec:authorize="isAuthenticated()">
+        <div th:if="${qrcode != null}">
+            <p>
+                <img th:src="|data:image/png;base64,${qrcode}|" width="500"/>
+            </p>
+        </div>
     </div>
 
     <p>
-        The OpenID metadata is available at <a href="https://wallet.a-sit.at/m5/.well-known/openid-configuration">.well-known/openid-configuration</a>. The Credential Issuer metadata is available at <a href="https://wallet.a-sit.at/m5/.well-known/openid-credential-issuer">.well-known/openid-credential-issuer</a>.
+        The OpenID metadata is available at <a href="https://wallet.a-sit.at/m6/.well-known/openid-configuration">.well-known/openid-configuration</a>. The Credential Issuer metadata is available at <a href="https://wallet.a-sit.at/m6/.well-known/openid-credential-issuer">.well-known/openid-credential-issuer</a>.
     </p>
 
     <p>

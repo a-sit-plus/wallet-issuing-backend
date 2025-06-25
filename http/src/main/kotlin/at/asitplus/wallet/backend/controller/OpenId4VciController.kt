@@ -84,7 +84,7 @@ class OpenId4VciController(
         } ?: ResponseEntity.notFound().build()
     }
 
-    @GetMapping("/", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/")
     fun index(model: ModelMap): ModelAndView = runBlocking {
         val principal = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.i("/index called with $principal")
