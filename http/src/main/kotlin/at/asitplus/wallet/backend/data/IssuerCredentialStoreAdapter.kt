@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.data
 
+import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
@@ -11,6 +12,7 @@ import kotlinx.datetime.Instant
  */
 class IssuerCredentialStoreAdapter(
     private val revocationService: RevocationService,
+    private val authenticationSupplier: AuthenticationSupplier,
 ) : IssuerCredentialStore {
 
     override fun setStatus(
@@ -28,6 +30,8 @@ class IssuerCredentialStoreAdapter(
         expirationDate: Instant,
         timePeriod: Int,
     ): Long? = revocationService.storeGetNextIndex(
+        // TODO needs to have userInfo in CredentialToBeIssued in vck
+        authenticationSupplier.getCurrentUserOidcDetails(),
         issuanceDate,
         expirationDate,
         timePeriod,

@@ -10,6 +10,7 @@ import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
@@ -34,7 +35,10 @@ class SpringSecurityAuthenticationSupplier : AuthenticationSupplier {
             return principal.idToken.toOidcUserInfoExtended()
         if (principal is Siop2User)
             return principal.apiItem.toOidcUserInfoExtended()
-        return fakeOidcUserInfoExtended()
+        if (principal is UsernamePasswordAuthenticationToken)
+            return fakeOidcUserInfoExtended()
+        Napier.w("loadOidcToken returns null for $authn")
+        return null
     }
 
     private fun OidcIdToken.toOidcUserInfoExtended() = OidcUserInfoExtended(

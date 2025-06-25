@@ -13,6 +13,7 @@ class IssuedCredential() {
     constructor(
         vcId: String,
         subjectId: String,
+        userInfoSubject: String,
         validUntil: Instant,
         timePeriod: Int,
         attributeName: String,
@@ -20,6 +21,7 @@ class IssuedCredential() {
     ) : this() {
         this.vcId = vcId
         this.subjectId = subjectId
+        this.userInfoSubject = userInfoSubject
         this.attributeName = attributeName
         this.validUntil = validUntil
         this.timePeriod = timePeriod
@@ -47,6 +49,9 @@ class IssuedCredential() {
     lateinit var validUntil: Instant
 
     @Column
+    lateinit var userInfoSubject: String
+
+    @Column
     var timePeriod: Int = 0
 
     @Column
@@ -62,6 +67,7 @@ class IssuedCredential() {
                 "subjectId='$subjectId', " +
                 "attributeName='$attributeName', " +
                 "validUntil=$validUntil, " +
+                "userInfoSubject=$userInfoSubject, " +
                 "timePeriod=$timePeriod, " +
                 "revocationListIndex=$revocationListIndex)"
     }

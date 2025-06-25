@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
@@ -31,6 +32,7 @@ interface RevocationService {
      * can verify the revocation status).
      */
     fun storeGetNextIndex(
+        userInfo: OidcUserInfoExtended?,
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int,
@@ -47,6 +49,11 @@ interface RevocationService {
      * Lists all non-revoked credentials that have been issued
      */
     fun getAllNonRevokedWithDetails(): Collection<IssuedCredential>
+
+    /**
+     * Lists all non-revoked credentials for one user
+     */
+    fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential>
 
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
@@ -91,6 +98,7 @@ class DefaultRevocationService(
      * can verify the revocation status).
      */
     override fun storeGetNextIndex(
+        userInfo: OidcUserInfoExtended?,
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int,
@@ -104,6 +112,8 @@ class DefaultRevocationService(
                     Napier.e("Tried to store a new credential for existing vcId")
                     Napier.v("vcId: '$vcId'")
                 }
+            val userInfoSubject = userInfo?.userInfo?.subject ?: "unknown"
+            Napier.v("Storing new credential for userInfoSubject '$userInfoSubject")
             val revocationListIndex = max(
                 (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
                 revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
@@ -111,6 +121,7 @@ class DefaultRevocationService(
             val issuedCredential = IssuedCredential(
                 vcId = vcId,
                 subjectId = subjectPublicKey.didEncoded,
+                userInfoSubject = userInfoSubject,
                 validUntil = expirationDate.toJavaInstant(),
                 timePeriod = timePeriod,
                 attributeName = credential.attributeName(),
@@ -177,6 +188,12 @@ class DefaultRevocationService(
      * Lists all non-revoked credentials that have been issued
      */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
+        return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
+    }
+
+    override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> {
+        // TODO should be
+        //return credentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.userInfo.subject, java.time.Instant.now())
         return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
     }
 

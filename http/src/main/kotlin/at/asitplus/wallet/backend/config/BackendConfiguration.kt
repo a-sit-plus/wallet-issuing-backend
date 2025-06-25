@@ -134,13 +134,17 @@ class BackendConfiguration {
     ): RevocationService = DefaultRevocationService(
         credentialRepo,
         revokedCredentialRepo,
-        applicationEventPublisher,
+        applicationEventPublisher
     )
 
     @Bean
     fun issuerCredentialStoreAdapter(
         revocationService: RevocationService,
-    ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(revocationService)
+        authenticationSupplier: AuthenticationSupplier,
+    ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(
+        revocationService,
+        authenticationSupplier
+    )
 
     @Bean
     fun issuerKeyAdapter(): KeyMaterial =
@@ -259,7 +263,7 @@ class BackendConfiguration {
         authenticationSupplier: AuthenticationSupplier,
     ): OAuth2AuthorizationServerAdapter = SimpleAuthorizationService(
         dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
-        strategy = CredentialAuthorizationServiceStrategy(credentialSchemes,),
+        strategy = CredentialAuthorizationServiceStrategy(credentialSchemes),
         publicContext = configurationProperties.publicContext,
         authorizationEndpointPath = "/authorize",
         tokenEndpointPath = "/token",
