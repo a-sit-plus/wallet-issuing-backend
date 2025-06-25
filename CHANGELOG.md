@@ -1,5 +1,11 @@
 # Changelog
 
+5.7.1:
+ - Update to VC-K 5.7.1
+ - Update mDL credential to 1.2.0
+ - Update EU PID credential to 3.1.0
+ - Update EU PID credential SD-JWT to 1.1.0
+
 5.7.0:
  - Update to VC-K 5.7.0
 
