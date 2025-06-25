@@ -49,7 +49,7 @@ class IssuedCredential() {
     lateinit var validUntil: Instant
 
     @Column
-    lateinit var userInfoSubject: String
+    var userInfoSubject: String? = null
 
     @Column
     var timePeriod: Int = 0

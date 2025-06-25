@@ -7,6 +7,7 @@ import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -25,12 +26,14 @@ class RevocationController(
 
     private val mapNonceToOffer = mutableMapOf<String, CredentialOffer>()
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/revocation")
     fun index(model: ModelMap): ModelAndView = runBlocking {
         val principal = authenticationSupplier.getCurrentUserOidcDetails()
         Napier.i("/revocation called with $principal")
         principal?.let {
             model["credentials"] = revocationService.getAllNonRevokedForUser(it)
+            model["revokedCredentials"] = revocationService.getAllRevokedForUser(it)
         }
         ModelAndView("revocation")
     }

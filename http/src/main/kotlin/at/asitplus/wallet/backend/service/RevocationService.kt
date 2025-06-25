@@ -56,6 +56,11 @@ interface RevocationService {
     fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential>
 
     /**
+     * Lists all revoked credentials for one user
+     */
+    fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential>
+
+    /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
     fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long>
@@ -148,9 +153,10 @@ class DefaultRevocationService(
         synchronized(CredentialRepositoriesLock) {
             revokedCredentialRepo.saveAll(toRevoke.map {
                 RevokedCredential(
-                    it.revocationListIndex,
-                    it.timePeriod,
-                    status.value
+                    revocationListIndex = it.revocationListIndex,
+                    timePeriod = it.timePeriod,
+                    status = status.value,
+                    userInfoSubject = it.userInfoSubject,
                 )
             })
             credentialRepo.deleteAllInBatch(toRevoke)
@@ -197,6 +203,12 @@ class DefaultRevocationService(
         return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
     }
 
+    override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> {
+        // TODO should be
+        //return revokedCredentialRepo.findAllByUserInfoSubject(userInfo.userInfo.subject)
+        return revokedCredentialRepo.findAll()
+    }
+
     /**
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
      */
@@ -213,9 +225,9 @@ class DefaultRevocationService(
 }
 
 private fun IssuerCredentialStore.Credential.attributeName(): String = when (this) {
-    is IssuerCredentialStore.Credential.Iso -> this.scheme.schemaUri
-    is IssuerCredentialStore.Credential.VcJwt -> this.scheme.schemaUri
-    is IssuerCredentialStore.Credential.VcSd -> this.scheme.schemaUri
+    is IssuerCredentialStore.Credential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
+    is IssuerCredentialStore.Credential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
+    is IssuerCredentialStore.Credential.VcSd -> this.scheme.sdJwtType ?: this.scheme.schemaUri
 }
 
 val IssuerCredentialStore.Credential.revocationIdentifier: String
