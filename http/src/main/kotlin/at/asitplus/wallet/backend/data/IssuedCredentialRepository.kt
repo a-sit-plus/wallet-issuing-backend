@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.Instant
+import java.util.*
 
 /**
  * Be sure to use [CredentialRepositoriesLock] when executing modifying statements
@@ -15,6 +16,8 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
     fun findBytimePeriodAndVcId(timePeriod: Int, vcId: String): IssuedCredential?
 
     fun findAllByValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>
+
+    fun findByIdAndUserInfoSubject(id: Long, subject: String?): Optional<IssuedCredential>
 
     fun findAllByUserInfoSubjectAndValidUntilAfter(subject: String, validUntil: Instant): Collection<IssuedCredential>
 

@@ -13,6 +13,7 @@ import kotlinx.datetime.toJavaInstant
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
+import kotlin.jvm.optionals.getOrNull
 
 
 interface RevocationService {
@@ -59,6 +60,11 @@ interface RevocationService {
      * Lists all revoked credentials for one user
      */
     fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential>
+
+    /**
+     * Revokes one credential for one user
+     */
+    fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean
 
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
@@ -208,6 +214,13 @@ class DefaultRevocationService(
         //return revokedCredentialRepo.findAllByUserInfoSubject(userInfo.userInfo.subject)
         return revokedCredentialRepo.findAll()
     }
+
+    override fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean =
+        // TODO should be credentialRepo.findByIdAndUserInfoSubject(id, userInfo.userInfo.subject).getOrNull()?.let
+        credentialRepo.findById(id).getOrNull()?.let {
+            Napier.d("/revoke/$id for $it")
+            setStatus(it.vcId, TokenStatus.Invalid, it.timePeriod)
+        } ?: false
 
     /**
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.

@@ -1,15 +1,16 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.openid.CredentialOffer
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 
@@ -18,24 +19,38 @@ import org.springframework.web.servlet.ModelAndView
  */
 @RestController
 class RevocationController(
-    private val backendConfigurationProperties: BackendConfigurationProperties,
     private val authenticationSupplier: AuthenticationSupplier,
-    private val issuerCredentialStore: IssuerCredentialStore,
     private val revocationService: RevocationService,
 ) {
 
-    private val mapNonceToOffer = mutableMapOf<String, CredentialOffer>()
-
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/revocation")
-    fun index(model: ModelMap): ModelAndView = runBlocking {
+    fun list(model: ModelMap): ModelAndView = runBlocking {
         val principal = authenticationSupplier.getCurrentUserOidcDetails()
-        Napier.i("/revocation called with $principal")
+        Napier.i("/revocation called with ${principal?.userInfo?.subject}")
         principal?.let {
             model["credentials"] = revocationService.getAllNonRevokedForUser(it)
             model["revokedCredentials"] = revocationService.getAllRevokedForUser(it)
         }
         ModelAndView("revocation")
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/revoke/{id}", produces = [APPLICATION_JSON_VALUE])
+    fun revoke(
+        @PathVariable id: String,
+    ): ResponseEntity<String> = runBlocking {
+        val principal = authenticationSupplier.getCurrentUserOidcDetails()
+        Napier.i("/revoke/$id called with ${principal?.userInfo?.subject}")
+        principal?.let {
+            if (revocationService.revoke(id.toLong(), it)) {
+                Napier.d("/revoke/$id returns OK")
+                ResponseEntity.ok().build<String>()
+            } else {
+                Napier.d("/revoke/$id returns NOT_FOUND")
+                ResponseEntity.notFound().build<String>()
+            }
+        } ?: ResponseEntity.notFound().build<String>()
     }
 
 }
