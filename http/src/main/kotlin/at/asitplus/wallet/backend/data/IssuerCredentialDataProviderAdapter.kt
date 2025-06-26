@@ -9,7 +9,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.oidvci.CredentialIssuerDataProvider
+import at.asitplus.wallet.lib.oidvci.CredentialDataProviderFun
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -22,17 +22,16 @@ import kotlin.time.Duration
 class OidcIssuerCredentialDataProvider(
     private val lifetime: Duration,
     private val ePrescriptionLoader: EPrescriptionLoader,
-) : CredentialIssuerDataProvider {
-    override fun getCredential(
+) : CredentialDataProviderFun {
+    override suspend fun invoke(
         userInfo: OidcUserInfoExtended,
         subjectPublicKey: CryptoPublicKey,
         credentialScheme: ConstantIndex.CredentialScheme,
         representation: ConstantIndex.CredentialRepresentation,
-        claimNames: Collection<String>?,
     ): KmmResult<CredentialToBeIssued> = catching {
         val issuance = Clock.System.now().toJavaInstant().truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
         val expiration = (issuance + lifetime).toJavaInstant().truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
-        Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation, $claimNames")
+        Napier.v("getCredential for $credentialScheme and ${subjectPublicKey.didEncoded} in $representation")
         Napier.v("getCredential user is $userInfo")
         createCredential(
             representation,

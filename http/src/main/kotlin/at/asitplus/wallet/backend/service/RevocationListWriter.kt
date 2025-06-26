@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.data.StatusListToken
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.StatusProvider
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.communication.primitives.StatusListTokenMediaType
 import at.asitplus.wallet.lib.iso.vckCborSerializer
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +15,7 @@ import kotlin.io.path.*
 
 @Service
 class RevocationListWriter(
-    private val issuer: Issuer,
+    private val issuer: StatusProvider<StatusListToken>,
     private val configurationProperties: BackendConfigurationProperties,
 ) {
 

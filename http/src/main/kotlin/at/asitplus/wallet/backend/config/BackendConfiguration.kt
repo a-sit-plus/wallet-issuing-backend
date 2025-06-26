@@ -4,10 +4,7 @@ import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
-import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
-import at.asitplus.wallet.backend.data.RevokedCredentialRepository
+import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
@@ -128,13 +125,15 @@ class BackendConfiguration {
 
     @Bean
     fun revocationService(
+        preparedCredentialRepo: PreparedCredentialRepository,
         credentialRepo: IssuedCredentialRepository,
         revokedCredentialRepo: RevokedCredentialRepository,
         applicationEventPublisher: ApplicationEventPublisher,
     ): RevocationService = DefaultRevocationService(
-        credentialRepo,
-        revokedCredentialRepo,
-        applicationEventPublisher
+        preparedCredentialRepo = preparedCredentialRepo,
+        credentialRepo = credentialRepo,
+        revokedCredentialRepo = revokedCredentialRepo,
+        applicationEventPublisher = applicationEventPublisher
     )
 
     @Bean
@@ -250,7 +249,7 @@ class BackendConfiguration {
         publicContext = configurationProperties.publicContext,
         credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
-        credentialProvider = OidcIssuerCredentialDataProvider(
+        credentialDataProvider = OidcIssuerCredentialDataProvider(
             lifetime = configurationProperties.credentials.lifeTime,
             ePrescriptionLoader = ePrescriptionLoader
         ),
