@@ -1,15 +1,23 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.lib.agent.CredentialToBeIssued
+import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider.timePeriod
+import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore.StoredCredentialReference
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
-import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import org.apache.commons.lang3.math.NumberUtils.max
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
@@ -17,6 +25,11 @@ import kotlin.jvm.optionals.getOrNull
 
 
 interface RevocationService {
+    fun setStatus(
+        timePeriod: Int,
+        index: ULong,
+        status: TokenStatus,
+    ): Boolean
 
     fun setStatus(
         vcId: String,
@@ -25,6 +38,23 @@ interface RevocationService {
     ): Boolean
 
     fun getStatusListView(timePeriod: Int): StatusListView
+
+    /**
+     * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
+     * [Issuer] will call [updateStoredCredential] with the issued credential afterwards.
+     */
+    suspend fun createStatusListIndex(
+        credential: CredentialToBeIssued,
+        timePeriod: Int,
+    ): KmmResult<StoredCredentialReference>
+
+    /**
+     * Called by an [Issuer] when the credential has been signed and delivered to the holder.
+     */
+    suspend fun updateStoredCredential(
+        reference: StoredCredentialReference,
+        credential: Issuer.IssuedCredential,
+    ): KmmResult<StoredCredentialReference>
 
     /**
      * Stores the verifiable credential that is about to be issued,
@@ -38,7 +68,7 @@ interface RevocationService {
         expirationDate: Instant,
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
+        subjectPublicKey: CryptoPublicKey,
     ): Long?
 
     /**
@@ -89,6 +119,7 @@ class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(sourc
 }
 
 class DefaultRevocationService(
+    private val preparedCredentialRepo: PreparedCredentialRepository,
     private val credentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
@@ -103,6 +134,64 @@ class DefaultRevocationService(
     }
 
     /**
+     * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
+     * [Issuer] will call [updateStoredCredential] with the issued credential afterwards.
+     */
+    override suspend fun createStatusListIndex(
+        credential: CredentialToBeIssued,
+        timePeriod: Int,
+    ): KmmResult<StoredCredentialReference> = catching {
+        synchronized(CredentialRepositoriesLock) {
+            Napier.v("Storing new credential for $credential")
+            val revocationListIndex: Long = max(
+                preparedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+                credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
+            ) + 1
+            val savedCredential = preparedCredentialRepo.save(
+                PreparedCredential(
+                    timePeriod = timePeriod,
+                    revocationListIndex = revocationListIndex
+                )
+            )
+            StoredCredentialReference(savedCredential.id.toString(), timePeriod, revocationListIndex.toULong())
+        }
+    }
+
+    /**
+     * Called by an [Issuer] when the credential has been signed and delivered to the holder.
+     */
+    override suspend fun updateStoredCredential(
+        reference: StoredCredentialReference,
+        credential: Issuer.IssuedCredential,
+    ): KmmResult<StoredCredentialReference> = catching {
+        synchronized(CredentialRepositoriesLock) {
+            Napier.v("Storing new credential for $credential")
+            val savedCredential = preparedCredentialRepo.findById(reference.id.toLong()).getOrNull()
+                ?: throw IllegalStateException("No credential found for id ${reference.id}")
+
+            val issuedCredential = credentialRepo.save(
+                IssuedCredential(
+                    vcId = "dont care",
+                    subjectId = credential.subjectPublicKey.encodeToPEM().getOrNull() ?: "dont care",
+                    userInfoSubject = "dont care",
+                    validUntil = credential.validUntil.toJavaInstant(),
+                    timePeriod = savedCredential.timePeriod,
+                    attributeName = credential.attributeName,
+                    revocationListIndex = savedCredential.revocationListIndex,
+                )
+            )
+            preparedCredentialRepo.delete(savedCredential)
+            applicationEventPublisher.publishEvent(RevocationEvent(this, timePeriod))
+            StoredCredentialReference(
+                issuedCredential.id.toString(),
+                timePeriod,
+                issuedCredential.revocationListIndex.toULong()
+            )
+        }
+    }
+
+    /**
      * Stores the verifiable credential that is about to be issued,
      * and returns the [IssuedCredential.revocationListIndex] for this credential,
      * that will be included in the verifiable credentials (so that consumers
@@ -114,28 +203,28 @@ class DefaultRevocationService(
         expirationDate: Instant,
         timePeriod: Int,
         credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
+        subjectPublicKey: CryptoPublicKey,
     ): Long? = runCatching {
         synchronized(CredentialRepositoriesLock) {
-            val vcId = credential.revocationIdentifier
-            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) != null)
+            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, credential.vcId) != null)
                 return@runCatching null.also {
                     Napier.e("Tried to store a new credential for existing vcId")
-                    Napier.v("vcId: '$vcId'")
+                    Napier.v("vcId: '${credential.vcId}'")
                 }
             val userInfoSubject = userInfo?.userInfo?.subject ?: "unknown"
             Napier.v("Storing new credential for userInfoSubject '$userInfoSubject")
             val revocationListIndex = max(
-                (credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0),
+                preparedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+                credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
                 revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
             ) + 1
             val issuedCredential = IssuedCredential(
-                vcId = vcId,
+                vcId = credential.vcId,
                 subjectId = subjectPublicKey.didEncoded,
                 userInfoSubject = userInfoSubject,
                 validUntil = expirationDate.toJavaInstant(),
                 timePeriod = timePeriod,
-                attributeName = credential.attributeName(),
+                attributeName = credential.attributeName,
                 revocationListIndex = revocationListIndex
             )
             val savedCredential = credentialRepo.save(issuedCredential)
@@ -144,6 +233,16 @@ class DefaultRevocationService(
             return@runCatching savedCredential.revocationListIndex
         }
     }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
+
+    override fun setStatus(
+        timePeriod: Int,
+        index: ULong,
+        status: TokenStatus,
+    ): Boolean {
+        val credential = credentialRepo.findBytimePeriodAndRevocationListIndex(timePeriod, index.toLong())
+            ?: return false
+        return revokeAllCredentials(listOf(credential), status) == 1
+    }
 
     override fun setStatus(
         vcId: String,
@@ -237,15 +336,26 @@ class DefaultRevocationService(
     }
 }
 
-private fun IssuerCredentialStore.Credential.attributeName(): String = when (this) {
-    is IssuerCredentialStore.Credential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
-    is IssuerCredentialStore.Credential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
-    is IssuerCredentialStore.Credential.VcSd -> this.scheme.sdJwtType ?: this.scheme.schemaUri
-}
-
-val IssuerCredentialStore.Credential.revocationIdentifier: String
+private val IssuerCredentialStore.Credential.attributeName: String
     get() = when (this) {
-        is IssuerCredentialStore.Credential.Iso -> "urn:uuid:${uuid4()}"
-        is IssuerCredentialStore.Credential.VcJwt -> vcId
-        is IssuerCredentialStore.Credential.VcSd -> vcId
+        is IssuerCredentialStore.Credential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
+        is IssuerCredentialStore.Credential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
+        is IssuerCredentialStore.Credential.VcSd -> this.scheme.sdJwtType ?: this.scheme.schemaUri
     }
+
+private val Issuer.IssuedCredential.attributeName: String
+    get() = when (this) {
+        is Issuer.IssuedCredential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
+        is Issuer.IssuedCredential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
+        is Issuer.IssuedCredential.VcSdJwt -> this.scheme.sdJwtType ?: this.scheme.schemaUri
+    }
+
+private val Issuer.IssuedCredential.validUntil: Instant
+    get() = when (this) {
+        is Issuer.IssuedCredential.Iso -> this.issuerSigned.issuerAuth.payload?.validityInfo?.validUntil
+            ?: Instant.DISTANT_PAST
+
+        is Issuer.IssuedCredential.VcJwt -> this.vc.expirationDate ?: Instant.DISTANT_PAST
+        is Issuer.IssuedCredential.VcSdJwt -> this.sdJwtVc.expiration ?: Instant.DISTANT_PAST
+    }
+

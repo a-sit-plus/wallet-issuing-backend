@@ -15,6 +15,8 @@ interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
     fun findBytimePeriodAndVcId(timePeriod: Int, vcId: String): IssuedCredential?
 
+    fun findBytimePeriodAndRevocationListIndex(timePeriod: Int, revocationListIndex: Long): IssuedCredential?
+
     fun findAllByValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>
 
     fun findByIdAndUserInfoSubject(id: Long, subject: String?): Optional<IssuedCredential>
