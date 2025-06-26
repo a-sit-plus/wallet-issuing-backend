@@ -2,9 +2,12 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.iso.sha256
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
+import at.asitplus.signum.indispensable.cosef.io.Base16Strict
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.data.*
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider.timePeriod
@@ -15,8 +18,11 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
 import io.github.aakira.napier.Napier
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.encodeToByteArray
 import org.apache.commons.lang3.math.NumberUtils.max
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
@@ -172,12 +178,13 @@ class DefaultRevocationService(
 
             val issuedCredential = credentialRepo.save(
                 IssuedCredential(
-                    vcId = "dont care",
-                    subjectId = credential.subjectPublicKey.encodeToPEM().getOrNull() ?: "dont care",
-                    userInfoSubject = "dont care",
+                    vcId = credential.vcId,
+                    subjectId = credential.subjectPublicKey.encodeToPEM().getOrNull()
+                        ?: credential.subjectPublicKey.didEncoded,
+                    userInfoSubject = credential.userInfo.userInfo.subject,
                     validUntil = credential.validUntil.toJavaInstant(),
                     timePeriod = savedCredential.timePeriod,
-                    attributeName = credential.attributeName,
+                    attributeName = credential.credentialName,
                     revocationListIndex = savedCredential.revocationListIndex,
                 )
             )
@@ -220,7 +227,7 @@ class DefaultRevocationService(
             ) + 1
             val issuedCredential = IssuedCredential(
                 vcId = credential.vcId,
-                subjectId = subjectPublicKey.didEncoded,
+                subjectId = subjectPublicKey.encodeToPEM().getOrNull() ?: subjectPublicKey.didEncoded,
                 userInfoSubject = userInfoSubject,
                 validUntil = expirationDate.toJavaInstant(),
                 timePeriod = timePeriod,
@@ -302,21 +309,14 @@ class DefaultRevocationService(
         return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
     }
 
-    override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> {
-        // TODO should be
-        //return credentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.userInfo.subject, java.time.Instant.now())
-        return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
-    }
+    override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> =
+        credentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.userInfo.subject, java.time.Instant.now())
 
-    override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> {
-        // TODO should be
-        //return revokedCredentialRepo.findAllByUserInfoSubject(userInfo.userInfo.subject)
-        return revokedCredentialRepo.findAll()
-    }
+    override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> =
+        revokedCredentialRepo.findAllByUserInfoSubject(userInfo.userInfo.subject)
 
     override fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean =
-        // TODO should be credentialRepo.findByIdAndUserInfoSubject(id, userInfo.userInfo.subject).getOrNull()?.let
-        credentialRepo.findById(id).getOrNull()?.let {
+        credentialRepo.findByIdAndUserInfoSubject(id, userInfo.userInfo.subject).getOrNull()?.let {
             Napier.d("/revoke/$id for $it")
             setStatus(it.vcId, TokenStatus.Invalid, it.timePeriod)
         } ?: false
@@ -343,7 +343,15 @@ private val IssuerCredentialStore.Credential.attributeName: String
         is IssuerCredentialStore.Credential.VcSd -> this.scheme.sdJwtType ?: this.scheme.schemaUri
     }
 
-private val Issuer.IssuedCredential.attributeName: String
+@OptIn(ExperimentalSerializationApi::class)
+private val Issuer.IssuedCredential.vcId: String
+    get() = when (this) {
+        is Issuer.IssuedCredential.Iso -> coseCompliantSerializer.encodeToByteArray(this.issuerSigned).hashString()
+        is Issuer.IssuedCredential.VcJwt -> this.vc.id
+        is Issuer.IssuedCredential.VcSdJwt -> this.sdJwtVc.jwtId ?: this.signedSdJwtVc.serialize().hashString()
+    }
+
+private val Issuer.IssuedCredential.credentialName: String
     get() = when (this) {
         is Issuer.IssuedCredential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
         is Issuer.IssuedCredential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
@@ -359,3 +367,5 @@ private val Issuer.IssuedCredential.validUntil: Instant
         is Issuer.IssuedCredential.VcSdJwt -> this.sdJwtVc.expiration ?: Instant.DISTANT_PAST
     }
 
+private fun String.hashString() = this.encodeToByteArray().hashString()
+private fun ByteArray.hashString() = sha256().encodeToString(Base16Strict)
