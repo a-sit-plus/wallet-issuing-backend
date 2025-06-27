@@ -17,18 +17,23 @@ import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.lib.agent.*
-import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidator
+import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
+import at.asitplus.wallet.lib.agent.KeyStoreMaterial
+import at.asitplus.wallet.lib.agent.StatusListIssuer
+import at.asitplus.wallet.lib.agent.Validator
+import at.asitplus.wallet.lib.agent.VerifierAgent
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
-import kotlinx.datetime.Clock
-import kotlin.time.Duration.Companion.seconds
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
-import at.asitplus.wallet.lib.openid.*
+import at.asitplus.wallet.lib.openid.AuthnResponseResult
+import at.asitplus.wallet.lib.openid.ClientIdScheme
+import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
+import at.asitplus.wallet.lib.openid.OpenIdRequestOptions
+import at.asitplus.wallet.lib.openid.PresentationMechanismEnum
+import at.asitplus.wallet.lib.openid.RequestOptionsCredential
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
@@ -49,9 +54,11 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.apache.tomcat.websocket.AuthenticationException
-import org.springframework.http.*
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.client.registration.ClientRegistration
@@ -60,7 +67,14 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.web.WebAttributes
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.ui.ModelMap
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
@@ -82,7 +96,7 @@ import kotlin.time.toJavaDuration
  */
 @RestController
 class PublicController(
-    private val issuer: Issuer,
+    private val statusListIssuer: StatusListIssuer,
     private val configurationProperties: BackendConfigurationProperties,
     private val clientRegistrations: InMemoryClientRegistrationRepository?,
     private val successHandler: AuthenticationSuccessHandler,
@@ -184,7 +198,7 @@ class PublicController(
     @GetMapping("/credentials/status/current", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getStatutsListAggregation(): ResponseEntity<StatusListAggregation> = runBlocking {
         Napier.i("/credentials/status/current called")
-        val rl = issuer.provideStatusListAggregation()
+        val rl = statusListIssuer.provideStatusListAggregation()
         Napier.i("/credentials/status/current returns $rl")
         ResponseEntity.ok(rl)
     }
