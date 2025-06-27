@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.openid.OidcUserInfo
+import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.backend.Client
 import at.asitplus.wallet.backend.data.IssuedCredential
@@ -40,6 +42,7 @@ class RevocationServiceStatusListIndexTest {
     @Autowired
     private lateinit var revocationService: RevocationService
 
+    private lateinit var userInfo: OidcUserInfoExtended
     private lateinit var vcId: String
     private lateinit var bpk: String
     private lateinit var attributeName: String
@@ -53,6 +56,7 @@ class RevocationServiceStatusListIndexTest {
 
     @BeforeEach
     fun beforeEach() {
+        userInfo = OidcUserInfoExtended.fromOidcUserInfo(OidcUserInfo("subject")).getOrThrow()
         timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
         attributeName = IdAustriaScheme.vcType
@@ -77,11 +81,12 @@ class RevocationServiceStatusListIndexTest {
     @Transactional
     fun `simple positive add and revoke vcId should work`() {
         revocationService.storeGetNextIndex(
-            issuanceDate,
-            expirationDate,
-            timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey
+            userInfo = userInfo,
+            issuanceDate = issuanceDate,
+            expirationDate = expirationDate,
+            timePeriod = timePeriod,
+            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
+            subjectPublicKey = subjectPublicKey
         )
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
         revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod) shouldBe true
@@ -105,11 +110,12 @@ class RevocationServiceStatusListIndexTest {
     private fun storeNewCredential(i: Int): Long? {
         vcId = UUID.randomUUID().toString()
         return revocationService.storeGetNextIndex(
-            issuanceDate,
-            expirationDate,
-            i,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey
+            userInfo = userInfo,
+            issuanceDate = issuanceDate,
+            expirationDate = expirationDate,
+            timePeriod = i,
+            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
+            subjectPublicKey = subjectPublicKey
         )
     }
 
@@ -117,22 +123,24 @@ class RevocationServiceStatusListIndexTest {
     @Transactional
     fun cantIssueCredentialWithSameVcIdTwice() {
         IssuedCredential(
-            vcId,
-            subjectId,
-            validUntil.toJavaInstant(),
-            timePeriod,
-            attributeName,
-            3
+            vcId = vcId,
+            subjectId = subjectId,
+            userInfoSubject = userInfo.userInfo.subject,
+            validUntil = validUntil.toJavaInstant(),
+            timePeriod = timePeriod,
+            attributeName = attributeName,
+            revocationListIndex = 3
         ).also {
             credentialRepo.save(it)
         }
 
         revocationService.storeGetNextIndex(
-            issuanceDate,
-            expirationDate,
-            timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey
+            userInfo = userInfo,
+            issuanceDate = issuanceDate,
+            expirationDate = expirationDate,
+            timePeriod = timePeriod,
+            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
+            subjectPublicKey = subjectPublicKey
         ).shouldBeNull()
     }
 
@@ -140,18 +148,20 @@ class RevocationServiceStatusListIndexTest {
     @Transactional
     fun `double adding vcId should return null`() {
         revocationService.storeGetNextIndex(
-            issuanceDate,
-            expirationDate,
-            timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey
+            userInfo = userInfo,
+            issuanceDate = issuanceDate,
+            expirationDate = expirationDate,
+            timePeriod = timePeriod,
+            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
+            subjectPublicKey = subjectPublicKey
         ).shouldNotBeNull()
         revocationService.storeGetNextIndex(
-            issuanceDate,
-            expirationDate,
-            timePeriod,
-            IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey
+            userInfo = userInfo,
+            issuanceDate = issuanceDate,
+            expirationDate = expirationDate,
+            timePeriod = timePeriod,
+            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
+            subjectPublicKey = subjectPublicKey
         ).shouldBeNull()
     }
 
@@ -172,11 +182,12 @@ class RevocationServiceStatusListIndexTest {
             val vcId = UUID.randomUUID().toString()
             val revocationListIndex =
                 revocationService.storeGetNextIndex(
-                    issuanceDate,
-                    expirationDate,
-                    timePeriod,
-                    IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-                    subjectPublicKey
+                    userInfo = userInfo,
+                    issuanceDate = issuanceDate,
+                    expirationDate = expirationDate,
+                    timePeriod = timePeriod,
+                    credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
+                    subjectPublicKey = subjectPublicKey
                 )
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex!!)

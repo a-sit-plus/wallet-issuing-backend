@@ -4,7 +4,10 @@ import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
+import at.asitplus.wallet.backend.data.PreparedCredentialRepository
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
@@ -13,7 +16,17 @@ import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
-import at.asitplus.wallet.lib.agent.*
+import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
+import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
+import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.agent.IssuerAgent
+import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.agent.KeyMaterial
+import at.asitplus.wallet.lib.agent.KeyStoreMaterial
+import at.asitplus.wallet.lib.agent.StatusListAgent
+import at.asitplus.wallet.lib.agent.StatusListIssuer
+import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
@@ -208,7 +221,6 @@ class BackendConfiguration {
         keyMaterial: KeyMaterial,
     ): Issuer = IssuerAgent(
         keyMaterial = keyMaterial,
-        validator = Validator(),
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
         statusListAggregationUrl = appendPath(
@@ -221,6 +233,25 @@ class BackendConfiguration {
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
         identifier = configurationProperties.publicContext
+    )
+
+    @Bean
+    fun statusListIssuer(
+        issuerCredentialStore: IssuerCredentialStore,
+        keyMaterial: KeyMaterial,
+    ): StatusListIssuer = StatusListAgent(
+        keyMaterial = keyMaterial,
+        validator = Validator(),
+        issuerCredentialStore = issuerCredentialStore,
+        statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
+        statusListAggregationUrl = appendPath(
+            configurationProperties.publicContext,
+            "credentials",
+            "status",
+            "current"
+        ),
+        revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
+        timePeriodProvider = timePeriodProvider(),
     )
 
     @Bean
@@ -243,16 +274,10 @@ class BackendConfiguration {
     fun issuerService(
         issuer: Issuer,
         authorizationServer: OAuth2AuthorizationServerAdapter,
-        ePrescriptionLoader: EPrescriptionLoader,
     ): CredentialIssuer = CredentialIssuer(
-        issuer = issuer,
         publicContext = configurationProperties.publicContext,
         credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
-        credentialDataProvider = OidcIssuerCredentialDataProvider(
-            lifetime = configurationProperties.credentials.lifeTime,
-            ePrescriptionLoader = ePrescriptionLoader
-        ),
         credentialEndpointPath = "/credential",
         nonceEndpointPath = "/nonce",
     )

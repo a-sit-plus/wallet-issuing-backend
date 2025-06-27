@@ -80,22 +80,13 @@ class RevocationServiceRepositoryTest {
 
     private fun createIssuedCredential(): IssuedCredential =
         IssuedCredential(
-            vcId,
-            subjectId,
-            validUntil.toJavaInstant(),
-            timePeriod,
-            attributeName,
-            1L
-        )
-
-    private fun createExpiredCredential(): IssuedCredential =
-        IssuedCredential(
-            vcId,
-            subjectId,
-            validUntilExpired.toJavaInstant(),
-            timePeriod,
-            attributeName,
-            1L
+            vcId = vcId,
+            subjectId = subjectId,
+            userInfoSubject = "userInfoSubject",
+            validUntil = validUntil.toJavaInstant(),
+            timePeriod = timePeriod,
+            attributeName = attributeName,
+            revocationListIndex = 1L
         )
 
 }

@@ -8,7 +8,13 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import at.asitplus.wallet.backend.data.*
+import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
+import at.asitplus.wallet.backend.data.IssuedCredential
+import at.asitplus.wallet.backend.data.IssuedCredentialRepository
+import at.asitplus.wallet.backend.data.PreparedCredential
+import at.asitplus.wallet.backend.data.PreparedCredentialRepository
+import at.asitplus.wallet.backend.data.RevokedCredential
+import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider.timePeriod
 import at.asitplus.wallet.lib.agent.Issuer
@@ -73,7 +79,7 @@ interface RevocationService {
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int,
-        credential: IssuerCredentialStore.Credential,
+        credential: IssuerCredentialStore.Credential, // TODO change
         subjectPublicKey: CryptoPublicKey,
     ): Long?
 

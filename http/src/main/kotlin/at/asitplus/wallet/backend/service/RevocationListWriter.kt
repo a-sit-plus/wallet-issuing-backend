@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.data.StatusListToken
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.StatusProvider
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.communication.primitives.StatusListTokenMediaType
 import at.asitplus.wallet.lib.iso.vckCborSerializer
 import kotlinx.coroutines.Dispatchers
@@ -11,11 +11,17 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import kotlin.io.path.*
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.createTempFile
+import kotlin.io.path.moveTo
+import kotlin.io.path.pathString
+import kotlin.io.path.writeBytes
+import kotlin.io.path.writeText
 
 @Service
 class RevocationListWriter(
-    private val issuer: StatusProvider<StatusListToken>,
+    private val statusListIssuer: StatusListIssuer,
     private val configurationProperties: BackendConfigurationProperties,
 ) {
 
@@ -35,7 +41,7 @@ class RevocationListWriter(
                     log.info("Writing revocation list for $timePeriod")
                     Path(jwtPath).createDirectories()
                     Path(jwtPath, timePeriod.toString()).let { destinationFile ->
-                        issuer.provideStatusListToken(listOf(StatusListTokenMediaType.Jwt)).let { token ->
+                        statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Jwt)).let { token ->
                             val content = token.second as StatusListToken.StatusListJwt
                             val text = content.value.serialize()
                             createTempFile().apply {
@@ -47,7 +53,7 @@ class RevocationListWriter(
                     }
                     Path(cwtPath).createDirectories()
                     Path(cwtPath, timePeriod.toString()).let { destinationFile ->
-                        issuer.provideStatusListToken(listOf(StatusListTokenMediaType.Cwt)).let { token ->
+                        statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Cwt)).let { token ->
                             val content = token.second as StatusListToken.StatusListCwt
                             val bytes = vckCborSerializer.encodeToByteArray(content.value)
                             createTempFile().apply {

@@ -3,13 +3,13 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.EPrescriptionLoader
+import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
+import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.OAuth2Error
-import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
-import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
+import at.asitplus.wallet.lib.oidvci.*
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.http.*
@@ -32,10 +32,12 @@ import qrcode.QRCode
  */
 @RestController
 class OpenId4VciController(
+    private val issuer: Issuer,
     private val credentialIssuer: CredentialIssuer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
     private val authenticationSupplier: AuthenticationSupplier,
+    private val ePrescriptionLoader: EPrescriptionLoader,
 ) {
 
     private val mapNonceToOffer = mutableMapOf<String, CredentialOffer>()
@@ -216,7 +218,14 @@ class OpenId4VciController(
         val credential = credentialIssuer.credential(
             authorizationHeader = authorizationHeader,
             params = params,
-            request = request.toRequestInfo()
+            request = request.toRequestInfo(),
+            credentialDataProvider = OidcIssuerCredentialDataProvider(
+                lifetime = backendConfigurationProperties.credentials.lifeTime,
+                ePrescriptionLoader = ePrescriptionLoader
+            ),
+            issueCredential = {
+                issuer.issueCredential(it)
+            },
         ).getOrElse {
             Napier.w("/credential got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)

@@ -84,23 +84,27 @@ fun List<ClaimToBeIssued>.toIsoClaims(
     pubKey: CryptoPublicKey,
     exp: Instant,
     scheme: ConstantIndex.CredentialScheme,
+    userInfo: OidcUserInfoExtended,
 ) = CredentialToBeIssued.Iso(
     issuerSignedItems = this
         .mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
     expiration = exp,
     scheme = scheme,
     subjectPublicKey = pubKey,
+    userInfo = userInfo,
 )
 
 fun List<ClaimToBeIssued>.toSdJwtClaims(
     pubKey: CryptoPublicKey,
     exp: Instant,
     scheme: ConstantIndex.CredentialScheme,
+    userInfo: OidcUserInfoExtended,
 ) = CredentialToBeIssued.VcSd(
     claims = this,
     expiration = exp,
     scheme = scheme,
     subjectPublicKey = pubKey,
+    userInfo = userInfo,
 )
 
 fun OidcUserInfoExtended.toIdaCredential(
@@ -124,6 +128,7 @@ fun OidcUserInfoExtended.toIdaCredential(
     expiration = exp,
     scheme = scheme,
     subjectPublicKey = pubKey,
+    userInfo = this,
 )
 
 fun OidcUserInfoExtended.toEuPidCredential(
@@ -156,7 +161,8 @@ fun OidcUserInfoExtended.toEuPidCredential(
     ).also { Napier.v("eupidVcJwt returns $it") },
     expiration = exp,
     scheme = scheme,
-    subjectPublicKey = pubKey
+    subjectPublicKey = pubKey,
+    userInfo = this,
 )
 
 fun OidcUserInfoExtended.buildIdaClaims(useSd: Boolean) =
