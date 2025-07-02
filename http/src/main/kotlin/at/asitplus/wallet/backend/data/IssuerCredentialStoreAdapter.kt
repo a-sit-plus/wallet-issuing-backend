@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
@@ -15,7 +15,6 @@ import kotlinx.datetime.Instant
  */
 class IssuerCredentialStoreAdapter(
     private val revocationService: RevocationService,
-    private val authenticationSupplier: AuthenticationSupplier,
 ) : IssuerCredentialStore {
 
     override fun setStatus(
@@ -39,7 +38,7 @@ class IssuerCredentialStoreAdapter(
         expirationDate: Instant,
         timePeriod: Int,
     ): Long? = revocationService.storeGetNextIndex(
-        authenticationSupplier.getCurrentUserOidcDetails(),
+        SpringSecurityAuthenticationSupplier.getCurrentUserOidcDetails(),
         issuanceDate,
         expirationDate,
         timePeriod,

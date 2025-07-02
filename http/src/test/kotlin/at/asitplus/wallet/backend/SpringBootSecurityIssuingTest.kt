@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.catching
-import at.asitplus.iso.IssuerSignedList
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -45,7 +44,6 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
 import org.junit.jupiter.api.Disabled

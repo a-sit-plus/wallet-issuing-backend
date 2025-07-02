@@ -2,8 +2,6 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.auth.AuthenticationSupplier
-import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.backend.data.PreparedCredentialRepository
@@ -134,9 +132,6 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun authenticationSupplier(): AuthenticationSupplier = SpringSecurityAuthenticationSupplier()
-
-    @Bean
     fun revocationService(
         preparedCredentialRepo: PreparedCredentialRepository,
         credentialRepo: IssuedCredentialRepository,
@@ -152,10 +147,8 @@ class BackendConfiguration {
     @Bean
     fun issuerCredentialStoreAdapter(
         revocationService: RevocationService,
-        authenticationSupplier: AuthenticationSupplier,
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(
-        revocationService,
-        authenticationSupplier
+        revocationService
     )
 
     @Bean
