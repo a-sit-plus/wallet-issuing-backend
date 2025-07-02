@@ -25,7 +25,7 @@ data class BackendConfigurationProperties(
     /**
      * Configure external service for getting OTT for EPrescription credentials
      */
-    val eprescription: EPrescriptionConfigurationProperties = EPrescriptionConfigurationProperties()
+    val eprescription: EPrescriptionConfigurationProperties? = null
 )
 
 data class EPrescriptionConfigurationProperties(
