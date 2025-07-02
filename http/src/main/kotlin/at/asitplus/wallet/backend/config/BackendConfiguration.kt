@@ -272,7 +272,6 @@ class BackendConfiguration {
 
     @Bean
     fun issuerService(
-        issuer: Issuer,
         authorizationServer: OAuth2AuthorizationServerAdapter,
     ): CredentialIssuer = CredentialIssuer(
         publicContext = configurationProperties.publicContext,
@@ -284,9 +283,7 @@ class BackendConfiguration {
 
     @Bean
     fun authorizationServer(
-        authenticationSupplier: AuthenticationSupplier,
-    ): OAuth2AuthorizationServerAdapter = SimpleAuthorizationService(
-        dataProvider = PreAuthnOAuth2DataProvider(authenticationSupplier),
+    ): SimpleAuthorizationService = SimpleAuthorizationService(
         strategy = CredentialAuthorizationServiceStrategy(credentialSchemes),
         publicContext = configurationProperties.publicContext,
         authorizationEndpointPath = "/authorize",
