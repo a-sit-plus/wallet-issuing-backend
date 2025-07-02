@@ -1,9 +1,14 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.openid.*
-import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.openid.AuthenticationRequestParameters
+import at.asitplus.openid.CredentialOffer
+import at.asitplus.openid.CredentialRequestParameters
+import at.asitplus.openid.IssuerMetadata
+import at.asitplus.openid.JwtVcIssuerMetadata
+import at.asitplus.openid.OAuth2AuthorizationServerMetadata
+import at.asitplus.openid.OpenIdConstants
+import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.EPrescriptionLoader
@@ -12,7 +17,10 @@ import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.*
+import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OAuth2Error
+import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
+import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.http.*
@@ -26,7 +34,14 @@ import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.ui.ModelMap
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 import qrcode.QRCode
 
@@ -40,7 +55,6 @@ class OpenId4VciController(
     private val credentialIssuer: CredentialIssuer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
-    private val authenticationSupplier: AuthenticationSupplier,
     private val ePrescriptionLoader: EPrescriptionLoader,
 ) {
 
@@ -91,12 +105,15 @@ class OpenId4VciController(
     }
 
     @GetMapping("/")
-    fun index(model: ModelMap): ModelAndView = runBlocking {
-        val principal = authenticationSupplier.getCurrentUserOidcDetails()
-        Napier.i("/index called with $principal")
-        principal?.let {
+    fun index(
+        model: ModelMap,
+        authentication: Authentication?
+    ): ModelAndView = runBlocking {
+        val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
+        Napier.i("/index called with ${authenticatedUser?.userInfo?.subject}")
+        authenticatedUser?.let {
             val offer = authorizationService.credentialOfferWithPreAuthnForUser(
-                principal,
+                authenticatedUser,
                 credentialIssuer.metadata.credentialIssuer
             )
             val nonce = uuid4().toString().also { mapNonceToOffer[it] = offer }
