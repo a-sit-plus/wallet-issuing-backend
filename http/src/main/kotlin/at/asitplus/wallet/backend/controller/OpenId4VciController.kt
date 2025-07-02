@@ -1,7 +1,10 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.openid.*
 import at.asitplus.wallet.backend.auth.AuthenticationSupplier
+import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.EPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
@@ -21,6 +24,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.ModelAndView
@@ -146,19 +150,27 @@ class OpenId4VciController(
      * using the configured OAuth2 AS. Subsequent requests to [token] and [credential] are secured
      * by the authorization code returned here.
      */
+    // TODO add "PreAuthorize" annotation?
     @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET])
     fun authorize(
         @RequestParam requestParams: Map<String, String>,
         @RequestBody requestBody: String?,
         request: HttpServletRequest,
         model: ModelMap,
+        authentication: Authentication? = null,
     ) = runBlocking {
         Napier.i("/authorize called")
         Napier.v("/authorize called with $requestParams and $requestBody")
         val params: AuthenticationRequestParameters =
             if (requestBody.isNullOrEmpty()) requestParams.decodeFromUrlQuery()
             else requestBody.decodeFromPostBody()
-        val result = authorizationService.authorize(params).getOrElse {
+
+        val result = authorizationService.authorize(params) {
+            catching {
+                SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
+                    ?: throw IllegalArgumentException("No authenticated user")
+            }
+        }.getOrElse {
             Napier.w("/authorize got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }

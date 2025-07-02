@@ -1,12 +1,12 @@
 package at.asitplus.wallet.backend
 
-
+import at.asitplus.catching
 import at.asitplus.iso.IssuerSignedList
 import at.asitplus.openid.CredentialResponseParameters
-import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.NoopEPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
@@ -27,12 +27,13 @@ import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.WalletService
+import at.asitplus.wallet.lib.oidvci.WalletService.RequestOptions
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -45,24 +46,32 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.security.core.authority.AuthorityUtils
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
+import org.springframework.security.oauth2.core.oidc.OidcIdToken
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
+import org.springframework.security.test.context.support.WithSecurityContext
+import org.springframework.security.test.context.support.WithSecurityContextFactory
+import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * Tests the issuing process,
+ * Tests the issuing process
  * by facilitating the internal authorization server,
- * and not relying on Spring Security to authorize the user.
+ * and using Spring Security to extract user data, see [WithOAuth2AuthenticationToken]
  */
-@Suppress("OPT_IN_USAGE")
+@OptIn(ExperimentalSerializationApi::class)
 @SpringBootTest
-class IssuingInternalAuthorizationServerTest {
+class SpringBootSecurityIssuingTest {
 
     @Autowired
     private lateinit var issuer: Issuer
@@ -74,74 +83,84 @@ class IssuingInternalAuthorizationServerTest {
     private lateinit var authorizationServer: SimpleAuthorizationService
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun pid_vc_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidScheme, PLAIN_JWT)
+        val requestOptions = RequestOptions(EuPidScheme, PLAIN_JWT)
 
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
-        val vcJws = VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
+        VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow()
+            .shouldNotBeNull().vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
             .birthDate shouldBe LocalDate(1983, 6, 4)
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun pid_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidScheme, SD_JWT)
+        val requestOptions = RequestOptions(EuPidScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-            .disclosureDigests!!.size shouldBeGreaterThan 1
+        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow()
+            .shouldNotBeNull().disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun pid_new_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidSdJwtScheme, SD_JWT)
+        val requestOptions =
+            RequestOptions(EuPidSdJwtScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-            .disclosureDigests!!.size shouldBeGreaterThan 1
+        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow()
+            .shouldNotBeNull().disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun pid_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidScheme, ISO_MDOC)
+        val requestOptions = RequestOptions(EuPidScheme, ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
-            .namespaces?.values?.firstOrNull<@Contextual IssuerSignedList>()?.entries?.size.shouldNotBeNull()
-            .shouldBeGreaterThan(1)
+            .namespaces?.values?.firstOrNull()
+            ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun cor_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(CertificateOfResidenceScheme, SD_JWT)
+        val requestOptions =
+            RequestOptions(CertificateOfResidenceScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-            .disclosureDigests!!.size shouldBeGreaterThan 1
+        val vcJws =
+            VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
+        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun por_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(PowerOfRepresentationScheme, SD_JWT)
+        val requestOptions =
+            RequestOptions(PowerOfRepresentationScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -157,8 +176,10 @@ class IssuingInternalAuthorizationServerTest {
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun cr_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(CompanyRegistrationScheme, SD_JWT)
+        val requestOptions =
+            RequestOptions(CompanyRegistrationScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -169,15 +190,15 @@ class IssuingInternalAuthorizationServerTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-
         SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
     @Disabled("Need to enter correct URL and api-key")
     @Test
+    @WithOAuth2AuthenticationToken
     fun healthid_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(HealthIdScheme, SD_JWT)
+        val requestOptions = RequestOptions(HealthIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -193,8 +214,9 @@ class IssuingInternalAuthorizationServerTest {
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun ehic_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EhicScheme, SD_JWT)
+        val requestOptions = RequestOptions(EhicScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -202,7 +224,7 @@ class IssuingInternalAuthorizationServerTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
-            issuer.shouldNotBeNull()
+            subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
         SdJwtValidator(
@@ -212,8 +234,9 @@ class IssuingInternalAuthorizationServerTest {
 
     @Suppress("DEPRECATION")
     @Test
+    @WithOAuth2AuthenticationToken
     fun taxid_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(at.asitplus.wallet.taxid.TaxIdScheme, SD_JWT)
+        val requestOptions = RequestOptions(TaxIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -221,7 +244,7 @@ class IssuingInternalAuthorizationServerTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
-            issuer.shouldNotBeNull()
+            subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
         SdJwtValidator(
@@ -230,8 +253,10 @@ class IssuingInternalAuthorizationServerTest {
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun taxid2025_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(TaxId2025Scheme, SD_JWT)
+        val requestOptions =
+            RequestOptions(TaxId2025Scheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -239,7 +264,7 @@ class IssuingInternalAuthorizationServerTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
-            issuer.shouldNotBeNull()
+            subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
         SdJwtValidator(
@@ -248,8 +273,10 @@ class IssuingInternalAuthorizationServerTest {
     }
 
     @Test
+    @WithOAuth2AuthenticationToken
     fun mdl_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(MobileDrivingLicenceScheme, ISO_MDOC)
+        val requestOptions =
+            RequestOptions(MobileDrivingLicenceScheme, ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -260,7 +287,7 @@ class IssuingInternalAuthorizationServerTest {
             ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
     }
 
-    private suspend fun loadCredential(requestOptions: WalletService.RequestOptions): CredentialResponseParameters {
+    private suspend fun loadCredential(requestOptions: RequestOptions): CredentialResponseParameters {
         val client = Client()
         val state = uuid4().toString()
         val credentialFormat =
@@ -269,7 +296,12 @@ class IssuingInternalAuthorizationServerTest {
         val scope = credentialFormat.scope
         val authnRequest =
             client.oid4vciClient.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-        val authorizationCode = authorizationServer.authorize(authnRequest) { mockOidcUserInfoExtended() }.getOrThrow()
+        val authorizationCode = authorizationServer.authorize(authnRequest) {
+            catching {
+                SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(SecurityContextHolder.getContext()?.authentication)
+                    ?: throw IllegalArgumentException("No authenticated user")
+            }
+        }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oid4vciClient.oauth2Client.createTokenRequestParameters(
             OAuth2Client.AuthorizationForToken.Code(authorizationCode.params.code!!),
@@ -300,11 +332,35 @@ class IssuingInternalAuthorizationServerTest {
 
 }
 
-private fun mockOidcUserInfoExtended() = OidcUserInfoExtended.deserialize(buildJsonObject {
-    put(IdTokenClaimNames.SUB, JsonPrimitive("IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN"))
-    put("birthdate", JsonPrimitive("1983-06-04"))
-    put("given_name", JsonPrimitive("XXXŐzgür"))
-    put("family_name", JsonPrimitive("XXXTüzekçi"))
-    put("urn:pvpgvat:oidc.bpk", JsonPrimitive("ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo="))
-}.toString())
+/**
+ * Gives us full flexibility to insert a fake [OAuth2AuthenticationToken] into the security context of the unit test.
+ *
+ * Data from <https://eid.egiz.gv.at/template/examples/idToken.json>
+ */
+class WithOAuth2AuthenticationTokenSecurityContextFactory : WithSecurityContextFactory<WithOAuth2AuthenticationToken> {
+    override fun createSecurityContext(customUser: WithOAuth2AuthenticationToken): SecurityContext {
+        val context = SecurityContextHolder.createEmptyContext()
+        val authorities = AuthorityUtils.createAuthorityList("notimportant")
+        val principal = DefaultOidcUser(authorities, mockOidcIdToken())
+        val authentication = OAuth2AuthenticationToken(principal, authorities, "clientId")
+        context.authentication = authentication
+        return context
+    }
+}
 
+private fun mockOidcIdToken(): OidcIdToken = OidcIdToken(
+    /* tokenValue = */ "tokenValue",
+    /* issuedAt = */ Instant.now().minusSeconds(10),
+    /* expiresAt = */ Instant.now().plusSeconds(10),
+    /* claims = */ mapOf(
+        IdTokenClaimNames.SUB to "IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN",
+        "birthdate" to "1983-06-04",
+        "given_name" to "XXXŐzgür",
+        "family_name" to "XXXTüzekçi",
+        "urn:pvpgvat:oidc.bpk" to "ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo=",
+    )
+)
+
+@Retention(AnnotationRetention.RUNTIME)
+@WithSecurityContext(factory = WithOAuth2AuthenticationTokenSecurityContextFactory::class)
+annotation class WithOAuth2AuthenticationToken
