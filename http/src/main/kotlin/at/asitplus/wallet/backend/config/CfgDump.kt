@@ -28,7 +28,7 @@ class AppContextEventListener {
             .toList()
             .forEach {
                 try {
-                    if (it.contains("password", ignoreCase = true)||it.contains("api-key", ignoreCase = true)) {
+                    if (it.contains("password", ignoreCase = true) || it.contains("api-key", ignoreCase = true)) {
                         Napier.i("$it=***")
                     } else {
                         Napier.i("$it=${env.getProperty(it)}")

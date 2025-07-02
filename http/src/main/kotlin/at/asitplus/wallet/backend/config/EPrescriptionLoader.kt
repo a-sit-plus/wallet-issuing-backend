@@ -9,25 +9,43 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 
-class EPrescriptionLoader(
+interface EPrescriptionLoader {
+
+    fun load(bpk: String, givenName: String, familyName: String, birthDate: String): Result<OttResponse?>
+
+}
+
+object NoopEPrescriptionLoader : EPrescriptionLoader {
+
+    override fun load(
+        bpk: String,
+        givenName: String,
+        familyName: String,
+        birthDate: String,
+    ): Result<OttResponse?> = Result.success(null)
+
+}
+
+class ConfiguredEPrescriptionLoader(
     restTemplateBuilder: RestTemplateBuilder,
     val url: String,
     apiKey: String,
-) {
+) : EPrescriptionLoader {
     private val restTemplate = restTemplateBuilder
         .defaultHeader("X-API-Key", apiKey)
         .build()
 
-    fun load(bpk: String, givenName: String, familyName: String, birthDate: String): Result<OttResponse?> =
+    override fun load(bpk: String, givenName: String, familyName: String, birthDate: String): Result<OttResponse?> =
         kotlin.runCatching {
             restTemplate.postForObject(
                 url,
-                HttpEntity<OttRequest>(OttRequest(
-                    identifier = OttRequestBpkHolder(system = "urn:oid:1.2.3.4", value = bpk),
-                    familyName = familyName,
-                    givenName = givenName,
-                    birthDate = LocalDate.parse(birthDate)
-                ), HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }),
+                HttpEntity<OttRequest>(
+                    OttRequest(
+                        identifier = OttRequestBpkHolder(system = "urn:oid:1.2.3.4", value = bpk),
+                        familyName = familyName,
+                        givenName = givenName,
+                        birthDate = LocalDate.parse(birthDate)
+                    ), HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }),
                 OttResponse::class.java
             )
         }
@@ -45,7 +63,7 @@ data class OttRequest(
     val givenName: String,
 
     @SerialName("birthDate")
-    val birthDate: LocalDate
+    val birthDate: LocalDate,
 )
 
 @Serializable
@@ -69,7 +87,7 @@ data class OttResponse(
     val info: String? = null,
 
     @SerialName("data")
-    val data: OttData
+    val data: OttData,
 )
 
 @Serializable

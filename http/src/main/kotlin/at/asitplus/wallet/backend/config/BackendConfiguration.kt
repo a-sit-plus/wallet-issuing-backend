@@ -293,11 +293,13 @@ class BackendConfiguration {
 
     @Bean
     fun ePrescriptionLoader(restTemplateBuilder: RestTemplateBuilder): EPrescriptionLoader =
-        EPrescriptionLoader(
-            restTemplateBuilder,
-            configurationProperties.eprescription.url,
-            configurationProperties.eprescription.apiKey
-        )
+        configurationProperties.eprescription?.let {
+            ConfiguredEPrescriptionLoader(
+                restTemplateBuilder = restTemplateBuilder,
+                url = it.url,
+                apiKey = it.apiKey
+            )
+        } ?: NoopEPrescriptionLoader
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =

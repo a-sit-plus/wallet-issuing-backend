@@ -17,9 +17,18 @@ class EPrescriptionLoaderTest {
             .messageConverters(KotlinSerializationJsonHttpMessageConverter(Json {
                 ignoreUnknownKeys = true
             })) // see BackendConfiguration.kt
-        val service = EPrescriptionLoader(builder, "https://example.com/", "TODO")
+        val service = ConfiguredEPrescriptionLoader(
+            restTemplateBuilder = builder,
+            url = "https://example.com/",
+            apiKey = "TODO"
+        )
 
-        val result = service.load("thisIsA/bPK/GH/012345==", "Wolfgang Peter", "Huber", "2000-03-04")
+        val result = service.load(
+            bpk = "thisIsA/bPK/GH/012345==",
+            givenName = "Wolfgang Peter",
+            familyName = "Huber",
+            birthDate = "2000-03-04"
+        )
 
         assertTrue(result.isSuccess)
         val data = result.getOrNull()
