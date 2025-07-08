@@ -1,14 +1,12 @@
 plugins {
-    id("at.asitplus.gradle.conventions") version "2.1.20+20250409"
+    id("at.asitplus.gradle.conventions") version "20250628"
+    kotlin("jvm") version "2.1.21" apply false
+    kotlin("plugin.serialization") version "2.1.21" apply false
+    kotlin("plugin.spring") version "2.1.21" apply false
+    kotlin("plugin.jpa") version "2.1.21" apply false
+    kotlin("plugin.allopen") version "2.1.21" apply false
 }
 
-/*
-* This workaround is required, because the kotlin version defined in the `AspVersions` is not a constant, but parsed from a properties file
-* Adding the plugins to the classpath here requires no version string, but instead adds the gradle module containing the required
-* plugin definitions to the classpath without applying them. doing so aligns them with the kotlin version used to build this
-* project and thus prevents version mismatches).
-* There has been an open issue on GitHub for the Kotlin Gradle DSL (because Groovy does not have the restriction on cons) for years
-* */
 buildscript {
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-allopen") //Spring
