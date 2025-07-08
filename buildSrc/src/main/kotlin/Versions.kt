@@ -20,7 +20,7 @@ object VersionsBackend {
     const val nimbus = "9.37.1"
 
     object spring {
-        const val boot = "3.4.6"
+        const val boot = "3.5.3"
         const val `admin-starter-client` = "3.4.7"
     }
 
