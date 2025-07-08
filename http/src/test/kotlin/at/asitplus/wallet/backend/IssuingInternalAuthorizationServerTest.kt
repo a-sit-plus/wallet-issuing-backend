@@ -211,25 +211,6 @@ class IssuingInternalAuthorizationServerTest {
         ).reconstructedJsonObject.shouldNotBeNull()
     }
 
-    @Suppress("DEPRECATION")
-    @Test
-    fun taxid_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(at.asitplus.wallet.taxid.TaxIdScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
-            issuer.shouldNotBeNull()
-            disclosureDigests.shouldBeNull()
-        }
-        SdJwtValidator(
-            SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
-        ).reconstructedJsonObject.shouldNotBeNull()
-    }
-
     @Test
     fun taxid2025_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(TaxId2025Scheme, SD_JWT)

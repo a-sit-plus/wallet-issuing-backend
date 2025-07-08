@@ -59,7 +59,6 @@ fun ConstantIndex.CredentialScheme.buildClaims(
         is EuPidScheme -> userInfo.buildEupidClaims(iss, exp, this.useSd())
         is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(iss, exp, this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
-        is at.asitplus.wallet.taxid.TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is TaxId2025Scheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
@@ -73,7 +72,6 @@ fun ConstantIndex.CredentialScheme.buildClaims(
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is HealthIdScheme -> false
     is EhicScheme -> false
-    is at.asitplus.wallet.taxid.TaxIdScheme -> false
     is TaxId2025Scheme -> false
     is PowerOfRepresentationScheme -> false
     is CompanyRegistrationScheme -> false
