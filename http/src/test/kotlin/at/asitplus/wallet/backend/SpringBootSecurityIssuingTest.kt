@@ -21,6 +21,7 @@ import at.asitplus.wallet.lib.agent.SdJwtValidator
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.iso.IssuerSigned
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
@@ -90,8 +91,8 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
-        VerifiableCredentialJws.deserialize(jws.payload.decodeToString()).getOrThrow()
-            .shouldNotBeNull().vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
+        vckJsonSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
+            .vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
             .birthDate shouldBe LocalDate(1983, 6, 4)
     }
 
@@ -105,8 +106,8 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow()
-            .shouldNotBeNull().disclosureDigests!!.size shouldBeGreaterThan 1
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+            .disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
@@ -120,8 +121,8 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow()
-            .shouldNotBeNull().disclosureDigests!!.size shouldBeGreaterThan 1
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+            .disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
@@ -149,9 +150,8 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        val vcJws =
-            VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull()
-        vcJws.disclosureDigests!!.size shouldBeGreaterThan 1
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+            .disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
@@ -165,7 +165,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -184,7 +184,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -203,7 +203,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -221,7 +221,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -241,7 +241,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -261,7 +261,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        VerifiableCredentialSdJwt.deserialize(jws.payload.decodeToString()).getOrThrow().shouldNotBeNull().apply {
+        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }

@@ -31,6 +31,7 @@ class IssuerCredentialStoreAdapter(
 
     override fun getStatusListView(timePeriod: Int): StatusListView = revocationService.getStatusListView(timePeriod)
 
+    @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
     override suspend fun storeGetNextIndex(
         credential: IssuerCredentialStore.Credential,
         subjectPublicKey: at.asitplus.signum.indispensable.CryptoPublicKey,
