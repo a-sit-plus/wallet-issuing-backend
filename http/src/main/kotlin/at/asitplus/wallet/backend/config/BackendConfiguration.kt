@@ -33,7 +33,6 @@ import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
-import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
@@ -258,7 +257,6 @@ class BackendConfiguration {
         HealthIdScheme,
         CertificateOfResidenceScheme,
         CompanyRegistrationScheme,
-        TaxIdScheme,
         TaxId2025Scheme,
         EhicScheme
     )

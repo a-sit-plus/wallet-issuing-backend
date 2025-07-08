@@ -33,7 +33,6 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxId2025Scheme
-import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -215,26 +214,6 @@ class SpringBootSecurityIssuingTest {
     @WithOAuth2AuthenticationToken
     fun ehic_ok() = runTest {
         val requestOptions = RequestOptions(EhicScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
-            subject.shouldNotBeNull()
-            disclosureDigests.shouldBeNull()
-        }
-        SdJwtValidator(
-            SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
-        ).reconstructedJsonObject.shouldNotBeNull()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    @WithOAuth2AuthenticationToken
-    fun taxid_ok() = runTest {
-        val requestOptions = RequestOptions(TaxIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
