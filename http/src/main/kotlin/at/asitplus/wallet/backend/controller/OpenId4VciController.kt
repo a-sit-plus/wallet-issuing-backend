@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.openid.AuthenticationRequestParameters
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.CredentialRequestParameters
@@ -239,7 +240,9 @@ class OpenId4VciController(
         Napier.i("/credential called")
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         Napier.v("/credential called with $authorizationHeader and $requestBody")
-        val params = CredentialRequestParameters.deserialize(requestBody).getOrElse {
+        val params = catchingUnwrapped {
+            vckJsonSerializer.decodeFromString<CredentialRequestParameters>(requestBody)
+        }.getOrElse {
             Napier.w("/credential can't parse request", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
