@@ -6,7 +6,6 @@ import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.wallet.backend.controller.ApiItem
 import at.asitplus.wallet.backend.controller.Siop2User
 import io.github.aakira.napier.Napier
-import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -15,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
+import kotlin.time.toKotlinInstant
 
 object SpringSecurityAuthenticationSupplier {
 

@@ -15,11 +15,11 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.oidvci.CredentialDataProviderFun
 import at.asitplus.wallet.lib.oidvci.CredentialDataProviderInput
 import io.github.aakira.napier.Napier
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
-import kotlinx.datetime.toKotlinInstant
 import java.time.temporal.ChronoUnit
+import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.toJavaInstant
+import kotlin.time.toKotlinInstant
 
 
 class OidcIssuerCredentialDataProvider(

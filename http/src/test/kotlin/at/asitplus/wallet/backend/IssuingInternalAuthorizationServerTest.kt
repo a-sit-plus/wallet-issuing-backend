@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 
+import at.asitplus.iso.IssuerSigned
 import at.asitplus.iso.IssuerSignedList
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.OidcUserInfoExtended
@@ -18,12 +19,11 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.SdJwtValidator
+import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.data.vckJsonSerializer
-import at.asitplus.wallet.lib.iso.IssuerSigned
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -153,7 +153,7 @@ class IssuingInternalAuthorizationServerTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
     }
 
@@ -171,7 +171,7 @@ class IssuingInternalAuthorizationServerTest {
             disclosureDigests.shouldBeNull()
         }
 
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
@@ -189,7 +189,7 @@ class IssuingInternalAuthorizationServerTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
     }
 
@@ -206,7 +206,7 @@ class IssuingInternalAuthorizationServerTest {
             issuer.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(
+        SdJwtDecoded(
             SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
         ).reconstructedJsonObject.shouldNotBeNull()
     }
@@ -224,7 +224,7 @@ class IssuingInternalAuthorizationServerTest {
             issuer.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(
+        SdJwtDecoded(
             SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
         ).reconstructedJsonObject.shouldNotBeNull()
     }
@@ -273,9 +273,6 @@ class IssuingInternalAuthorizationServerTest {
                 lifetime = 1.minutes,
                 ePrescriptionLoader = NoopEPrescriptionLoader
             ),
-            issueCredential = {
-                issuer.issueCredential(it)
-            },
         ).getOrThrow()
         return credential
     }

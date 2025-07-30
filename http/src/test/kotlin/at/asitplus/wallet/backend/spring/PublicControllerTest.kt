@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
-import kotlinx.datetime.Clock
 import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
@@ -13,6 +12,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import kotlin.time.Clock
 
 @SpringBootTest
 @AutoConfigureMockMvc

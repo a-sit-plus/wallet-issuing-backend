@@ -24,6 +24,14 @@ configurations {
     }
 }
 
+kotlin {
+    sourceSets {
+        all {
+            languageSettings.optIn("kotlin.time.ExperimentalTime")
+        }
+    }
+}
+
 repositories {
     mavenCentral()
 }

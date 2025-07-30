@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.config
 
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -8,6 +7,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import kotlin.time.Instant
 
 interface EPrescriptionLoader {
 
