@@ -31,13 +31,23 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.*
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.serialization.json.*
+import kotlinx.datetime.format
+import kotlinx.datetime.minus
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import java.nio.charset.Charset
 import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextUInt
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
     IssuerSignedItem(
@@ -614,7 +624,7 @@ val OidcUserInfoExtended.bpk: String
     get() = getClaimAsString("urn:pvpgvat:oidc.bpk")
         ?: userInfo.subject
 
-val OidcUserInfoExtended.dateOfBirth
+val OidcUserInfoExtended.dateOfBirth: LocalDate
     get() = userInfo.birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?: randomDateOfBirth()
 
@@ -751,7 +761,7 @@ fun OidcUserInfoExtended.getClaimAsString(key: String): String? {
 
 val OidcUserInfoExtended.socialSecurityNumber: String
     get() = "1111" + dateOfBirth.format(LocalDate.Format {
-        dayOfMonth()
+        day()
         monthNumber()
         year()
     })

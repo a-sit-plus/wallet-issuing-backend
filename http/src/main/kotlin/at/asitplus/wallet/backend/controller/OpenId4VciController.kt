@@ -14,7 +14,6 @@ import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.EPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
-import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -52,7 +51,6 @@ import qrcode.QRCode
  */
 @RestController
 class OpenId4VciController(
-    private val issuer: Issuer,
     private val credentialIssuer: CredentialIssuer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
@@ -255,9 +253,6 @@ class OpenId4VciController(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
                 ePrescriptionLoader = ePrescriptionLoader
             ),
-            issueCredential = {
-                issuer.issueCredential(it)
-            },
         ).getOrElse {
             Napier.w("/credential got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)

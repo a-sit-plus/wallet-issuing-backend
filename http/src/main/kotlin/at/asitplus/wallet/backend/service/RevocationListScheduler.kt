@@ -2,14 +2,14 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationStartedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
-import jakarta.annotation.PostConstruct
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.time.toJavaDuration
 
 

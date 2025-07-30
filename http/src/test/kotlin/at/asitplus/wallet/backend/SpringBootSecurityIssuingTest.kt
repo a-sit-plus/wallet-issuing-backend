@@ -300,9 +300,6 @@ class SpringBootSecurityIssuingTest {
                 lifetime = 1.minutes,
                 ePrescriptionLoader = NoopEPrescriptionLoader
             ),
-            issueCredential = {
-                issuer.issueCredential(it)
-            },
         ).getOrThrow()
         return credential
     }

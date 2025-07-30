@@ -24,7 +24,6 @@ import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
@@ -233,7 +232,6 @@ class BackendConfiguration {
         keyMaterial: KeyMaterial,
     ): StatusListIssuer = StatusListAgent(
         keyMaterial = keyMaterial,
-        validator = Validator(),
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
         statusListAggregationUrl = appendPath(
@@ -264,10 +262,12 @@ class BackendConfiguration {
     @Bean
     fun issuerService(
         authorizationServer: OAuth2AuthorizationServerAdapter,
+        issuer: Issuer,
     ): CredentialIssuer = CredentialIssuer(
         publicContext = configurationProperties.publicContext,
         credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
+        issuer = issuer,
         credentialEndpointPath = "/credential",
         nonceEndpointPath = "/nonce",
     )

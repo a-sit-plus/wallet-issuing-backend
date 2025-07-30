@@ -25,8 +25,6 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import org.apache.commons.lang3.math.NumberUtils.max
@@ -34,6 +32,8 @@ import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
 import kotlin.jvm.optionals.getOrNull
+import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 
 interface RevocationService {
@@ -74,12 +74,14 @@ interface RevocationService {
      * that will be included in the verifiable credentials (so that consumers
      * can verify the revocation status).
      */
+    @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
+    // TODO check usages
     fun storeGetNextIndex(
         userInfo: OidcUserInfoExtended?,
         issuanceDate: Instant,
         expirationDate: Instant,
         timePeriod: Int,
-        credential: IssuerCredentialStore.Credential, // TODO change
+        @Suppress("DEPRECATION") credential: IssuerCredentialStore.Credential,
         subjectPublicKey: CryptoPublicKey,
     ): Long?
 

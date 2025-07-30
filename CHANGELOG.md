@@ -1,7 +1,10 @@
 # Changelog
 
 5.8.0:
- - Update issued credential store to VC-K 5.8.0
+ - Update to VC-K 5.8.0
+ - Update credentials
+ - Update issuer credential store
+ - Scope revocation page to logged-in user
 
 5.7.2:
  - Implement revocation of issued credentials on Web UI

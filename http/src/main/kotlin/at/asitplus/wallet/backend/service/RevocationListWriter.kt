@@ -1,10 +1,10 @@
 package at.asitplus.wallet.backend.service
 
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.data.StatusListToken
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.communication.primitives.StatusListTokenMediaType
-import at.asitplus.wallet.lib.iso.vckCborSerializer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -55,7 +55,7 @@ class RevocationListWriter(
                     Path(cwtPath, timePeriod.toString()).let { destinationFile ->
                         statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Cwt)).let { token ->
                             val content = token.second as StatusListToken.StatusListCwt
-                            val bytes = vckCborSerializer.encodeToByteArray(content.value)
+                            val bytes = coseCompliantSerializer.encodeToByteArray(content.value)
                             createTempFile().apply {
                                 writeBytes(bytes)
                                 moveTo(destinationFile, true)
