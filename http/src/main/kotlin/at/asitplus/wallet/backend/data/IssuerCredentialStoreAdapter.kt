@@ -23,6 +23,7 @@ class IssuerCredentialStoreAdapter(
         status: TokenStatus,
     ): Boolean = revocationService.setStatus(timePeriod, index, status)
 
+    @Deprecated("Use setStatus(timePeriod, index, status) instead")
     override fun setStatus(
         vcId: String,
         status: TokenStatus,
@@ -31,6 +32,7 @@ class IssuerCredentialStoreAdapter(
 
     override fun getStatusListView(timePeriod: Int): StatusListView = revocationService.getStatusListView(timePeriod)
 
+    @Suppress("DEPRECATION")
     @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
     override suspend fun storeGetNextIndex(
         credential: IssuerCredentialStore.Credential,

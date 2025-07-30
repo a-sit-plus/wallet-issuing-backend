@@ -4,21 +4,26 @@ import at.asitplus.openid.OidcUserInfo
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.backend.Client
-import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.idaustria.IdAustriaCredential
-import at.asitplus.wallet.idaustria.IdAustriaScheme
-import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.agent.CredentialToBeIssued
+import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
+import at.asitplus.wallet.lib.agent.Issuer
+import at.asitplus.wallet.lib.data.AtomicAttribute2023
+import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.CredentialSubject
+import at.asitplus.wallet.lib.data.VcDataModelConstants.VERIFIABLE_CREDENTIAL
+import at.asitplus.wallet.lib.data.VerifiableCredential
+import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
+import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
+import at.asitplus.wallet.lib.jws.JwsHeaderKeyId
+import at.asitplus.wallet.lib.jws.SignJwt
 import io.kotest.assertions.withClue
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import jakarta.transaction.Transactional
-import kotlinx.datetime.LocalDate
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,10 +33,12 @@ import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
-import kotlin.time.toJavaInstant
 
 @SpringBootTest
 class RevocationServiceStatusListIndexTest {
+
+    @Autowired
+    private lateinit var issuer: Issuer
 
     @Autowired
     private lateinit var credentialRepo: IssuedCredentialRepository
@@ -59,14 +66,12 @@ class RevocationServiceStatusListIndexTest {
         userInfo = OidcUserInfoExtended.fromOidcUserInfo(OidcUserInfo("subject")).getOrThrow()
         timePeriod = Random.nextInt(2000, 2032)
         vcId = UUID.randomUUID().toString()
-        attributeName = IdAustriaScheme.vcType
+        attributeName = ConstantIndex.AtomicAttribute2023.vcType
         subjectId = UUID.randomUUID().toString()
-        credentialSubject = IdAustriaCredential(
+        credentialSubject = AtomicAttribute2023(
             subjectId,
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
-            UUID.randomUUID().toString(),
-            LocalDate.fromEpochDays(1)
         )
         issuanceDate = Clock.System.now()
         expirationDate = Clock.System.now() + 60.seconds
@@ -79,15 +84,8 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     @Transactional
-    fun `simple positive add and revoke vcId should work`() {
-        revocationService.storeGetNextIndex(
-            userInfo = userInfo,
-            issuanceDate = issuanceDate,
-            expirationDate = expirationDate,
-            timePeriod = timePeriod,
-            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey = subjectPublicKey
-        )
+    fun `simple positive add and revoke vcId should work`()  = runTest{
+        store(timePeriod, vcId) shouldBe 1uL
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
         revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod) shouldBe true
         revocationService.isRevoked(vcId, timePeriod) shouldBe true
@@ -96,78 +94,38 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     @Transactional
-    fun `revocation list indexes should be grouped by time period`() {
-        storeNewCredential(timePeriod) shouldBe 1L
-        storeNewCredential(timePeriod) shouldBe 2L
+    fun `revocation list indexes should be grouped by time period`() = runTest {
+        storeNewCredential(timePeriod) shouldBe 1uL
+        storeNewCredential(timePeriod) shouldBe 2uL
 
-        storeNewCredential(timePeriod + 1) shouldBe 1L
-        storeNewCredential(timePeriod + 1) shouldBe 2L
-        storeNewCredential(timePeriod + 1) shouldBe 3L
+        storeNewCredential(timePeriod + 1) shouldBe 1uL
+        storeNewCredential(timePeriod + 1) shouldBe 2uL
+        storeNewCredential(timePeriod + 1) shouldBe 3uL
 
-        storeNewCredential(timePeriod) shouldBe 3L
+        storeNewCredential(timePeriod) shouldBe 3uL
     }
 
-    private fun storeNewCredential(i: Int): Long? {
-        vcId = UUID.randomUUID().toString()
-        return revocationService.storeGetNextIndex(
-            userInfo = userInfo,
-            issuanceDate = issuanceDate,
-            expirationDate = expirationDate,
-            timePeriod = i,
-            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey = subjectPublicKey
+    private suspend fun storeNewCredential(timePeriod: Int): ULong = store(timePeriod, UUID.randomUUID().toString())
+
+    @Test
+    @Transactional
+    fun `double adding vcId should return null`() = runTest {
+        val credentialToBeIssued = CredentialToBeIssued.VcJwt(
+            subject = credentialSubject,
+            expiration = expirationDate,
+            scheme = ConstantIndex.AtomicAttribute2023,
+            subjectPublicKey = subjectPublicKey,
+            userInfo = userInfo
         )
+        val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
+
+        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).isSuccess shouldBe true
+        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).isFailure shouldBe true
     }
 
     @Test
     @Transactional
-    fun cantIssueCredentialWithSameVcIdTwice() {
-        IssuedCredential(
-            vcId = vcId,
-            subjectId = subjectId,
-            userInfoSubject = userInfo.userInfo.subject,
-            validUntil = validUntil.toJavaInstant(),
-            timePeriod = timePeriod,
-            attributeName = attributeName,
-            revocationListIndex = 3
-        ).also {
-            credentialRepo.save(it)
-        }
-
-        revocationService.storeGetNextIndex(
-            userInfo = userInfo,
-            issuanceDate = issuanceDate,
-            expirationDate = expirationDate,
-            timePeriod = timePeriod,
-            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey = subjectPublicKey
-        ).shouldBeNull()
-    }
-
-    @Test
-    @Transactional
-    fun `double adding vcId should return null`() {
-        revocationService.storeGetNextIndex(
-            userInfo = userInfo,
-            issuanceDate = issuanceDate,
-            expirationDate = expirationDate,
-            timePeriod = timePeriod,
-            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey = subjectPublicKey
-        ).shouldNotBeNull()
-        revocationService.storeGetNextIndex(
-            userInfo = userInfo,
-            issuanceDate = issuanceDate,
-            expirationDate = expirationDate,
-            timePeriod = timePeriod,
-            credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-            subjectPublicKey = subjectPublicKey
-        ).shouldBeNull()
-    }
-
-    @Test
-    @Transactional
-    fun `revocation list should match revocation calls`() {
+    fun `revocation list should match revocation calls`() = runTest {
         val expectedRevocationList = revokeRandomCredentials()
 
         val revocationList = revocationService.getRevokedStatusListIndexList(timePeriod)
@@ -176,25 +134,63 @@ class RevocationServiceStatusListIndexTest {
         }
     }
 
-    private fun revokeRandomCredentials(): MutableList<Long> {
+    private suspend fun revokeRandomCredentials(): MutableList<Long> {
         val expectedRevocationList = mutableListOf<Long>()
-        for (i in 1..256) {
+        (1..256).forEach { _ ->
             val vcId = UUID.randomUUID().toString()
-            val revocationListIndex =
-                revocationService.storeGetNextIndex(
-                    userInfo = userInfo,
-                    issuanceDate = issuanceDate,
-                    expirationDate = expirationDate,
-                    timePeriod = timePeriod,
-                    credential = IssuerCredentialStore.Credential.VcJwt(vcId, credentialSubject, IdAustriaScheme),
-                    subjectPublicKey = subjectPublicKey
-                )
+            val revocationListIndex = store(timePeriod, vcId)
             if (Random.nextBoolean()) {
-                expectedRevocationList.add(revocationListIndex!!)
+                expectedRevocationList.add(revocationListIndex.toLong())
                 revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod)
             }
         }
         return expectedRevocationList
     }
 
+    private suspend fun store(timePeriod: Int, vcId: String): ULong {
+        val credentialToBeIssued = CredentialToBeIssued.VcJwt(
+            subject = credentialSubject,
+            expiration = expirationDate,
+            scheme = ConstantIndex.AtomicAttribute2023,
+            subjectPublicKey = subjectPublicKey,
+            userInfo = userInfo
+        )
+        val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
+        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).isSuccess shouldBe true
+        return reference.statusListIndex
+    }
+
+    private suspend fun buildIssuedCredential(vcId: String): Issuer.IssuedCredential.VcJwt {
+        val vc = VerifiableCredential(
+            id = vcId,
+            issuer = "https://issuer.example.com",
+            type = listOf(VERIFIABLE_CREDENTIAL, attributeName),
+            issuanceDate = issuanceDate,
+            expirationDate = expirationDate,
+            credentialSubject = credentialSubject,
+        )
+        val vcInJws = SignJwt<VerifiableCredentialJws>(EphemeralKeyWithoutCert(), JwsHeaderKeyId())(
+            type = JwsContentTypeConstants.JWT,
+            payload = vc.toJws(),
+            serializer = VerifiableCredentialJws.serializer(),
+        ).getOrThrow()
+
+        return Issuer.IssuedCredential.VcJwt(
+            vc = vc,
+            signedVcJws = vcInJws,
+            vcJws = vcInJws.serialize(),
+            scheme = ConstantIndex.AtomicAttribute2023,
+            subjectPublicKey = subjectPublicKey,
+            userInfo = userInfo,
+        )
+    }
+
 }
+private fun VerifiableCredential.toJws() = VerifiableCredentialJws(
+    vc = this,
+    subject = credentialSubject.id,
+    notBefore = issuanceDate,
+    issuer = issuer,
+    expiration = expirationDate,
+    jwtId = id
+)

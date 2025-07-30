@@ -75,7 +75,6 @@ interface RevocationService {
      * can verify the revocation status).
      */
     @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
-    // TODO check usages
     fun storeGetNextIndex(
         userInfo: OidcUserInfoExtended?,
         issuanceDate: Instant,
@@ -212,6 +211,7 @@ class DefaultRevocationService(
      * that will be included in the verifiable credentials (so that consumers
      * can verify the revocation status).
      */
+    @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
     override fun storeGetNextIndex(
         userInfo: OidcUserInfoExtended?,
         issuanceDate: Instant,
