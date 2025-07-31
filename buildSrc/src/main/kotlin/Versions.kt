@@ -15,7 +15,7 @@ object VersionsBackend {
     const val mockito = "5.1.0"
     const val okhttp = "4.11.0"
     const val scrimage = "4.0.39"
-    const val vck = "5.8.0-SNAPSHOT"
+    const val vck = "5.8.0"
     const val nimbus = "10.4"
 
     object spring {
