@@ -14,8 +14,6 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.IsoIec5218Gender
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
-import at.asitplus.wallet.idaustria.IdAustriaCredential
-import at.asitplus.wallet.idaustria.IdAustriaScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -26,7 +24,7 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
-import at.asitplus.wallet.taxid.TaxId2025Scheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -65,11 +63,10 @@ fun ConstantIndex.CredentialScheme.buildClaims(
     loader: EPrescriptionLoader,
 ): List<ClaimToBeIssued> =
     when (this) {
-        is IdAustriaScheme -> userInfo.buildIdaClaims(this.useSd())
-        is EuPidScheme -> userInfo.buildEupidClaims(iss, exp, this.useSd())
-        is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(iss, exp, this.useSd())
+        is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
+        is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
-        is TaxId2025Scheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
+        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
@@ -82,7 +79,7 @@ fun ConstantIndex.CredentialScheme.buildClaims(
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is HealthIdScheme -> false
     is EhicScheme -> false
-    is TaxId2025Scheme -> false
+    is TaxIdScheme -> false
     is PowerOfRepresentationScheme -> false
     is CompanyRegistrationScheme -> false
     else -> true
@@ -115,33 +112,8 @@ fun List<ClaimToBeIssued>.toSdJwtClaims(
     userInfo = userInfo,
 )
 
-fun OidcUserInfoExtended.toIdaCredential(
-    pubKey: CryptoPublicKey,
-    exp: Instant,
-    scheme: ConstantIndex.CredentialScheme,
-) = CredentialToBeIssued.VcJwt(
-    subject = IdAustriaCredential(
-        id = pubKey.didEncoded,
-        bpk = bpk,
-        firstname = userInfo.givenName ?: "N/A",
-        lastname = userInfo.familyName ?: "N/A",
-        dateOfBirth = dateOfBirth,
-        portrait = portrait,
-        mainAddress = mainAddress,
-        ageOver14 = ageOver14,
-        ageOver16 = ageOver16,
-        ageOver18 = ageOver18,
-        ageOver21 = ageOver21,
-    ).also { Napier.v("idaVcJwt returns $it") },
-    expiration = exp,
-    scheme = scheme,
-    subjectPublicKey = pubKey,
-    userInfo = this,
-)
-
 fun OidcUserInfoExtended.toEuPidCredential(
     pubKey: CryptoPublicKey,
-    iss: Instant,
     exp: Instant,
     scheme: ConstantIndex.CredentialScheme,
 ) = CredentialToBeIssued.VcJwt(
@@ -173,27 +145,10 @@ fun OidcUserInfoExtended.toEuPidCredential(
     userInfo = this,
 )
 
-fun OidcUserInfoExtended.buildIdaClaims(useSd: Boolean) =
-    with(IdAustriaScheme.Attributes) {
-        listOfNotNull(
-            claim(BPK, useSd) { bpk },
-            claim(FIRSTNAME, useSd) { userInfo.givenName },
-            claim(LASTNAME, useSd) { userInfo.familyName },
-            claim(DATE_OF_BIRTH, useSd) { dateOfBirth },
-            claim(PORTRAIT, useSd) { portrait },
-            claim(MAIN_ADDRESS, useSd) { mainAddress },
-            claim(AGE_OVER_14, useSd) { ageOver14 },
-            claim(AGE_OVER_16, useSd) { ageOver16 },
-            claim(AGE_OVER_18, useSd) { ageOver18 },
-            claim(AGE_OVER_21, useSd) { ageOver21 },
-            claim(GENDER, useSd) { genderText },
-        )
-    }
-
-fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd: Boolean) =
+fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
     with(EuPidSdJwtScheme.SdJwtAttributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
-        val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
+        val (_, ourBirthCity, ourBirthState, _) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -281,10 +236,10 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(iss: Instant, exp: Instant, useSd
     }
 
 @Suppress("DEPRECATION")
-fun OidcUserInfoExtended.buildEupidClaims(iss: Instant, exp: Instant, useSd: Boolean) =
+fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
     with(EuPidScheme.Attributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
-        val (_, ourBirthCity, ourBirthState, ourBirthStreet) = randomAddress()
+        val (_, ourBirthCity, ourBirthState, _) = randomAddress()
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -392,7 +347,7 @@ fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant, useSd: Boole
     }
 
 fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boolean) =
-    with(TaxId2025Scheme.Attributes) {
+    with(TaxIdScheme.Attributes) {
         listOfNotNull(
             claim(TAX_NUMBER, useSd) { "ATU12345678" },
             claim(AFFILIATION_COUNTRY, useSd) { "AT" },
@@ -640,10 +595,6 @@ val OidcUserInfoExtended.sex
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoSexEnum()
         ?: IsoSexEnum.NOT_KNOWN
 
-val OidcUserInfoExtended.genderText
-    get() = getClaimAsString("urn:eidgvat:attributes.gender")
-        ?: "unknown"
-
 val OidcUserInfoExtended.gender
     get() = getClaimAsString("urn:eidgvat:attributes.gender")?.toIsoGenderEnum()
         ?: IsoIec5218Gender.NOT_KNOWN
@@ -718,10 +669,6 @@ val OidcUserInfoExtended.portraitCaptureDate: LocalDate?
     get() = getClaimAsString("org.iso.18013.5.1:portrait_capture_date")
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?: LocalDate(2020, Random.nextInt(1, 12), Random.nextInt(1, 28))
-
-val OidcUserInfoExtended.mainAddress: String?
-    get() = userInfo.address?.formatted
-        ?: getClaimAsString("urn:eidgvat:attributes.mainAddress")
 
 val OidcUserInfoExtended.arrivalDate: LocalDate
     get() = getClaimAsString("urn:eidgvat:attributes.mainAddressRegistrationDate")
