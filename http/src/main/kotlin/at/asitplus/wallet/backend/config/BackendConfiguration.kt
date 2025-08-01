@@ -31,7 +31,7 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
-import at.asitplus.wallet.taxid.TaxId2025Scheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import jakarta.annotation.PostConstruct
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
@@ -105,9 +105,7 @@ class BackendConfiguration {
         Napier.base(AntilogSlf4jAdapter())
         Security.addProvider(BouncyCastleProvider())
         at.asitplus.wallet.lib.Initializer.initOpenIdModule()
-        at.asitplus.wallet.idaustria.Initializer.initWithVCK()
         at.asitplus.wallet.taxid.Initializer.initWithVCK()
-        at.asitplus.wallet.taxid.Initializer2025.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
         at.asitplus.wallet.eupidsdjwt.Initializer.initWithVCK()
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
@@ -214,13 +212,6 @@ class BackendConfiguration {
         keyMaterial = keyMaterial,
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
-        statusListAggregationUrl = appendPath(
-            configurationProperties.publicContext,
-            "credentials",
-            "status",
-            "current"
-        ),
-        revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
         identifier = configurationProperties.publicContext
@@ -255,7 +246,7 @@ class BackendConfiguration {
         HealthIdScheme,
         CertificateOfResidenceScheme,
         CompanyRegistrationScheme,
-        TaxId2025Scheme,
+        TaxIdScheme,
         EhicScheme
     )
 

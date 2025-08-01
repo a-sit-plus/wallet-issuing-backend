@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.catching
+import at.asitplus.iso.IssuerSigned
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -17,12 +18,11 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.SdJwtValidator
+import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.data.vckJsonSerializer
-import at.asitplus.wallet.lib.iso.IssuerSigned
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -32,7 +32,7 @@ import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
-import at.asitplus.wallet.taxid.TaxId2025Scheme
+import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -168,7 +168,8 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+            .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
     }
 
@@ -187,7 +188,8 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+            .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
@@ -206,7 +208,8 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+            .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
     }
 
@@ -224,16 +227,14 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(
-            SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
-        ).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+            .reconstructedJsonObject.shouldNotBeNull()
     }
 
     @Test
     @WithOAuth2AuthenticationToken
-    fun taxid2025_ok() = runTest {
-        val requestOptions =
-            RequestOptions(TaxId2025Scheme, SD_JWT)
+    fun taxid_ok() = runTest {
+        val requestOptions = RequestOptions(TaxIdScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -244,7 +245,7 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtValidator(
+        SdJwtDecoded(
             SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
         ).reconstructedJsonObject.shouldNotBeNull()
     }

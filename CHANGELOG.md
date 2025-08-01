@@ -3,6 +3,7 @@
 5.8.0:
  - Update to VC-K 5.8.0
  - Update credentials
+ - Drop support for IDA credential
  - Update issuer credential store
  - Scope revocation page to logged-in user
 
