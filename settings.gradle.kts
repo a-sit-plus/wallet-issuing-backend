@@ -11,7 +11,7 @@ pluginManagement {
 }
 
 
-rootProject.name = "backend"
+rootProject.name = "Wallet Issuing Service"
 
 include("http")
 
