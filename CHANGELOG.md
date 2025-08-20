@@ -6,6 +6,7 @@
  - Drop support for IDA credential
  - Update issuer credential store
  - Scope revocation page to logged-in user
+ - Issue `vctm` for EHIC
 
 5.7.2:
  - Implement revocation of issued credentials on Web UI
