@@ -18,6 +18,7 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
+import at.asitplus.wallet.lib.jws.JwsHeaderModifierFun
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
@@ -55,25 +56,114 @@ fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
         elementValue = value
     )
 
+private const val EHIC_VCTM = """
+    eyJ2Y3QiOiJ1cm46ZXVkaTplaGljOjEiLCJuYW1lIjoiRUhJQyBTRC1KV1QgVFlQRSBNRVRBREFUQSIs
+    ImRlc2NyaXB0aW9uIjoiRXVyb3BlYW4gSGVhbHRoIEluc3VyYW5jZSBDYXJkIChFSElDKSBTRC1KV1Qg
+    VmVyaWZpYWJsZSBDcmVkZW50aWFsIFR5cGUgTWV0YWRhdGEsIGJhc2VkIG9uIGlldGYtb2F1dGgtc2Qt
+    and0LXZjIChkcmFmdCAwOSksIHVzaW5nIGEgc2luZ2xlIGxhbmd1YWdlIHRhZyAoZW4tVVMpLiIsIiRj
+    b21tZW50IjoiSW1wbGVtZW50YXRpb24gb2YgdGhpcyBleGFtcGxlIFR5cGUgTWV0YWRhdGEgbWF5IHJl
+    cXVpcmUgTWVtYmVyIFN0YXRlLXNwZWNpZmljIGNsYXJpZmljYXRpb25zIHRvIGFsaWduIHdpdGggbmF0
+    aW9uYWwgcG9saWNpZXMgZ292ZXJuaW5nIHRoZSBkaXNwbGF5IG9mIGluY2x1ZGVkIGNsYWltcy4iLCJk
+    aXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJuYW1lIjoiRUhJQyBTRC1KV1QgVkMiLCJkZXNjcmlwdGlv
+    biI6IkV1cm9wZWFuIEhlYWx0aCBJbnN1cmFuY2UgQ2FyZCAoRUhJQykgU0QtSldUIFZDIiwicmVuZGVy
+    aW5nIjp7InNpbXBsZSI6eyJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFiMjYzYiIsInRleHRfY29sb3IiOiIj
+    RkZGRkZGIn0sInN2Z190ZW1wbGF0ZXMiOlt7InVyaSI6Imh0dHBzOi8vcWEtaXNzdWVyLnd3d2FsbGV0
+    Lm9yZy9pbWFnZXMvdGVtcGxhdGUtZWhpYy5zdmciLCJ1cmkjaW50ZWdyaXR5Ijoic2hhMjU2LU5OQ0JF
+    Q1ZadzVJeFJLL3ZxLyt4ZjJPY0h2YVJLekNreGhxeGhYalpYa2c9IiwicHJvcGVydGllcyI6eyJvcmll
+    bnRhdGlvbiI6ImxhbmRzY2FwZSIsImNvbG9yX3NjaGVtZSI6ImxpZ2h0IiwiY29udHJhc3QiOiJub3Jt
+    YWwifX1dfX1dLCJjbGFpbXMiOlt7InBhdGgiOlsianRpIl0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsi
+    c3ViIl0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsiaWF0Il0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsi
+    cGVyc29uYWxfYWRtaW5pc3RyYXRpdmVfbnVtYmVyIl0sInNkIjoiYWx3YXlzIiwic3ZnX2lkIjoicGVy
+    c29uYWxfYWRtaW5pc3RyYXRpdmVfbnVtYmVyIiwiZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFi
+    ZWwiOiJTb2NpYWwgU2VjdXJpdHkgUElOIiwiZGVzY3JpcHRpb24iOiJVbmlxdWUgcGVyc29uYWwgaWRl
+    bnRpZmllciB1c2VkIGJ5IHNvY2lhbCBzZWN1cml0eSBzZXJ2aWNlcy4ifV19LHsicGF0aCI6WyJpc3N1
+    aW5nX2NvdW50cnkiXSwic2QiOiJuZXZlciIsInN2Z19pZCI6Imlzc3Vlcl9jb3VudHJ5IiwiZGlzcGxh
+    eSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJJc3N1aW5nIGNvdW50cnkiLCJkZXNjcmlwdGlvbiI6
+    IkVISUMgaXNzdWluZyBjb3VudHJ5LiJ9XX0seyJwYXRoIjpbImlzc3VpbmdfYXV0aG9yaXR5Il0sInNk
+    IjoibmV2ZXIifSx7InBhdGgiOlsiaXNzdWluZ19hdXRob3JpdHkiLCJpZCJdLCJzZCI6Im5ldmVyIiwi
+    ZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJJc3N1aW5nIGF1dGhvcml0eSBpZCIsImRl
+    c2NyaXB0aW9uIjoiRUhJQyBpc3N1aW5nIGF1dGhvcml0eSB1bmlxdWUgaWRlbnRpZmllci4ifV19LHsi
+    cGF0aCI6WyJpc3N1aW5nX2F1dGhvcml0eSIsIm5hbWUiXSwic2QiOiJuZXZlciIsImRpc3BsYXkiOlt7
+    ImxhbmciOiJlbi1VUyIsImxhYmVsIjoiSXNzdWluZyBhdXRob3JpdHkgbmFtZSIsImRlc2NyaXB0aW9u
+    IjoiRUhJQyBpc3N1aW5nIGF1dGhvcml0eSBuYW1lLiJ9XX0seyJwYXRoIjpbImRhdGVfb2ZfZXhwaXJ5
+    Il0sInNkIjoibmV2ZXIiLCJzdmdfaWQiOiJkYXRlX29mX2V4cGlyeSIsImRpc3BsYXkiOlt7Imxhbmci
+    OiJlbi1VUyIsImxhYmVsIjoiRXhwaXJ5IGRhdGUiLCJkZXNjcmlwdGlvbiI6IkVISUMgZXhwaXJhdGlv
+    biBkYXRlLiJ9XX0seyJwYXRoIjpbImRhdGVfb2ZfaXNzdWFuY2UiXSwic2QiOiJuZXZlciIsImRpc3Bs
+    YXkiOlt7ImxhbmciOiJlbi1VUyIsImxhYmVsIjoiSXNzdWUgZGF0ZSIsImRlc2NyaXB0aW9uIjoiRUhJ
+    QyB2YWxpZGl0eSBzdGFydCBkYXRlLiJ9XX0seyJwYXRoIjpbImF1dGhlbnRpY19zb3VyY2UiXSwic2Qi
+    OiJuZXZlciJ9LHsicGF0aCI6WyJhdXRoZW50aWNfc291cmNlIiwiaWQiXSwic2QiOiJuZXZlciIsInN2
+    Z19pZCI6ImF1dGhlbnRpY19zb3VyY2VfaWQiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJl
+    bCI6IkNvbXBldGVudCBpbnN0aXR1dGlvbiBpZCIsImRlc2NyaXB0aW9uIjoiSWRlbnRpZmllciBvZiB0
+    aGUgY29tcGV0ZW50IGluc2l0dXRpb24gYXMgcmVnaXN0ZXJlZCBpbiB0aGUgRUVTU0kgSW5zdGl0dXRp
+    b24gUmVwb3NpdG9yeS4ifV19LHsicGF0aCI6WyJhdXRoZW50aWNfc291cmNlIiwibmFtZSJdLCJzZCI6
+    Im5ldmVyIiwic3ZnX2lkIjoiYXV0aGVudGljX3NvdXJjZV9uYW1lIiwiZGlzcGxheSI6W3sibGFuZyI6
+    ImVuLVVTIiwibGFiZWwiOiJDb21wZXRlbnQgaW5zdGl0dXRpb24gbmFtZSIsImRlc2NyaXB0aW9uIjoi
+    TmFtZSBvZiB0aGUgY29tcGV0ZW50IGluc2l0dXRpb24gYXMgcmVnaXN0ZXJlZCBpbiB0aGUgRUVTU0kg
+    SW5zdGl0dXRpb24gUmVwb3NpdG9yeS4ifV19LHsicGF0aCI6WyJlbmRpbmdfZGF0ZSJdLCJzZCI6Im5l
+    dmVyIiwiZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJFbmRpbmcgZGF0ZSIsImRlc2Ny
+    aXB0aW9uIjoiRW5kIGRhdGUgb2YgdGhlIGluc3VyYW5jZSBjb3ZlcmFnZS4ifV19LHsicGF0aCI6WyJz
+    dGFydGluZ19kYXRlIl0sInNkIjoibmV2ZXIiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJl
+    bCI6IlN0YXJ0aW5nIGRhdGUiLCJkZXNjcmlwdGlvbiI6IlN0YXJ0IGRhdGUgb2YgdGhlIGluc3VyYW5j
+    ZSBjb3ZlcmFnZS4ifV19LHsicGF0aCI6WyJkb2N1bWVudF9udW1iZXIiXSwic2QiOiJhbHdheXMiLCJz
+    dmdfaWQiOiJkb2N1bWVudF9udW1iZXIiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJlbCI6
+    IkRvY3VtZW50IG51bWJlciIsImRlc2NyaXB0aW9uIjoiRUhJQyB1bmlxdWUgZG9jdW1lbnQgaWRlbnRp
+    Zmllci4ifV19XSwic2NoZW1hX3VyaSI6Imh0dHBzOi8vcWEtaXNzdWVyLnd3d2FsbGV0Lm9yZy9laGlj
+    LXNjaGVtYSIsInNjaGVtYV91cmkjaW50ZWdyaXR5Ijoic2hhMjU2LWNOUzJhalByNnBmWnp0RTBLNVlL
+    NGg3RWlTNzNQQ2oxL3YvM1ZmMXpkMUU9In0
+"""
+
 @Suppress("DEPRECATION")
-fun ConstantIndex.CredentialScheme.buildClaims(
+fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
     loader: EPrescriptionLoader,
-): List<ClaimToBeIssued> =
-    when (this) {
+    subjectPublicKey: CryptoPublicKey,
+) = CredentialToBeIssued.VcSd(
+    claims = when (this) {
         is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
         is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
         is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
-        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
         is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(this.useSd())
         is EhicScheme -> userInfo.buildEhicClaims(iss, exp, this.useSd())
-        else -> TODO("$this is not implemented in buildClaims()")
-    }.also { Napier.v("${this}.buildClaims returns $it") }
+        else -> TODO("$this is not implemented in buildSdJwtClaims()")
+    },
+    expiration = exp,
+    scheme = this,
+    subjectPublicKey = subjectPublicKey,
+    userInfo = userInfo,
+    modifyHeader = {
+        if (this is EhicScheme)
+            it.copy(
+                vcTypeMetadata = setOf(EHIC_VCTM.trimIndent().replace("\n", ""))
+            )
+        else
+            it
+    }
+).also { Napier.v("${this}.buildSdJwtClaims returns $it") }
+
+@Suppress("DEPRECATION")
+fun ConstantIndex.CredentialScheme.buildIsoClaims(
+    userInfo: OidcUserInfoExtended,
+    iss: Instant,
+    exp: Instant,
+    loader: EPrescriptionLoader,
+    subjectPublicKey: CryptoPublicKey,
+) = CredentialToBeIssued.Iso(
+    issuerSignedItems = when (this) {
+        is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
+        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
+        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
+        else -> TODO("$this is not implemented in buildIsoClaims()")
+    }.mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
+    expiration = exp,
+    scheme = this,
+    subjectPublicKey = subjectPublicKey,
+    userInfo = userInfo,
+).also { Napier.v("${this}.buildIsoClaims returns $it") }
 
 @Suppress("DEPRECATION")
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
@@ -84,33 +174,6 @@ fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is CompanyRegistrationScheme -> false
     else -> true
 }
-
-fun List<ClaimToBeIssued>.toIsoClaims(
-    pubKey: CryptoPublicKey,
-    exp: Instant,
-    scheme: ConstantIndex.CredentialScheme,
-    userInfo: OidcUserInfoExtended,
-) = CredentialToBeIssued.Iso(
-    issuerSignedItems = this
-        .mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
-    expiration = exp,
-    scheme = scheme,
-    subjectPublicKey = pubKey,
-    userInfo = userInfo,
-)
-
-fun List<ClaimToBeIssued>.toSdJwtClaims(
-    pubKey: CryptoPublicKey,
-    exp: Instant,
-    scheme: ConstantIndex.CredentialScheme,
-    userInfo: OidcUserInfoExtended,
-) = CredentialToBeIssued.VcSd(
-    claims = this,
-    expiration = exp,
-    scheme = scheme,
-    subjectPublicKey = pubKey,
-    userInfo = userInfo,
-)
 
 fun OidcUserInfoExtended.toEuPidCredential(
     pubKey: CryptoPublicKey,

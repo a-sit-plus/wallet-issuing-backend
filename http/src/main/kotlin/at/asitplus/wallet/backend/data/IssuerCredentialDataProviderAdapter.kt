@@ -3,10 +3,9 @@ package at.asitplus.wallet.backend.data
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.wallet.backend.config.EPrescriptionLoader
-import at.asitplus.wallet.backend.config.buildClaims
+import at.asitplus.wallet.backend.config.buildIsoClaims
+import at.asitplus.wallet.backend.config.buildSdJwtClaims
 import at.asitplus.wallet.backend.config.toEuPidCredential
-import at.asitplus.wallet.backend.config.toIsoClaims
-import at.asitplus.wallet.backend.config.toSdJwtClaims
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -40,12 +39,10 @@ class OidcIssuerCredentialDataProvider(
                     }
 
                     ConstantIndex.CredentialRepresentation.SD_JWT ->
-                        credentialScheme.buildClaims(userInfo, issuance, expiration, ePrescriptionLoader)
-                            .toSdJwtClaims(subjectPublicKey, expiration, credentialScheme, input.userInfo)
+                        credentialScheme.buildSdJwtClaims(userInfo, issuance, expiration, ePrescriptionLoader, subjectPublicKey)
 
                     ConstantIndex.CredentialRepresentation.ISO_MDOC ->
-                        credentialScheme.buildClaims(userInfo, issuance, expiration, ePrescriptionLoader)
-                            .toIsoClaims(subjectPublicKey, expiration, credentialScheme, input.userInfo)
+                        credentialScheme.buildIsoClaims(userInfo, issuance, expiration, ePrescriptionLoader, subjectPublicKey)
                 }
             } else throw IllegalArgumentException("$credentialScheme not supporting $credentialRepresentation")
         }
