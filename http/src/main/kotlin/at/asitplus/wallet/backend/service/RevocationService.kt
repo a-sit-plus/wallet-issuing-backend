@@ -5,7 +5,6 @@ import at.asitplus.catching
 import at.asitplus.iso.sha256
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
@@ -31,6 +30,7 @@ import org.apache.commons.lang3.math.NumberUtils.max
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.lang.Long.max
+import kotlin.io.encoding.Base64
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
@@ -186,9 +186,8 @@ class DefaultRevocationService(
             val issuedCredential = credentialRepo.save(
                 IssuedCredential(
                     vcId = credential.vcId,
-                    subjectId = credential.subjectPublicKey.encodeToPEM().getOrNull()
-                        ?: credential.subjectPublicKey.didEncoded,
-                    userInfoSubject = credential.userInfo.userInfo.subject,
+                    subjectId = credential.subjectPublicKey.subjectId(),
+                    userInfoSubject = credential.userInfo.matchedSubject(),
                     validUntil = credential.validUntil.toJavaInstant(),
                     timePeriod = savedCredential.timePeriod,
                     attributeName = credential.credentialName,
@@ -204,6 +203,9 @@ class DefaultRevocationService(
             )
         }
     }
+
+    private fun CryptoPublicKey.subjectId(): String =
+        catching { Base64.Mime.encode(encodeToDer()).lines().joinToString("") }.getOrNull() ?: didEncoded
 
     /**
      * Stores the verifiable credential that is about to be issued,
@@ -226,7 +228,7 @@ class DefaultRevocationService(
                     Napier.e("Tried to store a new credential for existing vcId")
                     Napier.v("vcId: '${credential.vcId}'")
                 }
-            val userInfoSubject = userInfo?.userInfo?.subject ?: "unknown"
+            val userInfoSubject = userInfo?.matchedSubject() ?: "unknown"
             Napier.v("Storing new credential for userInfoSubject '$userInfoSubject")
             val revocationListIndex = max(
                 preparedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
@@ -235,7 +237,7 @@ class DefaultRevocationService(
             ) + 1
             val issuedCredential = IssuedCredential(
                 vcId = credential.vcId,
-                subjectId = subjectPublicKey.encodeToPEM().getOrNull() ?: subjectPublicKey.didEncoded,
+                subjectId = subjectPublicKey.subjectId(),
                 userInfoSubject = userInfoSubject,
                 validUntil = expirationDate.toJavaInstant(),
                 timePeriod = timePeriod,
@@ -318,16 +320,27 @@ class DefaultRevocationService(
     }
 
     override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> =
-        credentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.userInfo.subject, java.time.Instant.now())
+        credentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.matchedSubject(), java.time.Instant.now())
 
     override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> =
-        revokedCredentialRepo.findAllByUserInfoSubject(userInfo.userInfo.subject)
+        revokedCredentialRepo.findAllByUserInfoSubject(userInfo.matchedSubject())
 
     override fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean =
-        credentialRepo.findByIdAndUserInfoSubject(id, userInfo.userInfo.subject).getOrNull()?.let {
+        credentialRepo.findByIdAndUserInfoSubject(id, userInfo.matchedSubject()).getOrNull()?.let {
             Napier.d("/revoke/$id for $it")
             setStatus(it.vcId, TokenStatus.Invalid, it.timePeriod)
         } ?: false
+
+    /**
+     * `subject` received from ID Austria is not a stable identifier, so we'll need to come up with our own.
+     * Collisions might happen, but this is just a development stage.
+     */
+    private fun OidcUserInfoExtended.matchedSubject(): String = with(userInfo) {
+        if (givenName?.isNotEmpty() == true && familyName?.isNotEmpty() == true && birthDate?.isNotEmpty() == true)
+            "$givenName $familyName $birthDate"
+        else
+            subject
+    }
 
     /**
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
