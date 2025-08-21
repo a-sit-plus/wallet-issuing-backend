@@ -25,8 +25,8 @@ import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.jws.SdJwtSigned
+import at.asitplus.wallet.lib.oauth2.IdAustriaAuthorizationService
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
-import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
@@ -72,7 +72,7 @@ class IssuingInternalAuthorizationServerTest {
     private lateinit var credentialIssuer: CredentialIssuer
 
     @Autowired
-    private lateinit var authorizationServer: SimpleAuthorizationService
+    private lateinit var authorizationServer: IdAustriaAuthorizationService
 
     @Test
     fun pid_vc_ok() = runTest {
@@ -254,7 +254,7 @@ class IssuingInternalAuthorizationServerTest {
         val authorizationCode = authorizationServer.authorize(authnRequest) { mockOidcUserInfoExtended() }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oid4vciClient.oauth2Client.createTokenRequestParameters(
-            OAuth2Client.AuthorizationForToken.Code(authorizationCode.params.code!!),
+            OAuth2Client.AuthorizationForToken.Code(authorizationCode.params?.code!!),
             state = state,
             authorizationDetails = null,
             scope = scope

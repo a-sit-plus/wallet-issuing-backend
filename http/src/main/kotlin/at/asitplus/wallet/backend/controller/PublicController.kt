@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.AuthenticationRequestParameters
-import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
@@ -9,8 +8,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.subjectAltName_2_5_29_17
-import at.asitplus.signum.indispensable.josef.JsonWebKey
-import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.SubjectAltNameImplicitTags
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -21,28 +18,22 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListIssuer
-import at.asitplus.wallet.lib.agent.Validator
-import at.asitplus.wallet.lib.agent.VerifierAgent
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
-import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.ClientIdScheme
 import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
-import at.asitplus.wallet.lib.openid.OpenIdRequestOptions
 import at.asitplus.wallet.lib.openid.PresentationMechanismEnum
+import at.asitplus.wallet.lib.openid.RequestOptions
 import at.asitplus.wallet.lib.openid.RequestOptionsCredential
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
@@ -52,8 +43,6 @@ import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpServletResponseWrapper
 import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.apache.tomcat.websocket.AuthenticationException
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
@@ -151,38 +140,11 @@ class PublicController(
             chain = listOf(verifierKeyMaterial.getCertificate()!!),
             clientIdDnsName = clientIdDnsName,
             redirectUri = configurationProperties.publicContext,
-            useDeprecatedClientIdScheme = true,
         )
     }
 
-    fun potentialValidator(): Validator = Validator(
-        verifyJwsObject = VerifyJwsObject(
-            publicKeyLookup = { jwsSigned ->
-                buildPotentialKeyLookup(jwsSigned)
-            }
-        ),
-    )
-
-    private fun buildPotentialKeyLookup(jwsSigned: JwsSigned<*>): Set<JsonWebKey>? =
-        (jwsSigned.payload as? JsonObject)?.get("iss")?.jsonPrimitive?.content?.let { iss ->
-            val url = iss.buildVcIssuerUrl()
-            runBlocking {
-                Napier.i("Resolving Key for $iss from $url")
-                httpClient.get(url).body<JwtVcIssuerMetadata>().jsonWebKeySet?.keys?.toSet()
-            }
-        }
-
-    private fun String.buildVcIssuerUrl(): Url = URLBuilder(urlString = this).apply {
-        path(".well-known", "jwt-vc-issuer", *(pathSegments.toTypedArray()))
-    }.build()
-
-    val strippedClientId = clientIdScheme.clientId.removePrefix(clientIdScheme.scheme.prefix)
     val openIdVerifier = OpenId4VpVerifier(
         keyMaterial = verifierKeyMaterial,
-        verifier = VerifierAgent(
-            identifier = strippedClientId,
-            validator = potentialValidator()
-        ),
         clientIdScheme = clientIdScheme,
     )
 
@@ -252,7 +214,7 @@ class PublicController(
                 .pathSegment(transactionId).build().toUriString()
             val state = uuid4().toString()
             val result = openIdVerifier.createAuthnRequestAsSignedRequestObject(
-                OpenIdRequestOptions(
+                RequestOptions(
                     state = state,
                     responseMode = OpenIdConstants.ResponseMode.DirectPost,
                     responseUrl = responseUrl,

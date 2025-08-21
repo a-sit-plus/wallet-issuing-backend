@@ -64,18 +64,18 @@ class RevocationServiceRepositoryTest {
         createIssuedCredential()
             .also { credentialRepo.save(it) }
 
-        revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod)
+        revocationService.setStatus(timePeriod, 1U, TokenStatus.Invalid)
     }
 
     @Test
     @Disabled("Remnant")
-     fun `check on non-existing vcId should return null`() {
+    fun `check on non-existing vcId should return null`() {
         revocationService.isRevoked(vcId, timePeriod).shouldBeNull()
     }
 
     @Test
     fun `revocation of non-existing vcId should do nothing`() {
-        revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod) shouldBe false
+        revocationService.setStatus(timePeriod, 1U, TokenStatus.Invalid) shouldBe false
     }
 
     private fun createIssuedCredential(): IssuedCredential =
