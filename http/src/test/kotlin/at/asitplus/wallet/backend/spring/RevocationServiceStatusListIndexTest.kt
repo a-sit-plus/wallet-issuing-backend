@@ -18,7 +18,7 @@ import at.asitplus.wallet.lib.data.VerifiableCredential
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
-import at.asitplus.wallet.lib.jws.JwsHeaderKeyId
+import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -84,10 +84,10 @@ class RevocationServiceStatusListIndexTest {
 
     @Test
     @Transactional
-    fun `simple positive add and revoke vcId should work`()  = runTest{
-        store(timePeriod, vcId) shouldBe 1uL
+    fun `simple positive add and revoke vcId should work`() = runTest {
+        val index = store(timePeriod, vcId) shouldBe 1uL
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
-        revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod) shouldBe true
+        revocationService.setStatus(timePeriod, index, TokenStatus.Invalid) shouldBe true
         revocationService.isRevoked(vcId, timePeriod) shouldBe true
     }
 
@@ -141,7 +141,7 @@ class RevocationServiceStatusListIndexTest {
             val revocationListIndex = store(timePeriod, vcId)
             if (Random.nextBoolean()) {
                 expectedRevocationList.add(revocationListIndex.toLong())
-                revocationService.setStatus(vcId, TokenStatus.Invalid, timePeriod)
+                revocationService.setStatus(timePeriod, revocationListIndex, TokenStatus.Invalid)
             }
         }
         return expectedRevocationList
@@ -169,7 +169,7 @@ class RevocationServiceStatusListIndexTest {
             expirationDate = expirationDate,
             credentialSubject = credentialSubject,
         )
-        val vcInJws = SignJwt<VerifiableCredentialJws>(EphemeralKeyWithoutCert(), JwsHeaderKeyId())(
+        val vcInJws = SignJwt<VerifiableCredentialJws>(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk())(
             type = JwsContentTypeConstants.JWT,
             payload = vc.toJws(),
             serializer = VerifiableCredentialJws.serializer(),
@@ -178,7 +178,6 @@ class RevocationServiceStatusListIndexTest {
         return Issuer.IssuedCredential.VcJwt(
             vc = vc,
             signedVcJws = vcInJws,
-            vcJws = vcInJws.serialize(),
             scheme = ConstantIndex.AtomicAttribute2023,
             subjectPublicKey = subjectPublicKey,
             userInfo = userInfo,
@@ -186,6 +185,7 @@ class RevocationServiceStatusListIndexTest {
     }
 
 }
+
 private fun VerifiableCredential.toJws() = VerifiableCredentialJws(
     vc = this,
     subject = credentialSubject.id,

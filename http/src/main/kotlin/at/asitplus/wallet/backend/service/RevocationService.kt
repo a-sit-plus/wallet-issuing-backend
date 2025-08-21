@@ -17,7 +17,6 @@ import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider.timePeriod
 import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore.StoredCredentialReference
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
@@ -43,12 +42,6 @@ interface RevocationService {
         status: TokenStatus,
     ): Boolean
 
-    fun setStatus(
-        vcId: String,
-        status: TokenStatus,
-        timePeriod: Int,
-    ): Boolean
-
     fun getStatusListView(timePeriod: Int): StatusListView
 
     /**
@@ -67,22 +60,6 @@ interface RevocationService {
         reference: StoredCredentialReference,
         credential: Issuer.IssuedCredential,
     ): KmmResult<StoredCredentialReference>
-
-    /**
-     * Stores the verifiable credential that is about to be issued,
-     * and returns the [IssuedCredential.revocationListIndex] for this credential,
-     * that will be included in the verifiable credentials (so that consumers
-     * can verify the revocation status).
-     */
-    @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
-    fun storeGetNextIndex(
-        userInfo: OidcUserInfoExtended?,
-        issuanceDate: Instant,
-        expirationDate: Instant,
-        timePeriod: Int,
-        @Suppress("DEPRECATION") credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: CryptoPublicKey,
-    ): Long?
 
     /**
      * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
@@ -207,66 +184,12 @@ class DefaultRevocationService(
     private fun CryptoPublicKey.subjectId(): String =
         catching { Base64.Mime.encode(encodeToDer()).lines().joinToString("") }.getOrNull() ?: didEncoded
 
-    /**
-     * Stores the verifiable credential that is about to be issued,
-     * and returns the [IssuedCredential.revocationListIndex] for this credential,
-     * that will be included in the verifiable credentials (so that consumers
-     * can verify the revocation status).
-     */
-    @Deprecated("Use `createStatusListIndex` and `updateStoredCredential` instead")
-    override fun storeGetNextIndex(
-        userInfo: OidcUserInfoExtended?,
-        issuanceDate: Instant,
-        expirationDate: Instant,
-        timePeriod: Int,
-        credential: IssuerCredentialStore.Credential,
-        subjectPublicKey: CryptoPublicKey,
-    ): Long? = runCatching {
-        synchronized(CredentialRepositoriesLock) {
-            if (credentialRepo.findBytimePeriodAndVcId(timePeriod, credential.vcId) != null)
-                return@runCatching null.also {
-                    Napier.e("Tried to store a new credential for existing vcId")
-                    Napier.v("vcId: '${credential.vcId}'")
-                }
-            val userInfoSubject = userInfo?.matchedSubject() ?: "unknown"
-            Napier.v("Storing new credential for userInfoSubject '$userInfoSubject")
-            val revocationListIndex = max(
-                preparedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
-                credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
-                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-            ) + 1
-            val issuedCredential = IssuedCredential(
-                vcId = credential.vcId,
-                subjectId = subjectPublicKey.subjectId(),
-                userInfoSubject = userInfoSubject,
-                validUntil = expirationDate.toJavaInstant(),
-                timePeriod = timePeriod,
-                attributeName = credential.attributeName,
-                revocationListIndex = revocationListIndex
-            )
-            val savedCredential = credentialRepo.save(issuedCredential)
-            // trigger writing new revocation list, because we'll need the new index on the list!
-            applicationEventPublisher.publishEvent(RevocationEvent(this, timePeriod))
-            return@runCatching savedCredential.revocationListIndex
-        }
-    }.getOrElse { null.also { _ -> Napier.e("Database error", it) } }
-
     override fun setStatus(
         timePeriod: Int,
         index: ULong,
         status: TokenStatus,
     ): Boolean {
         val credential = credentialRepo.findBytimePeriodAndRevocationListIndex(timePeriod, index.toLong())
-            ?: return false
-        return revokeAllCredentials(listOf(credential), status) == 1
-    }
-
-    override fun setStatus(
-        vcId: String,
-        status: TokenStatus,
-        timePeriod: Int,
-    ): Boolean {
-        val credential = credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId)
             ?: return false
         return revokeAllCredentials(listOf(credential), status) == 1
     }
@@ -328,7 +251,7 @@ class DefaultRevocationService(
     override fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean =
         credentialRepo.findByIdAndUserInfoSubject(id, userInfo.matchedSubject()).getOrNull()?.let {
             Napier.d("/revoke/$id for $it")
-            setStatus(it.vcId, TokenStatus.Invalid, it.timePeriod)
+            setStatus(it.timePeriod, it.revocationListIndex.toULong(), TokenStatus.Invalid)
         } ?: false
 
     /**
@@ -356,13 +279,6 @@ class DefaultRevocationService(
         return list.size
     }
 }
-
-private val IssuerCredentialStore.Credential.attributeName: String
-    get() = when (this) {
-        is IssuerCredentialStore.Credential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
-        is IssuerCredentialStore.Credential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
-        is IssuerCredentialStore.Credential.VcSd -> this.scheme.sdJwtType ?: this.scheme.schemaUri
-    }
 
 @OptIn(ExperimentalSerializationApi::class)
 private val Issuer.IssuedCredential.vcId: String
