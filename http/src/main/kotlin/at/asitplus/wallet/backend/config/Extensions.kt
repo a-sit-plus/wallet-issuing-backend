@@ -728,7 +728,7 @@ val OidcUserInfoExtended.portrait: ByteArray?
     get() = userInfo.picture?.decodeToByteArray(Base64())
         ?: getClaimAsString("org.iso.18013.5.1:portrait")?.decodeToByteArray(Base64())
 
-val OidcUserInfoExtended.portraitCaptureDate: LocalDate?
+val OidcUserInfoExtended.portraitCaptureDate: LocalDate
     get() = getClaimAsString("org.iso.18013.5.1:portrait_capture_date")
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         ?: LocalDate(2020, Random.nextInt(1, 12), Random.nextInt(1, 28))
@@ -786,13 +786,13 @@ private fun expiryDate() = LocalDate.parse("2026-12-31")
 
 private fun issueDate() = LocalDate.parse("2023-01-01")
 
-private val issuingCountry = "AT"
-private val issuingJurisdiction = "AT-0"
-private val issuingAuthority = "Miniwahr"
-private val authenticSource = "Ministry of Love"
-private val unDistinguishingSign = "A"
-private val fallbackBirthCountry = "AT"
-private val fallbackAddressCountry = "AT"
+private const val issuingCountry = "AT"
+private const val issuingJurisdiction = "AT-0"
+private const val issuingAuthority = "Miniwahr"
+private const val authenticSource = "Ministry of Love"
+private const val unDistinguishingSign = "A"
+private const val fallbackBirthCountry = "AT"
+private const val fallbackAddressCountry = "AT"
 
 private fun String.toState(): String = when {
     this.startsWith("1") -> "Wien"

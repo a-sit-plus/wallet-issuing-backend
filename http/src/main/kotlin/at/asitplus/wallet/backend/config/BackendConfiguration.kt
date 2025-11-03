@@ -24,6 +24,7 @@ import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
@@ -104,7 +105,6 @@ class BackendConfiguration {
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
         Security.addProvider(BouncyCastleProvider())
-        at.asitplus.wallet.lib.Initializer.initOpenIdModule()
         at.asitplus.wallet.taxid.Initializer.initWithVCK()
         at.asitplus.wallet.eupid.Initializer.initWithVCK()
         at.asitplus.wallet.eupidsdjwt.Initializer.initWithVCK()
@@ -119,7 +119,6 @@ class BackendConfiguration {
     @PostConstruct
     private fun logConfig() {
         Napier.i("******** Current Configuration ********")
-
         Napier.i(
             "\n" + configurationProperties.toString()
                 .replace(Regex("password=.*?,"), "password=***,").toIndentString()
@@ -214,7 +213,7 @@ class BackendConfiguration {
         statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
-        identifier = configurationProperties.publicContext
+        identifier = UniformResourceIdentifier(configurationProperties.publicContext)
     )
 
     @Bean

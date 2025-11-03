@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.iso.IssuerSignedItem
 import at.asitplus.openid.dcql.DCQLCredentialQueryIdentifier
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.wallet.eupid.EuPidCredential
@@ -11,10 +10,13 @@ import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.AuthnResponseResult.*
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
-import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import org.springframework.security.core.AuthenticatedPrincipal
 import java.security.MessageDigest
 import java.time.Instant
@@ -98,7 +100,7 @@ fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toApiItemCredentials
         }
     }.filterIsInstance<ApiItemCredential>()
 
-fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toSiop2User(): Siop2User? =
+fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toSiop2User(): Siop2User =
     this.toApiItemCredentials().toSiop2User()
 
 fun VerifiablePresentationParsed.toApiItemCredential(): ApiItemCredential? = freshVerifiableCredentials
@@ -139,8 +141,3 @@ private fun String.sha256() = runCatching {
     MessageDigest.getInstance("SHA-256").digest(this.encodeToByteArray()).encodeToString(Base64UrlStrict)
 }.getOrElse { this.hashCode().toString() }
 
-private fun IssuerSignedItem.elementValueToString() = when (elementValue) {
-    is ByteArray -> (elementValue as ByteArray).encodeToString(Base64())
-    is Array<*> -> (elementValue as Array<*>).contentToString()
-    else -> elementValue.toString()
-}

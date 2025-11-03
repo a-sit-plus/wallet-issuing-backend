@@ -38,9 +38,6 @@ import kotlin.time.Instant
 class RevocationServiceStatusListIndexTest {
 
     @Autowired
-    private lateinit var issuer: Issuer
-
-    @Autowired
     private lateinit var credentialRepo: IssuedCredentialRepository
 
     @Autowired
