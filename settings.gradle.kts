@@ -6,7 +6,6 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
-        maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     }
 }
 
@@ -16,19 +15,7 @@ rootProject.name = "Wallet Issuing Service"
 include("http")
 
 
-dependencyResolutionManagement {
-    repositories {
-        maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")}
-        mavenCentral()
-    }
-    versionCatalogs {
-        create("vclib") {
-            from("at.asitplus.wallet:vck-openid-versionCatalog:5.8.0")
-        }
-    }
-}
-
-//If we have a working composite build, use it!
+// //If we have a working composite build, use it!
 if (File("../vck/signum").isDirectory && File("../vck/signum/build.gradle.kts").exists()) {
     logger.warn("\u001b[7m\u001b[1mDetected VC-K in ${File("../vck").absolutePath}.")
     logger.warn("Including VC-K and Signum as composite build.")
@@ -66,5 +53,3 @@ if (File("../vck/signum").isDirectory && File("../vck/signum/build.gradle.kts").
         }
     }
 }
-
-
