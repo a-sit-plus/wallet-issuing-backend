@@ -96,6 +96,7 @@ dependencies {
 }
 
 tasks.test {
+    useJUnitPlatform()
     testLogging {
         showExceptions = true
         events = setOf(
