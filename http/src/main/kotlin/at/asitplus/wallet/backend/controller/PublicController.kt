@@ -1,6 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.openid.AuthenticationRequestParameters
+import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
@@ -149,7 +149,7 @@ class PublicController(
     )
 
     fun buildQrCodeUrl(requestUrl: String) = ServletUriComponentsBuilder.fromUriString("haip://").apply {
-        AuthenticationRequestParameters(
+        JarRequestParameters(
             clientId = clientIdScheme.clientId,
             requestUri = requestUrl,
         ).encodeToParameters()

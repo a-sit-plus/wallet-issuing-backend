@@ -9,6 +9,7 @@ import at.asitplus.openid.IssuerMetadata
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
@@ -67,10 +68,10 @@ class OpenId4VciController(
     }
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
-    fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
-        val metadata = authorizationService.metadata
+    fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
+        val metadata = authorizationService.metadata()
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $metadata")
-        return ResponseEntity.ok(metadata)
+        ResponseEntity.ok(metadata)
     }
 
     @GetMapping(
@@ -137,8 +138,7 @@ class OpenId4VciController(
             ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         val result = authorizationService.par(
             params,
-            request.getHeader(O_AUTH_CLIENT_ATTESTATION),
-            request.getHeader(O_AUTH_CLIENT_ATTESTATION_POP),
+            request.toRequestInfo(),
         ).getOrElse {
             Napier.w("/par got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
@@ -153,12 +153,15 @@ class OpenId4VciController(
     fun nonce(
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/nonce called")
-        val result = credentialIssuer.nonce().getOrElse {
+        val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
             Napier.w("/nonce got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/nonce returns $result")
-        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
+        return@runBlocking ResponseEntity.status(HttpStatus.OK)
+            .header(HttpHeaders.CACHE_CONTROL, "no-store")
+            .header("DPoP-Nonce", result.dpopNonce)
+            .body(vckJsonSerializer.encodeToString(result.response))
     }
 
     /**
@@ -177,7 +180,7 @@ class OpenId4VciController(
     ) = runBlocking {
         Napier.i("/authorize called")
         Napier.v("/authorize called with $requestParams and $requestBody")
-        val params: AuthenticationRequestParameters =
+        val params: RequestParameters =
             if (requestBody.isNullOrEmpty()) requestParams.decodeFromUrlQuery()
             else requestBody.decodeFromPostBody()
 

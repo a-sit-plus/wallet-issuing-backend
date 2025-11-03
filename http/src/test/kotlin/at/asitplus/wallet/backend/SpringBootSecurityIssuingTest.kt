@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.catching
 import at.asitplus.iso.IssuerSigned
 import at.asitplus.openid.CredentialResponseParameters
+import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JwsSigned
@@ -17,15 +18,14 @@ import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
-import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.jws.SdJwtSigned
-import at.asitplus.wallet.lib.oauth2.IdAustriaAuthorizationService
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
+import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService.RequestOptions
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
@@ -72,13 +72,10 @@ import kotlin.time.Duration.Companion.minutes
 class SpringBootSecurityIssuingTest {
 
     @Autowired
-    private lateinit var issuer: Issuer
-
-    @Autowired
     private lateinit var credentialIssuer: CredentialIssuer
 
     @Autowired
-    private lateinit var authorizationServer: IdAustriaAuthorizationService
+    private lateinit var authorizationServer: SimpleAuthorizationService
 
     @Test
     @WithOAuth2AuthenticationToken
@@ -168,7 +165,7 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
             .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
     }
@@ -188,7 +185,7 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
             .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
@@ -208,7 +205,7 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
             .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
     }
@@ -227,7 +224,7 @@ class SpringBootSecurityIssuingTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential).shouldNotBeNull())
+        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
             .reconstructedJsonObject.shouldNotBeNull()
     }
 
@@ -246,7 +243,7 @@ class SpringBootSecurityIssuingTest {
             disclosureDigests.shouldBeNull()
         }
         SdJwtDecoded(
-            SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
         ).reconstructedJsonObject.shouldNotBeNull()
     }
 
@@ -274,7 +271,7 @@ class SpringBootSecurityIssuingTest {
         val scope = credentialFormat.scope
         val authnRequest =
             client.oid4vciClient.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-        val authorizationCode = authorizationServer.authorize(authnRequest) {
+        val authorizationCode = authorizationServer.authorize(authnRequest as RequestParameters) {
             catching {
                 SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(SecurityContextHolder.getContext()?.authentication)
                     ?: throw IllegalArgumentException("No authenticated user")
@@ -288,11 +285,11 @@ class SpringBootSecurityIssuingTest {
             scope = scope
         )
         val accessToken: TokenResponseParameters = authorizationServer.token(tokenRequest).getOrThrow()
-        val credentialRequest = client.oid4vciClient.createCredentialRequest(
+        val credentialRequest = client.oid4vciClient.createCredential(
             tokenResponse = accessToken,
             metadata = credentialIssuer.metadata,
             credentialFormat = credentialFormat,
-            clientNonce = credentialIssuer.nonce().getOrThrow().clientNonce
+            clientNonce = credentialIssuer.nonceWithDpopNonce().getOrThrow().response.clientNonce
         ).getOrThrow()
         val credential = credentialIssuer.credential(
             authorizationHeader = accessToken.toHttpHeaderValue(),

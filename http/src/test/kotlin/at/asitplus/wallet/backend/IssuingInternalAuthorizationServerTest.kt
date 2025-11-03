@@ -5,6 +5,7 @@ import at.asitplus.iso.IssuerSigned
 import at.asitplus.iso.IssuerSignedList
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JwsSigned
@@ -18,15 +19,14 @@ import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
-import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.jws.SdJwtSigned
-import at.asitplus.wallet.lib.oauth2.IdAustriaAuthorizationService
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
+import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
@@ -66,13 +66,10 @@ import kotlin.time.Duration.Companion.minutes
 class IssuingInternalAuthorizationServerTest {
 
     @Autowired
-    private lateinit var issuer: Issuer
-
-    @Autowired
     private lateinit var credentialIssuer: CredentialIssuer
 
     @Autowired
-    private lateinit var authorizationServer: IdAustriaAuthorizationService
+    private lateinit var authorizationServer: SimpleAuthorizationService
 
     @Test
     fun pid_vc_ok() = runTest {
@@ -153,7 +150,9 @@ class IssuingInternalAuthorizationServerTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
+        ).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
     }
 
@@ -171,7 +170,9 @@ class IssuingInternalAuthorizationServerTest {
             disclosureDigests.shouldBeNull()
         }
 
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
+        ).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
@@ -189,7 +190,9 @@ class IssuingInternalAuthorizationServerTest {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parse(serializedCredential)!!).reconstructedJsonObject.shouldNotBeNull()
+        SdJwtDecoded(
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
+        ).reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
     }
 
@@ -207,7 +210,7 @@ class IssuingInternalAuthorizationServerTest {
             disclosureDigests.shouldBeNull()
         }
         SdJwtDecoded(
-            SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
         ).reconstructedJsonObject.shouldNotBeNull()
     }
 
@@ -225,7 +228,7 @@ class IssuingInternalAuthorizationServerTest {
             disclosureDigests.shouldBeNull()
         }
         SdJwtDecoded(
-            SdJwtSigned.parse(serializedCredential).shouldNotBeNull()
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
         ).reconstructedJsonObject.shouldNotBeNull()
     }
 
@@ -251,6 +254,7 @@ class IssuingInternalAuthorizationServerTest {
         val scope = credentialFormat.scope
         val authnRequest =
             client.oid4vciClient.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
+                    as RequestParameters
         val authorizationCode = authorizationServer.authorize(authnRequest) { mockOidcUserInfoExtended() }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oid4vciClient.oauth2Client.createTokenRequestParameters(
@@ -260,11 +264,11 @@ class IssuingInternalAuthorizationServerTest {
             scope = scope
         )
         val accessToken: TokenResponseParameters = authorizationServer.token(tokenRequest).getOrThrow()
-        val credentialRequest = client.oid4vciClient.createCredentialRequest(
+        val credentialRequest = client.oid4vciClient.createCredential(
             tokenResponse = accessToken,
             metadata = credentialIssuer.metadata,
             credentialFormat = credentialFormat,
-            clientNonce = credentialIssuer.nonce().getOrThrow().clientNonce
+            clientNonce = credentialIssuer.nonceWithDpopNonce().getOrThrow().response.clientNonce
         ).getOrThrow()
         val credential = credentialIssuer.credential(
             authorizationHeader = accessToken.toHttpHeaderValue(),

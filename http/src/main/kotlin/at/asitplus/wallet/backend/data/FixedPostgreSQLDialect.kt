@@ -12,8 +12,6 @@ import java.sql.Types
 //from https://stackoverflow.com/a/75359082
 class FixedPostgreSQLDialect : PostgreSQLDialect(DatabaseVersion.make(10)) {
 
-
-
     override fun columnType(sqlTypeCode: Int): String {
         return when (sqlTypeCode) {
             SqlTypes.BLOB -> "bytea"

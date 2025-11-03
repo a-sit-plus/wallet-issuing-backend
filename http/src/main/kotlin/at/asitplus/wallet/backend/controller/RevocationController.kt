@@ -49,12 +49,12 @@ class RevocationController(
         authenticatedUser?.let {
             if (revocationService.revoke(id.toLong(), it)) {
                 Napier.d("/revoke/$id returns OK")
-                ResponseEntity.ok().build<String>()
+                ResponseEntity.ok().build()
             } else {
                 Napier.d("/revoke/$id returns NOT_FOUND")
-                ResponseEntity.notFound().build<String>()
+                ResponseEntity.notFound().build()
             }
-        } ?: ResponseEntity.notFound().build<String>()
+        } ?: ResponseEntity.notFound().build()
     }
 
 }
