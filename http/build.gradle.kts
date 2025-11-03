@@ -3,6 +3,7 @@ import at.asitplus.gradle.bouncycastle
 import at.asitplus.gradle.coroutines
 import at.asitplus.gradle.gitLab
 import at.asitplus.gradle.ktor
+import at.asitplus.gradle.napier
 
 plugins {
     kotlin("jvm")
@@ -10,7 +11,7 @@ plugins {
     kotlin("plugin.spring")
     kotlin("plugin.jpa")
     kotlin("plugin.allopen")
-    id("org.springframework.boot") version VersionsBackend.spring.boot
+    id("org.springframework.boot") version libs.versions.spring.boot.get()
     id("at.asitplus.gradle.conventions")
 }
 
@@ -47,50 +48,51 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.session:spring-session-core")
-    implementation("de.codecentric:spring-boot-admin-starter-client:${VersionsBackend.spring.`admin-starter-client`}")
+    implementation(libs.spring.boot.admin.starter.client)
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.httpcomponents.client5:httpclient5")
-    implementation("com.nimbusds:nimbus-jose-jwt:${VersionsBackend.nimbus}")
-    implementation(vclib.napier)
-    implementation(coroutines())
-    implementation(bouncycastle("bcpkix"))
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
-    implementation("org.webjars:webjars-locator:${VersionsBackend.webjars.locator}")
-    implementation("org.webjars:bootstrap:${VersionsBackend.webjars.bootstrap}")
-    implementation("org.webjars:jquery:${VersionsBackend.webjars.jquery}")
-    implementation("org.webjars:datatables:${VersionsBackend.webjars.datatables}")
-    implementation("io.github.g0dkar:qrcode-kotlin:${VersionsBackend.qrcode}")
-    implementation("at.asitplus.wallet:taxid:${VersionsBackend.taxid}")
-    implementation("at.asitplus.wallet:eupidcredential:${VersionsBackend.eupid}")
-    implementation("at.asitplus.wallet:eupidcredential-sdjwt:${VersionsBackend.`eupid-sdjwt`}")
-    implementation("at.asitplus.wallet:mobiledrivinglicence:${VersionsBackend.mdl}")
-    implementation("at.asitplus.wallet:powerofrepresentation:${VersionsBackend.por}")
-    implementation("at.asitplus.wallet:certificateofresidence:${VersionsBackend.cor}")
-    implementation("at.asitplus.wallet:healthid:${VersionsBackend.healthId}")
-    implementation("at.asitplus.wallet:ehic:${VersionsBackend.ehic}")
-    implementation("at.asitplus.wallet:company-registration:${VersionsBackend.cr}")
-    implementation("at.asitplus.wallet:vck-jvm:${VersionsBackend.vck}")
-    implementation("at.asitplus.wallet:vck-openid-ktor-jvm:${VersionsBackend.vck}")
+
+    implementation(libs.nimbus.jose.jwt)
+    implementation(libs.webjars.locator)
+    implementation(libs.webjars.bootstrap)
+    implementation(libs.webjars.jquery)
+    implementation(libs.webjars.datatables)
+    implementation(libs.qrcode.kotlin)
+
+    implementation(libs.wallet.taxid)
+    implementation(libs.wallet.eupid)
+    implementation(libs.wallet.eupid.sdjwt)
+    implementation(libs.wallet.mdl)
+    implementation(libs.wallet.por)
+    implementation(libs.wallet.cor)
+    implementation(libs.wallet.healthid)
+    implementation(libs.wallet.ehic)
+    implementation(libs.wallet.cr)
+    implementation(libs.wallet.vck.jvm)
+    implementation(libs.wallet.vck.openid.ktor.jvm)
+    implementation(napier())
+    implementation(bouncycastle("bcpkix", "jdk18on"))
     implementation(ktor("http"))
     implementation(ktor("client-cio"))
     implementation(ktor("client-logging"))
     implementation(ktor("client-content-negotiation"))
     implementation(ktor("serialization-kotlinx-json"))
 
-    implementation("com.google.iot.cbor:cbor:${VersionsBackend.`google-cbor`}")
-    implementation("com.sksamuel.scrimage:scrimage-core:${VersionsBackend.scrimage}")
+    implementation(libs.google.cbor)
+    implementation(libs.scrimage.core)
     runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql:${VersionsBackend.pgsql}")
+    runtimeOnly(libs.postgresql)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:${VersionsBackend.mockito}")
+    testImplementation(libs.mockito.kotlin)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testImplementation(ktor("client-java"))
-    testImplementation("com.squareup.okhttp3:mockwebserver:${VersionsBackend.okhttp}")
+    testImplementation(libs.okhttp.mockwebserver)
 }
 
 tasks.test {
