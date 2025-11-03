@@ -47,8 +47,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -283,11 +283,11 @@ class IssuingInternalAuthorizationServerTest {
 
 }
 
-private fun mockOidcUserInfoExtended() = OidcUserInfoExtended.deserialize(buildJsonObject {
-    put(IdTokenClaimNames.SUB, JsonPrimitive("IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN"))
-    put("birthdate", JsonPrimitive("1983-06-04"))
-    put("given_name", JsonPrimitive("XXXŐzgür"))
-    put("family_name", JsonPrimitive("XXXTüzekçi"))
-    put("urn:pvpgvat:oidc.bpk", JsonPrimitive("ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo="))
-}.toString())
+private fun mockOidcUserInfoExtended() = OidcUserInfoExtended.fromJsonObject(buildJsonObject {
+    put(IdTokenClaimNames.SUB, "IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN")
+    put("birthdate", "1983-06-04")
+    put("given_name", "XXXŐzgür")
+    put("family_name", "XXXTüzekçi")
+    put("urn:pvpgvat:oidc.bpk", "ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo=")
+})
 
