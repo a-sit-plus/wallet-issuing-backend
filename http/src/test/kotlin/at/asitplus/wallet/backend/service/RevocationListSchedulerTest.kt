@@ -2,14 +2,14 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import kotlin.random.Random
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 class RevocationListSchedulerTest {
 

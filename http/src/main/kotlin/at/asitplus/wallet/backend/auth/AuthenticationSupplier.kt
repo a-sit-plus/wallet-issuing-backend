@@ -61,8 +61,7 @@ object SpringSecurityAuthenticationSupplier {
             updatedAt = updatedAt?.toKotlinInstant(),
         ),
         JsonObject(claims.map { m ->
-            m.key to runCatching { Json.parseToJsonElement(m.value.toString()) }
-                .getOrElse { JsonPrimitive(m.value.toString()) }
+            m.key to JsonPrimitive(m.value.toString())
         }.toMap())
     )
 
