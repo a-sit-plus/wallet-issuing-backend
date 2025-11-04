@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.openid.AuthenticationRequestParameters
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.CredentialRequestParameters
 import at.asitplus.openid.IssuerMetadata
@@ -134,7 +133,7 @@ class OpenId4VciController(
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/par called")
         Napier.v("/par called with $requestBody")
-        val params: AuthenticationRequestParameters = requestBody.decodeFromPostBody()
+        val params: RequestParameters = requestBody.decodeFromPostBody()
             ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         val result = authorizationService.par(
             params,
