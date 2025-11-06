@@ -1,6 +1,6 @@
 # Wallet Issuing Service
 
-This backend service for provisioning and revoking verifiable credentials runs at <https://wallet.a-sit.at/m6>.
+This backend service for provisioning and revoking verifiable credentials runs at <https://wallet.a-sit.at/m7>.
 
 Some notable configuration properties (aside from the usual setting of context paths, ports and logging) are:
 
@@ -13,7 +13,7 @@ backend:
   issuer-key:
     type: KEYSTORE
     keystore:
-      path: "file:/srv/wallet-backend-m6/data/keystore.p12"
+      path: "file:/srv/wallet-backend-m7/data/keystore.p12"
       type: PKCS12
   eprescription:
     url: https://test.baumann.at/sites/ott-service/
@@ -31,7 +31,7 @@ spring:
             non_contextual_creation: true
   datasource:
     driver-class: "org.h2.Driver"
-    url: "jdbc:h2:file:/srv/wallet-backend-m6/data/h2.db"
+    url: "jdbc:h2:file:/srv/wallet-backend-m7/data/h2.db"
     platform: h2
     username: sa
     password: sa
@@ -40,41 +40,27 @@ spring:
       client:
         registration:
           idaq:
-            client-id: "https://wallet.a-sit.at/m6"
+            client-id: "https://wallet.a-sit.at/m7"
             client-secret: "TODO"
             scope: "openid, profile"
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "https://wallet.a-sit.at/m6/login/oauth2/code/idaq"
+            redirect-uri: "https://wallet.a-sit.at/m7/login/oauth2/code/idaq"
             client-name: "ID Austria"
-          idaqv:
-            client-id: "https://wallet.a-sit.at/m6v"
-            client-secret: "TODO"
-            scope: "openid, profile"
-            client-authentication-method: client_secret_post
-            authorization-grant-type: authorization_code
-            redirect-uri: "https://wallet.a-sit.at/m6/login/oauth2/code/idaqv"
-            client-name: "ID Austria in Vertretung"
         provider:
           idaq:
-            issuer-uri: "https://eid2.oesterreich.gv.at"
-          idaqv:
             issuer-uri: "https://eid2.oesterreich.gv.at"
 ```
 
 There are some settings necessary for the reverse proxy, in this case Apache2:
 
 ```
-<Location "/m6">
-  ProxyPass "http://localhost:9860/m6"
-  ProxyPassReverse "http://localhost:9860/m6"
+<Location "/m7">
+  ProxyPass "http://localhost:9860/m7"
+  ProxyPassReverse "http://localhost:9860/m7"
   ProxyPreserveHost On
   RequestHeader set X-Forwarded-Proto https
   RequestHeader set X-Forwarded-Port 443
-</Location>
-
-<Location "/m6/android">
-  ProxyPass "!"
 </Location>
 
 Alias /.well-known /var/www/wallet/html/.well-known
