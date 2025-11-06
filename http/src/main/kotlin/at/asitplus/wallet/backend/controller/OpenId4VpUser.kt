@@ -2,37 +2,32 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.dcql.DCQLCredentialQueryIdentifier
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.data.CredentialToJsonConverter.toJsonElement
-import at.asitplus.wallet.lib.data.VerifiablePresentationParsed
-import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.AuthnResponseResult.*
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.encodeToJsonElement
 import org.springframework.security.core.AuthenticatedPrincipal
 import java.security.MessageDigest
 import java.time.Instant
 
 @Serializable
-class Siop2User(
+class OpenId4VpUser(
     val apiItem: ApiItem,
 ) : AuthenticatedPrincipal {
 
     override fun getName(): String = "${apiItem.firstname} ${apiItem.lastname} (${apiItem.id})"
 
-    override fun toString(): String = "Siop2User(apiItem=$apiItem)"
+    override fun toString(): String = "OpenId4VpUser(apiItem=$apiItem)"
 
 }
 
-fun List<ApiItemCredential>.toSiop2User() = Siop2User(
+fun List<ApiItemCredential>.toOpenId4VpUser() = OpenId4VpUser(
     apiItem = ApiItem(
         id = Json.encodeToString(this).sha256(),
         firstname = firstNotNullOfOrNull { it.getGivenName() } ?: "N/A",
@@ -43,7 +38,7 @@ fun List<ApiItemCredential>.toSiop2User() = Siop2User(
     )
 )
 
-fun ApiItemCredential.toSiop2User() = Siop2User(
+fun ApiItemCredential.toOpenId4VpUser() = OpenId4VpUser(
     apiItem = ApiItem(
         id = Json.encodeToString(this).sha256(),
         firstname = getGivenName() ?: "N/A",
@@ -72,53 +67,36 @@ fun ApiItemCredential.getClaim(claim: String) = this.allFields?.entries?.firstOr
     }
 }
 
-fun VerifiablePresentationValidationResults.toApiItemCredentials(): List<ApiItemCredential> =
+fun VerifiablePresentationValidationResults.toApiItem(): List<ApiItemCredential> =
     validationResults.flatMap {
         when (it) {
             is Error -> listOf()
             is IdToken -> listOf()
-            is Success -> listOf(it.vp.toApiItemCredential())
-            is SuccessIso -> it.toApiItemCredentials()
+            is Success -> listOf()
+            is SuccessIso -> it.toApiItem()
             is SuccessSdJwt -> listOf(it.toApiItemCredential())
             is ValidationError -> listOf()
-            is VerifiablePresentationValidationResults -> it.toApiItemCredentials()
-            is VerifiableDCQLPresentationValidationResults -> it.validationResults.toApiItemCredentials()
+            is VerifiablePresentationValidationResults -> it.toApiItem()
+            is VerifiableDCQLPresentationValidationResults -> it.validationResults.toApiItem()
         }
-    }.filterNotNull()
+    }
 
-fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toApiItemCredentials(): List<ApiItemCredential> =
+fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toApiItem(): List<ApiItemCredential> =
     values.flatMap {
         when (it) {
             is Error -> listOf()
             is IdToken -> listOf()
-            is Success -> listOfNotNull(it.vp.toApiItemCredential())
-            is SuccessIso -> it.toApiItemCredentials()
+            is Success -> listOf()
+            is SuccessIso -> it.toApiItem()
             is SuccessSdJwt -> listOfNotNull(it.toApiItemCredential())
             is ValidationError -> listOf()
-            is VerifiableDCQLPresentationValidationResults -> it.validationResults.toApiItemCredentials()
-            is VerifiablePresentationValidationResults -> listOfNotNull(it.toApiItemCredentials())
+            is VerifiableDCQLPresentationValidationResults -> it.validationResults.toApiItem()
+            is VerifiablePresentationValidationResults -> listOfNotNull(it.toApiItem())
         }
     }.filterIsInstance<ApiItemCredential>()
 
-fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toSiop2User(): Siop2User =
-    this.toApiItemCredentials().toSiop2User()
-
-fun VerifiablePresentationParsed.toApiItemCredential(): ApiItemCredential? = freshVerifiableCredentials
-    .map { it.vcJws.vc.credentialSubject }
-    .filterIsInstance<EuPidCredential>()
-    .firstOrNull()?.toApiItemCredential()
-
-fun VerifiablePresentationParsed.toSiop2User() = freshVerifiableCredentials
-    .map { it.vcJws.vc.credentialSubject }
-    .filterIsInstance<EuPidCredential>()
-    .firstOrNull()?.toApiItemCredential()?.toSiop2User()
-
-private fun EuPidCredential.toApiItemCredential() =
-    ApiItemCredential(
-        jwtCredential = runCatching { vckJsonSerializer.encodeToJsonElement(this) }.getOrNull(),
-        allFields = runCatching { vckJsonSerializer.encodeToJsonElement(this) }.getOrNull() as? JsonObject?,
-        credentialType = EuPidScheme.vcType,
-    )
+fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toOpenId4VpUser(): OpenId4VpUser =
+    this.toApiItem().toOpenId4VpUser()
 
 fun SuccessSdJwt.toApiItemCredential(): ApiItemCredential =
     ApiItemCredential(
@@ -126,7 +104,7 @@ fun SuccessSdJwt.toApiItemCredential(): ApiItemCredential =
         credentialType = verifiableCredentialSdJwt.verifiableCredentialType,
     )
 
-fun SuccessIso.toApiItemCredentials(): List<ApiItemCredential> = documents.map { doc ->
+fun SuccessIso.toApiItem(): List<ApiItemCredential> = documents.map { doc ->
     ApiItemCredential(
         allFields = buildJsonObject {
             doc.validItems.forEach {

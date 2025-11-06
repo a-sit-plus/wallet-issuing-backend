@@ -2,19 +2,11 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.OpenIdConstants
-import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.pki.SubjectAltNameImplicitTags
-import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
-import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListIssuer
@@ -26,7 +18,6 @@ import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.ClientIdScheme
 import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
-import at.asitplus.wallet.lib.openid.PresentationMechanismEnum
 import at.asitplus.wallet.lib.openid.RequestOptions
 import at.asitplus.wallet.lib.openid.RequestOptionsCredential
 import com.benasher44.uuid.uuid4
@@ -43,6 +34,7 @@ import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpServletResponseWrapper
 import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import org.apache.tomcat.websocket.AuthenticationException
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
@@ -50,12 +42,16 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter
 import org.springframework.security.web.WebAttributes
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY
+import org.springframework.session.MapSessionRepository
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -80,6 +76,8 @@ import kotlin.io.path.isReadable
 import kotlin.io.path.readBytes
 import kotlin.time.toJavaDuration
 
+private const val SESSION_KEY_OPENID4VP_USER = "sessionOpenId4VpResponse"
+
 /**
  * Public endpoints, available without authentication:
  * - Revocation list for Verifiable Credentials (RevocationList2020)
@@ -90,6 +88,8 @@ class PublicController(
     private val configurationProperties: BackendConfigurationProperties,
     private val clientRegistrations: InMemoryClientRegistrationRepository?,
     private val successHandler: AuthenticationSuccessHandler,
+    private val transactionIdToSessionIdMap: NonceToSessionMap,
+    private val sessionRepository: MapSessionRepository,
 ) {
     private val httpClient = HttpClient {
         install(ContentNegotiation) {
@@ -104,9 +104,6 @@ class PublicController(
             level = LogLevel.ALL
         }
     }
-    private val clientIdDnsName =
-        (UriComponentsBuilder.fromUriString(configurationProperties.publicContext).build().host
-            ?: "wallet.a-sit.at")
     private val verifierKeyMaterial = File("verifier.p12").run {
         if (exists()) {
             KeyStoreMaterial(
@@ -118,27 +115,12 @@ class PublicController(
                 certAlias = "verifier",
             )
         } else {
-            EphemeralKeyWithSelfSignedCert(
-                extensions = listOf(
-                    X509CertificateExtension(
-                        KnownOIDs.subjectAltName_2_5_29_17,
-                        critical = false,
-                        Asn1EncapsulatingOctetString(
-                            listOf(
-                                Asn1.Sequence {
-                                    +Asn1Primitive(
-                                        SubjectAltNameImplicitTags.dNSName,
-                                        Asn1String.UTF8(clientIdDnsName).encodeToTlv().content
-                                    )
-                                }
-                            ))))
-            )
+            EphemeralKeyWithSelfSignedCert()
         }
     }
     val clientIdScheme = runBlocking {
-        ClientIdScheme.CertificateSanDns(
+        ClientIdScheme.CertificateHash(
             chain = listOf(verifierKeyMaterial.getCertificate()!!),
-            clientIdDnsName = clientIdDnsName,
             redirectUri = configurationProperties.publicContext,
         )
     }
@@ -148,15 +130,14 @@ class PublicController(
         clientIdScheme = clientIdScheme,
     )
 
-    fun buildQrCodeUrl(requestUrl: String) = ServletUriComponentsBuilder.fromUriString("haip://").apply {
-        JarRequestParameters(
-            clientId = clientIdScheme.clientId,
-            requestUri = requestUrl,
-        ).encodeToParameters()
-            .forEach { queryParam(it.key, it.value) }
-    }.toUriString()
-
-    private val transactionMap = mutableMapOf<String, String>()
+    fun buildQrCodeUrl(requestUrl: String) =
+        ServletUriComponentsBuilder.fromUriString("haip-vp://").apply {
+            JarRequestParameters(
+                clientId = clientIdScheme.clientId,
+                requestUri = requestUrl,
+            ).encodeToParameters()
+                .forEach { queryParam(it.key, it.value) }
+        }.toUriString()
 
     @GetMapping("/credentials/status/current", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getStatutsListAggregation(): ResponseEntity<StatusListAggregation> = runBlocking {
@@ -184,8 +165,9 @@ class PublicController(
             model["loginError"] = request.getSession(false).getAuthnException()?.ifEmpty { null }
                 ?: "Invalid credentials"
         }
+
         val transactionId = uuid4().toString()
-        transactionMap[transactionId] = transactionId
+            .also { transactionIdToSessionIdMap.put(it, request.getSession(true).id) }
         val transactionUrl = UriComponentsBuilder.fromUriString(configurationProperties.publicContext)
             .pathSegment("transaction")
             .pathSegment("get")
@@ -197,14 +179,32 @@ class PublicController(
         return ModelAndView("login", model)
     }
 
+    @Serializable
+    data class StatusResponse(val authenticated: Boolean, val redirectUrl: String?)
+
+    @GetMapping("/status")
+    fun status(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        session: HttpSession,
+    ) = runBlocking {
+        val user = session.getAttribute(SESSION_KEY_OPENID4VP_USER) as? OpenId4VpUser?
+            ?: return@runBlocking StatusResponse(false, null)
+
+        Napier.i("/status got successful authentication in session ${session.id}: $user")
+        val targetUrl = setAuthenticationInSession(user, session, request, response)
+        val redirectUrl = if (targetUrl.isNotEmpty()) targetUrl.toString() else "/"
+        StatusResponse(true, redirectUrl)
+    }
+
     @GetMapping("/transaction/get/{transactionId}")
     @ResponseBody
     fun transactionGet(
         @PathVariable transactionId: String,
     ): ResponseEntity<String> = runBlocking {
         Napier.i("/transaction/get/$transactionId called")
-        val transaction = transactionMap[transactionId]
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+        if (transactionIdToSessionIdMap.get(transactionId) == null)
+            throw ResponseStatusException(HttpStatus.NOT_FOUND)
                 .also { Napier.w("/transaction/get/$transactionId returns NOT_FOUND") }
 
         try {
@@ -220,16 +220,15 @@ class PublicController(
                     responseUrl = responseUrl,
                     credentials = setOf(
                         RequestOptionsCredential(
-                            credentialScheme = EuPidScheme,
+                            credentialScheme = EuPidSdJwtScheme,
                             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
                             requestedAttributes = setOf(
-                                EuPidScheme.Attributes.FAMILY_NAME,
-                                EuPidScheme.Attributes.GIVEN_NAME,
-                                EuPidScheme.Attributes.BIRTH_DATE
+                                EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME,
+                                EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME,
+                                EuPidSdJwtScheme.SdJwtAttributes.BIRTH_DATE
                             ),
                         )
                     ),
-                    presentationMechanism = PresentationMechanismEnum.PresentationExchange,
                 )
             ).getOrThrow().serialize()
                 .also { Napier.i("/transaction/get/$transactionId returns $it") }
@@ -250,28 +249,32 @@ class PublicController(
     fun transactionPost(
         @PathVariable id: String,
         @RequestBody requestBody: String,
-        request: HttpServletRequest,
-        response: HttpServletResponse,
     ): ResponseEntity<Void> = runBlocking {
         Napier.i("/transaction/result/$id called with $requestBody")
-        val transaction = transactionMap.remove(id)
-        if (transaction == null) {
+        val desktopSessionId = transactionIdToSessionIdMap.remove(id)
+        if (desktopSessionId == null) {
             Napier.w("/transaction/result/$id returns NOT_FOUND")
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
         val user = try {
-            validateSiopResponse(requestBody, openIdVerifier)
+            validateOpenId4VpResponse(requestBody, openIdVerifier)
         } catch (e: Throwable) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage, e)
         }
-        if (user == null) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot parse from VP")
-        }
+        val session = sessionRepository.findById(desktopSessionId)
+        Napier.i("/transaction/result/$id is updating session ${session.id}")
+        session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
+        sessionRepository.save(session)
+        ResponseEntity.ok().build<Void>()
+    }
 
-        Napier.i("Storing user for transaction $id: $user")
-        val authentication = UsernamePasswordAuthenticationToken(user, "")
-        SecurityContextHolder.getContext().authentication = authentication
-        request.getSession(true)
+    private fun setAuthenticationInSession(
+        user: OpenId4VpUser,
+        session: HttpSession,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): StringBuilder {
+        val authentication = UsernamePasswordAuthenticationToken(user, null, listOf(GrantedAuthority { "ROLE_OPENID4VP" }))
         val targetUrl = StringBuilder()
         val urlCapturingResponse = object : HttpServletResponseWrapper(response) {
             override fun sendRedirect(url: String) {
@@ -279,25 +282,25 @@ class PublicController(
             }
         }
         successHandler.onAuthenticationSuccess(request, urlCapturingResponse, authentication)
-
-        val redirectUrl = if (targetUrl.isNotEmpty()) targetUrl.toString() else "/"
-        ResponseEntity
-            .status(HttpStatus.FOUND)
-            .header(HttpHeaders.LOCATION, redirectUrl)
-            .build()
+        val context = SecurityContextHolder.createEmptyContext()
+        context.authentication = authentication
+        SecurityContextHolder.setContext(context)
+        session.setAttribute(SPRING_SECURITY_CONTEXT_KEY, context)
+        HttpSessionSecurityContextRepository().saveContext(context, request, response)
+        return targetUrl
     }
 
-    private suspend fun validateSiopResponse(
+    private suspend fun validateOpenId4VpResponse(
         requestBody: String,
         verifier: OpenId4VpVerifier,
-    ): Siop2User? = when (val result = verifier.validateAuthnResponse(requestBody)) {
-        is AuthnResponseResult.VerifiableDCQLPresentationValidationResults -> result.validationResults.toSiop2User()
-        is AuthnResponseResult.Success -> result.vp.toSiop2User()
-        is AuthnResponseResult.SuccessSdJwt -> result.toApiItemCredential().toSiop2User()
-        is AuthnResponseResult.SuccessIso -> result.toApiItemCredentials().toSiop2User()
+    ): OpenId4VpUser? = when (val result = verifier.validateAuthnResponse(requestBody)) {
+        is AuthnResponseResult.VerifiableDCQLPresentationValidationResults -> result.validationResults.toOpenId4VpUser()
+        is AuthnResponseResult.Success -> throw RuntimeException("Plain JWT Success not expected")
+        is AuthnResponseResult.SuccessSdJwt -> result.toApiItemCredential().toOpenId4VpUser()
+        is AuthnResponseResult.SuccessIso -> result.toApiItem().toOpenId4VpUser()
         is AuthnResponseResult.Error -> throw RuntimeException(result.reason, result.cause)
         is AuthnResponseResult.ValidationError -> throw RuntimeException("Failed: ${result.field}", result.cause)
-        is AuthnResponseResult.VerifiablePresentationValidationResults -> result.toApiItemCredentials().toSiop2User()
+        is AuthnResponseResult.VerifiablePresentationValidationResults -> result.toApiItem().toOpenId4VpUser()
         is AuthnResponseResult.IdToken -> throw RuntimeException("Only got id_token")
     }
 

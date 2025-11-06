@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.controller
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -23,8 +22,3 @@ data class ApiItemCredential(
     val credentialType: String? = null,
 )
 
-@Serializable
-data class OpenId4VpSuccess(
-    @SerialName("redirect_uri")
-    val redirectUri: String,
-)
