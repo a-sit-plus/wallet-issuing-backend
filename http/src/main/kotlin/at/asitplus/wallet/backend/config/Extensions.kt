@@ -12,13 +12,13 @@ import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.IsoIec5218Gender
+import at.asitplus.wallet.eupid.PlaceOfBirth
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
-import at.asitplus.wallet.lib.jws.JwsHeaderModifierFun
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
@@ -219,36 +219,6 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
             claim(PORTRAIT, useSd) { portrait?.let { "data:image/jpeg;base64,${it.encodeToString(Base64Strict)}" } },
-            claim(PREFIX_AGE_EQUAL_OR_OVER, useSd) {
-                with(EuPidSdJwtScheme.SdJwtAttributes.AgeEqualOrOver) {
-                    listOf(
-                        claim(EQUAL_OR_OVER_12, useSd) { ageOver12 },
-                        claim(EQUAL_OR_OVER_13, useSd) { ageOver13 },
-                        claim(EQUAL_OR_OVER_14, useSd) { ageOver14 },
-                        claim(EQUAL_OR_OVER_16, useSd) { ageOver16 },
-                        claim(EQUAL_OR_OVER_18, useSd) { ageOver18 },
-                        claim(EQUAL_OR_OVER_21, useSd) { ageOver21 },
-                        claim(EQUAL_OR_OVER_25, useSd) { ageOver25 },
-                        claim(EQUAL_OR_OVER_60, useSd) { ageOver60 },
-                        claim(EQUAL_OR_OVER_62, useSd) { ageOver62 },
-                        claim(EQUAL_OR_OVER_65, useSd) { ageOver65 },
-                        claim(EQUAL_OR_OVER_68, useSd) { ageOver68 },
-                    )
-                }
-            },
-            claim(AGE_EQUAL_OR_OVER_12, useSd) { ageOver12 },
-            claim(AGE_EQUAL_OR_OVER_13, useSd) { ageOver13 },
-            claim(AGE_EQUAL_OR_OVER_14, useSd) { ageOver14 },
-            claim(AGE_EQUAL_OR_OVER_16, useSd) { ageOver16 },
-            claim(AGE_EQUAL_OR_OVER_18, useSd) { ageOver18 },
-            claim(AGE_EQUAL_OR_OVER_21, useSd) { ageOver21 },
-            claim(AGE_EQUAL_OR_OVER_25, useSd) { ageOver25 },
-            claim(AGE_EQUAL_OR_OVER_60, useSd) { ageOver60 },
-            claim(AGE_EQUAL_OR_OVER_62, useSd) { ageOver62 },
-            claim(AGE_EQUAL_OR_OVER_65, useSd) { ageOver65 },
-            claim(AGE_EQUAL_OR_OVER_68, useSd) { ageOver68 },
-            claim(AGE_IN_YEARS, useSd) { ageInYears },
-            claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
             claim(PREFIX_PLACE_OF_BIRTH, useSd) {
@@ -276,13 +246,6 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
                     )
                 }
             },
-            claim(ADDRESS_FORMATTED, useSd) { formatted },
-            claim(ADDRESS_COUNTRY, useSd) { country },
-            claim(ADDRESS_REGION, useSd) { state },
-            claim(ADDRESS_LOCALITY, useSd) { city },
-            claim(ADDRESS_POSTAL_CODE, useSd) { postCode },
-            claim(ADDRESS_STREET, useSd) { street },
-            claim(ADDRESS_HOUSE_NUMBER, useSd) { locator.toString() },
             claim(SEX, useSd) { gender },
             claim(NATIONALITIES, useSd) { setOf(nationality) },
             claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
@@ -313,6 +276,7 @@ fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
             claim(BIRTH_COUNTRY, useSd) { fallbackBirthCountry },
             claim(BIRTH_STATE, useSd) { ourBirthState },
             claim(BIRTH_PLACE, useSd) { ourBirthCity },
+            claim(PLACE_OF_BIRTH, useSd) { PlaceOfBirth(fallbackBirthCountry, ourBirthState, ourBirthCity) },
             claim(NATIONALITY, useSd) { setOf(nationality) },
             claim(RESIDENT_ADDRESS, useSd) { formatted },
             claim(RESIDENT_COUNTRY, useSd) { country },
@@ -337,19 +301,6 @@ fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
             claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
-            claim(AGE_OVER_12, useSd) { ageOver12 },
-            claim(AGE_OVER_13, useSd) { ageOver13 },
-            claim(AGE_OVER_14, useSd) { ageOver14 },
-            claim(AGE_OVER_16, useSd) { ageOver16 },
-            claim(AGE_OVER_18, useSd) { ageOver18 },
-            claim(AGE_OVER_21, useSd) { ageOver21 },
-            claim(AGE_OVER_25, useSd) { ageOver25 },
-            claim(AGE_OVER_60, useSd) { ageOver60 },
-            claim(AGE_OVER_62, useSd) { ageOver62 },
-            claim(AGE_OVER_65, useSd) { ageOver65 },
-            claim(AGE_OVER_68, useSd) { ageOver68 },
-            claim(AGE_IN_YEARS, useSd) { ageInYears },
-            claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
             claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
             claim(LOCATION_STATUS, useSd) { "https://wallet.a-sit.at/" },
         )

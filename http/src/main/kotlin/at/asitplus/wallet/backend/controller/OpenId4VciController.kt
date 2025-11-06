@@ -2,11 +2,13 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.openid.CredentialFormatEnum
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.CredentialRequestParameters
 import at.asitplus.openid.IssuerMetadata
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
+import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
@@ -14,13 +16,17 @@ import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.EPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
+import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.CredentialSchemeMapping.encodeToCredentialIdentifier
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
+import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.http.*
@@ -55,9 +61,8 @@ class OpenId4VciController(
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
     private val ePrescriptionLoader: EPrescriptionLoader,
+    private val nonceToOfferMap: NonceToOfferMap,
 ) {
-
-    private val mapNonceToOffer = mutableMapOf<String, CredentialOffer>()
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
     fun issuerMetadata(): ResponseEntity<IssuerMetadata> {
@@ -85,19 +90,10 @@ class OpenId4VciController(
         return ResponseEntity.ok(metadata)
     }
 
-    @GetMapping("/offer", produces = [APPLICATION_JSON_VALUE])
-    fun offer(): ResponseEntity<CredentialOffer> = runBlocking {
-        Napier.i("/offer called")
-        val offer =
-            authorizationService.credentialOfferWithAuthorizationCode(credentialIssuer.metadata.credentialIssuer)
-        Napier.d("/offer returns $offer")
-        return@runBlocking ResponseEntity.ok(offer)
-    }
-
     @GetMapping("/offer/{nonce}", produces = [APPLICATION_JSON_VALUE])
     fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
         Napier.i("/offer/$nonce called")
-        mapNonceToOffer[nonce]?.let {
+        nonceToOfferMap.get(nonce)?.let {
             Napier.d("/offer/$nonce returns $it")
             ResponseEntity.ok(it)
         } ?: ResponseEntity.notFound().build()
@@ -106,25 +102,57 @@ class OpenId4VciController(
     @GetMapping("/")
     fun index(
         model: ModelMap,
-        authentication: Authentication?
+        authentication: Authentication?,
     ): ModelAndView = runBlocking {
-        val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
-        Napier.i("/index called with ${authenticatedUser?.userInfo?.subject}")
-        authenticatedUser?.let {
-            val offer = authorizationService.credentialOfferWithPreAuthnForUser(
-                authenticatedUser,
-                credentialIssuer.metadata.credentialIssuer
+        val user = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
+        Napier.i("/index called with ${user?.userInfo?.subject}")
+        user?.let {
+            model["tabs"] = listOf(
+                buildTabItem(user, "All", "All credentials", listOf()),
+                buildTabItem(
+                    user,
+                    "PID-SD-JWT",
+                    "PID in SD-JWT",
+                    encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, CredentialFormatEnum.DC_SD_JWT)
+                ),
+                buildTabItem(user, "PID-MDOC", "PID in ISO MDOC", EuPidScheme.isoNamespace),
+                buildTabItem(user, "MDL-MDOC", "mDL in ISO MDOC", MobileDrivingLicenceScheme.isoNamespace),
             )
-            val nonce = uuid4().toString().also { mapNonceToOffer[it] = offer }
-            val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
-            val url = "openid-credential-offer://?credential_offer_uri=$credentialOfferUrl"
-            Napier.d("/index sets credential offer URL $url")
-            model["qrcode"] = QRCode.ofSquares().build(url).render().getBytes()
-                .also { Napier.d("/index generates QR code with ${it.size} bytes") }
-                .encodeToString(Base64())
         }
         ModelAndView("index")
     }
+
+    private suspend fun buildTabItem(
+        user: OidcUserInfoExtended,
+        title: String,
+        description: String,
+        configurationId: String,
+    ) = buildTabItem(user, title, description, listOf(configurationId))
+
+    private suspend fun buildTabItem(
+        user: OidcUserInfoExtended,
+        title: String,
+        description: String,
+        configurationIds: Collection<String>,
+    ): TabItem {
+        val offer = authorizationService.credentialOfferWithPreAuthnForUser(
+            user = user,
+            credentialIssuer = credentialIssuer.metadata.credentialIssuer,
+            configurationIds = configurationIds
+        )
+        val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
+        val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
+        val url = "openid-credential-offer://?credential_offer_uri=$credentialOfferUrl"
+        val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
+        return TabItem(nonce, title, description, qrBase64)
+    }
+
+    data class TabItem(
+        val id: String,
+        val title: String,
+        val description: String,
+        val qrBase64: String,
+    )
 
     @PostMapping("/par", produces = [APPLICATION_JSON_VALUE])
     fun par(
@@ -228,8 +256,8 @@ class OpenId4VciController(
         url = requestURL.toString(),
         method = HttpMethod.parse(method),
         dpop = getHeader("DPoP"),
-        clientAttestation = getHeader(O_AUTH_CLIENT_ATTESTATION),
-        clientAttestationPop = getHeader(O_AUTH_CLIENT_ATTESTATION_POP),
+        clientAttestation = getHeader("OAuth-Client-Attestation"),
+        clientAttestationPop = getHeader("OAuth-Client-Attestation-PoP"),
     )
 
     @PostMapping("/credential", produces = [APPLICATION_JSON_VALUE])
@@ -275,6 +303,3 @@ class OpenId4VciController(
 }
 
 
-private const val O_AUTH_CLIENT_ATTESTATION = "OAuth-Client-Attestation"
-
-private const val O_AUTH_CLIENT_ATTESTATION_POP = "OAuth-Client-Attestation-PoP"
