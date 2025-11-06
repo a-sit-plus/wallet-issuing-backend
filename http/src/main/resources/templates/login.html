@@ -7,10 +7,48 @@
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
-    <script>
-        $(document).ready(function () {
+    <script th:inline="javascript" language="JavaScript">
+        const BASE_URL = /*[[@{/}]]*/ "";
+        const STATUS_ENDPOINT = /*[[@{/status}]]*/ "";
+        const POLL_INTERVAL_MS = 2000; // 2s
+        const POLL_TIMEOUT_MS = 300000; // 5 minutes
 
-        });
+        function checkStatus() {
+            return fetch(STATUS_ENDPOINT, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            }).then(res => {
+                if (!res.ok) throw new Error('Status check failed: ' + res.status);
+                return res.json();
+            });
+        }
+
+        (function startAuthPolling() {
+            const start = Date.now();
+            const timer = setInterval(async () => {
+                const elapsed = Date.now() - start;
+                if (elapsed >= POLL_TIMEOUT_MS) {
+                    clearInterval(timer);
+                    console.warn('Authentication polling timed out');
+                    return;
+                }
+
+                try {
+                    const status = await checkStatus();
+                    if (status && status.authenticated === true) {
+                        clearInterval(timer);
+                        window.location.replace(BASE_URL);
+                    }
+                } catch (e) {
+                    // Optional: backoff or log
+                    console.warn(e);
+                }
+            }, POLL_INTERVAL_MS);
+
+            // Optional: clear on page unload
+            window.addEventListener('beforeunload', () => clearInterval(timer));
+        })();
     </script>
 </head>
 <body style="" class="bg-light">

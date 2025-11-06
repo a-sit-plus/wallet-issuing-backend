@@ -10,14 +10,29 @@ import kotlin.time.Instant
 @Service
 class NonceToOfferMap {
 
-    private val map = ConcurrentHashMap<String, TimestampedOffer>()
+    private val map = ConcurrentHashMap<String, Timestamped<CredentialOffer>>()
 
-    fun put(nonce: String, offer: CredentialOffer) =
-        map.put(nonce, TimestampedOffer(offer, Clock.System.now().plus(24.hours)))
+    fun put(nonce: String, value: CredentialOffer) =
+        map.put(nonce, Timestamped(value, Clock.System.now().plus(24.hours)))
             .also { map.entries.removeIf { it.value.expiration < Clock.System.now() } }
 
-    fun get(nonce: String) = map.get(nonce)?.offer
-
-    data class TimestampedOffer(val offer: CredentialOffer, val expiration: Instant)
+    fun get(nonce: String) = map.get(nonce)?.value
 
 }
+
+@Service
+class NonceToSessionMap {
+
+    private val map = ConcurrentHashMap<String, Timestamped<String>>()
+
+    fun put(nonce: String, value: String) =
+        map.put(nonce, Timestamped(value, Clock.System.now().plus(24.hours)))
+            .also { map.entries.removeIf { it.value.expiration < Clock.System.now() } }
+
+    fun get(nonce: String) = map.get(nonce)?.value
+
+    fun remove(nonce: String) = map.remove(nonce)?.value
+}
+
+
+data class Timestamped<T>(val value: T, val expiration: Instant)

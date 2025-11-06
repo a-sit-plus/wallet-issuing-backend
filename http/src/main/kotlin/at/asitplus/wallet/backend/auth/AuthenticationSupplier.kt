@@ -4,8 +4,8 @@ import at.asitplus.openid.OidcAddressClaim
 import at.asitplus.openid.OidcUserInfo
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.wallet.backend.controller.ApiItem
-import at.asitplus.wallet.backend.controller.Siop2User
-import kotlinx.serialization.json.Json
+import at.asitplus.wallet.backend.controller.OpenId4VpUser
+import io.github.aakira.napier.Napier
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.springframework.security.core.Authentication
@@ -20,9 +20,10 @@ object SpringSecurityAuthenticationSupplier {
         if (authn is OidcUser)
             return authn.idToken.toOidcUserInfoExtended()
         val principal = authn?.principal
+        Napier.i("toOidcUserInfoExtended called with $principal")
         if (principal is OidcUser)
             return principal.idToken.toOidcUserInfoExtended()
-        if (principal is Siop2User)
+        if (principal is OpenId4VpUser)
             return principal.apiItem.toOidcUserInfoExtended()
         if (principal is User)
             return fakeOidcUserInfoExtended()
@@ -66,14 +67,14 @@ object SpringSecurityAuthenticationSupplier {
     )
 
     private fun ApiItem.toOidcUserInfoExtended() = OidcUserInfoExtended(
-        OidcUserInfo(
+        userInfo = OidcUserInfo(
             subject = id,
-            name = firstname + " " + lastname,
+            name = "$firstname $lastname",
             givenName = firstname,
             familyName = lastname,
             picture = imageDataBase64?.removePrefix("data:image;base64,"),
         ),
-        credentials.first().allFields ?: JsonObject(emptyMap())
+        jsonObject = credentials.first().allFields ?: JsonObject(emptyMap())
     )
 
     private fun fakeOidcUserInfoExtended(): OidcUserInfoExtended =

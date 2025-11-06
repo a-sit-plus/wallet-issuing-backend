@@ -33,12 +33,14 @@ import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -102,9 +104,13 @@ class OpenId4VciController(
     @GetMapping("/")
     fun index(
         model: ModelMap,
+        session: HttpSession,
         authentication: Authentication?,
     ): ModelAndView = runBlocking {
+        Napier.i("/index called with session ${session.id} and $authentication")
         val user = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
+            ?: SecurityContextHolder.getContext().authentication
+                ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
         Napier.i("/index called with ${user?.userInfo?.subject}")
         user?.let {
             model["tabs"] = listOf(
@@ -214,6 +220,8 @@ class OpenId4VciController(
         val result = authorizationService.authorize(params) {
             catching {
                 SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
+                    ?: SecurityContextHolder.getContext().authentication
+                        ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
                     ?: throw IllegalArgumentException("No authenticated user")
             }
         }.getOrElse {
