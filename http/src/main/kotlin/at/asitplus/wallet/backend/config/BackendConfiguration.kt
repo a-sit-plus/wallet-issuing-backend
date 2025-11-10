@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
@@ -114,6 +115,7 @@ class BackendConfiguration {
         at.asitplus.wallet.healthid.Initializer.initWithVCK()
         at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
+        at.asitplus.wallet.ageverification.Initializer.initWithVCK()
     }
 
     @PostConstruct
@@ -246,7 +248,8 @@ class BackendConfiguration {
         CertificateOfResidenceScheme,
         CompanyRegistrationScheme,
         TaxIdScheme,
-        EhicScheme
+        EhicScheme,
+        AgeVerificationScheme
     )
 
     @Bean

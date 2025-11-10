@@ -1,6 +1,5 @@
 
 import at.asitplus.gradle.bouncycastle
-import at.asitplus.gradle.coroutines
 import at.asitplus.gradle.gitLab
 import at.asitplus.gradle.ktor
 import at.asitplus.gradle.napier
@@ -71,6 +70,7 @@ dependencies {
     implementation(libs.wallet.healthid)
     implementation(libs.wallet.ehic)
     implementation(libs.wallet.cr)
+    implementation(libs.wallet.av)
     implementation(libs.wallet.vck.jvm)
     implementation(libs.wallet.vck.openid.ktor.jvm)
     implementation(napier())

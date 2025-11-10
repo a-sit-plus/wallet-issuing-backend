@@ -78,6 +78,8 @@ RewriteEngine On
 RewriteRule ^jwt-vc-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
 RewriteRule ^mdoc-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
 RewriteRule ^jar-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteRule ^oauth-authorization-server/(.*)$ /$1/.well-known/oauth-authorization-server [L]
+RewriteRule ^openid-credential-issuer/(.*)$ /$1/.well-known/openid-credential-issuer [L]
 RewriteCond %{REQUEST_FILENAME} -d
 
 <Files "apple-app-site-association">

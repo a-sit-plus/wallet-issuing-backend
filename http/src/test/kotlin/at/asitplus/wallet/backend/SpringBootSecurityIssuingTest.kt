@@ -7,6 +7,7 @@ import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.NoopEPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
@@ -94,23 +95,8 @@ class SpringBootSecurityIssuingTest {
 
     @Test
     @WithOAuth2AuthenticationToken
-    fun pid_sdjwt_ok() = runTest {
-        val requestOptions = RequestOptions(EuPidScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
-            .disclosureDigests!!.size shouldBeGreaterThan 1
-    }
-
-    @Test
-    @WithOAuth2AuthenticationToken
     fun pid_new_sdjwt_ok() = runTest {
-        val requestOptions =
-            RequestOptions(EuPidSdJwtScheme, SD_JWT)
+        val requestOptions = RequestOptions(EuPidSdJwtScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -138,8 +124,7 @@ class SpringBootSecurityIssuingTest {
     @Test
     @WithOAuth2AuthenticationToken
     fun cor_sdjwt_ok() = runTest {
-        val requestOptions =
-            RequestOptions(CertificateOfResidenceScheme, SD_JWT)
+        val requestOptions = RequestOptions(CertificateOfResidenceScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -153,8 +138,7 @@ class SpringBootSecurityIssuingTest {
     @Test
     @WithOAuth2AuthenticationToken
     fun por_sdjwt_ok() = runTest {
-        val requestOptions =
-            RequestOptions(PowerOfRepresentationScheme, SD_JWT)
+        val requestOptions = RequestOptions(PowerOfRepresentationScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -173,8 +157,7 @@ class SpringBootSecurityIssuingTest {
     @Test
     @WithOAuth2AuthenticationToken
     fun cr_sdjwt_ok() = runTest {
-        val requestOptions =
-            RequestOptions(CompanyRegistrationScheme, SD_JWT)
+        val requestOptions = RequestOptions(CompanyRegistrationScheme, SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -250,8 +233,21 @@ class SpringBootSecurityIssuingTest {
     @Test
     @WithOAuth2AuthenticationToken
     fun mdl_iso_ok() = runTest {
-        val requestOptions =
-            RequestOptions(MobileDrivingLicenceScheme, ISO_MDOC)
+        val requestOptions = RequestOptions(MobileDrivingLicenceScheme, ISO_MDOC)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
+        coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
+            .namespaces?.values?.firstOrNull()
+            ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun age_iso_ok() = runTest {
+        val requestOptions = RequestOptions(AgeVerificationScheme, ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -269,8 +265,7 @@ class SpringBootSecurityIssuingTest {
             client.oid4vciClient.selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
                 .shouldNotBeNull()
         val scope = credentialFormat.scope
-        val authnRequest =
-            client.oid4vciClient.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
+        val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
         val authorizationCode = authorizationServer.authorize(authnRequest as RequestParameters) {
             catching {
                 SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(SecurityContextHolder.getContext()?.authentication)
@@ -278,7 +273,7 @@ class SpringBootSecurityIssuingTest {
             }
         }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
-        val tokenRequest = client.oid4vciClient.oauth2Client.createTokenRequestParameters(
+        val tokenRequest = client.oauth2Client.createTokenRequestParameters(
             OAuth2Client.AuthorizationForToken.Code(authorizationCode.params?.code!!),
             state = state,
             authorizationDetails = null,

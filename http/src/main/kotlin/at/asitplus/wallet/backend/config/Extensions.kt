@@ -4,6 +4,7 @@ import at.asitplus.iso.IssuerSignedItem
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
@@ -157,6 +158,7 @@ fun ConstantIndex.CredentialScheme.buildIsoClaims(
         is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
         is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
+        is AgeVerificationScheme -> userInfo.buildAgeClaims(this.useSd())
         else -> TODO("$this is not implemented in buildIsoClaims()")
     }.mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
     expiration = exp,
@@ -580,6 +582,23 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(BIOMETRIC_TEMPLATE_FINGER, useSd) { signature() },
             claim(BIOMETRIC_TEMPLATE_SIGNATURE_SIGN, useSd) { signature() },
             claim(BIOMETRIC_TEMPLATE_IRIS, useSd) { signature() },
+        )
+    }
+
+fun OidcUserInfoExtended.buildAgeClaims(useSd: Boolean) =
+    with(AgeVerificationScheme.Attributes) {
+        listOfNotNull(
+            claim(AGE_OVER_12, useSd) { ageOver12 },
+            claim(AGE_OVER_13, useSd) { ageOver13 },
+            claim(AGE_OVER_14, useSd) { ageOver14 },
+            claim(AGE_OVER_16, useSd) { ageOver16 },
+            claim(AGE_OVER_18, useSd) { ageOver18 },
+            claim(AGE_OVER_21, useSd) { ageOver21 },
+            claim(AGE_OVER_25, useSd) { ageOver25 },
+            claim(AGE_OVER_60, useSd) { ageOver60 },
+            claim(AGE_OVER_62, useSd) { ageOver62 },
+            claim(AGE_OVER_65, useSd) { ageOver65 },
+            claim(AGE_OVER_68, useSd) { ageOver68 },
         )
     }
 

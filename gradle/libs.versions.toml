@@ -8,13 +8,14 @@ cor = "2.2.0"
 healthId = "2.2.0"
 ehic = "1.2.0"
 cr = "1.2.0"
+av = "1.0.0"
 qrcode = "4.1.1"
 google-cbor = "0.01.02"
 pgsql = "42.5.0"
 mockito = "5.1.0"
 okhttp = "4.11.0"
 scrimage = "4.0.39"
-vck = "5.9.0"
+vck = "5.10.0-SNAPSHOT"
 nimbus = "10.4"
 
 spring-boot = "3.5.4"
@@ -42,6 +43,7 @@ wallet-cor = { module = "at.asitplus.wallet:certificateofresidence", version.ref
 wallet-healthid = { module = "at.asitplus.wallet:healthid", version.ref = "healthId" }
 wallet-ehic = { module = "at.asitplus.wallet:ehic", version.ref = "ehic" }
 wallet-cr = { module = "at.asitplus.wallet:company-registration", version.ref = "cr" }
+wallet-av = { module = "at.asitplus.wallet:ageverification", version.ref = "av" }
 wallet-vck-jvm = { module = "at.asitplus.wallet:vck-jvm", version.ref = "vck" }
 wallet-vck-openid-ktor-jvm = { module = "at.asitplus.wallet:vck-openid-ktor-jvm", version.ref = "vck" }
 google-cbor = { module = "com.google.iot.cbor:cbor", version.ref = "google-cbor" }
@@ -61,6 +63,7 @@ wallet = [
   "wallet-healthid",
   "wallet-ehic",
   "wallet-cr",
+  "wallet-av",
   "wallet-vck-jvm",
   "wallet-vck-openid-ktor-jvm"
 ]
