@@ -1,5 +1,14 @@
 # Changelog
 
+5.10.0:
+ - Update to VC-K 5.10.0
+ - Update PID credentials
+ - Add Age Verification credential
+ - Enable login with PID to issue other credentials
+
+5.9.0:
+ - Update to VC-K 5.9.0
+
 5.8.0:
  - Update to VC-K 5.8.0
  - Update credentials

@@ -9,6 +9,7 @@ import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.config.NoopEPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
@@ -83,19 +84,6 @@ class IssuingInternalAuthorizationServerTest {
         val vcJws = vckJsonSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
         vcJws.vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
             .birthDate shouldBe LocalDate(1983, 6, 4)
-    }
-
-    @Test
-    fun pid_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
-            .disclosureDigests!!.size shouldBeGreaterThan 1
     }
 
     @Test
@@ -245,6 +233,19 @@ class IssuingInternalAuthorizationServerTest {
             ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
     }
 
+    @Test
+    fun age_iso_ok() = runTest {
+        val requestOptions = WalletService.RequestOptions(AgeVerificationScheme, ISO_MDOC)
+
+        val credential = loadCredential(requestOptions)
+
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
+        coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
+            .namespaces?.values?.firstOrNull()
+            ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
+    }
+
     private suspend fun loadCredential(requestOptions: WalletService.RequestOptions): CredentialResponseParameters {
         val client = Client()
         val state = uuid4().toString()
@@ -252,12 +253,11 @@ class IssuingInternalAuthorizationServerTest {
             client.oid4vciClient.selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
                 .shouldNotBeNull()
         val scope = credentialFormat.scope
-        val authnRequest =
-            client.oid4vciClient.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-                    as RequestParameters
+        val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
+                as RequestParameters
         val authorizationCode = authorizationServer.authorize(authnRequest) { mockOidcUserInfoExtended() }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
-        val tokenRequest = client.oid4vciClient.oauth2Client.createTokenRequestParameters(
+        val tokenRequest = client.oauth2Client.createTokenRequestParameters(
             OAuth2Client.AuthorizationForToken.Code(authorizationCode.params?.code!!),
             state = state,
             authorizationDetails = null,
