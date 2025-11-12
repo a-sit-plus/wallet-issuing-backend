@@ -1,5 +1,5 @@
 plugins {
-    id("at.asitplus.gradle.conventions") version "20251023"
+    id("at.asitplus.gradle.conventions") version "20251110"
     kotlin("jvm") version "2.2.21" apply false
     kotlin("plugin.serialization") version "2.2.21" apply false
     kotlin("plugin.spring") version "2.2.21" apply false
