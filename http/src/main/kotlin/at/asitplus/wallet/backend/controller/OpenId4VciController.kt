@@ -74,9 +74,16 @@ class OpenId4VciController(
     }
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
-    fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
+    fun openidMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
         val metadata = authorizationService.metadata()
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $metadata")
+        ResponseEntity.ok(metadata)
+    }
+
+    @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER, produces = [APPLICATION_JSON_VALUE])
+    fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
+        val metadata = authorizationService.metadata()
+        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $metadata")
         ResponseEntity.ok(metadata)
     }
 
