@@ -26,6 +26,8 @@ webjars-bootstrap = "5.3.1"
 webjars-jquery = "3.7.1"
 webjars-datatables = "1.13.5"
 
+kotlin = "2.2.21"
+
 [libraries]
 spring-boot-admin-starter-client = { module = "de.codecentric:spring-boot-admin-starter-client", version.ref = "spring-admin-starter-client" }
 nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
