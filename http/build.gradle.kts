@@ -27,12 +27,15 @@ configurations {
 kotlin {
     sourceSets {
         all {
+            compilerOptions {
+                this.freeCompilerArgs.add("-Xnested-type-aliases")
+            }
             languageSettings.optIn("kotlin.time.ExperimentalTime")
         }
     }
 }
-
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
