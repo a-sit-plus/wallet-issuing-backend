@@ -18,6 +18,7 @@ import at.asitplus.wallet.backend.config.EPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.lib.data.MediaTypes
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -283,27 +284,47 @@ class OpenId4VciController(
         Napier.i("/credential called")
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         Napier.v("/credential called with $authorizationHeader and $requestBody")
-        val params = catchingUnwrapped {
-            vckJsonSerializer.decodeFromString<CredentialRequestParameters>(requestBody)
-        }.getOrElse {
-            Napier.w("/credential can't parse request", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
-        }
 
-        val credential = credentialIssuer.credential(
-            authorizationHeader = authorizationHeader,
-            params = params,
-            request = request.toRequestInfo(),
-            credentialDataProvider = OidcIssuerCredentialDataProvider(
-                lifetime = backendConfigurationProperties.credentials.lifeTime,
-                ePrescriptionLoader = ePrescriptionLoader
-            ),
-        ).getOrElse {
+        val credential = if (requestBody.contains("{")) {
+            credentialIssuer.credential(
+                authorizationHeader = authorizationHeader,
+                params = catchingUnwrapped {
+                    vckJsonSerializer.decodeFromString<CredentialRequestParameters>(requestBody)
+                }.getOrElse {
+                    Napier.w("/credential can't parse request", it)
+                    return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+                },
+                request = request.toRequestInfo(),
+                credentialDataProvider = OidcIssuerCredentialDataProvider(
+                    lifetime = backendConfigurationProperties.credentials.lifeTime,
+                    ePrescriptionLoader = ePrescriptionLoader
+                ),
+            )
+        } else {
+            credentialIssuer.credentialEncryptedRequest(
+                authorizationHeader = authorizationHeader,
+                input = requestBody,
+                request = request.toRequestInfo(),
+                credentialDataProvider = OidcIssuerCredentialDataProvider(
+                    lifetime = backendConfigurationProperties.credentials.lifeTime,
+                    ePrescriptionLoader = ePrescriptionLoader
+                ),
+            )
+        }.getOrElse {
             Napier.w("/credential got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/credential returns $credential")
-        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(credential))
+        return@runBlocking when (credential) {
+            is CredentialIssuer.CredentialResponse.Encrypted -> ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JWT)
+                .body(vckJsonSerializer.encodeToString(credential.response.serialize()))
+
+            is CredentialIssuer.CredentialResponse.Plain -> ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JSON)
+                .body(vckJsonSerializer.encodeToString(credential.response))
+        }
     }
 
     private fun buildOidcRedirect(location: String): ResponseEntity<String> = ResponseEntity
