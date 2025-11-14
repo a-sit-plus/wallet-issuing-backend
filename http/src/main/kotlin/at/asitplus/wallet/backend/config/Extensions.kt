@@ -113,7 +113,6 @@ private const val EHIC_VCTM = """
     NGg3RWlTNzNQQ2oxL3YvM1ZmMXpkMUU9In0
 """
 
-@Suppress("DEPRECATION")
 fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
@@ -146,7 +145,6 @@ fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     }
 ).also { Napier.v("${this}.buildSdJwtClaims returns $it") }
 
-@Suppress("DEPRECATION")
 fun ConstantIndex.CredentialScheme.buildIsoClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
@@ -167,7 +165,6 @@ fun ConstantIndex.CredentialScheme.buildIsoClaims(
     userInfo = userInfo,
 ).also { Napier.v("${this}.buildIsoClaims returns $it") }
 
-@Suppress("DEPRECATION")
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
     is HealthIdScheme -> false
     is EhicScheme -> false
@@ -232,9 +229,6 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
                     )
                 }
             },
-            claim(PLACE_OF_BIRTH_LOCALITY, useSd) { ourBirthCity },
-            claim(PLACE_OF_BIRTH_COUNTRY, useSd) { country },
-            claim(PLACE_OF_BIRTH_REGION, useSd) { ourBirthState },
             claim(PREFIX_ADDRESS, useSd) {
                 with(EuPidSdJwtScheme.SdJwtAttributes.Address) {
                     listOf(
@@ -263,7 +257,6 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
         )
     }
 
-@Suppress("DEPRECATION")
 fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
     with(EuPidScheme.Attributes) {
         val (postCode, city, state, street, locator) = addressOrRandom()
@@ -274,10 +267,6 @@ fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(BIRTH_CITY, useSd) { ourBirthCity },
-            claim(BIRTH_COUNTRY, useSd) { fallbackBirthCountry },
-            claim(BIRTH_STATE, useSd) { ourBirthState },
-            claim(BIRTH_PLACE, useSd) { ourBirthCity },
             claim(PLACE_OF_BIRTH, useSd) { PlaceOfBirth(fallbackBirthCountry, ourBirthState, ourBirthCity) },
             claim(NATIONALITY, useSd) { setOf(nationality) },
             claim(RESIDENT_ADDRESS, useSd) { formatted },
@@ -287,13 +276,10 @@ fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
             claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
             claim(RESIDENT_STREET, useSd) { street },
             claim(RESIDENT_HOUSE_NUMBER, useSd) { locator.toString() },
-            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(PORTRAIT, useSd) { portrait },
-            claim(PORTRAIT_CAPTURE_DATE, useSd) { portraitCaptureDate },
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
-            claim(GENDER, useSd) { gender },
             claim(SEX, useSd) { gender.code },
             claim(EMAIL_ADDRESS, useSd) { email },
             claim(MOBILE_PHONE_NUMBER, useSd) { phoneNumber },
@@ -447,14 +433,12 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
         )
     }
 
-@Suppress("DEPRECATION")
 fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Boolean): List<ClaimToBeIssued> =
     with(EhicScheme.Attributes) {
         val issuingAuthorityId = UUID.randomUUID().toString()
         val authenticSourceId = UUID.randomUUID().toString()
         listOfNotNull(
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
-            claim(SOCIAL_SECURITY_NUMBER, useSd) { socialSecurityNumber },
             claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { socialSecurityNumber },
             claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
             claim(ISSUING_AUTHORITY_ID, useSd) { issuingAuthorityId },
@@ -477,9 +461,7 @@ fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Bool
                     )
                 }
             },
-            claim(ISSUANCE_DATE, useSd) { iss.toLocalDate() },
             claim(DATE_OF_ISSUANCE, useSd) { iss.toLocalDate() },
-            claim(EXPIRY_DATE, useSd) { exp.toLocalDate() },
             claim(DATE_OF_EXPIRY, useSd) { exp.toLocalDate() },
             claim(STARTING_DATE, useSd) { expiryDate() },
             claim(ENDING_DATE, useSd) { expiryDate() },
@@ -508,13 +490,6 @@ fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boole
                     )
                 }
             },
-            claim(RESIDENCE_ADDRESS_THOROUGHFARE, useSd) { street },
-            claim(RESIDENCE_ADDRESS_LOCATOR_DESIGNATOR, useSd) { locator },
-            claim(RESIDENCE_ADDRESS_POST_CODE, useSd) { postCode },
-            claim(RESIDENCE_ADDRESS_POST_NAME, useSd) { city },
-            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_1, useSd) { country },
-            claim(RESIDENCE_ADDRESS_ADMIN_UNIT_L_2, useSd) { state },
-            claim(RESIDENCE_ADDRESS_FULL_ADDRESS, useSd) { fullAddress },
             claim(GENDER, useSd) { gender },
             claim(BIRTH_PLACE, useSd) { randomAddress().city },
             claim(ARRIVAL_DATE, useSd) { arrivalDate },
