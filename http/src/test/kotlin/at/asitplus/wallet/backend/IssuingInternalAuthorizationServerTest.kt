@@ -279,6 +279,8 @@ class IssuingInternalAuthorizationServerTest {
             ),
         ).getOrThrow()
         return credential
+            .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()
+            .response
     }
 
 }

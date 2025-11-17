@@ -295,6 +295,8 @@ class SpringBootSecurityIssuingTest {
             ),
         ).getOrThrow()
         return credential
+            .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()
+            .response
     }
 
 }

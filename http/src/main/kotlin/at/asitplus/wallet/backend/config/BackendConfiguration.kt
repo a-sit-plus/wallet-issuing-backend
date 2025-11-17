@@ -138,14 +138,14 @@ class BackendConfiguration {
         preparedCredentialRepo = preparedCredentialRepo,
         credentialRepo = credentialRepo,
         revokedCredentialRepo = revokedCredentialRepo,
-        applicationEventPublisher = applicationEventPublisher
+        applicationEventPublisher = applicationEventPublisher,
     )
 
     @Bean
     fun issuerCredentialStoreAdapter(
         revocationService: RevocationService,
     ): IssuerCredentialStoreAdapter = IssuerCredentialStoreAdapter(
-        revocationService
+        revocationService = revocationService,
     )
 
     @Bean
