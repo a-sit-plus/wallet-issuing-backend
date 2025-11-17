@@ -5,6 +5,8 @@ import at.asitplus.catchingUnwrapped
 import at.asitplus.openid.CredentialFormatEnum
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.CredentialRequestParameters
+import at.asitplus.openid.DisplayLogoProperties
+import at.asitplus.openid.DisplayProperties
 import at.asitplus.openid.IssuerMetadata
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
@@ -69,7 +71,15 @@ class OpenId4VciController(
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
     fun issuerMetadata(): ResponseEntity<IssuerMetadata> {
-        val metadata = credentialIssuer.metadata
+        val metadata = credentialIssuer.metadata.copy(
+            displayProperties = setOf(
+                DisplayProperties(
+                    name = "A-SIT Plus Wallet Issuer M7",
+                    locale = "en-US",
+                    logo = DisplayLogoProperties(uri = "https://wallet.a-sit.at/assets/images/logo.svg")
+                )
+            )
+        )
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
         return ResponseEntity.ok(metadata)
     }
@@ -315,17 +325,25 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
         Napier.d("/credential returns $credential")
-        return@runBlocking when (credential) {
-            is CredentialIssuer.CredentialResponse.Encrypted -> ResponseEntity
-                .status(HttpStatus.OK)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JWT)
-                .body(vckJsonSerializer.encodeToString(credential.response.serialize()))
-
-            is CredentialIssuer.CredentialResponse.Plain -> ResponseEntity.status(HttpStatus.OK)
-                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JSON)
-                .body(vckJsonSerializer.encodeToString(credential.response))
-        }
+        return@runBlocking credential.toResponseEntity()
     }
+
+    private fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String?> =
+        when (this) {
+            is CredentialIssuer.CredentialResponse.Encrypted -> this.toResponseEntity()
+            is CredentialIssuer.CredentialResponse.Plain -> this.toResponseEntity()
+        }
+
+    private fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String?> =
+        ResponseEntity.status(HttpStatus.OK)
+            .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JSON)
+            .body(vckJsonSerializer.encodeToString(response))
+
+    private fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String?> =
+        ResponseEntity
+            .status(HttpStatus.OK)
+            .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JWT)
+            .body(vckJsonSerializer.encodeToString(response.serialize()))
 
     private fun buildOidcRedirect(location: String): ResponseEntity<String> = ResponseEntity
         .status(HttpStatus.FOUND)
