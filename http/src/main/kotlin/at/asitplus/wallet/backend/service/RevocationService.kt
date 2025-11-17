@@ -172,7 +172,6 @@ class DefaultRevocationService(
                 )
             )
             preparedCredentialRepo.delete(savedCredential)
-            applicationEventPublisher.publishEvent(RevocationEvent(this, timePeriod))
             StoredCredentialReference(
                 issuedCredential.id.toString(),
                 timePeriod,
