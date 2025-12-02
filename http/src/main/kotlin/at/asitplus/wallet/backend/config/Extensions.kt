@@ -17,6 +17,7 @@ import at.asitplus.wallet.eupid.PlaceOfBirth
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
+import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
@@ -238,12 +239,12 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
                         claim(LOCALITY, useSd) { city },
                         claim(POSTAL_CODE, useSd) { postCode },
                         claim(STREET, useSd) { street },
-                        claim(HOUSE_NUMBER, useSd) { locator }.toString(),
+                        claim(HOUSE_NUMBER, useSd) { locator },
                     )
                 }
             },
             claim(SEX, useSd) { gender },
-            claim(NATIONALITIES, useSd) { setOf(nationality) },
+            claim(NATIONALITIES, useSd) { setOf(ClaimToBeIssuedArrayElement(nationality)) },
             claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
             claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate()) },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
@@ -544,7 +545,7 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(AGE_OVER_62, useSd) { ageOver62 },
             claim(AGE_OVER_65, useSd) { ageOver65 },
             claim(AGE_OVER_68, useSd) { ageOver68 },
-            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
+            // Would need matching field in certificate claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(NATIONALITY, useSd) { nationality },
             claim(RESIDENT_CITY, useSd) { city },
             claim(RESIDENT_STATE, useSd) { state },
