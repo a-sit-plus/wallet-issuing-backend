@@ -1,10 +1,8 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
-import at.asitplus.catchingUnwrapped
 import at.asitplus.openid.CredentialFormatEnum
 import at.asitplus.openid.CredentialOffer
-import at.asitplus.openid.CredentialRequestParameters
 import at.asitplus.openid.DisplayLogoProperties
 import at.asitplus.openid.DisplayProperties
 import at.asitplus.openid.IssuerMetadata
@@ -27,6 +25,7 @@ import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.CredentialSchemeMapping.encodeToCredentialIdentifier
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
+import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
@@ -294,33 +293,19 @@ class OpenId4VciController(
         Napier.i("/credential called")
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         Napier.v("/credential called with $authorizationHeader and $requestBody")
-
-        val credential = if (requestBody.contains("{")) {
-            credentialIssuer.credential(
-                authorizationHeader = authorizationHeader,
-                params = catchingUnwrapped {
-                    vckJsonSerializer.decodeFromString<CredentialRequestParameters>(requestBody)
-                }.getOrElse {
-                    Napier.w("/credential can't parse request", it)
-                    return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
-                },
-                request = request.toRequestInfo(),
-                credentialDataProvider = OidcIssuerCredentialDataProvider(
-                    lifetime = backendConfigurationProperties.credentials.lifeTime,
-                    ePrescriptionLoader = ePrescriptionLoader
-                ),
-            )
-        } else {
-            credentialIssuer.credentialEncryptedRequest(
-                authorizationHeader = authorizationHeader,
-                input = requestBody,
-                request = request.toRequestInfo(),
-                credentialDataProvider = OidcIssuerCredentialDataProvider(
-                    lifetime = backendConfigurationProperties.credentials.lifeTime,
-                    ePrescriptionLoader = ePrescriptionLoader
-                ),
-            )
-        }.getOrElse {
+        val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
+            Napier.w("/credential can't parse request", it)
+            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+        }
+        val credential = credentialIssuer.credential(
+            authorizationHeader = authorizationHeader,
+            params = params,
+            request = request.toRequestInfo(),
+            credentialDataProvider = OidcIssuerCredentialDataProvider(
+                lifetime = backendConfigurationProperties.credentials.lifeTime,
+                ePrescriptionLoader = ePrescriptionLoader
+            ),
+        ).getOrElse {
             Napier.w("/credential got error", it)
             return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
         }
