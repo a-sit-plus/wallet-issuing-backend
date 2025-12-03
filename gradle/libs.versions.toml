@@ -15,7 +15,7 @@ pgsql = "42.5.0"
 mockito = "5.1.0"
 okhttp = "4.11.0"
 scrimage = "4.0.39"
-vck = "5.10.0-SNAPSHOT"
+vck = "5.10.0"
 nimbus = "10.4"
 
 spring-boot = "3.5.4"
