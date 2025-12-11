@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
-import at.asitplus.openid.CredentialFormatEnum
+import at.asitplus.openid.CredentialFormatEnum.DC_SD_JWT
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.DisplayLogoProperties
 import at.asitplus.openid.DisplayProperties
@@ -10,6 +10,7 @@ import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.openid.OpenIdConstants.Errors
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
@@ -25,6 +26,7 @@ import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.CredentialSchemeMapping.encodeToCredentialIdentifier
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
+import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
@@ -185,13 +187,15 @@ class OpenId4VciController(
         Napier.i("/par called")
         Napier.v("/par called with $requestBody")
         val params: RequestParameters = requestBody.decodeFromPostBody()
-            ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
         val result = authorizationService.par(
             params,
-            request.toRequestInfo(),
+            request.toRequestInfo().also {
+                Napier.v("/par called with $it")
+            },
         ).getOrElse {
-            Napier.w("/par got error", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            return@runBlocking buildOidcErrorResponse(it)
+                .also { Napier.w("/par sends error $it") }
         }
         Napier.d("/par returns $result")
         return@runBlocking ResponseEntity
@@ -204,8 +208,8 @@ class OpenId4VciController(
     ): ResponseEntity<*> = runBlocking {
         Napier.i("/nonce called")
         val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
-            Napier.w("/nonce got error", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            return@runBlocking buildOidcErrorResponse(it)
+                .also { Napier.w("/nonce sends error $it") }
         }
         Napier.d("/nonce returns $result")
         return@runBlocking ResponseEntity.status(HttpStatus.OK)
@@ -243,7 +247,7 @@ class OpenId4VciController(
             }
         }.getOrElse {
             Napier.w("/authorize got error", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("/authorize returns ${result.url}")
         val userAgent = request.getHeader(HttpHeaders.USER_AGENT)
@@ -265,13 +269,14 @@ class OpenId4VciController(
         Napier.i("/token called")
         Napier.v("/token called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromPostBody()
-            ?: return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
         val result = authorizationService.token(
             request = params,
             httpRequest = request.toRequestInfo()
+                .also { Napier.v("/token called with $it") }
         ).getOrElse {
             Napier.w("/token got error", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("/token returns $result")
         return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
@@ -295,19 +300,21 @@ class OpenId4VciController(
         Napier.v("/credential called with $authorizationHeader and $requestBody")
         val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
             Napier.w("/credential can't parse request", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            return@runBlocking buildOidcErrorResponse(it)
         }
         val credential = credentialIssuer.credential(
             authorizationHeader = authorizationHeader,
             params = params,
-            request = request.toRequestInfo(),
+            request = request.toRequestInfo().also {
+                Napier.v("/credential called with $it")
+            },
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
                 ePrescriptionLoader = ePrescriptionLoader
             ),
         ).getOrElse {
-            Napier.w("/credential got error", it)
-            return@runBlocking buildOidcErrorResponse(OpenIdConstants.Errors.INVALID_REQUEST)
+            return@runBlocking buildOidcErrorResponse(it)
+                .also { Napier.w("/credential sends error $it") }
         }
         Napier.d("/credential returns $credential")
         return@runBlocking credential.toResponseEntity()
@@ -335,9 +342,21 @@ class OpenId4VciController(
         .header(HttpHeaders.LOCATION, location)
         .build()
 
-    private fun buildOidcErrorResponse(error: String): ResponseEntity<OAuth2Error> = ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)
-        .body(OAuth2Error(error = error))
+    private fun buildOidcErrorResponse(throwable: Throwable): ResponseEntity<OAuth2Error> =
+        when (throwable) {
+            is OAuth2Exception.UseDpopNonce -> ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .header("DPoP-Nonce", throwable.dpopNonce)
+                .body(throwable.toOAuth2Error())
+
+            is OAuth2Exception -> ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(throwable.toOAuth2Error())
+
+            else -> ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(OAuth2Error(error = Errors.INVALID_REQUEST))
+        }
 
 }
 
