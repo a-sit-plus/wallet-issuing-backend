@@ -28,6 +28,7 @@ import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
+import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
@@ -273,6 +274,9 @@ class BackendConfiguration {
         authorizationEndpointPath = "/authorize",
         tokenEndpointPath = "/token",
         pushedAuthorizationRequestEndpointPath = "/par",
+        tokenService = TokenService.jwt(
+            publicContext = configurationProperties.publicContext,
+        ),
     )
 
     @Bean
