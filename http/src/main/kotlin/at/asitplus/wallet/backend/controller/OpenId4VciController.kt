@@ -21,6 +21,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.MediaTypes
 import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -257,6 +258,7 @@ class OpenId4VciController(
         Napier.d("/par returns $result")
         return@runBlocking ResponseEntity
             .status(HttpStatus.CREATED)
+            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .body(vckJsonSerializer.encodeToString(result))
     }
 
@@ -271,7 +273,7 @@ class OpenId4VciController(
         Napier.d("/nonce returns $result")
         return@runBlocking ResponseEntity.status(HttpStatus.OK)
             .header(HttpHeaders.CACHE_CONTROL, "no-store")
-            .header("DPoP-Nonce", result.dpopNonce)
+            .header(io.ktor.http.HttpHeaders.DPoPNonce, result.dpopNonce)
             .body(vckJsonSerializer.encodeToString(result.response))
     }
 
@@ -336,7 +338,10 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("/token returns $result")
-        return@runBlocking ResponseEntity.ok(vckJsonSerializer.encodeToString(result))
+        return@runBlocking ResponseEntity
+            .status(HttpStatus.OK)
+            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
+            .body(vckJsonSerializer.encodeToString(result))
     }
 
     private fun HttpServletRequest.toRequestInfo() = RequestInfo(
@@ -377,20 +382,22 @@ class OpenId4VciController(
         return@runBlocking credential.toResponseEntity()
     }
 
-    private fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String?> =
+    private suspend fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String?> =
         when (this) {
             is CredentialIssuer.CredentialResponse.Encrypted -> this.toResponseEntity()
             is CredentialIssuer.CredentialResponse.Plain -> this.toResponseEntity()
         }
 
-    private fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String?> =
+    private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String?> =
         ResponseEntity.status(HttpStatus.OK)
+            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JSON)
             .body(vckJsonSerializer.encodeToString(response))
 
-    private fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String?> =
+    private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String?> =
         ResponseEntity
             .status(HttpStatus.OK)
+            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JWT)
             .body(vckJsonSerializer.encodeToString(response.serialize()))
 
