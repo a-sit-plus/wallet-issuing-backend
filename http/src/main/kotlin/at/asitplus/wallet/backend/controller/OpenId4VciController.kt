@@ -13,6 +13,7 @@ import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.OpenIdConstants.Errors
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
+import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.EPrescriptionLoader
@@ -133,12 +134,43 @@ class OpenId4VciController(
                 ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
         Napier.i("/index called with ${user?.userInfo?.subject}")
         model["tabs"] = listOfNotNull(
+            buildTabItemAuthCode(
+                title = "All-Code",
+                description = "All credentials with auth code",
+                configurationIds = listOf(),
+                urlScheme = "haip-vci"
+            ),
+            buildTabItemAuthCode(
+                title = "PID-SD-JWT-Code",
+                description = "PID in SD-JWT with auth code",
+                configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
+                urlScheme = "haip-vci"
+            ),
+            buildTabItemAuthCode(
+                title = "PID-MDOC-Code",
+                description = "PID in ISO MDOC with auth code",
+                configurationId = EuPidScheme.isoNamespace,
+                urlScheme = "haip-vci"
+            ),
+            buildTabItemAuthCode(
+                title = "MDL-MDOC-Code",
+                description = "mDL in ISO MDOC with auth code",
+                configurationId = MobileDrivingLicenceScheme.isoNamespace,
+                urlScheme = "haip-vci"
+            ),
+            buildTabItemAuthCode(
+                title = "AV-MDOC-Code",
+                description = "Age Verification in ISO MDOC with auth code",
+                configurationId = AgeVerificationScheme.isoNamespace,
+                urlScheme = "av"
+            ),
             user?.let {
                 buildTabItemPreAuthn(
                     user = user,
                     title = "All-pre",
                     description = "All credentials with pre-authn",
-                    configurationIds = listOf()
+                    configurationIds = listOf(),
+                    urlScheme = "haip-vci"
                 )
             },
             user?.let {
@@ -146,36 +178,37 @@ class OpenId4VciController(
                     user = user,
                     title = "PID-SD-JWT-pre",
                     description = "PID in SD-JWT with pre-authn",
-                    configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT)
+                    configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
+                    urlScheme = "haip-vci"
                 )
             },
-            buildTabItemAuthCode(
-                title = "PID-SD-JWT-Code",
-                description = "PID in SD-JWT with auth code",
-                configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT)
-            ),
             user?.let {
                 buildTabItemPreAuthn(
                     user = user,
                     title = "PID-MDOC-pre",
                     description = "PID in ISO MDOC with pre-authn",
-                    configurationId = EuPidScheme.isoNamespace
+                    configurationId = EuPidScheme.isoNamespace,
+                    urlScheme = "haip-vci"
                 )
             },
-            buildTabItemAuthCode("PID-MDOC-Code", "PID in ISO MDOC with auth code", EuPidScheme.isoNamespace),
             user?.let {
                 buildTabItemPreAuthn(
                     user = user,
                     title = "MDL-MDOC-pre",
                     description = "mDL in ISO MDOC with pre-authn",
-                    configurationId = MobileDrivingLicenceScheme.isoNamespace
+                    configurationId = MobileDrivingLicenceScheme.isoNamespace,
+                    urlScheme = "haip-vci"
                 )
             },
-            buildTabItemAuthCode(
-                title = "MDL-MDOC-Code",
-                description = "mDL in ISO MDOC with auth code",
-                configurationId = MobileDrivingLicenceScheme.isoNamespace
-            ),
+            user?.let {
+                buildTabItemPreAuthn(
+                    user = user,
+                    title = "AV-MDOC-pre",
+                    description = "Age Verification in ISO MDOC with pre-authn",
+                    configurationId = AgeVerificationScheme.isoNamespace,
+                    urlScheme = "av"
+                )
+            },
         )
 
         ModelAndView("index")
@@ -186,13 +219,15 @@ class OpenId4VciController(
         title: String,
         description: String,
         configurationId: String,
-    ) = buildTabItemPreAuthn(user, title, description, listOf(configurationId))
+        urlScheme: String,
+    ) = buildTabItemPreAuthn(user, title, description, listOf(configurationId), urlScheme)
 
     private suspend fun buildTabItemPreAuthn(
         user: OidcUserInfoExtended,
         title: String,
         description: String,
         configurationIds: Collection<String>,
+        urlScheme: String,
     ): TabItem {
         val offer = authorizationService.credentialOfferWithPreAuthnForUser(
             user = user,
@@ -201,7 +236,7 @@ class OpenId4VciController(
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
-        val url = "haip-vci://?credential_offer_uri=$credentialOfferUrl"
+        val url = "$urlScheme://?credential_offer_uri=$credentialOfferUrl"
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
         return TabItem(nonce, title, description, qrBase64)
     }
@@ -210,14 +245,14 @@ class OpenId4VciController(
         title: String,
         description: String,
         configurationId: String,
-    ): TabItem = buildTabItemAuthCode(
-        title, description, setOf(configurationId)
-    )
+        urlScheme: String,
+    ): TabItem = buildTabItemAuthCode(title, description, setOf(configurationId), urlScheme)
 
     private suspend fun buildTabItemAuthCode(
         title: String,
         description: String,
         configurationIds: Collection<String>,
+        urlScheme: String,
     ): TabItem {
         val offer = authorizationService.credentialOfferWithAuthorizationCode(
             credentialIssuer = credentialIssuer.metadata.credentialIssuer,
@@ -225,7 +260,7 @@ class OpenId4VciController(
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
-        val url = "haip-vci://?credential_offer_uri=$credentialOfferUrl"
+        val url = "$urlScheme://?credential_offer_uri=$credentialOfferUrl"
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
         return TabItem(nonce, title, description, qrBase64)
     }
