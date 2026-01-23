@@ -1,57 +1,6 @@
 # Wallet Issuing Service
 
-This is the backend service for provisioning and revoking [Verifiable Credentials](https://w3c.github.io/vc-data-model/), representing `IdAustriaCredentials` or anything else.
-
-The default public key that signs the credentials is:
-
-```
------BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaCUPdgNqCIFLVXE8yn5lZGaYjbyC
-ys0go5xhPtbXj0X2jNAUUOddCh8eYoB9dO/ARUyBbccxKmNxO01kd8+/Tg==
------END PUBLIC KEY-----
-```
-
-with it's `kid` of `did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O`.
-
-## REST API
-
-`GET /credentials/status/current` returns a simple list of currently available revocation lists.
-
-`GET /credentials/status/{year}` returns the revocation list in a VC-compatible format, that is [Revocation List 2020](https://w3c-ccg.github.io/vc-status-rl-2020/). It is essentially a bitstring in which a bit is set if the verifiable credential with this `statusListIndex` is revoked. The bitstring is then zlib compressed and base64 encoded to be transported inside an JWS. The `{year}` variable may be filled with an entry from the `current` revocation lists, or is contained in an issued ID.
-
-Sample revocation list (transported as a JWS in compact representation, exploded here for readability):
-
-```
-{
-  "kid": "did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O",
-  "typ": "JWT",
-  "alg": "ES256"
-}
-.
-{
-  "vc": {
-    "id": "http://localhost:8080/credentials/status/1",
-    "type": [
-      "VerifiableCredential",
-      "RevocationList2020"
-    ],
-    "issuer": "did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O",
-    "issuanceDate": "2022-02-23T14:46:10.969279Z",
-    "expirationDate": "2022-02-26T02:46:10.969281Z",
-    "credentialSubject": {
-      "type": "RevocationList2020",
-      "id": "http://localhost:8080/credentials/status/1#list",
-      "encodedList": "eJxjBAAAAgAC"
-    }
-  },
-  "sub": "http://localhost:8080/credentials/status/1#list",
-  "nbf": 1645627570,
-  "iss": "did:key:mEpBoJQ92A2oIgUtVcTzKfmVkZpiNvILKzSCjnGE+1tePRfaM0BRQ510KHx5igH1078BFTIFtxzEqY3E7TWR3z79O",
-  "exp": 1645843570,
-  "jti": "http://localhost:8080/credentials/status/1"
-}
-```
-
+TODO
 
 ## Web API
 
@@ -77,11 +26,6 @@ backend:
     regular-check-rate: PT1H
     cache-path: cache/revocation-list/
   issuer-key: {{ KEY_CONFIG }}
-  debug:
-    enabled: true
-    qr-code-size: 400
-  cleanup:
-    enabled: false
 ```
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
@@ -241,22 +185,6 @@ spring:
       auto-commit: false
 ```
 
-### Cleanup
-
-Old entries of the database (i.e. expired bindings, expired credentials) can be deleted periodically, if the configuration is enabled (it is disabled by default):
-
-```yaml
-backend:
-  cleanup:
-    enabled: true
-    bindings-scheduling-rate: PT24H
-    bindings-expiration-days: 30
-    credentials-scheduling-rate: PT24H
-    credentials-expiration-days: 30
-```
-
-The scheduling rate shall be configured in a [Java Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-) compatible format (e.g. `PT24H`).
-
 ### Spring Boot Admin Client
 
 Configuration to connect to a [Spring Boot Admin Server](https://github.com/codecentric/spring-boot-admin):
@@ -277,23 +205,6 @@ management:
     web:
       exposure:
         include: "*"
-```
-
-### Cloud Configuration
-
-Configuration to pull the configuration from a [Spring Cloud Config Server](https://cloud.spring.io/spring-cloud-config/reference/html/):
-
-```yaml
-spring:
-  profiles:
-    active: pupilid
-  application:
-    name: wallet
-  config:
-    import: optional:configserver:http://localhost:9910/
-  cloud:
-    config:
-      enabled: true
 ```
 
 ### Error Handling
@@ -329,15 +240,4 @@ and the application throws an exception like `IllegalArgumentException("foo")`, 
   "status": 500,
   "timestamp": "2022-05-18T08:24:17.239+00:00"
 }
-```
-
-### Logging
-
-MDC-based assigment of unique transaction IDs for each incoming request is supported (into the variable `txID`), but requires a customized logger pattern, e.g.:
-
-```yaml
-logging:
-  pattern:
-    file: "%d{dd-MM-yyyy HH:mm:ss.SSS} [%X{txID:-00000000-0000-0000-0000-000000000000}] %-5level %-50logger{50}:%-4line - %msg%n"
-    console: "%d{dd-MM-yyyy HH:mm:ss.SSS} [%X{txID:-00000000-0000-0000-0000-000000000000}] %-5level %-50logger{50}:%-4line - %msg%n"
 ```
