@@ -11,7 +11,6 @@ av = "1.0.0"
 qrcode = "4.5.0"
 pgsql = "42.7.7"
 mockito = "6.2.1"
-okhttp = "5.3.2"
 vck = "5.11.0-SNAPSHOT"
 nimbus = "10.7"
 
@@ -46,7 +45,6 @@ wallet-vck-jvm = { module = "at.asitplus.wallet:vck-jvm", version.ref = "vck" }
 wallet-vck-openid-ktor-jvm = { module = "at.asitplus.wallet:vck-openid-ktor-jvm", version.ref = "vck" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "pgsql" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito" }
-okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 
 [bundles]
 wallet = [
