@@ -9,7 +9,7 @@ data class BackendConfigurationProperties(
     /**
      * Public URL of this instance, used for several URLs in messages sent to the Wallet
      */
-    val publicContext: String = "http://localhost:8080/",
+    val publicContext: String = "http://localhost:8080/", // TODO convert to URL?
     /**
      * Configuration for issued credentials
      */

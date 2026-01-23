@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import org.hamcrest.Matchers.emptyString
@@ -28,7 +29,7 @@ class PublicControllerTest {
     fun `GET CWT status list with If-None-Match in second request`() {
         Thread.sleep(1000L) // wait for RevocationListScheduler to write the revocation list
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
-        val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
+        val firstResult = mockMvc.get("${Paths.Credentials.StatusUrl}/$timePeriod") {
             accept(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT))
         }.andExpect {
             status { isOk() }
@@ -38,7 +39,7 @@ class PublicControllerTest {
             header { exists(HttpHeaders.CACHE_CONTROL) }
         }.andReturn()
 
-        mockMvc.get("/credentials/status/$timePeriod") {
+        mockMvc.get("${Paths.Credentials.StatusUrl}/$timePeriod") {
             accept(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT))
             headers {
                 ifNoneMatch = listOf(firstResult.response.getHeader(HttpHeaders.ETAG))
@@ -56,7 +57,7 @@ class PublicControllerTest {
     fun `GET JWT status list token, with If-Modified-Since in second request`() {
         Thread.sleep(1000L) // wait for RevocationListScheduler to write the revocation list
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
-        val firstResult = mockMvc.get("/credentials/status/$timePeriod") {
+        val firstResult = mockMvc.get("${Paths.Credentials.StatusUrl}/$timePeriod") {
             accept(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT))
         }.andExpect {
             status { isOk() }
@@ -66,7 +67,7 @@ class PublicControllerTest {
             header { exists(HttpHeaders.CACHE_CONTROL) }
         }.andReturn()
 
-        mockMvc.get("/credentials/status/$timePeriod") {
+        mockMvc.get("${Paths.Credentials.StatusUrl}/$timePeriod") {
             accept(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT))
             headers {
                 ifModifiedSince = firstResult.response.getDateHeader(HttpHeaders.LAST_MODIFIED)
@@ -82,7 +83,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET status list with invalid period`() {
-        mockMvc.get("/credentials/status/${timePeriodProvider.getRelevantTimePeriods(Clock.System).max() * 2}") {
+        mockMvc.get("${Paths.Credentials.StatusUrl}/${timePeriodProvider.getRelevantTimePeriods(Clock.System).max() * 2}") {
         }.andExpect {
             status { isNotFound() }
             content { string(emptyString()) }
@@ -91,7 +92,7 @@ class PublicControllerTest {
 
     @Test
     fun `GET list of currently active VC status lists`() {
-        mockMvc.get("/credentials/status/current") {
+        mockMvc.get(Paths.Credentials.Status.CurrentUrl) {
         }.andExpect {
             status { isOk() }
             content { string(not(emptyString())) }

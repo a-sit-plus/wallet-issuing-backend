@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.service.RevocationService
 import io.github.aakira.napier.Napier
@@ -24,13 +25,13 @@ class RevocationController(
 ) {
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/revocation")
+    @GetMapping(Paths.RevocationUrl)
     fun list(
         model: ModelMap,
         authentication: Authentication?,
     ): ModelAndView = runBlocking {
         val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
-        Napier.i("/revocation called with ${authenticatedUser?.userInfo?.subject}")
+        Napier.i("${Paths.RevocationUrl} called with ${authenticatedUser?.userInfo?.subject}")
         authenticatedUser?.let {
             model["credentials"] = revocationService.getAllNonRevokedForUser(it)
             model["revokedCredentials"] = revocationService.getAllRevokedForUser(it)
@@ -39,19 +40,19 @@ class RevocationController(
     }
 
     @PreAuthorize("isAuthenticated()")
-    @PostMapping("/revoke/{id}", produces = [APPLICATION_JSON_VALUE])
+    @PostMapping("${Paths.RevokeUrl}/{id}", produces = [APPLICATION_JSON_VALUE])
     fun revoke(
         @PathVariable id: String,
         authentication: Authentication?,
     ): ResponseEntity<String> = runBlocking {
         val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
-        Napier.i("/revoke/$id called with ${authenticatedUser?.userInfo?.subject}")
+        Napier.i("${Paths.RevokeUrl}/$id called with ${authenticatedUser?.userInfo?.subject}")
         authenticatedUser?.let {
             if (revocationService.revoke(id.toLong(), it)) {
-                Napier.d("/revoke/$id returns OK")
+                Napier.d("${Paths.RevokeUrl}/$id returns OK")
                 ResponseEntity.ok().build()
             } else {
-                Napier.d("/revoke/$id returns NOT_FOUND")
+                Napier.d("${Paths.RevokeUrl}/$id returns NOT_FOUND")
                 ResponseEntity.notFound().build()
             }
         } ?: ResponseEntity.notFound().build()

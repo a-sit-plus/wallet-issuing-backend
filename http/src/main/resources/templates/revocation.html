@@ -9,7 +9,7 @@
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
     <script th:inline="javascript">
         function sendRevocationPost(id) {
-            var contextPath = /*[[@{/revoke}]]*/ '';
+            var contextPath = /*[[@{${@PathsBean.RevokeUrl}}]]*/ '';
             fetch(contextPath + '/' + id, {
                 method: 'POST',
                 headers: {

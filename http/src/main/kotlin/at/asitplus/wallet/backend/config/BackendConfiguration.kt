@@ -3,6 +3,7 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.backend.data.PreparedCredentialRepository
@@ -35,7 +36,6 @@ import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
-import jakarta.annotation.PostConstruct
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -64,39 +64,8 @@ import java.security.Security
 @EnableScheduling
 class BackendConfiguration {
 
-    companion object {
-        //https://gist.github.com/bnorm/71c7973b4b3f928e855a183a3e56c791
-        fun String.toIndentString(): String = buildString(length) {
-            var indent = 0
-
-            fun line() {
-                appendLine()
-                repeat(2 * indent) { append(' ') }
-            }
-
-            this@toIndentString.filter { it != ' ' }.forEach { char ->
-                when (char) {
-                    ')', ']', '}' -> {
-                        indent--
-                        line()
-                        append(char)
-                    }
-
-                    '=' -> append(" = ")
-                    '(', '[', '{', ',' -> {
-                        append(char)
-                        if (char != ',') indent++
-                        line()
-                    }
-
-                    else -> append(char)
-                }
-            }
-        }
-    }
-
     @Autowired
-    private lateinit var configurationProperties: BackendConfigurationProperties
+    private lateinit var configuration: BackendConfigurationProperties
 
     @Autowired
     private lateinit var resourceLoader: ResourceLoader
@@ -114,16 +83,6 @@ class BackendConfiguration {
         at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
         at.asitplus.wallet.ageverification.Initializer.initWithVCK()
-    }
-
-    @PostConstruct
-    private fun logConfig() {
-        Napier.i("******** Current Configuration ********")
-        Napier.i(
-            "\n" + configurationProperties.toString()
-                .replace(Regex("password=.*?,"), "password=***,").toIndentString()
-        )
-        Napier.i("***************************************")
     }
 
     @Bean
@@ -148,9 +107,9 @@ class BackendConfiguration {
 
     @Bean
     fun issuerKeyAdapter(): KeyMaterial =
-        when (configurationProperties.issuerKey.type) {
-            KeyType.FILE -> loadKeyFile(configurationProperties.issuerKey.file!!, resourceLoader)
-            KeyType.KEYSTORE -> loadKeyStore(configurationProperties.issuerKey.keystore!!)
+        when (configuration.issuerKey.type) {
+            KeyType.FILE -> loadKeyFile(configuration.issuerKey.file!!, resourceLoader)
+            KeyType.KEYSTORE -> loadKeyStore(configuration.issuerKey.keystore!!)
             KeyType.MEMORY -> EphemeralKeyWithSelfSignedCert()
         }
 
@@ -169,12 +128,12 @@ class BackendConfiguration {
         val privateKey = JcaPEMKeyConverter().getPrivateKey(privateKeyRead as PrivateKeyInfo)
         val (jcaKey, jcaCert) = loadCertOrPubKey(file.publicKey, file.certificate, resourceLoader)
         return KeyStoreMaterial(
-            KeyStore.getInstance("PKCS12").apply {
+            keyStore = KeyStore.getInstance("PKCS12").apply {
                 load(null, null)
                 setKeyEntry("alias", privateKey, charArrayOf(), jcaCert?.let { arrayOf(it) })
             },
-            "alias",
-            charArrayOf(),
+            keyAlias = "alias",
+            privateKeyPassword = charArrayOf(),
             certAlias = jcaCert?.let { "alias" }
         )
     }
@@ -184,8 +143,10 @@ class BackendConfiguration {
         certificate: URI?,
         resourceLoader: ResourceLoader,
     ): Pair<PublicKey, java.security.cert.X509Certificate?> {
-        if (publicKey == null && certificate == null) throw RuntimeException("Neither cert nor public key configured. Set one!")
-        if (publicKey != null && certificate != null) throw RuntimeException("Both public key and certificate set. Set either but not both!")
+        if (publicKey == null && certificate == null)
+            throw RuntimeException("Neither cert nor public key configured. Set one!")
+        if (publicKey != null && certificate != null)
+            throw RuntimeException("Both public key and certificate set. Set either but not both!")
         return (publicKey?.let {
             val publicKeyString = loadResource(resourceLoader, it.toString())
             val publicKeyRead = PEMParser(StringReader(publicKeyString)).readObject()
@@ -210,10 +171,10 @@ class BackendConfiguration {
     ): Issuer = IssuerAgent(
         keyMaterial = keyMaterial,
         issuerCredentialStore = issuerCredentialStore,
-        statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
+        statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
-        identifier = UniformResourceIdentifier(configurationProperties.publicContext)
+        identifier = UniformResourceIdentifier(configuration.publicContext)
     )
 
     @Bean
@@ -223,14 +184,9 @@ class BackendConfiguration {
     ): StatusListIssuer = StatusListAgent(
         keyMaterial = keyMaterial,
         issuerCredentialStore = issuerCredentialStore,
-        statusListBaseUrl = appendPath(configurationProperties.publicContext, "credentials", "status"),
-        statusListAggregationUrl = appendPath(
-            configurationProperties.publicContext,
-            "credentials",
-            "status",
-            "current"
-        ),
-        revocationListLifetime = configurationProperties.revocationList.lifetimeDuration,
+        statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
+        statusListAggregationUrl = configuration.publicContext.appendPath(Paths.Credentials.Status.CurrentUrl),
+        revocationListLifetime = configuration.revocationList.lifetimeDuration,
         timePeriodProvider = timePeriodProvider(),
     )
 
@@ -254,24 +210,24 @@ class BackendConfiguration {
         authorizationServer: OAuth2AuthorizationServerAdapter,
         issuer: Issuer,
     ): CredentialIssuer = CredentialIssuer(
-        publicContext = configurationProperties.publicContext,
+        publicContext = configuration.publicContext,
         credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
         issuer = issuer,
-        credentialEndpointPath = "/credential",
-        nonceEndpointPath = "/nonce",
+        credentialEndpointPath = Paths.CredentialUrl,
+        nonceEndpointPath = Paths.NonceUrl,
     )
 
     @Bean
     fun authorizationServer(
     ): SimpleAuthorizationService = SimpleAuthorizationService(
         strategy = CredentialAuthorizationServiceStrategy(credentialSchemes),
-        publicContext = configurationProperties.publicContext,
-        authorizationEndpointPath = "/authorize",
-        tokenEndpointPath = "/token",
-        pushedAuthorizationRequestEndpointPath = "/par",
+        publicContext = configuration.publicContext,
+        authorizationEndpointPath = Paths.AuthorizeUrl,
+        tokenEndpointPath = Paths.TokenUrl,
+        pushedAuthorizationRequestEndpointPath = Paths.ParUrl,
         tokenService = TokenService.jwt(
-            publicContext = configurationProperties.publicContext,
+            publicContext = configuration.publicContext,
         ),
     )
 

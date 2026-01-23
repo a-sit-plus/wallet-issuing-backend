@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.wallet.backend.Paths
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
@@ -42,14 +43,14 @@ class WebSecurityConfig {
             }.headers {
                 it.frameOptions { it.sameOrigin() }
             }.authorizeHttpRequests {
-                it.requestMatchers("/authorize").authenticated()
+                it.requestMatchers(Paths.AuthorizeUrl).authenticated()
                 it.anyRequest().permitAll()
             }.formLogin {
-                it.loginPage("/login")
+                it.loginPage(Paths.LoginUrl)
             }
         if (clientRegistrations != null) {
             builder.oauth2Login {
-                it.defaultSuccessUrl("/").loginPage("/login")
+                it.defaultSuccessUrl("/").loginPage(Paths.LoginUrl)
             }
         }
         return builder

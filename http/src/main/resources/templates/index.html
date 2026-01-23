@@ -25,7 +25,7 @@
     </p>
 
     <p>
-        Either use the URL of this service to load credentials (starting the wallet-initiated variation of OID4VCI)<span sec:authorize="isAnonymous()">, or <a th:href="@{/login}">login</a> to generate a QR Code for a credential offer to start the issuer-initiated variation of OID4VCI.</span><span sec:authorize="isAuthenticated()">, or scan the QR Code below for the credential offer.</span>
+        Either use the URL of this service to load credentials (starting the wallet-initiated variation of OID4VCI)<span sec:authorize="isAnonymous()">, or <a th:href="@{${@PathsBean.LoginUrl}}">login</a> to generate a QR Code for a credential offer to start the issuer-initiated variation of OID4VCI.</span><span sec:authorize="isAuthenticated()">, or scan the QR Code below for the credential offer.</span>
     </p>
 
     <p sec:authorize="isAnonymous()">
