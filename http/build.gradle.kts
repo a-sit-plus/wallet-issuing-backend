@@ -69,7 +69,6 @@ dependencies {
     implementation(libs.wallet.mdl)
     implementation(libs.wallet.por)
     implementation(libs.wallet.cor)
-    implementation(libs.wallet.healthid)
     implementation(libs.wallet.ehic)
     implementation(libs.wallet.cr)
     implementation(libs.wallet.av)

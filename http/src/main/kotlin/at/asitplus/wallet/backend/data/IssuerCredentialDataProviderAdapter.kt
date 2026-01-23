@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.wallet.backend.config.EPrescriptionLoader
 import at.asitplus.wallet.backend.config.buildIsoClaims
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
 import at.asitplus.wallet.backend.config.toEuPidCredential
@@ -21,7 +20,6 @@ import kotlin.time.toKotlinInstant
 
 class OidcIssuerCredentialDataProvider(
     private val lifetime: Duration,
-    private val ePrescriptionLoader: EPrescriptionLoader,
 ) : CredentialDataProviderFun {
     override suspend fun invoke(
         input: CredentialDataProviderInput,
@@ -39,10 +37,10 @@ class OidcIssuerCredentialDataProvider(
                     }
 
                     ConstantIndex.CredentialRepresentation.SD_JWT ->
-                        credentialScheme.buildSdJwtClaims(userInfo, issuance, expiration, ePrescriptionLoader, subjectPublicKey)
+                        credentialScheme.buildSdJwtClaims(userInfo, issuance, expiration, subjectPublicKey)
 
                     ConstantIndex.CredentialRepresentation.ISO_MDOC ->
-                        credentialScheme.buildIsoClaims(userInfo, issuance, expiration, ePrescriptionLoader, subjectPublicKey)
+                        credentialScheme.buildIsoClaims(userInfo, issuance, expiration, subjectPublicKey)
                 }
             } else throw IllegalArgumentException("$credentialScheme not supporting $credentialRepresentation")
         }

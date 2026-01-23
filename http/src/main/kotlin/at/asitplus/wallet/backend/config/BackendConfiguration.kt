@@ -14,7 +14,6 @@ import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
-import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
 import at.asitplus.wallet.lib.agent.Issuer
@@ -46,7 +45,6 @@ import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -113,7 +111,6 @@ class BackendConfiguration {
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
         at.asitplus.wallet.cor.Initializer.initWithVCK()
         at.asitplus.wallet.por.Initializer.initWithVCK()
-        at.asitplus.wallet.healthid.Initializer.initWithVCK()
         at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
         at.asitplus.wallet.ageverification.Initializer.initWithVCK()
@@ -245,7 +242,6 @@ class BackendConfiguration {
         EuPidSdJwtScheme,
         MobileDrivingLicenceScheme,
         PowerOfRepresentationScheme,
-        HealthIdScheme,
         CertificateOfResidenceScheme,
         CompanyRegistrationScheme,
         TaxIdScheme,
@@ -278,16 +274,6 @@ class BackendConfiguration {
             publicContext = configurationProperties.publicContext,
         ),
     )
-
-    @Bean
-    fun ePrescriptionLoader(restTemplateBuilder: RestTemplateBuilder): EPrescriptionLoader =
-        configurationProperties.eprescription?.let {
-            ConfiguredEPrescriptionLoader(
-                restTemplateBuilder = restTemplateBuilder,
-                url = it.url,
-                apiKey = it.apiKey
-            )
-        } ?: NoopEPrescriptionLoader
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =

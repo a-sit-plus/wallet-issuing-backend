@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.OpenIdConstants
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
@@ -22,10 +21,6 @@ import at.asitplus.wallet.lib.openid.RequestOptions
 import at.asitplus.wallet.lib.openid.RequestOptionsCredential
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
-import io.ktor.client.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.serialization.kotlinx.json.*
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -91,19 +86,7 @@ class PublicController(
     private val transactionIdToSessionIdMap: NonceToSessionMap,
     private val sessionRepository: MapSessionRepository,
 ) {
-    private val httpClient = HttpClient {
-        install(ContentNegotiation) {
-            json(joseCompliantSerializer)
-        }
-        install(Logging) {
-            logger = object : Logger {
-                override fun log(message: String) {
-                    Napier.i(message = message, tag = "at.asitplus.http")
-                }
-            }
-            level = LogLevel.ALL
-        }
-    }
+    // TODO configuration!
     private val verifierKeyMaterial = File("verifier.p12").run {
         if (exists()) {
             KeyStoreMaterial(
