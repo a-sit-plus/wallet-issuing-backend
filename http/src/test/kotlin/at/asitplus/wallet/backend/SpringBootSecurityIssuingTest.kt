@@ -3,12 +3,12 @@ package at.asitplus.wallet.backend
 import at.asitplus.catching
 import at.asitplus.iso.IssuerSigned
 import at.asitplus.openid.CredentialResponseParameters
-import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
-import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
+import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
 import at.asitplus.wallet.backend.config.NoopEPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
@@ -19,14 +19,20 @@ import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.healthid.HealthIdScheme
+import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SdJwtSigned
+import at.asitplus.wallet.lib.jws.SignJwt
+import at.asitplus.wallet.lib.jws.SignJwtFun
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
+import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
+import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService.RequestOptions
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
@@ -41,6 +47,7 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
@@ -104,7 +111,7 @@ class SpringBootSecurityIssuingTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
-            .disclosureDigests!!.size shouldBeGreaterThan 1
+            .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
     @Test
@@ -132,7 +139,7 @@ class SpringBootSecurityIssuingTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
         vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
-            .disclosureDigests!!.size shouldBeGreaterThan 1
+            .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
     @Test
@@ -260,26 +267,39 @@ class SpringBootSecurityIssuingTest {
 
     private suspend fun loadCredential(requestOptions: RequestOptions): CredentialResponseParameters {
         val client = Client()
+        val signDpop: SignJwtFun<JsonWebToken> = SignJwt(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk())
         val state = uuid4().toString()
-        val credentialFormat =
-            client.oid4vciClient.selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
-                .shouldNotBeNull()
+        val credentialFormat = client.oid4vciClient
+            .selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
+            .shouldNotBeNull()
         val scope = credentialFormat.scope
         val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-        val authorizationCode = authorizationServer.authorize(authnRequest as RequestParameters) {
+        val authorizationCode = authorizationServer.authorize(authnRequest) {
             catching {
-                SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(SecurityContextHolder.getContext()?.authentication)
+                toOidcUserInfoExtended(SecurityContextHolder.getContext()?.authentication)
                     ?: throw IllegalArgumentException("No authenticated user")
             }
         }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oauth2Client.createTokenRequestParameters(
-            OAuth2Client.AuthorizationForToken.Code(authorizationCode.params?.code!!),
+            OAuth2Client.AuthorizationForToken.Code(authorizationCode.params.shouldNotBeNull().code.shouldNotBeNull()),
             state = state,
             authorizationDetails = null,
             scope = scope
         )
-        val accessToken: TokenResponseParameters = authorizationServer.token(tokenRequest).getOrThrow()
+        val accessToken: TokenResponseParameters = authorizationServer.token(
+            request = tokenRequest,
+            httpRequest = RequestInfo(
+                url = "/token",
+                method = HttpMethod.Post,
+                dpop = BuildDPoPHeader(
+                    signDpop = signDpop,
+                    url = "/token",
+                    httpMethod = HttpMethod.Post.value,
+                    nonce = authorizationServer.getDpopNonce(),
+                )
+            )
+        ).getOrThrow()
         val credentialRequest = client.oid4vciClient.createCredential(
             tokenResponse = accessToken,
             metadata = credentialIssuer.metadata,
