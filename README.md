@@ -84,9 +84,6 @@ backend:
     enabled: false
   authn:
     attestation: [...]
-  eprescription:
-    url: https://example.com
-    api-key: TODO
 ```
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:

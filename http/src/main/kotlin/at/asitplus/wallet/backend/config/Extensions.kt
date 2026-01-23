@@ -15,7 +15,6 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupid.IsoIec5218Gender
 import at.asitplus.wallet.eupid.PlaceOfBirth
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
-import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
@@ -118,13 +117,11 @@ fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
-    loader: EPrescriptionLoader,
     subjectPublicKey: CryptoPublicKey,
 ) = CredentialToBeIssued.VcSd(
     claims = when (this) {
         is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
         is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(this.useSd())
-        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
         is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
@@ -150,12 +147,10 @@ fun ConstantIndex.CredentialScheme.buildIsoClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
-    loader: EPrescriptionLoader,
     subjectPublicKey: CryptoPublicKey,
 ) = CredentialToBeIssued.Iso(
     issuerSignedItems = when (this) {
         is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
-        is HealthIdScheme -> userInfo.buildHealthIdClaims(iss, loader, this.useSd())
         is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
         is AgeVerificationScheme -> userInfo.buildAgeClaims(this.useSd())
         else -> TODO("$this is not implemented in buildIsoClaims()")
@@ -167,7 +162,6 @@ fun ConstantIndex.CredentialScheme.buildIsoClaims(
 ).also { Napier.v("${this}.buildIsoClaims returns $it") }
 
 fun ConstantIndex.CredentialScheme.useSd() = when (this) {
-    is HealthIdScheme -> false
     is EhicScheme -> false
     is TaxIdScheme -> false
     is PowerOfRepresentationScheme -> false
@@ -373,25 +367,6 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
         )
     }
-
-fun OidcUserInfoExtended.buildHealthIdClaims(iss: Instant, loader: EPrescriptionLoader, useSd: Boolean) =
-    with(HealthIdScheme.Attributes) {
-        val ottElement =
-            loader.load(bpk, userInfo.givenName!!, userInfo.familyName!!, userInfo.birthDate!!).getOrNull()?.data
-                ?: throw IllegalArgumentException("No data from EPrescriptionLoader")
-        listOfNotNull(
-            claim(ONE_TIME_TOKEN, useSd) { ottElement.oneTimeToken },
-            claim(AFFILIATION_COUNTRY, useSd) { ottElement.countryCode },
-            claim(ISSUE_DATE, useSd) { iss },
-            claim(EXPIRY_DATE, useSd) { ottElement.ottValidUntil },
-            claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
-            claim(ISSUING_COUNTRY, useSd) { issuingCountry },
-            claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
-        )
-    }
-
 
 fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
     with(CompanyRegistrationDataElements) {

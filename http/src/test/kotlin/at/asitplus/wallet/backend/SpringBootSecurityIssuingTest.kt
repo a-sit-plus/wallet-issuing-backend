@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
-import at.asitplus.wallet.backend.config.NoopEPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
 import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
@@ -18,7 +17,6 @@ import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
-import at.asitplus.wallet.healthid.HealthIdScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
@@ -54,7 +52,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -180,26 +177,6 @@ class SpringBootSecurityIssuingTest {
             .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
-    @Disabled("Need to enter correct URL and api-key")
-    @Test
-    @WithOAuth2AuthenticationToken
-    fun healthid_sdjwt_ok() = runTest {
-        val requestOptions = RequestOptions(HealthIdScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
-            subject.shouldNotBeNull()
-            disclosureDigests.shouldBeNull()
-        }
-        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
-            .reconstructedJsonObject.shouldNotBeNull()
-            .keys.shouldContain(HealthIdScheme.Attributes.ISSUING_AUTHORITY)
-    }
-
     @Test
     @WithOAuth2AuthenticationToken
     fun ehic_ok() = runTest {
@@ -311,7 +288,6 @@ class SpringBootSecurityIssuingTest {
             params = credentialRequest.first(),
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = 1.minutes,
-                ePrescriptionLoader = NoopEPrescriptionLoader
             ),
         ).getOrThrow()
         return credential

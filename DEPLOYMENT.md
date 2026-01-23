@@ -15,9 +15,6 @@ backend:
     keystore:
       path: "file:/srv/wallet-backend-m7/data/keystore.p12"
       type: PKCS12
-  eprescription:
-    url: https://test.baumann.at/sites/ott-service/
-    api-key: TODO
 spring:
   jpa:
     database: H2

@@ -5,7 +5,6 @@ mdl = "1.3.0"
 taxid = "1.2.0"
 por = "1.3.0"
 cor = "2.2.0"
-healthId = "2.2.0"
 ehic = "1.2.0"
 cr = "1.2.0"
 av = "1.0.0"
@@ -40,7 +39,6 @@ wallet-eupid-sdjwt = { module = "at.asitplus.wallet:eupidcredential-sdjwt", vers
 wallet-mdl = { module = "at.asitplus.wallet:mobiledrivinglicence", version.ref = "mdl" }
 wallet-por = { module = "at.asitplus.wallet:powerofrepresentation", version.ref = "por" }
 wallet-cor = { module = "at.asitplus.wallet:certificateofresidence", version.ref = "cor" }
-wallet-healthid = { module = "at.asitplus.wallet:healthid", version.ref = "healthId" }
 wallet-ehic = { module = "at.asitplus.wallet:ehic", version.ref = "ehic" }
 wallet-cr = { module = "at.asitplus.wallet:company-registration", version.ref = "cr" }
 wallet-av = { module = "at.asitplus.wallet:ageverification", version.ref = "av" }
@@ -58,7 +56,6 @@ wallet = [
   "wallet-mdl",
   "wallet-por",
   "wallet-cor",
-  "wallet-healthid",
   "wallet-ehic",
   "wallet-cr",
   "wallet-av",

@@ -16,7 +16,6 @@ import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.config.EPrescriptionLoader
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
@@ -68,7 +67,6 @@ class OpenId4VciController(
     private val credentialIssuer: CredentialIssuer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
-    private val ePrescriptionLoader: EPrescriptionLoader,
     private val nonceToOfferMap: NonceToOfferMap,
 ) {
 
@@ -407,7 +405,6 @@ class OpenId4VciController(
             },
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
-                ePrescriptionLoader = ePrescriptionLoader
             ),
         ).getOrElse {
             return@runBlocking buildOidcErrorResponse(it)
