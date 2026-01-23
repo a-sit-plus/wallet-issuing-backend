@@ -40,10 +40,5 @@ backend:
     device-binding:
       attestation:
         noop: true
-  credentials:
-    pictures:
-      pathLibJni: "libwebp/libwebp_jni.so"
-      pathLibWebp: "libwebp/libwebp.so.7.1.6"
-      pathLibSharp: "libwebp/libsharpyuv.so.0"
   attribute-source:
     type: EIDAS
