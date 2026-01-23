@@ -2,7 +2,9 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Extensions.sha256
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
@@ -60,7 +62,6 @@ import org.springframework.web.context.request.WebRequest
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
-import org.springframework.web.util.UriComponentsBuilder
 import qrcode.QRCode
 import java.io.File
 import java.nio.file.Path
@@ -122,11 +123,11 @@ class PublicController(
                 .forEach { queryParam(it.key, it.value) }
         }.toUriString()
 
-    @GetMapping("/credentials/status/current", produces = [MediaType.APPLICATION_JSON_VALUE])
+    @GetMapping(Paths.Credentials.Status.CurrentUrl, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getStatutsListAggregation(): ResponseEntity<StatusListAggregation> = runBlocking {
-        Napier.i("/credentials/status/current called")
+        Napier.i("${Paths.Credentials.Status.CurrentUrl} called")
         val rl = statusListIssuer.provideStatusListAggregation()
-        Napier.i("/credentials/status/current returns $rl")
+        Napier.i("${Paths.Credentials.Status.CurrentUrl} returns $rl")
         ResponseEntity.ok(rl)
     }
 
@@ -134,7 +135,7 @@ class PublicController(
         val name: String, val url: String,
     )
 
-    @RequestMapping("/login")
+    @RequestMapping(Paths.LoginUrl)
     fun login(
         model: ModelMap,
         request: HttpServletRequest,
@@ -151,10 +152,8 @@ class PublicController(
 
         val transactionId = uuid4().toString()
             .also { transactionIdToSessionIdMap.put(it, request.getSession(true).id) }
-        val transactionUrl = UriComponentsBuilder.fromUriString(configurationProperties.publicContext)
-            .pathSegment("transaction")
-            .pathSegment("get")
-            .pathSegment(transactionId).build().toUriString()
+        val transactionUrl = configurationProperties.publicContext
+            .appendPath(Paths.Transaction.GetUrl + "/" + transactionId)
         val qrCodeUrl = buildQrCodeUrl(transactionUrl)
         model["loginPidUrl"] = qrCodeUrl
         model["loginPidQrCode"] = QRCode.ofSquares().build(qrCodeUrl).render().getBytes()
@@ -165,7 +164,7 @@ class PublicController(
     @Serializable
     data class StatusResponse(val authenticated: Boolean, val redirectUrl: String?)
 
-    @GetMapping("/status")
+    @GetMapping(Paths.StatusUrl)
     fun status(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -174,27 +173,25 @@ class PublicController(
         val user = session.getAttribute(SESSION_KEY_OPENID4VP_USER) as? OpenId4VpUser?
             ?: return@runBlocking StatusResponse(false, null)
 
-        Napier.i("/status got successful authentication in session ${session.id}: $user")
+        Napier.i("${Paths.StatusUrl} got successful authentication in session ${session.id}: $user")
         val targetUrl = setAuthenticationInSession(user, session, request, response)
         val redirectUrl = if (targetUrl.isNotEmpty()) targetUrl.toString() else "/"
         StatusResponse(true, redirectUrl)
     }
 
-    @GetMapping("/transaction/get/{transactionId}")
+    @GetMapping("${Paths.Transaction.GetUrl}/{transactionId}")
     @ResponseBody
     fun transactionGet(
         @PathVariable transactionId: String,
     ): ResponseEntity<String> = runBlocking {
-        Napier.i("/transaction/get/$transactionId called")
+        Napier.i("${Paths.Transaction.GetUrl}/$transactionId called")
         if (transactionIdToSessionIdMap.get(transactionId) == null)
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
-                .also { Napier.w("/transaction/get/$transactionId returns NOT_FOUND") }
+                .also { Napier.w("${Paths.Transaction.GetUrl}/$transactionId returns NOT_FOUND") }
 
         try {
-            val responseUrl = UriComponentsBuilder.fromUriString(configurationProperties.publicContext)
-                .pathSegment("transaction")
-                .pathSegment("result")
-                .pathSegment(transactionId).build().toUriString()
+            val responseUrl = configurationProperties.publicContext
+                .appendPath(Paths.Transaction.ResultUrl + "/" + transactionId)
             val state = uuid4().toString()
             val result = openIdVerifier.createAuthnRequestAsSignedRequestObject(
                 RequestOptions(
@@ -214,12 +211,12 @@ class PublicController(
                     ),
                 )
             ).getOrThrow().serialize()
-                .also { Napier.i("/transaction/get/$transactionId returns $it") }
+                .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
             ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/" + JwsContentTypeConstants.OAUTH_AUTHZ_REQUEST))
                 .body(result)
         } catch (e: Exception) {
-            Napier.w("/transaction/get/$transactionId error", e)
+            Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", e)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage)
         }
     }
@@ -228,15 +225,15 @@ class PublicController(
      * Expects SIOPv2 authn response as request body,
      * called from Wallet App upon answering authn request from [transactionGet].
      */
-    @PostMapping("/transaction/result/{id}")
+    @PostMapping("${Paths.Transaction.ResultUrl}/{id}")
     fun transactionPost(
         @PathVariable id: String,
         @RequestBody requestBody: String,
     ): ResponseEntity<Void> = runBlocking {
-        Napier.i("/transaction/result/$id called with $requestBody")
+        Napier.i("${Paths.Transaction.ResultUrl}/$id called with $requestBody")
         val desktopSessionId = transactionIdToSessionIdMap.remove(id)
         if (desktopSessionId == null) {
-            Napier.w("/transaction/result/$id returns NOT_FOUND")
+            Napier.w("${Paths.Transaction.ResultUrl}/$id returns NOT_FOUND")
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
         val user = try {
@@ -245,7 +242,7 @@ class PublicController(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage, e)
         }
         val session = sessionRepository.findById(desktopSessionId)
-        Napier.i("/transaction/result/$id is updating session ${session.id}")
+        Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
         session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
         sessionRepository.save(session)
         ResponseEntity.ok().build<Void>()
@@ -257,7 +254,8 @@ class PublicController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): StringBuilder {
-        val authentication = UsernamePasswordAuthenticationToken(user, null, listOf(GrantedAuthority { "ROLE_OPENID4VP" }))
+        val authentication =
+            UsernamePasswordAuthenticationToken(user, null, listOf(GrantedAuthority { "ROLE_OPENID4VP" }))
         val targetUrl = StringBuilder()
         val urlCapturingResponse = object : HttpServletResponseWrapper(response) {
             override fun sendRedirect(url: String) {
@@ -296,15 +294,15 @@ class PublicController(
     private val statusListJwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT)
     private val statusListCwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT)
 
-    @GetMapping("/credentials/status/{timePeriod}")
+    @GetMapping("${Paths.Credentials.StatusUrl}/{timePeriod}")
     fun getVcRevocationList(@PathVariable timePeriod: Int, request: WebRequest): ResponseEntity<*> {
-        Napier.i("/credentials/status/$timePeriod called")
+        Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod called")
         val acceptMediaTypes = request.getHeader(HttpHeaders.ACCEPT)?.let { MediaType.parseMediaTypes(it) }
         val contentType = acceptMediaTypes.toStatusListContentType()
         val path = configurationProperties.revocationList.getPath(acceptMediaTypes, timePeriod)
         val content = if (path.exists() && path.isReadable()) path.readBytes() else null
         return if (content == null || content.isEmpty()) {
-            Napier.w("/credentials/status/$timePeriod returns HTTP 404")
+            Napier.w("${Paths.Credentials.StatusUrl}/$timePeriod returns HTTP 404")
             ResponseEntity.notFound().build<String>()
         } else {
             val etag = content.sha256().encodeToString(Base16()).uppercase()
@@ -315,13 +313,13 @@ class PublicController(
             if (request.checkNotModified(etag, lastModified)
                 || request.checkNotModified("${etag}-gzip", lastModified)
             ) {
-                Napier.d("/credentials/status/$timePeriod returns HTTP 304")
+                Napier.d("${Paths.Credentials.StatusUrl}/$timePeriod returns HTTP 304")
                 ResponseEntity.status(HttpStatus.NOT_MODIFIED)
                     .cacheControl(cacheControl)
                     .contentType(contentType)
                     .build<String>()
             } else {
-                Napier.i("/credentials/status/$timePeriod returns ${content.count()} chars")
+                Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod returns ${content.count()} chars")
                 ResponseEntity.ok()
                     .cacheControl(cacheControl)
                     .contentType(contentType)

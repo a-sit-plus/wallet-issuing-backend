@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.spring
 
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,13 +28,13 @@ class PublicControllerWebClientTest {
     @Test
     fun `GET status list with If-None-Match in second request`() {
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
-        val firstResult = webClient.get().uri("/credentials/status/$timePeriod")
+        val firstResult = webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
             .exchange()
             .expectStatus().isOk()
             .expectHeader().exists(HttpHeaders.ETAG)
             .returnResult<String>()
 
-        webClient.get().uri("/credentials/status/$timePeriod")
+        webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
             .header(HttpHeaders.IF_NONE_MATCH, firstResult.responseHeaders[HttpHeaders.ETAG]?.first())
             .exchange()
             .expectStatus().isNotModified
@@ -44,7 +45,7 @@ class PublicControllerWebClientTest {
     @Test
     fun `GET status list with If-None-Match with gzip suffix in second request`() {
         val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
-        val firstResult = webClient.get().uri("/credentials/status/$timePeriod")
+        val firstResult = webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
             .header(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
             .exchange()
             .expectStatus().isOk
@@ -62,7 +63,7 @@ class PublicControllerWebClientTest {
             }
         }
 
-        webClient.get().uri("/credentials/status/$timePeriod")
+        webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
             .header(HttpHeaders.IF_NONE_MATCH, etag)
             .exchange()
             .expectStatus().isNotModified

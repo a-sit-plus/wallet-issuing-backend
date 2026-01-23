@@ -14,6 +14,8 @@ import at.asitplus.openid.OpenIdConstants.Errors
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
+import at.asitplus.wallet.backend.Extensions.appendPath
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
@@ -111,11 +113,11 @@ class OpenId4VciController(
         return ResponseEntity.ok(metadata)
     }
 
-    @GetMapping("/offer/{nonce}", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("${Paths.OfferUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
     fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
-        Napier.i("/offer/$nonce called")
+        Napier.i("${Paths.OfferUrl}/$nonce called")
         nonceToOfferMap.get(nonce)?.let {
-            Napier.d("/offer/$nonce returns $it")
+            Napier.d("${Paths.OfferUrl}/$nonce returns $it")
             ResponseEntity.ok(it)
         } ?: ResponseEntity.notFound().build()
     }
@@ -233,7 +235,7 @@ class OpenId4VciController(
             configurationIds = configurationIds
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
-        val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
+        val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
         val url = "$urlScheme://?credential_offer_uri=$credentialOfferUrl"
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
         return TabItem(nonce, title, description, qrBase64)
@@ -257,7 +259,7 @@ class OpenId4VciController(
             configurationIds = configurationIds
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
-        val credentialOfferUrl = "${backendConfigurationProperties.publicContext}/offer/$nonce"
+        val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
         val url = "$urlScheme://?credential_offer_uri=$credentialOfferUrl"
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
         return TabItem(nonce, title, description, qrBase64)
@@ -270,40 +272,40 @@ class OpenId4VciController(
         val qrBase64: String,
     )
 
-    @PostMapping("/par", produces = [APPLICATION_JSON_VALUE])
+    @PostMapping(Paths.ParUrl, produces = [APPLICATION_JSON_VALUE])
     fun par(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
     ): ResponseEntity<*> = runBlocking {
-        Napier.i("/par called")
-        Napier.v("/par called with $requestBody")
+        Napier.i("${Paths.ParUrl} called")
+        Napier.v("${Paths.ParUrl} called with $requestBody")
         val params: RequestParameters = requestBody.decodeFromPostBody()
             ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
         val result = authorizationService.par(
             params,
             request.toRequestInfo().also {
-                Napier.v("/par called with $it")
+                Napier.v("${Paths.ParUrl} called with $it")
             },
         ).getOrElse {
             return@runBlocking buildOidcErrorResponse(it)
-                .also { Napier.w("/par sends error $it") }
+                .also { Napier.w("${Paths.ParUrl} sends error $it") }
         }
-        Napier.d("/par returns $result")
+        Napier.d("${Paths.ParUrl} returns $result")
         return@runBlocking ResponseEntity
             .status(HttpStatus.CREATED)
             .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .body(vckJsonSerializer.encodeToString(result))
     }
 
-    @PostMapping("/nonce", produces = [APPLICATION_JSON_VALUE])
+    @PostMapping(Paths.NonceUrl, produces = [APPLICATION_JSON_VALUE])
     fun nonce(
     ): ResponseEntity<*> = runBlocking {
-        Napier.i("/nonce called")
+        Napier.i("${Paths.NonceUrl} called")
         val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
             return@runBlocking buildOidcErrorResponse(it)
-                .also { Napier.w("/nonce sends error $it") }
+                .also { Napier.w("${Paths.NonceUrl} sends error $it") }
         }
-        Napier.d("/nonce returns $result")
+        Napier.d("${Paths.NonceUrl} returns $result")
         return@runBlocking ResponseEntity.status(HttpStatus.OK)
             .header(HttpHeaders.CACHE_CONTROL, "no-store")
             .header(io.ktor.http.HttpHeaders.DPoPNonce, result.dpopNonce)
@@ -316,7 +318,7 @@ class OpenId4VciController(
      * by the authorization code returned here.
      */
     // TODO add "PreAuthorize" annotation?
-    @RequestMapping("/authorize", method = [RequestMethod.POST, RequestMethod.GET])
+    @RequestMapping(Paths.AuthorizeUrl, method = [RequestMethod.POST, RequestMethod.GET])
     fun authorize(
         @RequestParam requestParams: Map<String, String>,
         @RequestBody requestBody: String?,
@@ -324,8 +326,8 @@ class OpenId4VciController(
         model: ModelMap,
         authentication: Authentication? = null,
     ) = runBlocking {
-        Napier.i("/authorize called")
-        Napier.v("/authorize called with $requestParams and $requestBody")
+        Napier.i("${Paths.AuthorizeUrl} called")
+        Napier.v("${Paths.AuthorizeUrl} called with $requestParams and $requestBody")
         val params: RequestParameters =
             if (requestBody.isNullOrEmpty()) requestParams.decodeFromUrlQuery()
             else requestBody.decodeFromPostBody()
@@ -338,10 +340,10 @@ class OpenId4VciController(
                     ?: throw IllegalArgumentException("No authenticated user")
             }
         }.getOrElse {
-            Napier.w("/authorize got error", it)
+            Napier.w("${Paths.AuthorizeUrl} got error", it)
             return@runBlocking buildOidcErrorResponse(it)
         }
-        Napier.d("/authorize returns ${result.url}")
+        Napier.d("${Paths.AuthorizeUrl} returns ${result.url}")
         val userAgent = request.getHeader(HttpHeaders.USER_AGENT)
         return@runBlocking if (userAgent?.isSafariOniPhone() == true) {
             model["url"] = result.url
@@ -353,24 +355,24 @@ class OpenId4VciController(
 
     private fun String.isSafariOniPhone() = contains("Safari") && contains("iPhone")
 
-    @PostMapping("/token", produces = [APPLICATION_JSON_VALUE])
+    @PostMapping(Paths.TokenUrl, produces = [APPLICATION_JSON_VALUE])
     fun token(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
     ): ResponseEntity<*> = runBlocking {
-        Napier.i("/token called")
-        Napier.v("/token called with $requestBody")
+        Napier.i("${Paths.TokenUrl} called")
+        Napier.v("${Paths.TokenUrl} called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromPostBody()
             ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
         val result = authorizationService.token(
             request = params,
             httpRequest = request.toRequestInfo()
-                .also { Napier.v("/token called with $it") }
+                .also { Napier.v("${Paths.TokenUrl} called with $it") }
         ).getOrElse {
-            Napier.w("/token got error", it)
+            Napier.w("${Paths.TokenUrl} got error", it)
             return@runBlocking buildOidcErrorResponse(it)
         }
-        Napier.d("/token returns $result")
+        Napier.d("${Paths.TokenUrl} returns $result")
         return@runBlocking ResponseEntity
             .status(HttpStatus.OK)
             .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
@@ -385,32 +387,32 @@ class OpenId4VciController(
         clientAttestationPop = getHeader("OAuth-Client-Attestation-PoP"),
     )
 
-    @PostMapping("/credential", produces = [APPLICATION_JSON_VALUE])
+    @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE])
     fun credential(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
     ): ResponseEntity<*> = runBlocking {
-        Napier.i("/credential called")
+        Napier.i("${Paths.CredentialUrl} called")
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
-        Napier.v("/credential called with $authorizationHeader and $requestBody")
+        Napier.v("${Paths.CredentialUrl} called with $authorizationHeader and $requestBody")
         val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
-            Napier.w("/credential can't parse request", it)
+            Napier.w("${Paths.CredentialUrl} can't parse request", it)
             return@runBlocking buildOidcErrorResponse(it)
         }
         val credential = credentialIssuer.credential(
             authorizationHeader = authorizationHeader,
             params = params,
             request = request.toRequestInfo().also {
-                Napier.v("/credential called with $it")
+                Napier.v("${Paths.CredentialUrl} called with $it")
             },
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
             ),
         ).getOrElse {
             return@runBlocking buildOidcErrorResponse(it)
-                .also { Napier.w("/credential sends error $it") }
+                .also { Napier.w("${Paths.CredentialUrl} sends error $it") }
         }
-        Napier.d("/credential returns $credential")
+        Napier.d("${Paths.CredentialUrl} returns $credential")
         return@runBlocking credential.toResponseEntity()
     }
 

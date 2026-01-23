@@ -267,11 +267,11 @@ class SpringBootSecurityIssuingTest {
         val accessToken: TokenResponseParameters = authorizationServer.token(
             request = tokenRequest,
             httpRequest = RequestInfo(
-                url = "/token",
+                url = Paths.TokenUrl,
                 method = HttpMethod.Post,
                 dpop = BuildDPoPHeader(
                     signDpop = signDpop,
-                    url = "/token",
+                    url = Paths.TokenUrl,
                     httpMethod = HttpMethod.Post.value,
                     nonce = authorizationServer.getDpopNonce(),
                 )

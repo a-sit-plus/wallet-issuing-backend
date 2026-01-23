@@ -7,6 +7,7 @@ import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
@@ -249,7 +250,7 @@ class DefaultRevocationService(
 
     override fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean =
         credentialRepo.findByIdAndUserInfoSubject(id, userInfo.matchedSubject()).getOrNull()?.let {
-            Napier.d("/revoke/$id for $it")
+            Napier.d("${Paths.RevokeUrl}/$id for $it")
             setStatus(it.timePeriod, it.revocationListIndex.toULong(), TokenStatus.Invalid)
         } ?: false
 
