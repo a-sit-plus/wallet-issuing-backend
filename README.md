@@ -282,7 +282,6 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: "at.asitplus.wallet.backend.data.FixedPostgreSQLDialect"
         jdbc:
           lob:
             non_contextual_creation: true
