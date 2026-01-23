@@ -5,7 +5,7 @@ plugins {
     kotlin("plugin.spring") version kotlinVer apply false
     kotlin("plugin.jpa") version kotlinVer apply false
     kotlin("plugin.allopen") version kotlinVer apply false
-    id("at.asitplus.gradle.conventions") version "20251114"
+    id("at.asitplus.gradle.conventions") version "20260112"
 }
 buildscript {
     dependencies {

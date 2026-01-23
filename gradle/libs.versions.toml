@@ -9,24 +9,22 @@ healthId = "2.2.0"
 ehic = "1.2.0"
 cr = "1.2.0"
 av = "1.0.0"
-qrcode = "4.1.1"
-google-cbor = "0.01.02"
-pgsql = "42.5.0"
-mockito = "5.1.0"
-okhttp = "4.11.0"
-scrimage = "4.0.39"
-vck = "5.10.0"
-nimbus = "10.4"
+qrcode = "4.5.0"
+pgsql = "42.7.7"
+mockito = "6.2.1"
+okhttp = "5.3.2"
+vck = "5.11.0-SNAPSHOT"
+nimbus = "10.7"
 
-spring-boot = "3.5.4"
-spring-admin-starter-client = "3.4.7"
+spring-boot = "3.5.9"
+spring-admin-starter-client = "3.5.6"
 
 webjars-locator = "0.47"
 webjars-bootstrap = "5.3.1"
 webjars-jquery = "3.7.1"
 webjars-datatables = "1.13.5"
 
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 
 [libraries]
 spring-boot-admin-starter-client = { module = "de.codecentric:spring-boot-admin-starter-client", version.ref = "spring-admin-starter-client" }
@@ -48,8 +46,6 @@ wallet-cr = { module = "at.asitplus.wallet:company-registration", version.ref = 
 wallet-av = { module = "at.asitplus.wallet:ageverification", version.ref = "av" }
 wallet-vck-jvm = { module = "at.asitplus.wallet:vck-jvm", version.ref = "vck" }
 wallet-vck-openid-ktor-jvm = { module = "at.asitplus.wallet:vck-openid-ktor-jvm", version.ref = "vck" }
-google-cbor = { module = "com.google.iot.cbor:cbor", version.ref = "google-cbor" }
-scrimage-core = { module = "com.sksamuel.scrimage:scrimage-core", version.ref = "scrimage" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "pgsql" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito" }
 okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }

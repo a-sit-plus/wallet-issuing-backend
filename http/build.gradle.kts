@@ -1,6 +1,5 @@
 
 import at.asitplus.gradle.bouncycastle
-import at.asitplus.gradle.gitLab
 import at.asitplus.gradle.ktor
 import at.asitplus.gradle.napier
 
@@ -84,8 +83,6 @@ dependencies {
     implementation(ktor("client-content-negotiation"))
     implementation(ktor("serialization-kotlinx-json"))
 
-    implementation(libs.google.cbor)
-    implementation(libs.scrimage.core)
     runtimeOnly("com.h2database:h2")
     runtimeOnly(libs.postgresql)
 
@@ -123,13 +120,10 @@ springBoot {
     buildInfo()
 }
 
-val gitLabProjectId: String by extra
-
 publishing {
     publications {
         create<MavenPublication>("bootJava") {
             artifact(tasks.getByName("bootJar"))
         }
     }
-    gitLab(gitLabProjectId.toInt())
 }
