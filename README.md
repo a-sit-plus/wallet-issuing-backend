@@ -82,8 +82,6 @@ backend:
     qr-code-size: 400
   cleanup:
     enabled: false
-  authn:
-    attestation: [...]
 ```
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
@@ -92,54 +90,6 @@ Options for revocation lists for Verifiable Credentials under `backend.revocatio
  - `dirty-check-rate` to set the rate at which the service shall check for dirty (i.e. where a credential has been revoked) revocation lists that need to be written, defaults to `PT10M`, i.e. 10 minutes.
  - `regular-check-rate` to set the rate at which the service shall check for outdated revocation lists (see `regular-write-timeout`) that need to be written, defaults to `PT1H`, i.e. 1 hour.
  - `cache-path` to set the path at which the revocation lists shall be written to and read from, e.g. `cache/revocation-list/`
-
-EPrescription credentials need an OTT from an external source, which can be configured with `backend.eprescription`:
- - `url` is the full URL of the endpoint, where the request will be posted to
- - `api-key` will be sent in header `X-ApiToken` to that external service
-
-Key Attestation is considered a key feature, but it can be disabled for testing:
-
-```yaml
-backend:
-  authn:
-    attestation:
-      noop: true
-```
-
-```yaml
-backend:
-  authn:
-    attestation:
-      verification-offset: PT10M
-      android:
-        package-name: android.package.name
-        signature-digests:
-          - ...
-        patch-level:
-          year: 2020
-          month: 01
-        android-version: 9000
-        require-strong-box: false
-        ignore-leaf-validity: false
-      ios:
-        bundle-identifier: ios.bundle.identifier
-        team-identifier: DEADBEEF42
-        sandbox: false
-        ios-version: 14
-```
-
-There are more options for configuring validation of the Key Attestation provided by clients, under `backend.authn.attestation`:
-- `verification-offset` may add some offset to temporal validity checks, to account for slightly off clocks.
-- `android.package-name` defines the expected name of the client application running on Android.
-- `android.signature-digests` is a list of hex encoded SHA-256 fingerprints of valid App signing certificates.
-- `android.patch-level` is optional, e.g. `android.patch-level.year=2020` and `android.patch-level.month=01`, omitting the values defines no minimum patch level.
-- `android.android-version` is also optional, e.g. `9000` for Android 9, or `4200` for Android 4.2.
-- `android.require-strong-box` is `false` by default, may be set to `true` to enforce StrongBox-compatible hardware on Android clients.
-- `android.ignore-leaf-validity` is `false` by default, may be set to `true` to ignore the timely validity of the attestation leaf certificate (looking at you, Samsung!).
-- `ios.bundle-identifier` is the App bundle identifier, similar to Android package name, e.g. `ios.wallet.app`.
-- `ios.team-identifier` is the Apple Development Team identifier of the valid client App.
-- `ios.sandbox` may be set to `true` to enable "development" stage attestation, or to `false` to enable "production" stage attestation.
-- `ios.ios-version` defines optionally the minimal iOS version running on devices, e.g. `14.1`
 
 Alternative configuration of the attribute source (which attributes to issue for the Wallet App):
 
