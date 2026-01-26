@@ -1,7 +1,11 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.JarRequestParameters
+import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.signum.indispensable.josef.JsonWebKey
+import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.Paths
@@ -10,10 +14,19 @@ import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.StatusListIssuer
+import at.asitplus.wallet.lib.agent.Validator
+import at.asitplus.wallet.lib.agent.ValidatorMdoc
+import at.asitplus.wallet.lib.agent.ValidatorSdJwt
+import at.asitplus.wallet.lib.agent.VerifierAgent
+import at.asitplus.wallet.lib.agent.validation.TokenStatusResolverImpl
 import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
+import at.asitplus.wallet.lib.jws.VerifyJwsObject
+import at.asitplus.wallet.lib.oauth2.OAuth2Utils
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.ClientIdScheme
@@ -22,6 +35,13 @@ import at.asitplus.wallet.lib.openid.RequestOptions
 import at.asitplus.wallet.lib.openid.RequestOptionsCredential
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -31,9 +51,10 @@ import jakarta.servlet.http.HttpServletResponseWrapper
 import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.apache.tomcat.websocket.AuthenticationException
 import org.springframework.http.CacheControl
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -67,14 +88,11 @@ import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isReadable
 import kotlin.io.path.readBytes
+import kotlin.time.Clock
 import kotlin.time.toJavaDuration
 
 private const val SESSION_KEY_OPENID4VP_USER = "sessionOpenId4VpResponse"
 
-/**
- * Public endpoints, available without authentication:
- * - Revocation list for Verifiable Credentials (RevocationList2020)
- */
 @RestController
 class PublicController(
     private val statusListIssuer: StatusListIssuer,
@@ -86,6 +104,20 @@ class PublicController(
     private val verifierKeyMaterial: KeyMaterial,
 ) {
 
+    private val httpClient = HttpClient {
+        install(ContentNegotiation) {
+            json(joseCompliantSerializer)
+        }
+        install(Logging) {
+            logger = object : Logger {
+                override fun log(message: String) {
+                    Napier.i(message = message, tag = "at.asitplus.http")
+                }
+            }
+            level = LogLevel.ALL
+        }
+    }
+
     val clientIdScheme = runBlocking {
         ClientIdScheme.CertificateHash(
             chain = listOf(verifierKeyMaterial.getCertificate()!!),
@@ -93,9 +125,44 @@ class PublicController(
         )
     }
 
+    fun validator() = Validator(
+        tokenStatusResolver = TokenStatusResolverImpl(
+            resolveStatusListToken = {
+                Napier.i("Resolving token status for from $it")
+                run {
+                    httpClient.get(it.string) {
+                        header(HttpHeaders.Accept, MediaTypes.Application.STATUSLIST_JWT)
+                    }.body<String>()
+                }.let {
+                    JwsSigned.deserialize<StatusListTokenPayload>(StatusListTokenPayload.serializer(), it).getOrThrow()
+                }.let {
+                    StatusListJwt(it, Clock.System.now())
+                }
+            },
+        ),
+    )
+
     val openIdVerifier = OpenId4VpVerifier(
         keyMaterial = verifierKeyMaterial,
         clientIdScheme = clientIdScheme,
+        verifier = VerifierAgent(
+            identifier = clientIdScheme.clientId,
+            validatorSdJwt = ValidatorSdJwt(
+                verifyJwsObject = VerifyJwsObject(
+                    publicKeyLookup = {
+                        (it.payload as? JsonObject)?.get("iss")?.jsonPrimitive?.content?.let<String, Set<JsonWebKey>?> { iss ->
+                            val url = OAuth2Utils.insertWellKnownPath(iss, OpenIdConstants.WellKnownPaths.JwtVcIssuer)
+                            Napier.i("Resolving Key for $iss from $url")
+                            httpClient.get(url).body<JwtVcIssuerMetadata>().jsonWebKeySet?.keys?.toSet<JsonWebKey>()
+                        }
+                    }
+                ),
+                validator = validator(),
+            ),
+            validatorMdoc = ValidatorMdoc(
+                validator = validator(),
+            )
+        )
     )
 
     fun buildQrCodeUrl(requestUrl: String): String =
@@ -183,15 +250,7 @@ class PublicController(
                     responseMode = OpenIdConstants.ResponseMode.DirectPost,
                     responseUrl = responseUrl,
                     credentials = setOf(
-                        RequestOptionsCredential(
-                            credentialScheme = EuPidSdJwtScheme,
-                            representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-                            requestedAttributes = setOf(
-                                EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME,
-                                EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME,
-                                EuPidSdJwtScheme.SdJwtAttributes.BIRTH_DATE
-                            ),
-                        )
+                        requestPidSdJwt()
                     ),
                 )
             ).getOrThrow().serialize()
@@ -204,6 +263,16 @@ class PublicController(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage)
         }
     }
+
+    private fun requestPidSdJwt(): RequestOptionsCredential = RequestOptionsCredential(
+        credentialScheme = EuPidSdJwtScheme,
+        representation = ConstantIndex.CredentialRepresentation.SD_JWT,
+        requestedAttributes = setOf(
+            EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME,
+            EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME,
+            EuPidSdJwtScheme.SdJwtAttributes.BIRTH_DATE
+        ),
+    )
 
     /**
      * Expects SIOPv2 authn response as request body,
@@ -285,7 +354,7 @@ class PublicController(
         request: WebRequest,
     ): ResponseEntity<*> {
         Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod called")
-        val acceptMediaTypes = request.getHeader(HttpHeaders.ACCEPT)?.let { MediaType.parseMediaTypes(it) }
+        val acceptMediaTypes = request.getHeader(HttpHeaders.Accept)?.let { MediaType.parseMediaTypes(it) }
         val contentType = acceptMediaTypes.toStatusListContentType()
         val path = configurationProperties.revocationList.getPath(acceptMediaTypes, timePeriod)
         val content = if (path.exists() && path.isReadable()) path.readBytes() else null
