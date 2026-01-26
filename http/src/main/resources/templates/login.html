@@ -3,13 +3,13 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta charset="UTF-8">
-    <title>A-SIT Plus Issuing Service M7</title>
+    <title th:text="${config.metadata.name}">Issuing Service</title>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
     <script th:inline="javascript" language="JavaScript">
         const BASE_URL = /*[[@{/}]]*/ "";
-        const STATUS_ENDPOINT = /*[[@{${@PathsBean.LoginStatusUrl}}]]*/ '';
+        const STATUS_ENDPOINT = /*[[@{${paths.LoginStatusUrl}}]]*/ '';
         const POLL_INTERVAL_MS = 2000; // 2s
         const POLL_TIMEOUT_MS = 300000; // 5 minutes
 
@@ -54,11 +54,10 @@
 <body style="" class="bg-light">
 <div th:replace="~{fragments/navbar.html :: navbar}"></div>
 <div class="container py-4">
-
     <h2>Login with username and password</h2>
     <div class="lead mt-4 mb-5">
         <p th:if="${loginError}" class="text-danger">Login error: <span th:text="${loginError}"/></p>
-        <form th:action="@{${@PathsBean.LoginUrl}}" method="post" class="form-signin">
+        <form th:action="@{${paths.LoginUrl}}" method="post" class="form-signin">
             <label for="username">Username</label>:
             <input class="form-control" placeholder="user" type="text" id="username" name="username"
                    autofocus="autofocus"/>

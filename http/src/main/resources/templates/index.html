@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta charset="UTF-8">
-    <title>A-SIT Plus Issuing Service M7</title>
+    <title th:text="${config.metadata.name}">Issuing Service</title>
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
     <script th:src="@{/webjars/bootstrap/5.3.1/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
@@ -17,7 +17,7 @@
 <div th:replace="~{fragments/navbar.html :: navbar}"></div>
 <div class="container py-4">
     <div class="row align-items-start">
-        <h1 class="display-4 col">A-SIT Plus Issuing Service (M7)</h1>
+        <h1 class="display-4 col" th:text="${config.metadata.name}">Issuing Service</h1>
     </div>
 
     <p class="lead mt-4 mb-5">
@@ -25,7 +25,7 @@
     </p>
 
     <p>
-        Either use the URL of this service to load credentials (starting the wallet-initiated variation of OID4VCI)<span sec:authorize="isAnonymous()">, or <a th:href="@{${@PathsBean.LoginUrl}}">login</a> to generate a QR Code for a credential offer to start the issuer-initiated variation of OID4VCI.</span><span sec:authorize="isAuthenticated()">, or scan the QR Code below for the credential offer.</span>
+        Either use the URL of this service to load credentials (starting the wallet-initiated variation of OID4VCI)<span sec:authorize="isAnonymous()">, or <a th:href="@{${paths.LoginUrl}}">login</a> to generate a QR Code for a credential offer to start the issuer-initiated variation of OID4VCI.</span><span sec:authorize="isAuthenticated()">, or scan the QR Code below for the credential offer.</span>
     </p>
 
     <p sec:authorize="isAnonymous()">
@@ -72,7 +72,7 @@
     </div>
 
     <p>
-        The OpenID metadata is available at <a href="https://wallet.a-sit.at/m7/.well-known/openid-configuration">.well-known/openid-configuration</a>. The Credential Issuer metadata is available at <a href="https://wallet.a-sit.at/m7/.well-known/openid-credential-issuer">.well-known/openid-credential-issuer</a>.
+        The OpenID metadata is available at <a href="#" th:href="@{/.well-known/openid-configuration}">.well-known/openid-configuration</a>. The Credential Issuer metadata is available at <a href="#" th:href="@{/.well-known/openid-credential-issuer}">.well-known/openid-credential-issuer</a>.
     </p>
 
     <p>
