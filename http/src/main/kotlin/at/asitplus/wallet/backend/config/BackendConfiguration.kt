@@ -93,7 +93,7 @@ class BackendConfiguration {
         applicationEventPublisher: ApplicationEventPublisher,
     ): RevocationService = DefaultRevocationService(
         preparedCredentialRepo = preparedCredentialRepo,
-        credentialRepo = credentialRepo,
+        issuedCredentialRepo = credentialRepo,
         revokedCredentialRepo = revokedCredentialRepo,
         applicationEventPublisher = applicationEventPublisher,
     )
