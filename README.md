@@ -47,6 +47,9 @@ backend:
     dirty-check-rate: PT10M
     regular-check-rate: PT1H
     path: cache/revocation-lists/
+  metadata:
+    name: "Issuing Service"
+    logo: "https://wallet.a-sit.at/assets/images/logo.svg"
   issuer-key: {{ KEY_CONFIG }}
   verifier-key: {{ KEY_CONFIG }}
 ```
@@ -54,6 +57,10 @@ backend:
 Options for the issuer public URL and credential lifetimes:
 - `public-context` is the externally reachable base URL of this service (used in metadata and links sent to wallets).
 - `credentials.lifetime` is the validity duration for issued credentials (ISO-8601 duration, e.g. `PT60M`, `P180D`).
+
+Options for `backend.metadata`, to be used in OID4VCI metadata:
+- `name`
+- `logo`
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
  - `lifetime` to set the lifetime of a single revocation list, i.e. the validity of the Verifiable Credential which represents the revocation list for other credentials, defaults to `P7D`, i.e. 7 days.

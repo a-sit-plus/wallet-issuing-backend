@@ -9,6 +9,9 @@ backend:
   public-context: "https://wallet.a-sit.at/m7"
   credentials:
     lifetime: P7D
+  metadata:
+    name: "A-SIT Plus Wallet Issuer M7"
+    logo: "https://wallet.a-sit.at/assets/images/logo.svg"
   issuer-key:
     type: KEYSTORE
     keystore:
