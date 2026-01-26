@@ -23,7 +23,6 @@ import at.asitplus.wallet.lib.jws.SignJwt
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
-import jakarta.transaction.Transactional
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -81,7 +80,6 @@ class RevocationServiceStatusListIndexTest {
     }
 
     @Test
-    @Transactional
     fun `simple positive add and revoke vcId should work`() = runTest {
         val index = store(timePeriod, vcId) shouldBe 1uL
         revocationService.isRevoked(vcId, timePeriod) shouldBe false
@@ -91,7 +89,6 @@ class RevocationServiceStatusListIndexTest {
 
 
     @Test
-    @Transactional
     fun `revocation list indexes should be grouped by time period`() = runTest {
         storeNewCredential(timePeriod) shouldBe 1uL
         storeNewCredential(timePeriod) shouldBe 2uL
@@ -106,7 +103,6 @@ class RevocationServiceStatusListIndexTest {
     private suspend fun storeNewCredential(timePeriod: Int): ULong = store(timePeriod, UUID.randomUUID().toString())
 
     @Test
-    @Transactional
     fun `double adding vcId should return null`() = runTest {
         val credentialToBeIssued = CredentialToBeIssued.VcJwt(
             subject = credentialSubject,
@@ -124,7 +120,6 @@ class RevocationServiceStatusListIndexTest {
     }
 
     @Test
-    @Transactional
     fun `revocation list should match revocation calls`() = runTest {
         val expectedRevocationList = revokeRandomCredentials()
 

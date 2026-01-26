@@ -111,7 +111,7 @@ class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(sourc
 
 class DefaultRevocationService(
     private val preparedCredentialRepo: PreparedCredentialRepository,
-    private val credentialRepo: IssuedCredentialRepository,
+    private val issuedCredentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) : RevocationService {
@@ -121,7 +121,7 @@ class DefaultRevocationService(
      *
      */
     override fun isRevoked(vcId: String, timePeriod: Int): Boolean {
-        return credentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) == null
+        return issuedCredentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) == null
     }
 
     /**
@@ -136,7 +136,7 @@ class DefaultRevocationService(
             Napier.v("Storing new credential for $credential")
             val revocationListIndex: Long = max(
                 preparedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
-                credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+                issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
                 revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
             ) + 1
             val savedCredential = preparedCredentialRepo.save(
@@ -161,7 +161,7 @@ class DefaultRevocationService(
             val savedCredential = preparedCredentialRepo.findById(reference.id.toLong()).getOrNull()
                 ?: throw IllegalStateException("No credential found for id ${reference.id}")
 
-            val issuedCredential = credentialRepo.save(
+            val issuedCredential = issuedCredentialRepo.save(
                 IssuedCredential(
                     vcId = credential.vcId,
                     subjectId = credential.subjectPublicKey.subjectId(),
@@ -189,7 +189,7 @@ class DefaultRevocationService(
         index: ULong,
         status: TokenStatus,
     ): Boolean {
-        val credential = credentialRepo.findBytimePeriodAndRevocationListIndex(timePeriod, index.toLong())
+        val credential = issuedCredentialRepo.findBytimePeriodAndRevocationListIndex(timePeriod, index.toLong())
             ?: return false
         return revokeAllCredentials(listOf(credential), status) == 1
     }
@@ -204,7 +204,9 @@ class DefaultRevocationService(
                     userInfoSubject = it.userInfoSubject,
                 )
             })
-            credentialRepo.deleteAllInBatch(toRevoke)
+            revokedCredentialRepo.flush()
+            issuedCredentialRepo.deleteAll(toRevoke)
+            issuedCredentialRepo.flush()
             toRevoke.map { it.timePeriod }.toSet()
                 .forEach { applicationEventPublisher.publishEvent(RevocationEvent(this, it)) }
             return toRevoke.count()
@@ -217,7 +219,7 @@ class DefaultRevocationService(
     private fun tokenStatusForAllIndexes(timePeriod: Int): List<TokenStatus> {
         val revoked = revokedCredentialRepo.getByTimePeriod(timePeriod)
         val maxRevocationListIndex = max(
-            credentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+            issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
             revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
         )
         return List(maxRevocationListIndex.toInt()) { listIndex ->
@@ -239,17 +241,17 @@ class DefaultRevocationService(
      * Lists all non-revoked credentials that have been issued
      */
     override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
-        return credentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
+        return issuedCredentialRepo.findAllByValidUntilAfter(java.time.Instant.now())
     }
 
     override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> =
-        credentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.matchedSubject(), java.time.Instant.now())
+        issuedCredentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.matchedSubject(), java.time.Instant.now())
 
     override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> =
         revokedCredentialRepo.findAllByUserInfoSubject(userInfo.matchedSubject())
 
     override fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean =
-        credentialRepo.findByIdAndUserInfoSubject(id, userInfo.matchedSubject()).getOrNull()?.let {
+        issuedCredentialRepo.findByIdAndUserInfoSubject(id, userInfo.matchedSubject()).getOrNull()?.let {
             Napier.d("${Paths.RevokeUrl}/$id for $it")
             setStatus(it.timePeriod, it.revocationListIndex.toULong(), TokenStatus.Invalid)
         } ?: false
@@ -270,11 +272,11 @@ class DefaultRevocationService(
      */
     override fun deleteExpiredCredentialsBefore(cutoff: Instant): Int {
         // TODO Use synchronized(CredentialRepositoriesLock) here?
-        val list = credentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
+        val list = issuedCredentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
         list.forEach {
             Napier.i("Deleting credential")
             Napier.v("vcId: ${it.vcId}")
-            credentialRepo.delete(it)
+            issuedCredentialRepo.delete(it)
         }
         return list.size
     }
