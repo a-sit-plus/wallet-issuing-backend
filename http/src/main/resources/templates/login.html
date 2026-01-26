@@ -9,7 +9,7 @@
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
     <script th:inline="javascript" language="JavaScript">
         const BASE_URL = /*[[@{/}]]*/ "";
-        const STATUS_ENDPOINT = /*[[@{${@PathsBean.StatusUrl}}]]*/ '';
+        const STATUS_ENDPOINT = /*[[@{${@PathsBean.LoginStatusUrl}}]]*/ '';
         const POLL_INTERVAL_MS = 2000; // 2s
         const POLL_TIMEOUT_MS = 300000; // 5 minutes
 

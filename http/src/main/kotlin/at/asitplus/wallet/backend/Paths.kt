@@ -8,7 +8,7 @@ object Paths {
     const val RevocationUrl = "/revocation"
     const val LogoutUrl = "/logout"
     const val RevokeUrl = "/revoke"
-    const val StatusUrl = "/status"
+    const val LoginStatusUrl = "/loginstatus"
     const val ParUrl = "/par"
     const val NonceUrl = "/nonce"
     const val AuthorizeUrl = "/authorize"

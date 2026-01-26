@@ -148,7 +148,7 @@ class PublicController(
     @Serializable
     data class StatusResponse(val authenticated: Boolean, val redirectUrl: String?)
 
-    @GetMapping(Paths.StatusUrl)
+    @GetMapping(Paths.LoginStatusUrl)
     fun status(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -157,7 +157,7 @@ class PublicController(
         val user = session.getAttribute(SESSION_KEY_OPENID4VP_USER) as? OpenId4VpUser?
             ?: return@runBlocking StatusResponse(false, null)
 
-        Napier.i("${Paths.StatusUrl} got successful authentication in session ${session.id}: $user")
+        Napier.i("${Paths.LoginStatusUrl} got successful authentication in session ${session.id}: $user")
         val targetUrl = setAuthenticationInSession(user, session, request, response)
         val redirectUrl = if (targetUrl.isNotEmpty()) targetUrl.toString() else "/"
         StatusResponse(true, redirectUrl)
@@ -223,6 +223,7 @@ class PublicController(
         val user = try {
             validateOpenId4VpResponse(requestBody, openIdVerifier)
         } catch (e: Throwable) {
+            Napier.w("${Paths.Transaction.ResultUrl}/$id error", e)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage, e)
         }
         val session = sessionRepository.findById(desktopSessionId)
