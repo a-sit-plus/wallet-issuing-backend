@@ -10,7 +10,6 @@ import at.asitplus.wallet.backend.data.PreparedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidScheme
@@ -80,7 +79,6 @@ class BackendConfiguration {
         at.asitplus.wallet.mdl.Initializer.initWithVCK()
         at.asitplus.wallet.cor.Initializer.initWithVCK()
         at.asitplus.wallet.por.Initializer.initWithVCK()
-        at.asitplus.wallet.companyregistration.Initializer.initWithVCK()
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
         at.asitplus.wallet.ageverification.Initializer.initWithVCK()
     }
@@ -180,7 +178,7 @@ class BackendConfiguration {
         statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
         cryptoAlgorithms = setOf(issuerKeyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
-        identifier = UniformResourceIdentifier(configuration.publicContext)
+        identifier = UniformResourceIdentifier(configuration.publicContext.toString())
     )
 
     @Bean
@@ -205,7 +203,6 @@ class BackendConfiguration {
         MobileDrivingLicenceScheme,
         PowerOfRepresentationScheme,
         CertificateOfResidenceScheme,
-        CompanyRegistrationScheme,
         TaxIdScheme,
         EhicScheme,
         AgeVerificationScheme
@@ -216,7 +213,7 @@ class BackendConfiguration {
         authorizationServer: OAuth2AuthorizationServerAdapter,
         issuer: Issuer,
     ): CredentialIssuer = CredentialIssuer(
-        publicContext = configuration.publicContext,
+        publicContext = configuration.publicContext.toString(),
         credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
         issuer = issuer,
@@ -228,12 +225,12 @@ class BackendConfiguration {
     fun authorizationServer(
     ): SimpleAuthorizationService = SimpleAuthorizationService(
         strategy = CredentialAuthorizationServiceStrategy(credentialSchemes),
-        publicContext = configuration.publicContext,
+        publicContext = configuration.publicContext.toString(),
         authorizationEndpointPath = Paths.AuthorizeUrl,
         tokenEndpointPath = Paths.TokenUrl,
         pushedAuthorizationRequestEndpointPath = Paths.ParUrl,
         tokenService = TokenService.jwt(
-            publicContext = configuration.publicContext,
+            publicContext = configuration.publicContext.toString(),
         ),
     )
 

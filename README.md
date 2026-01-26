@@ -23,15 +23,7 @@ Build an executable jar:
 ./gradlew :http:bootJar
 ```
 
-## Web API
-
-`GET /` displays a general information page for new users.
-
 ## Configuration
-
-The default configuration file included in this service is minimal, i.e. it sets the default profile `pupilid` and disables cloud configuration.
-
-This means that for every deployment, the configuration file (`application.yml` or `application.properties`) should be explicit in setting all needed options.
 
 There are several custom configuration properties, all under the key `backend`, defined in
 `http/src/main/kotlin/at/asitplus/wallet/backend/config/BackendConfigurationProperties.kt`.
@@ -40,7 +32,7 @@ There are several custom configuration properties, all under the key `backend`, 
 backend:
   public-context: "http://localhost:8080/"
   credentials:
-    lifetime: PT60M
+    lifetime: P7D
   revocation-list:
     lifetime: P7D
     regular-write-timeout: P5D
@@ -48,19 +40,21 @@ backend:
     regular-check-rate: PT1H
     path: cache/revocation-lists/
   metadata:
-    name: "Issuing Service"
+    name: "A-SIT Plus Wallet Issuer"
     logo: "https://wallet.a-sit.at/assets/images/logo.svg"
-  issuer-key: {{ KEY_CONFIG }}
-  verifier-key: {{ KEY_CONFIG }}
+  issuer-key:
+    type: MEMORY
+  verifier-key:
+    type: MEMORY
 ```
 
 Options for the issuer public URL and credential lifetimes:
 - `public-context` is the externally reachable base URL of this service (used in metadata and links sent to wallets).
 - `credentials.lifetime` is the validity duration for issued credentials (ISO-8601 duration, e.g. `PT60M`, `P180D`).
 
-Options for `backend.metadata`, to be used in OID4VCI metadata:
-- `name`
-- `logo`
+Options for `backend.metadata`, to be used in [OID4VCI metadata](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-12.2.4-2.10.1):
+- `name` for `display.name`
+- `logo` for `display.logo.uri`
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
  - `lifetime` to set the lifetime of a single revocation list, i.e. the validity of the Verifiable Credential which represents the revocation list for other credentials, defaults to `P7D`, i.e. 7 days.
@@ -69,11 +63,18 @@ Options for revocation lists for Verifiable Credentials under `backend.revocatio
  - `regular-check-rate` to set the rate at which the service shall check for outdated revocation lists (see `regular-write-timeout`) that need to be written, defaults to `PT1H`, i.e. 1 hour.
  - `path` to set the directory for revocation list storage, e.g. `cache/revocation-lists/`
 
-Alternative configuration for the issuer signing key under `backend.issuer-key`, or the verifier key under `backend.verifier-key`, depicted as `{{ KEY_CONFIG }}` above:
+There are several options to configure the issuer signing key under `backend.issuer-key`, or the verifier key under `backend.verifier-key`:
+
+The type `memory`:
 
 ```yaml
 type: MEMORY
 ```
+
+will create an ephemeral key pair with a self-signed certificate.
+
+
+The type `file`:
 
 ```yaml
 type: FILE
@@ -82,6 +83,10 @@ file:
   public-key: file:issuer-key-public.pem
   certificate: file:issuer-cert.pem
 ```
+
+will load the private key, public key and certificate from `PEM` encoded files.
+
+The type `keystore`:
 
 ```yaml
 type: KEYSTORE
@@ -93,6 +98,8 @@ keystore:
   alias: key1
   alias-password: changeit         # may be null
 ```
+
+will load a Java KeyStore object and use key and certificate from there.
 
 ### OpenID for Verifiable Credential Issuance
 

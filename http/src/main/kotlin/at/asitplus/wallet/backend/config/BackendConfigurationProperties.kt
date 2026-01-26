@@ -2,12 +2,13 @@ package at.asitplus.wallet.backend.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
+import java.net.URL
 import kotlin.time.Duration
 
 @ConfigurationProperties(prefix = "backend")
 data class BackendConfigurationProperties(
     /** Public URL of this instance, used for several URLs in messages sent to the Wallet. */
-    val publicContext: String = "http://localhost:8080/", // TODO convert to URL?
+    val publicContext: URL = URL("http://localhost:8080/"),
     /** Configuration for issued credentials. */
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
     /** Key used for signing issued credentials. */

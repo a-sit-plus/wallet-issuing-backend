@@ -121,7 +121,7 @@ class PublicController(
     val clientIdScheme = runBlocking {
         ClientIdScheme.CertificateHash(
             chain = listOf(verifierKeyMaterial.getCertificate()!!),
-            redirectUri = configurationProperties.publicContext,
+            redirectUri = configurationProperties.publicContext.toString(),
         )
     }
 
