@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend
 
 import org.springframework.stereotype.Component
 
-@Component("PathsBean") // for access from Thymeleaf
 object Paths {
     const val LoginUrl = "/login"
     const val RevocationUrl = "/revocation"
@@ -20,6 +19,7 @@ object Paths {
         const val ResultUrl = "/transaction/result"
         const val GetUrl = "/transaction/get"
     }
+
     object Credentials {
         const val StatusUrl = "/credentials/status"
 
@@ -27,11 +27,13 @@ object Paths {
             const val CurrentUrl = "/credentials/status/current"
         }
     }
+
     object Schemes {
         const val HaipVci = "haip-vci"
         const val HaipVp = "haip-vp"
         const val Av = "av"
     }
+
     object QueryParams {
         const val CredentialOfferUri = "credential_offer_uri"
     }

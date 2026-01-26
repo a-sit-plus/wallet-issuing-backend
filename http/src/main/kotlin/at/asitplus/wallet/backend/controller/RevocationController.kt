@@ -33,8 +33,8 @@ class RevocationController(
         val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
         Napier.i("${Paths.RevocationUrl} called with ${authenticatedUser?.userInfo?.subject}")
         authenticatedUser?.let {
-            model["credentials"] = revocationService.getAllNonRevokedForUser(it)
-            model["revokedCredentials"] = revocationService.getAllRevokedForUser(it)
+            model["credentials"] = revocationService.getAllNonRevokedForUser(it).sortedBy { it.revocationListIndex }
+            model["revokedCredentials"] = revocationService.getAllRevokedForUser(it).sortedBy { it.revocationListIndex }
         }
         ModelAndView("revocation")
     }
