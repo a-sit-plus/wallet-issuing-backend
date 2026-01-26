@@ -31,7 +31,7 @@ import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestationPop
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.CredentialSchemeMapping.encodeToCredentialIdentifier
+import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.WalletService
@@ -40,6 +40,7 @@ import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
+import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -61,6 +62,7 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
+import org.springframework.web.util.UriComponentsBuilder
 import qrcode.QRCode
 
 
@@ -76,14 +78,14 @@ class OpenId4VciController(
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
-    fun issuerMetadata(): ResponseEntity<IssuerMetadata> {
+    fun issuerMetadata(): ResponseEntity<IssuerMetadata> = run {
         val metadata = credentialIssuer.metadata.copy(
             displayProperties = setOf(
                 backendConfigurationProperties.metadata.toDisplayProperties()
             )
         )
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
-        return ResponseEntity.ok(metadata)
+        ResponseEntity.ok(metadata)
     }
 
     private fun MetadataConfiguration.toDisplayProperties() = DisplayProperties(
@@ -112,10 +114,10 @@ class OpenId4VciController(
         ],
         produces = [APPLICATION_JSON_VALUE]
     )
-    fun jwtVcMetadata(): ResponseEntity<JwtVcIssuerMetadata> {
+    fun jwtVcMetadata(): ResponseEntity<JwtVcIssuerMetadata> = run {
         val metadata = credentialIssuer.jwtVcMetadata
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_JWT_VC_ISSUER_METADATA} returns $metadata")
-        return ResponseEntity.ok(metadata)
+        ResponseEntity.ok(metadata)
     }
 
     @GetMapping("${Paths.OfferUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
@@ -143,32 +145,32 @@ class OpenId4VciController(
                 title = "All-Code",
                 description = "All credentials with auth code",
                 configurationIds = listOf(),
-                urlScheme = "haip-vci"
+                urlScheme = Paths.Schemes.HaipVci
             ),
             buildTabItemAuthCode(
                 title = "PID-SD-JWT-Code",
                 description = "PID in SD-JWT with auth code",
-                // TODO deprecated
-                configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
-                urlScheme = "haip-vci"
+                configurationId = DefaultCredentialSchemeMapper()
+                    .encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
+                urlScheme = Paths.Schemes.HaipVci
             ),
             buildTabItemAuthCode(
                 title = "PID-MDOC-Code",
                 description = "PID in ISO MDOC with auth code",
                 configurationId = EuPidScheme.isoNamespace,
-                urlScheme = "haip-vci"
+                urlScheme = Paths.Schemes.HaipVci
             ),
             buildTabItemAuthCode(
                 title = "MDL-MDOC-Code",
                 description = "mDL in ISO MDOC with auth code",
                 configurationId = MobileDrivingLicenceScheme.isoNamespace,
-                urlScheme = "haip-vci"
+                urlScheme = Paths.Schemes.HaipVci
             ),
             buildTabItemAuthCode(
                 title = "AV-MDOC-Code",
                 description = "Age Verification in ISO MDOC with auth code",
                 configurationId = AgeVerificationScheme.isoNamespace,
-                urlScheme = "av"
+                urlScheme = Paths.Schemes.Av
             ),
             user?.let {
                 buildTabItemPreAuthn(
@@ -176,7 +178,7 @@ class OpenId4VciController(
                     title = "All-pre",
                     description = "All credentials with pre-authn",
                     configurationIds = listOf(),
-                    urlScheme = "haip-vci"
+                    urlScheme = Paths.Schemes.HaipVci
                 )
             },
             user?.let {
@@ -184,8 +186,9 @@ class OpenId4VciController(
                     user = user,
                     title = "PID-SD-JWT-pre",
                     description = "PID in SD-JWT with pre-authn",
-                    configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
-                    urlScheme = "haip-vci"
+                    configurationId = DefaultCredentialSchemeMapper()
+                        .encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
+                    urlScheme = Paths.Schemes.HaipVci
                 )
             },
             user?.let {
@@ -194,7 +197,7 @@ class OpenId4VciController(
                     title = "PID-MDOC-pre",
                     description = "PID in ISO MDOC with pre-authn",
                     configurationId = EuPidScheme.isoNamespace,
-                    urlScheme = "haip-vci"
+                    urlScheme = Paths.Schemes.HaipVci
                 )
             },
             user?.let {
@@ -203,7 +206,7 @@ class OpenId4VciController(
                     title = "MDL-MDOC-pre",
                     description = "mDL in ISO MDOC with pre-authn",
                     configurationId = MobileDrivingLicenceScheme.isoNamespace,
-                    urlScheme = "haip-vci"
+                    urlScheme = Paths.Schemes.HaipVci
                 )
             },
             user?.let {
@@ -212,7 +215,7 @@ class OpenId4VciController(
                     title = "AV-MDOC-pre",
                     description = "Age Verification in ISO MDOC with pre-authn",
                     configurationId = AgeVerificationScheme.isoNamespace,
-                    urlScheme = "av"
+                    urlScheme = Paths.Schemes.Av
                 )
             },
         )
@@ -234,7 +237,7 @@ class OpenId4VciController(
         description: String,
         configurationIds: Collection<String>,
         urlScheme: String,
-    ): TabItem {
+    ): TabItem = run {
         val offer = authorizationService.credentialOfferWithPreAuthnForUser(
             user = user,
             credentialIssuer = credentialIssuer.metadata.credentialIssuer,
@@ -242,9 +245,11 @@ class OpenId4VciController(
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
-        val url = "$urlScheme://?credential_offer_uri=$credentialOfferUrl"
+        val url = UriComponentsBuilder.newInstance()
+            .scheme(urlScheme).queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
+            .toUriString()
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        return TabItem(nonce, title, description, qrBase64)
+        TabItem(nonce, title, description, qrBase64)
     }
 
     private suspend fun buildTabItemAuthCode(
@@ -259,16 +264,18 @@ class OpenId4VciController(
         description: String,
         configurationIds: Collection<String>,
         urlScheme: String,
-    ): TabItem {
+    ): TabItem = run {
         val offer = authorizationService.credentialOfferWithAuthorizationCode(
             credentialIssuer = credentialIssuer.metadata.credentialIssuer,
             configurationIds = configurationIds
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
-        val url = "$urlScheme://?credential_offer_uri=$credentialOfferUrl"
+        val url = UriComponentsBuilder.newInstance()
+            .scheme(urlScheme).queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
+            .toUriString()
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        return TabItem(nonce, title, description, qrBase64)
+        TabItem(nonce, title, description, qrBase64)
     }
 
     data class TabItem(
@@ -297,7 +304,7 @@ class OpenId4VciController(
                 .also { Napier.w("${Paths.ParUrl} sends error $it") }
         }
         Napier.d("${Paths.ParUrl} returns $result")
-        return@runBlocking ResponseEntity
+        ResponseEntity
             .status(HttpStatus.CREATED)
             .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .body(vckJsonSerializer.encodeToString(result))
@@ -312,8 +319,8 @@ class OpenId4VciController(
                 .also { Napier.w("${Paths.NonceUrl} sends error $it") }
         }
         Napier.d("${Paths.NonceUrl} returns $result")
-        return@runBlocking ResponseEntity.status(HttpStatus.OK)
-            .header(HttpHeaders.CacheControl, "no-store")
+        ResponseEntity.status(HttpStatus.OK)
+            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
             .header(HttpHeaders.DPoPNonce, result.dpopNonce)
             .body(vckJsonSerializer.encodeToString(result.response))
     }
@@ -351,7 +358,7 @@ class OpenId4VciController(
         }
         Napier.d("${Paths.AuthorizeUrl} returns ${result.url}")
         val userAgent = request.getHeader(HttpHeaders.UserAgent)
-        return@runBlocking if (userAgent?.isSafariOniPhone() == true) {
+        if (userAgent?.isSafariOniPhone() == true) {
             model["url"] = result.url
             ModelAndView("iphone-redirect")
         } else {
@@ -379,7 +386,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.TokenUrl} returns $result")
-        return@runBlocking ResponseEntity
+        ResponseEntity
             .status(HttpStatus.OK)
             .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .body(vckJsonSerializer.encodeToString(result))
@@ -419,7 +426,7 @@ class OpenId4VciController(
                 .also { Napier.w("${Paths.CredentialUrl} sends error $it") }
         }
         Napier.d("${Paths.CredentialUrl} returns $credential")
-        return@runBlocking credential.toResponseEntity()
+        credential.toResponseEntity()
     }
 
     private suspend fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String?> =
