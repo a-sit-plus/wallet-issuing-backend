@@ -6,15 +6,23 @@ Some notable configuration properties (aside from the usual setting of context p
 
 ```yaml
 backend:
-  pki:
-    internal:
-      key:
-        type: MEMORY
+  public-context: "https://wallet.a-sit.at/m7"
+  credentials:
+    lifetime: P7D
   issuer-key:
     type: KEYSTORE
     keystore:
       path: "file:/srv/wallet-backend-m7/data/keystore.p12"
       type: PKCS12
+      alias: "issuer"
+      alias-password: "changeit"
+  verifier-key:
+    type: KEYSTORE
+    keystore:
+      path: "file:/srv/wallet-backend-m7/data/verifier.p12"
+      type: PKCS12
+      alias: "verifier"
+      alias-password: "changeit"
 spring:
   jpa:
     database: H2

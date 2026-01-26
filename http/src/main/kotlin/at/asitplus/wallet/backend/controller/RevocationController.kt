@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 
 /**
- * Implements controller for OpenID 4 Verifiable Credential Issuance
+ * Implements the self-revocation mechanism (for debug purposes), see `revocation.html`
  */
 @RestController
 class RevocationController(

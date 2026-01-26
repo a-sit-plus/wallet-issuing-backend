@@ -105,13 +105,19 @@ class BackendConfiguration {
         revocationService = revocationService,
     )
 
-    @Bean
-    fun issuerKeyAdapter(): KeyMaterial =
-        when (configuration.issuerKey.type) {
-            KeyType.FILE -> loadKeyFile(configuration.issuerKey.file!!, resourceLoader)
-            KeyType.KEYSTORE -> loadKeyStore(configuration.issuerKey.keystore!!)
-            KeyType.MEMORY -> EphemeralKeyWithSelfSignedCert()
-        }
+    @Bean("issuerKeyMaterial")
+    fun issuerKeyMaterial(): KeyMaterial = when (configuration.issuerKey.type) {
+        KeyType.FILE -> loadKeyFile(configuration.issuerKey.file!!, resourceLoader)
+        KeyType.KEYSTORE -> loadKeyStore(configuration.issuerKey.keystore!!)
+        KeyType.MEMORY -> EphemeralKeyWithSelfSignedCert()
+    }
+
+    @Bean("verifierKeyMaterial")
+    fun verifierKeyMaterial(): KeyMaterial = when (configuration.verifierKey.type) {
+        KeyType.FILE -> loadKeyFile(configuration.verifierKey.file!!, resourceLoader)
+        KeyType.KEYSTORE -> loadKeyStore(configuration.verifierKey.keystore!!)
+        KeyType.MEMORY -> EphemeralKeyWithSelfSignedCert()
+    }
 
     fun loadKeyStore(config: KeyStoreConfiguration) = KeyStoreMaterial(
         keyStore = KeyStore.getInstance(config.type, config.provider ?: "BC").apply {
@@ -167,12 +173,12 @@ class BackendConfiguration {
     @Bean
     fun issuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
-        keyMaterial: KeyMaterial,
+        issuerKeyMaterial: KeyMaterial,
     ): Issuer = IssuerAgent(
-        keyMaterial = keyMaterial,
+        keyMaterial = issuerKeyMaterial,
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
-        cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
+        cryptoAlgorithms = setOf(issuerKeyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
         identifier = UniformResourceIdentifier(configuration.publicContext)
     )
@@ -180,9 +186,9 @@ class BackendConfiguration {
     @Bean
     fun statusListIssuer(
         issuerCredentialStore: IssuerCredentialStore,
-        keyMaterial: KeyMaterial,
+        issuerKeyMaterial: KeyMaterial,
     ): StatusListIssuer = StatusListAgent(
-        keyMaterial = keyMaterial,
+        keyMaterial = issuerKeyMaterial,
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
         statusListAggregationUrl = configuration.publicContext.appendPath(Paths.Credentials.Status.CurrentUrl),

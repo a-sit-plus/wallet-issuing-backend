@@ -8,8 +8,7 @@ import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
-import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
-import at.asitplus.wallet.lib.agent.KeyStoreMaterial
+import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
@@ -63,9 +62,7 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import qrcode.QRCode
-import java.io.File
 import java.nio.file.Path
-import java.security.KeyStore
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isReadable
@@ -86,22 +83,9 @@ class PublicController(
     private val successHandler: AuthenticationSuccessHandler,
     private val transactionIdToSessionIdMap: NonceToSessionMap,
     private val sessionRepository: MapSessionRepository,
+    private val verifierKeyMaterial: KeyMaterial,
 ) {
-    // TODO configuration!
-    private val verifierKeyMaterial = File("verifier.p12").run {
-        if (exists()) {
-            KeyStoreMaterial(
-                keyStore = KeyStore.getInstance("PKCS12").apply {
-                    load(inputStream(), "changeit".toCharArray())
-                },
-                keyAlias = "verifier",
-                privateKeyPassword = "changeit".toCharArray(),
-                certAlias = "verifier",
-            )
-        } else {
-            EphemeralKeyWithSelfSignedCert()
-        }
-    }
+
     val clientIdScheme = runBlocking {
         ClientIdScheme.CertificateHash(
             chain = listOf(verifierKeyMaterial.getCertificate()!!),
@@ -114,7 +98,7 @@ class PublicController(
         clientIdScheme = clientIdScheme,
     )
 
-    fun buildQrCodeUrl(requestUrl: String) =
+    fun buildQrCodeUrl(requestUrl: String): String =
         ServletUriComponentsBuilder.fromUriString("haip-vp://").apply {
             JarRequestParameters(
                 clientId = clientIdScheme.clientId,
@@ -295,7 +279,10 @@ class PublicController(
     private val statusListCwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT)
 
     @GetMapping("${Paths.Credentials.StatusUrl}/{timePeriod}")
-    fun getVcRevocationList(@PathVariable timePeriod: Int, request: WebRequest): ResponseEntity<*> {
+    fun getStatusList(
+        @PathVariable timePeriod: Int,
+        request: WebRequest,
+    ): ResponseEntity<*> {
         Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod called")
         val acceptMediaTypes = request.getHeader(HttpHeaders.ACCEPT)?.let { MediaType.parseMediaTypes(it) }
         val contentType = acceptMediaTypes.toStatusListContentType()
