@@ -1,6 +1,27 @@
-# Wallet Issuing Service
+# Wallet Issuing Service (IDA)
 
-TODO
+This service implements OpenID for Verifiable Credential Issuance (OpenID4VCI) using vc-k to issue Verifiable Credentials to compatible wallets.
+
+## Main Features
+
+- OpenID4VCI issuer endpoints for credential issuance
+- Configurable credential lifetime and issuer signing keys
+- Revocation list generation and refresh scheduling
+- Spring Boot service with standard server, logging, and database configuration
+
+## Quick Start
+
+Build and run the HTTP service:
+
+```bash
+./gradlew :http:bootRun
+```
+
+Build an executable jar:
+
+```bash
+./gradlew :http:bootJar
+```
 
 ## Web API
 
@@ -12,11 +33,12 @@ The default configuration file included in this service is minimal, i.e. it sets
 
 This means that for every deployment, the configuration file (`application.yml` or `application.properties`) should be explicit in setting all needed options.
 
-There are several custom configuration properties, all under the key `backend`:
+There are several custom configuration properties, all under the key `backend`, defined in
+`http/src/main/kotlin/at/asitplus/wallet/backend/config/BackendConfigurationProperties.kt`.
 
 ```yaml
 backend:
-  public-context: "http://localhost:8080"
+  public-context: "http://localhost:8080/"
   credentials:
     lifetime: PT60M
   revocation-list:
@@ -24,34 +46,22 @@ backend:
     regular-write-timeout: P5D
     dirty-check-rate: PT10M
     regular-check-rate: PT1H
-    cache-path: cache/revocation-list/
+    path: cache/revocation-lists/
   issuer-key: {{ KEY_CONFIG }}
 ```
+
+Options for the issuer public URL and credential lifetimes:
+- `public-context` is the externally reachable base URL of this service (used in metadata and links sent to wallets).
+- `credentials.lifetime` is the validity duration for issued credentials (ISO-8601 duration, e.g. `PT60M`, `P180D`).
 
 Options for revocation lists for Verifiable Credentials under `backend.revocation-list`:
  - `lifetime` to set the lifetime of a single revocation list, i.e. the validity of the Verifiable Credential which represents the revocation list for other credentials, defaults to `P7D`, i.e. 7 days.
  - `regular-write-timeout` to set the timeout after which a revocation list shall be written again, defaults to `P5D`, i.e. 5 days.
  - `dirty-check-rate` to set the rate at which the service shall check for dirty (i.e. where a credential has been revoked) revocation lists that need to be written, defaults to `PT10M`, i.e. 10 minutes.
  - `regular-check-rate` to set the rate at which the service shall check for outdated revocation lists (see `regular-write-timeout`) that need to be written, defaults to `PT1H`, i.e. 1 hour.
- - `cache-path` to set the path at which the revocation lists shall be written to and read from, e.g. `cache/revocation-list/`
+ - `path` to set the directory for revocation list storage, e.g. `cache/revocation-lists/`
 
-Alternative configuration of the attribute source (which attributes to issue for the Wallet App):
-
-```yaml
-backend:
-  attribute-source:
-    type: RANDOM
-    random:
-      photo-location: file:photos/
-```
-
-```yaml
-backend:
-  attribute-source:
-    type: EIDAS
-```
-
-Alternative configuration for all cryptographic keys (e.g. for signing verifiable credentials or in Client TLS connections), depicted as `{{ KEY_CONFIG }}` above:
+Alternative configuration for the issuer signing key under `backend.issuer-key`, depicted as `{{ KEY_CONFIG }}` above:
 
 ```yaml
 type: MEMORY
@@ -62,6 +72,7 @@ type: FILE
 file:
   private-key: file:issuer-key-private.pem
   public-key: file:issuer-key-public.pem
+  certificate: file:issuer-cert.pem
 ```
 
 ```yaml
@@ -75,26 +86,20 @@ keystore:
   alias-password: changeit         # may be null
 ```
 
-Alternative configuration for all trust configurations (e.g. in TLS connections), depicted as `{{ TRUST_CONFIG }}` above:
-
-```yaml
-type: SYSTEM
-```
-
-```yaml
-type: KEYSTORE
-truststore:
-  path: file:/some/path/keystore.p12
-  type: PKCS12
-  provider: BC                     # may be null
-  password: changeit               # may be null
-```
-
 ### OpenID for Verifiable Credential Issuance
 
 Clients may use [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) to retrieve credentials from this service.
 
-The credential issuer metadata is available at `/.well-known/openid-credential-issuer`, the credential endpoint at `/credential`, the authorization endpoint at `/authorize`, and the token endpoint at `/token`.
+Issuer metadata and endpoints:
+- `/.well-known/openid-credential-issuer` (credential issuer metadata)
+- `/.well-known/openid-configuration` (OpenID provider metadata)
+- `/.well-known/oauth-authorization-server` (OAuth2 AS metadata)
+- `/.well-known/jwt-vc-issuer` (JWT VC issuer metadata)
+- `/authorize` (authorization endpoint)
+- `/token` (token endpoint)
+- `/credential` (credential endpoint)
+
+OpenID4VCI handling is implemented with vc-k, and the issuer metadata uses `backend.public-context` as its base URL.
 
 To use the issuing process, clients need to authenticate using ID Austria first, see configuration below:
 
@@ -207,37 +212,3 @@ management:
         include: "*"
 ```
 
-### Error Handling
-
-By default, Spring Boot handles errors thrown by our code and transforms them into a JSON document in the form of
-
-```json
-{
-  "error": "Internal Server Error",
-  "path": "/credentials/status/1",
-  "status": 500,
-  "timestamp": "2022-05-18T08:24:17.239+00:00"
-}
-```
-
-If these configuration properties are set:
-
-```yaml
-server:
-  error:
-    include-exception: true
-    include-message: always
-```
-
-and the application throws an exception like `IllegalArgumentException("foo")`, the response contains:
-
-```json
-{
-  "error": "Internal Server Error",
-  "exception": "java.lang.IllegalArgumentException",
-  "message": "foo",
-  "path": "/credentials/status/1",
-  "status": 500,
-  "timestamp": "2022-05-18T08:24:17.239+00:00"
-}
-```
