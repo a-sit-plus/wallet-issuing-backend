@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.wallet.backend.config.buildIsoClaims
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
-import at.asitplus.wallet.backend.config.toEuPidCredential
+import at.asitplus.wallet.backend.config.buildEuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
@@ -32,7 +32,7 @@ class OidcIssuerCredentialDataProvider(
             if (credentialScheme.supportedRepresentations.contains(credentialRepresentation)) {
                 when (credentialRepresentation) {
                     ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
-                        EuPidScheme -> userInfo.toEuPidCredential(subjectPublicKey, expiration, credentialScheme)
+                        EuPidScheme -> userInfo.buildEuPidCredential(subjectPublicKey, expiration, credentialScheme)
                         else -> throw IllegalArgumentException("$credentialScheme not supporting $credentialRepresentation")
                     }
 
@@ -40,7 +40,7 @@ class OidcIssuerCredentialDataProvider(
                         credentialScheme.buildSdJwtClaims(userInfo, issuance, expiration, subjectPublicKey)
 
                     ConstantIndex.CredentialRepresentation.ISO_MDOC ->
-                        credentialScheme.buildIsoClaims(userInfo, issuance, expiration, subjectPublicKey)
+                        credentialScheme.buildIsoClaims(userInfo, expiration, subjectPublicKey)
                 }
             } else throw IllegalArgumentException("$credentialScheme not supporting $credentialRepresentation")
         }

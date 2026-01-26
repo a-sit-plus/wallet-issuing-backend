@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.iso.IssuerSignedItem
+import at.asitplus.openid.OidcAddressClaim
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.Base64Strict
@@ -20,6 +21,7 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
+import at.asitplus.wallet.lib.jws.JwsHeaderModifierFun
 import at.asitplus.wallet.mdl.DrivingPrivilege
 import at.asitplus.wallet.mdl.IsoSexEnum
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
@@ -49,70 +51,6 @@ import kotlin.random.nextUInt
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) =
-    IssuerSignedItem(
-        digestId = index.toUInt(),
-        random = Random.nextBytes(16),
-        elementIdentifier = name,
-        elementValue = value
-    )
-
-private const val EHIC_VCTM = """
-    eyJ2Y3QiOiJ1cm46ZXVkaTplaGljOjEiLCJuYW1lIjoiRUhJQyBTRC1KV1QgVFlQRSBNRVRBREFUQSIs
-    ImRlc2NyaXB0aW9uIjoiRXVyb3BlYW4gSGVhbHRoIEluc3VyYW5jZSBDYXJkIChFSElDKSBTRC1KV1Qg
-    VmVyaWZpYWJsZSBDcmVkZW50aWFsIFR5cGUgTWV0YWRhdGEsIGJhc2VkIG9uIGlldGYtb2F1dGgtc2Qt
-    and0LXZjIChkcmFmdCAwOSksIHVzaW5nIGEgc2luZ2xlIGxhbmd1YWdlIHRhZyAoZW4tVVMpLiIsIiRj
-    b21tZW50IjoiSW1wbGVtZW50YXRpb24gb2YgdGhpcyBleGFtcGxlIFR5cGUgTWV0YWRhdGEgbWF5IHJl
-    cXVpcmUgTWVtYmVyIFN0YXRlLXNwZWNpZmljIGNsYXJpZmljYXRpb25zIHRvIGFsaWduIHdpdGggbmF0
-    aW9uYWwgcG9saWNpZXMgZ292ZXJuaW5nIHRoZSBkaXNwbGF5IG9mIGluY2x1ZGVkIGNsYWltcy4iLCJk
-    aXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJuYW1lIjoiRUhJQyBTRC1KV1QgVkMiLCJkZXNjcmlwdGlv
-    biI6IkV1cm9wZWFuIEhlYWx0aCBJbnN1cmFuY2UgQ2FyZCAoRUhJQykgU0QtSldUIFZDIiwicmVuZGVy
-    aW5nIjp7InNpbXBsZSI6eyJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFiMjYzYiIsInRleHRfY29sb3IiOiIj
-    RkZGRkZGIn0sInN2Z190ZW1wbGF0ZXMiOlt7InVyaSI6Imh0dHBzOi8vcWEtaXNzdWVyLnd3d2FsbGV0
-    Lm9yZy9pbWFnZXMvdGVtcGxhdGUtZWhpYy5zdmciLCJ1cmkjaW50ZWdyaXR5Ijoic2hhMjU2LU5OQ0JF
-    Q1ZadzVJeFJLL3ZxLyt4ZjJPY0h2YVJLekNreGhxeGhYalpYa2c9IiwicHJvcGVydGllcyI6eyJvcmll
-    bnRhdGlvbiI6ImxhbmRzY2FwZSIsImNvbG9yX3NjaGVtZSI6ImxpZ2h0IiwiY29udHJhc3QiOiJub3Jt
-    YWwifX1dfX1dLCJjbGFpbXMiOlt7InBhdGgiOlsianRpIl0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsi
-    c3ViIl0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsiaWF0Il0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsi
-    cGVyc29uYWxfYWRtaW5pc3RyYXRpdmVfbnVtYmVyIl0sInNkIjoiYWx3YXlzIiwic3ZnX2lkIjoicGVy
-    c29uYWxfYWRtaW5pc3RyYXRpdmVfbnVtYmVyIiwiZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFi
-    ZWwiOiJTb2NpYWwgU2VjdXJpdHkgUElOIiwiZGVzY3JpcHRpb24iOiJVbmlxdWUgcGVyc29uYWwgaWRl
-    bnRpZmllciB1c2VkIGJ5IHNvY2lhbCBzZWN1cml0eSBzZXJ2aWNlcy4ifV19LHsicGF0aCI6WyJpc3N1
-    aW5nX2NvdW50cnkiXSwic2QiOiJuZXZlciIsInN2Z19pZCI6Imlzc3Vlcl9jb3VudHJ5IiwiZGlzcGxh
-    eSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJJc3N1aW5nIGNvdW50cnkiLCJkZXNjcmlwdGlvbiI6
-    IkVISUMgaXNzdWluZyBjb3VudHJ5LiJ9XX0seyJwYXRoIjpbImlzc3VpbmdfYXV0aG9yaXR5Il0sInNk
-    IjoibmV2ZXIifSx7InBhdGgiOlsiaXNzdWluZ19hdXRob3JpdHkiLCJpZCJdLCJzZCI6Im5ldmVyIiwi
-    ZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJJc3N1aW5nIGF1dGhvcml0eSBpZCIsImRl
-    c2NyaXB0aW9uIjoiRUhJQyBpc3N1aW5nIGF1dGhvcml0eSB1bmlxdWUgaWRlbnRpZmllci4ifV19LHsi
-    cGF0aCI6WyJpc3N1aW5nX2F1dGhvcml0eSIsIm5hbWUiXSwic2QiOiJuZXZlciIsImRpc3BsYXkiOlt7
-    ImxhbmciOiJlbi1VUyIsImxhYmVsIjoiSXNzdWluZyBhdXRob3JpdHkgbmFtZSIsImRlc2NyaXB0aW9u
-    IjoiRUhJQyBpc3N1aW5nIGF1dGhvcml0eSBuYW1lLiJ9XX0seyJwYXRoIjpbImRhdGVfb2ZfZXhwaXJ5
-    Il0sInNkIjoibmV2ZXIiLCJzdmdfaWQiOiJkYXRlX29mX2V4cGlyeSIsImRpc3BsYXkiOlt7Imxhbmci
-    OiJlbi1VUyIsImxhYmVsIjoiRXhwaXJ5IGRhdGUiLCJkZXNjcmlwdGlvbiI6IkVISUMgZXhwaXJhdGlv
-    biBkYXRlLiJ9XX0seyJwYXRoIjpbImRhdGVfb2ZfaXNzdWFuY2UiXSwic2QiOiJuZXZlciIsImRpc3Bs
-    YXkiOlt7ImxhbmciOiJlbi1VUyIsImxhYmVsIjoiSXNzdWUgZGF0ZSIsImRlc2NyaXB0aW9uIjoiRUhJ
-    QyB2YWxpZGl0eSBzdGFydCBkYXRlLiJ9XX0seyJwYXRoIjpbImF1dGhlbnRpY19zb3VyY2UiXSwic2Qi
-    OiJuZXZlciJ9LHsicGF0aCI6WyJhdXRoZW50aWNfc291cmNlIiwiaWQiXSwic2QiOiJuZXZlciIsInN2
-    Z19pZCI6ImF1dGhlbnRpY19zb3VyY2VfaWQiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJl
-    bCI6IkNvbXBldGVudCBpbnN0aXR1dGlvbiBpZCIsImRlc2NyaXB0aW9uIjoiSWRlbnRpZmllciBvZiB0
-    aGUgY29tcGV0ZW50IGluc2l0dXRpb24gYXMgcmVnaXN0ZXJlZCBpbiB0aGUgRUVTU0kgSW5zdGl0dXRp
-    b24gUmVwb3NpdG9yeS4ifV19LHsicGF0aCI6WyJhdXRoZW50aWNfc291cmNlIiwibmFtZSJdLCJzZCI6
-    Im5ldmVyIiwic3ZnX2lkIjoiYXV0aGVudGljX3NvdXJjZV9uYW1lIiwiZGlzcGxheSI6W3sibGFuZyI6
-    ImVuLVVTIiwibGFiZWwiOiJDb21wZXRlbnQgaW5zdGl0dXRpb24gbmFtZSIsImRlc2NyaXB0aW9uIjoi
-    TmFtZSBvZiB0aGUgY29tcGV0ZW50IGluc2l0dXRpb24gYXMgcmVnaXN0ZXJlZCBpbiB0aGUgRUVTU0kg
-    SW5zdGl0dXRpb24gUmVwb3NpdG9yeS4ifV19LHsicGF0aCI6WyJlbmRpbmdfZGF0ZSJdLCJzZCI6Im5l
-    dmVyIiwiZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJFbmRpbmcgZGF0ZSIsImRlc2Ny
-    aXB0aW9uIjoiRW5kIGRhdGUgb2YgdGhlIGluc3VyYW5jZSBjb3ZlcmFnZS4ifV19LHsicGF0aCI6WyJz
-    dGFydGluZ19kYXRlIl0sInNkIjoibmV2ZXIiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJl
-    bCI6IlN0YXJ0aW5nIGRhdGUiLCJkZXNjcmlwdGlvbiI6IlN0YXJ0IGRhdGUgb2YgdGhlIGluc3VyYW5j
-    ZSBjb3ZlcmFnZS4ifV19LHsicGF0aCI6WyJkb2N1bWVudF9udW1iZXIiXSwic2QiOiJhbHdheXMiLCJz
-    dmdfaWQiOiJkb2N1bWVudF9udW1iZXIiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJlbCI6
-    IkRvY3VtZW50IG51bWJlciIsImRlc2NyaXB0aW9uIjoiRUhJQyB1bmlxdWUgZG9jdW1lbnQgaWRlbnRp
-    Zmllci4ifV19XSwic2NoZW1hX3VyaSI6Imh0dHBzOi8vcWEtaXNzdWVyLnd3d2FsbGV0Lm9yZy9laGlj
-    LXNjaGVtYSIsInNjaGVtYV91cmkjaW50ZWdyaXR5Ijoic2hhMjU2LWNOUzJhalByNnBmWnp0RTBLNVlL
-    NGg3RWlTNzNQQ2oxL3YvM1ZmMXpkMUU9In0
-"""
-
 fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
@@ -120,39 +58,40 @@ fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     subjectPublicKey: CryptoPublicKey,
 ) = CredentialToBeIssued.VcSd(
     claims = when (this) {
-        is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
-        is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(this.useSd())
-        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, this.useSd())
-        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, this.useSd())
-        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, this.useSd())
-        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(this.useSd())
-        is EhicScheme -> userInfo.buildEhicClaims(iss, exp, this.useSd())
+        is EuPidScheme -> userInfo.buildEupidClaims(true)
+        is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(true)
+        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, false)
+        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, false)
+        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, true)
+        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(false)
+        is EhicScheme -> userInfo.buildEhicClaims(iss, exp, false)
         else -> TODO("$this is not implemented in buildSdJwtClaims()")
     },
     expiration = exp,
     scheme = this,
     subjectPublicKey = subjectPublicKey,
     userInfo = userInfo,
-    modifyHeader = {
-        if (this is EhicScheme)
-            it.copy(
-                vcTypeMetadata = setOf(EHIC_VCTM.trimIndent().replace("\n", ""))
-            )
-        else
-            it
-    }
+    modifyHeader = appendEhicVctm()
 ).also { Napier.v("${this}.buildSdJwtClaims returns $it") }
+
+private fun ConstantIndex.CredentialScheme.appendEhicVctm(): JwsHeaderModifierFun = {
+    if (this is EhicScheme)
+        it.copy(
+            vcTypeMetadata = setOf(EHIC_VCTM.trimIndent().replace("\n", ""))
+        )
+    else
+        it
+}
 
 fun ConstantIndex.CredentialScheme.buildIsoClaims(
     userInfo: OidcUserInfoExtended,
-    iss: Instant,
     exp: Instant,
     subjectPublicKey: CryptoPublicKey,
 ) = CredentialToBeIssued.Iso(
     issuerSignedItems = when (this) {
-        is EuPidScheme -> userInfo.buildEupidClaims(this.useSd())
-        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(this.useSd())
-        is AgeVerificationScheme -> userInfo.buildAgeClaims(this.useSd())
+        is EuPidScheme -> userInfo.buildEupidClaims(true)
+        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(true)
+        is AgeVerificationScheme -> userInfo.buildAgeClaims(true)
         else -> TODO("$this is not implemented in buildIsoClaims()")
     }.mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
     expiration = exp,
@@ -161,15 +100,14 @@ fun ConstantIndex.CredentialScheme.buildIsoClaims(
     userInfo = userInfo,
 ).also { Napier.v("${this}.buildIsoClaims returns $it") }
 
-fun ConstantIndex.CredentialScheme.useSd() = when (this) {
-    is EhicScheme -> false
-    is TaxIdScheme -> false
-    is PowerOfRepresentationScheme -> false
-    is CompanyRegistrationScheme -> false
-    else -> true
-}
+fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) = IssuerSignedItem(
+    digestId = index.toUInt(),
+    random = Random.nextBytes(16),
+    elementIdentifier = name,
+    elementValue = value
+)
 
-fun OidcUserInfoExtended.toEuPidCredential(
+fun OidcUserInfoExtended.buildEuPidCredential(
     pubKey: CryptoPublicKey,
     exp: Instant,
     scheme: ConstantIndex.CredentialScheme,
@@ -191,21 +129,22 @@ fun OidcUserInfoExtended.toEuPidCredential(
         ageOver62 = ageOver62,
         ageOver65 = ageOver65,
         ageOver68 = ageOver68,
-        issuanceDate = LocalDateOrInstant.LocalDate(issueDate()),
-        expiryDate = LocalDateOrInstant.LocalDate(expiryDate()),
+        issuanceDate = LocalDateOrInstant.LocalDate(issueDate),
+        expiryDate = LocalDateOrInstant.LocalDate(expiryDate),
         issuingAuthority = issuingAuthority,
         issuingCountry = issuingCountry,
-    ).also { Napier.v("eupidVcJwt returns $it") },
+    ).also { Napier.v("toEuPidCredential returns $it") },
     expiration = exp,
     scheme = scheme,
     subjectPublicKey = pubKey,
     userInfo = this,
 )
 
+
 fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
     with(EuPidSdJwtScheme.SdJwtAttributes) {
-        val (postCode, city, state, street, locator) = addressOrRandom()
-        val (_, ourBirthCity, ourBirthState, _) = randomAddress()
+        val (postCode, city, state, street, locator) = addressOrRandom
+        val (_, ourBirthCity, ourBirthState, _) = randomAddress
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -239,23 +178,23 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
             },
             claim(SEX, useSd) { gender },
             claim(NATIONALITIES, useSd) { setOf(ClaimToBeIssuedArrayElement(nationality)) },
-            claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
-            claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate()) },
+            claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate) },
+            claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate) },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
-            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
             claim(EMAIL, useSd) { email },
             claim(PHONE_NUMBER, useSd) { phoneNumber },
-            claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
+            claim(TRUST_ANCHOR, useSd) { trustAnchor },
         )
     }
 
 fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
     with(EuPidScheme.Attributes) {
-        val (postCode, city, state, street, locator) = addressOrRandom()
-        val (_, ourBirthCity, ourBirthState, _) = randomAddress()
+        val (postCode, city, state, street, locator) = addressOrRandom
+        val (_, ourBirthCity, ourBirthState, _) = randomAddress
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -271,56 +210,68 @@ fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
             claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
             claim(RESIDENT_STREET, useSd) { street },
             claim(RESIDENT_HOUSE_NUMBER, useSd) { locator.toString() },
-            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
             claim(PORTRAIT, useSd) { portrait },
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
             claim(SEX, useSd) { gender.code },
             claim(EMAIL_ADDRESS, useSd) { email },
             claim(MOBILE_PHONE_NUMBER, useSd) { phoneNumber },
-            claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate()) },
+            claim(EXPIRY_DATE, useSd) { LocalDateOrInstant.LocalDate(expiryDate) },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
-            claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate()) },
-            claim(TRUST_ANCHOR, useSd) { "https://wallet.a-sit.at/" },
-            claim(LOCATION_STATUS, useSd) { "https://wallet.a-sit.at/" },
+            claim(ISSUANCE_DATE, useSd) { LocalDateOrInstant.LocalDate(issueDate) },
+            claim(TRUST_ANCHOR, useSd) { trustAnchor },
+            claim(LOCATION_STATUS, useSd) { trustAnchor },
         )
     }
 
-private fun OidcUserInfoExtended.addressOrRandom(): Address = userInfo.address?.let {
-    if (it.postalCode != null && it.locality != null && it.region != null && it.street != null) {
+private val OidcUserInfoExtended.addressOrRandom: Address
+    get() = userInfo.address?.parseOidcAddress()
+        ?: parseIdAustriaAddress()
+        ?: randomAddress
+
+
+private fun OidcAddressClaim.parseOidcAddress(): Address? =
+    if (postalCode != null && locality != null && region != null && street != null) {
         Address(
-            postCode = it.postalCode!!,
-            city = it.locality!!,
-            state = it.region!!,
-            street = it.street!!.substringBefore(" "),
-            locator = it.street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator()
+            postCode = postalCode!!,
+            city = locality!!,
+            state = region!!,
+            street = street!!.substringBefore(" "),
+            locator = street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator
         )
     } else null
-} ?: getClaimAsString("urn:eidgvat:attributes.mainAddress")?.let { idaAddress ->
-    runCatching {
-        val json = Json.parseToJsonElement(
-            idaAddress.decodeToByteArray(Base64()).toString(Charset.defaultCharset())
-        ) as? JsonObject
-        val postCode = json.getPrimitiveContent("Postleitzahl")
-        val city = json.getPrimitiveContent("Ortschaft")
-        val street = json.getPrimitiveContent("Strasse")
-        val locator = json.getPrimitiveContent("Hausnummer")
-        if (postCode != null && city != null && street != null && locator != null) {
-            Address(
-                postCode = postCode,
-                city = city,
-                state = postCode.toState(),
-                street = street,
-                locator = locator.toIntOrNull() ?: randomAddressLocator()
-            )
-        } else {
-            null
-        }
-    }.getOrNull()
-} ?: randomAddress()
+
+private fun OidcUserInfoExtended.parseIdAustriaAddress(): Address? =
+    getClaimAsString("urn:eidgvat:attributes.mainAddress")?.let { idaAddress ->
+        runCatching {
+            idaAddress.parseIdAustriaAddress()
+        }.getOrNull()
+    }
+
+private fun String.parseIdAustriaAddress(): Address? {
+    val json = Json.parseToJsonElement(
+        decodeToByteArray(Base64()).toString(Charset.defaultCharset())
+    ) as? JsonObject
+    val postCode = json.getPrimitiveContent("Postleitzahl")
+    val city = json.getPrimitiveContent("Ortschaft")
+    val street = json.getPrimitiveContent("Strasse")
+    val locator = json.getPrimitiveContent("Hausnummer")
+    return if (postCode != null && city != null && street != null && locator != null) {
+        Address(
+            postCode = postCode,
+            city = city,
+            state = postCode.toState(),
+            street = street,
+            locator = locator.toIntOrNull() ?: randomAddressLocator
+        )
+    } else {
+        null
+    }
+}
 
 private fun JsonObject?.getPrimitiveContent(key: String) = (this?.get(key) as? JsonPrimitive)?.content
 
@@ -338,8 +289,8 @@ fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant, useSd: Boole
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
         )
     }
 
@@ -351,7 +302,7 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(REGISTERED_GIVEN_NAME, useSd) { userInfo.givenName },
             claim(REGISTERED_FAMILY_NAME, useSd) { userInfo.familyName },
             claim(RESIDENT_ADDRESS, useSd) {
-                addressOrRandom()
+                addressOrRandom
                     .let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city }
             },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
@@ -363,8 +314,8 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
         )
     }
 
@@ -411,12 +362,12 @@ fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
 
 fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Boolean): List<ClaimToBeIssued> =
     with(EhicScheme.Attributes) {
-        val issuingAuthorityId = UUID.randomUUID().toString()
-        val authenticSourceId = UUID.randomUUID().toString()
+        val issuingAuthorityId = randomIdentifier
+        val authenticSourceId = randomIdentifier
         listOfNotNull(
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { socialSecurityNumber },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
             claim(ISSUING_AUTHORITY_ID, useSd) { issuingAuthorityId },
             claim(ISSUING_AUTHORITY_NAME, useSd) { issuingAuthority },
             claim(PREFIX_ISSUING_AUTHORITY, useSd) {
@@ -439,14 +390,14 @@ fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Bool
             },
             claim(DATE_OF_ISSUANCE, useSd) { iss.toLocalDate() },
             claim(DATE_OF_EXPIRY, useSd) { exp.toLocalDate() },
-            claim(STARTING_DATE, useSd) { expiryDate() },
-            claim(ENDING_DATE, useSd) { expiryDate() },
+            claim(STARTING_DATE, useSd) { expiryDate },
+            claim(ENDING_DATE, useSd) { expiryDate },
         )
     }
 
 fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(CertificateOfResidenceDataElements) {
-        val (postCode, city, state, street, locator) = addressOrRandom()
+        val (postCode, city, state, street, locator) = addressOrRandom
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val fullAddress = formatAddress(street, locator, postCode, city)
         listOfNotNull(
@@ -467,14 +418,14 @@ fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boole
                 }
             },
             claim(GENDER, useSd) { gender },
-            claim(BIRTH_PLACE, useSd) { randomAddress().city },
+            claim(BIRTH_PLACE, useSd) { randomAddress.city },
             claim(ARRIVAL_DATE, useSd) { arrivalDate },
             claim(NATIONALITY, useSd) { nationality },
             claim(ISSUANCE_DATE, useSd) { iss },
             claim(EXPIRY_DATE, useSd) { exp },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
-            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
         )
@@ -483,28 +434,28 @@ fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boole
 
 fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
     with(MobileDrivingLicenceDataElements) {
-        val (postCode, city, state, street, locator) = addressOrRandom()
+        val (postCode, city, state, street, locator) = addressOrRandom
         val country = userInfo.address?.country ?: fallbackAddressCountry
         val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
         listOfNotNull(
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(ISSUE_DATE, useSd) { issueDate() },
-            claim(EXPIRY_DATE, useSd) { expiryDate() },
+            claim(ISSUE_DATE, useSd) { issueDate },
+            claim(EXPIRY_DATE, useSd) { expiryDate },
             claim(ISSUING_COUNTRY, useSd) { issuingCountry },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
-            claim(DOCUMENT_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
             claim(PORTRAIT, useSd) { portrait },
-            claim(DRIVING_PRIVILEGES, useSd) { arrayOf(fakeDrivingPrivilege()) },
+            claim(DRIVING_PRIVILEGES, useSd) { arrayOf(fakeDrivingPrivilege) },
             claim(UN_DISTINGUISHING_SIGN, useSd) { unDistinguishingSign },
-            claim(ADMINISTRATIVE_NUMBER, useSd) { UUID.randomUUID().toString() },
+            claim(ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
             claim(SEX, useSd) { sex },
             claim(HEIGHT, useSd) { Random.nextUInt(150u, 210u) },
             claim(WEIGHT, useSd) { Random.nextUInt(60u, 120u) },
-            claim(EYE_COLOUR, useSd) { randomEyeColour() },
-            claim(HAIR_COLOUR, useSd) { randomHairColour() },
-            claim(BIRTH_PLACE, useSd) { randomAddress().city },
+            claim(EYE_COLOUR, useSd) { randomEyeColour },
+            claim(HAIR_COLOUR, useSd) { randomHairColour },
+            claim(BIRTH_PLACE, useSd) { randomAddress.city },
             claim(RESIDENT_ADDRESS, useSd) { formatted },
             claim(PORTRAIT_CAPTURE_DATE, useSd) { portraitCaptureDate },
             claim(AGE_IN_YEARS, useSd) { ageInYears },
@@ -528,11 +479,11 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(RESIDENT_COUNTRY, useSd) { country },
             claim(FAMILY_NAME_NATIONAL_CHARACTER, useSd) { userInfo.familyName + " \uD83E\uDD84" },
             claim(GIVEN_NAME_NATIONAL_CHARACTER, useSd) { userInfo.givenName + " \uD83E\uDD84" },
-            claim(SIGNATURE_USUAL_MARK, useSd) { signature() },
-            claim(BIOMETRIC_TEMPLATE_FACE, useSd) { signature() },
-            claim(BIOMETRIC_TEMPLATE_FINGER, useSd) { signature() },
-            claim(BIOMETRIC_TEMPLATE_SIGNATURE_SIGN, useSd) { signature() },
-            claim(BIOMETRIC_TEMPLATE_IRIS, useSd) { signature() },
+            claim(SIGNATURE_USUAL_MARK, useSd) { pictureTripleX },
+            claim(BIOMETRIC_TEMPLATE_FACE, useSd) { pictureTripleX },
+            claim(BIOMETRIC_TEMPLATE_FINGER, useSd) { pictureTripleX },
+            claim(BIOMETRIC_TEMPLATE_SIGNATURE_SIGN, useSd) { pictureTripleX },
+            claim(BIOMETRIC_TEMPLATE_IRIS, useSd) { pictureTripleX },
         )
     }
 
@@ -553,19 +504,16 @@ fun OidcUserInfoExtended.buildAgeClaims(useSd: Boolean) =
         )
     }
 
-fun fakeDrivingPrivilege() = DrivingPrivilege(
-    vehicleCategoryCode = "B",
-    issueDate = issueDate(),
-    expiryDate = expiryDate(),
-)
-
-val OidcUserInfoExtended.bpk: String
-    get() = getClaimAsString("urn:pvpgvat:oidc.bpk")
-        ?: userInfo.subject
+val fakeDrivingPrivilege
+    get() = DrivingPrivilege(
+        vehicleCategoryCode = "B",
+        issueDate = issueDate,
+        expiryDate = expiryDate,
+    )
 
 val OidcUserInfoExtended.dateOfBirth: LocalDate
     get() = userInfo.birthDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        ?: randomDateOfBirth()
+        ?: randomDateOfBirth
 
 val OidcUserInfoExtended.email
     get() = userInfo.email
@@ -616,8 +564,6 @@ val OidcUserInfoExtended.ageOver18: Boolean
         ?: getClaimAsString("org.iso.18013.5.1:age_over_18")?.toBoolean()
         ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(18)))
 
-fun Instant.toLocalDate() = toLocalDateTime(TimeZone.currentSystemDefault()).date
-
 val OidcUserInfoExtended.ageOver21: Boolean
     get() = getClaimAsString("org.iso.18013.5.1:age_over_21")?.toBoolean()
         ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(21)))
@@ -641,6 +587,8 @@ val OidcUserInfoExtended.ageOver65: Boolean
 val OidcUserInfoExtended.ageOver68: Boolean
     get() = getClaimAsString("org.iso.18013.5.1:age_over_68")?.toBoolean()
         ?: (dateOfBirth < Clock.System.now().toLocalDate().minus(DatePeriod(68)))
+
+fun Instant.toLocalDate() = toLocalDateTime(TimeZone.currentSystemDefault()).date
 
 val OidcUserInfoExtended.ageInYears: UInt
     get() = (Clock.System.now().toLocalDate().minus(dateOfBirth)).years.toUInt()
@@ -703,10 +651,11 @@ private fun formatAddress(street: String, locator: Int, postalCode: String, city
 private fun claim(key: String, useSd: Boolean, value: () -> Any?): ClaimToBeIssued? =
     value()?.let { ClaimToBeIssued(key, it, useSd) }
 
-private fun expiryDate() = LocalDate.parse("2026-12-31")
-
-private fun issueDate() = LocalDate.parse("2023-01-01")
-
+private val randomIdentifier: String
+    get() = UUID.randomUUID().toString()
+private val expiryDate = LocalDate.parse("2026-12-31")
+private val issueDate = LocalDate.parse("2023-01-01")
+private const val trustAnchor = "https://wallet.a-sit.at/"
 private const val issuingCountry = "AT"
 private const val issuingJurisdiction = "AT-0"
 private const val issuingAuthority = "Miniwahr"
@@ -728,35 +677,60 @@ private fun String.toState(): String = when {
     else -> "Österreich"
 }
 
-private fun randomEyeColour() =
-    listOf("black", "blue", "brown", "dichromatic", "grey", "green", "hazel", "maroon", "pink", "unknown").random()
+private val randomEyeColour
+    get() = listOf(
+        "black",
+        "blue",
+        "brown",
+        "dichromatic",
+        "grey",
+        "green",
+        "hazel",
+        "maroon",
+        "pink",
+        "unknown"
+    ).random()
 
-private fun randomHairColour() =
-    listOf("bald", "black", "blond", "brown", "grey", "red", "auburn", "sandy", "white", "unknown").random()
+private val randomHairColour
+    get() = listOf(
+        "bald",
+        "black",
+        "blond",
+        "brown",
+        "grey",
+        "red",
+        "auburn",
+        "sandy",
+        "white",
+        "unknown"
+    ).random()
 
 data class Address(val postCode: String, val city: String, val state: String, val street: String, val locator: Int)
 
-private fun randomAddress(): Address =
-    listOf(
-        Address("6900", "Bregenz", "Vorarlberg", randomStreet(), randomAddressLocator()),
-        Address("6010", "Innsbruck", "Tirol", randomStreet(), randomAddressLocator()),
-        Address("5010", "Salzburg", "Salzburg", randomStreet(), randomAddressLocator()),
-        Address("4020", "Linz", "Oberösterreich", randomStreet(), randomAddressLocator()),
-        Address("3100", "St. Pölten", "Niederösterreich", randomStreet(), randomAddressLocator()),
-        Address("1010", "Wien", "Wien", randomStreet(), randomAddressLocator()),
-        Address("8010", "Graz", "Steiermark", randomStreet(), randomAddressLocator()),
-        Address("7000", "Eisenstadt", "Burgenland", randomStreet(), randomAddressLocator()),
-        Address("9020", "Klagenfurt", "Kärnten", randomStreet(), randomAddressLocator())
+private val randomAddress: Address
+    get() = listOf(
+        Address("6900", "Bregenz", "Vorarlberg", randomStreet, randomAddressLocator),
+        Address("6010", "Innsbruck", "Tirol", randomStreet, randomAddressLocator),
+        Address("5010", "Salzburg", "Salzburg", randomStreet, randomAddressLocator),
+        Address("4020", "Linz", "Oberösterreich", randomStreet, randomAddressLocator),
+        Address("3100", "St. Pölten", "Niederösterreich", randomStreet, randomAddressLocator),
+        Address("1010", "Wien", "Wien", randomStreet, randomAddressLocator),
+        Address("8010", "Graz", "Steiermark", randomStreet, randomAddressLocator),
+        Address("7000", "Eisenstadt", "Burgenland", randomStreet, randomAddressLocator),
+        Address("9020", "Klagenfurt", "Kärnten", randomStreet, randomAddressLocator)
     ).random()
 
-private fun randomAddressLocator() = Random.nextInt(1, 99)
+private val randomAddressLocator
+    get() = Random.nextInt(1, 99)
 
-private fun randomStreet() =
-    listOf("Hauptstraße", "Herrengasse", "Hauptplatz", "Landstraße", "Dorfstraße").random()
+private val randomStreet
+    get() = listOf("Hauptstraße", "Herrengasse", "Hauptplatz", "Landstraße", "Dorfstraße").random()
 
-private fun randomDateOfBirth() = LocalDate(Random.nextInt(1970, 2000), Random.nextInt(1, 12), Random.nextInt(1, 28))
+private val randomDateOfBirth
+    get() = LocalDate(Random.nextInt(1970, 2000), Random.nextInt(1, 12), Random.nextInt(1, 28))
 
-private fun signature() = """
+private val pictureTripleX
+    get() = """
     /9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gKwSUNDX1BST0ZJTEUA
     AQEAAAKgbGNtcwRAAABtbnRyUkdCIFhZWiAH6QAEAAcABgAbAAphY3NwQVBQTAAAAAAAAAAAAAAA
     AAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWxjbXMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -812,3 +786,59 @@ private fun signature() = """
     BmkXWo2G2fIUR6CBBZumEwwT1cCNZhCErmpdyz7GO7W5Q/F0MBj3MoCUHfHVe7CkJcNKjEDCeP73
     vx2fPC3+/wCv9sLW1/B9vH//2Q==
 """.trimIndent().decodeToByteArray(Base64())
+
+private const val EHIC_VCTM = """
+    eyJ2Y3QiOiJ1cm46ZXVkaTplaGljOjEiLCJuYW1lIjoiRUhJQyBTRC1KV1QgVFlQRSBNRVRBREFUQSIs
+    ImRlc2NyaXB0aW9uIjoiRXVyb3BlYW4gSGVhbHRoIEluc3VyYW5jZSBDYXJkIChFSElDKSBTRC1KV1Qg
+    VmVyaWZpYWJsZSBDcmVkZW50aWFsIFR5cGUgTWV0YWRhdGEsIGJhc2VkIG9uIGlldGYtb2F1dGgtc2Qt
+    and0LXZjIChkcmFmdCAwOSksIHVzaW5nIGEgc2luZ2xlIGxhbmd1YWdlIHRhZyAoZW4tVVMpLiIsIiRj
+    b21tZW50IjoiSW1wbGVtZW50YXRpb24gb2YgdGhpcyBleGFtcGxlIFR5cGUgTWV0YWRhdGEgbWF5IHJl
+    cXVpcmUgTWVtYmVyIFN0YXRlLXNwZWNpZmljIGNsYXJpZmljYXRpb25zIHRvIGFsaWduIHdpdGggbmF0
+    aW9uYWwgcG9saWNpZXMgZ292ZXJuaW5nIHRoZSBkaXNwbGF5IG9mIGluY2x1ZGVkIGNsYWltcy4iLCJk
+    aXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJuYW1lIjoiRUhJQyBTRC1KV1QgVkMiLCJkZXNjcmlwdGlv
+    biI6IkV1cm9wZWFuIEhlYWx0aCBJbnN1cmFuY2UgQ2FyZCAoRUhJQykgU0QtSldUIFZDIiwicmVuZGVy
+    aW5nIjp7InNpbXBsZSI6eyJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFiMjYzYiIsInRleHRfY29sb3IiOiIj
+    RkZGRkZGIn0sInN2Z190ZW1wbGF0ZXMiOlt7InVyaSI6Imh0dHBzOi8vcWEtaXNzdWVyLnd3d2FsbGV0
+    Lm9yZy9pbWFnZXMvdGVtcGxhdGUtZWhpYy5zdmciLCJ1cmkjaW50ZWdyaXR5Ijoic2hhMjU2LU5OQ0JF
+    Q1ZadzVJeFJLL3ZxLyt4ZjJPY0h2YVJLekNreGhxeGhYalpYa2c9IiwicHJvcGVydGllcyI6eyJvcmll
+    bnRhdGlvbiI6ImxhbmRzY2FwZSIsImNvbG9yX3NjaGVtZSI6ImxpZ2h0IiwiY29udHJhc3QiOiJub3Jt
+    YWwifX1dfX1dLCJjbGFpbXMiOlt7InBhdGgiOlsianRpIl0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsi
+    c3ViIl0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsiaWF0Il0sInNkIjoibmV2ZXIifSx7InBhdGgiOlsi
+    cGVyc29uYWxfYWRtaW5pc3RyYXRpdmVfbnVtYmVyIl0sInNkIjoiYWx3YXlzIiwic3ZnX2lkIjoicGVy
+    c29uYWxfYWRtaW5pc3RyYXRpdmVfbnVtYmVyIiwiZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFi
+    ZWwiOiJTb2NpYWwgU2VjdXJpdHkgUElOIiwiZGVzY3JpcHRpb24iOiJVbmlxdWUgcGVyc29uYWwgaWRl
+    bnRpZmllciB1c2VkIGJ5IHNvY2lhbCBzZWN1cml0eSBzZXJ2aWNlcy4ifV19LHsicGF0aCI6WyJpc3N1
+    aW5nX2NvdW50cnkiXSwic2QiOiJuZXZlciIsInN2Z19pZCI6Imlzc3Vlcl9jb3VudHJ5IiwiZGlzcGxh
+    eSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJJc3N1aW5nIGNvdW50cnkiLCJkZXNjcmlwdGlvbiI6
+    IkVISUMgaXNzdWluZyBjb3VudHJ5LiJ9XX0seyJwYXRoIjpbImlzc3VpbmdfYXV0aG9yaXR5Il0sInNk
+    IjoibmV2ZXIifSx7InBhdGgiOlsiaXNzdWluZ19hdXRob3JpdHkiLCJpZCJdLCJzZCI6Im5ldmVyIiwi
+    ZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJJc3N1aW5nIGF1dGhvcml0eSBpZCIsImRl
+    c2NyaXB0aW9uIjoiRUhJQyBpc3N1aW5nIGF1dGhvcml0eSB1bmlxdWUgaWRlbnRpZmllci4ifV19LHsi
+    cGF0aCI6WyJpc3N1aW5nX2F1dGhvcml0eSIsIm5hbWUiXSwic2QiOiJuZXZlciIsImRpc3BsYXkiOlt7
+    ImxhbmciOiJlbi1VUyIsImxhYmVsIjoiSXNzdWluZyBhdXRob3JpdHkgbmFtZSIsImRlc2NyaXB0aW9u
+    IjoiRUhJQyBpc3N1aW5nIGF1dGhvcml0eSBuYW1lLiJ9XX0seyJwYXRoIjpbImRhdGVfb2ZfZXhwaXJ5
+    Il0sInNkIjoibmV2ZXIiLCJzdmdfaWQiOiJkYXRlX29mX2V4cGlyeSIsImRpc3BsYXkiOlt7Imxhbmci
+    OiJlbi1VUyIsImxhYmVsIjoiRXhwaXJ5IGRhdGUiLCJkZXNjcmlwdGlvbiI6IkVISUMgZXhwaXJhdGlv
+    biBkYXRlLiJ9XX0seyJwYXRoIjpbImRhdGVfb2ZfaXNzdWFuY2UiXSwic2QiOiJuZXZlciIsImRpc3Bs
+    YXkiOlt7ImxhbmciOiJlbi1VUyIsImxhYmVsIjoiSXNzdWUgZGF0ZSIsImRlc2NyaXB0aW9uIjoiRUhJ
+    QyB2YWxpZGl0eSBzdGFydCBkYXRlLiJ9XX0seyJwYXRoIjpbImF1dGhlbnRpY19zb3VyY2UiXSwic2Qi
+    OiJuZXZlciJ9LHsicGF0aCI6WyJhdXRoZW50aWNfc291cmNlIiwiaWQiXSwic2QiOiJuZXZlciIsInN2
+    Z19pZCI6ImF1dGhlbnRpY19zb3VyY2VfaWQiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJl
+    bCI6IkNvbXBldGVudCBpbnN0aXR1dGlvbiBpZCIsImRlc2NyaXB0aW9uIjoiSWRlbnRpZmllciBvZiB0
+    aGUgY29tcGV0ZW50IGluc2l0dXRpb24gYXMgcmVnaXN0ZXJlZCBpbiB0aGUgRUVTU0kgSW5zdGl0dXRp
+    b24gUmVwb3NpdG9yeS4ifV19LHsicGF0aCI6WyJhdXRoZW50aWNfc291cmNlIiwibmFtZSJdLCJzZCI6
+    Im5ldmVyIiwic3ZnX2lkIjoiYXV0aGVudGljX3NvdXJjZV9uYW1lIiwiZGlzcGxheSI6W3sibGFuZyI6
+    ImVuLVVTIiwibGFiZWwiOiJDb21wZXRlbnQgaW5zdGl0dXRpb24gbmFtZSIsImRlc2NyaXB0aW9uIjoi
+    TmFtZSBvZiB0aGUgY29tcGV0ZW50IGluc2l0dXRpb24gYXMgcmVnaXN0ZXJlZCBpbiB0aGUgRUVTU0kg
+    SW5zdGl0dXRpb24gUmVwb3NpdG9yeS4ifV19LHsicGF0aCI6WyJlbmRpbmdfZGF0ZSJdLCJzZCI6Im5l
+    dmVyIiwiZGlzcGxheSI6W3sibGFuZyI6ImVuLVVTIiwibGFiZWwiOiJFbmRpbmcgZGF0ZSIsImRlc2Ny
+    aXB0aW9uIjoiRW5kIGRhdGUgb2YgdGhlIGluc3VyYW5jZSBjb3ZlcmFnZS4ifV19LHsicGF0aCI6WyJz
+    dGFydGluZ19kYXRlIl0sInNkIjoibmV2ZXIiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJl
+    bCI6IlN0YXJ0aW5nIGRhdGUiLCJkZXNjcmlwdGlvbiI6IlN0YXJ0IGRhdGUgb2YgdGhlIGluc3VyYW5j
+    ZSBjb3ZlcmFnZS4ifV19LHsicGF0aCI6WyJkb2N1bWVudF9udW1iZXIiXSwic2QiOiJhbHdheXMiLCJz
+    dmdfaWQiOiJkb2N1bWVudF9udW1iZXIiLCJkaXNwbGF5IjpbeyJsYW5nIjoiZW4tVVMiLCJsYWJlbCI6
+    IkRvY3VtZW50IG51bWJlciIsImRlc2NyaXB0aW9uIjoiRUhJQyB1bmlxdWUgZG9jdW1lbnQgaWRlbnRp
+    Zmllci4ifV19XSwic2NoZW1hX3VyaSI6Imh0dHBzOi8vcWEtaXNzdWVyLnd3d2FsbGV0Lm9yZy9laGlj
+    LXNjaGVtYSIsInNjaGVtYV91cmkjaW50ZWdyaXR5Ijoic2hhMjU2LWNOUzJhalByNnBmWnp0RTBLNVlL
+    NGg3RWlTNzNQQ2oxL3YvM1ZmMXpkMUU9In0
+"""
