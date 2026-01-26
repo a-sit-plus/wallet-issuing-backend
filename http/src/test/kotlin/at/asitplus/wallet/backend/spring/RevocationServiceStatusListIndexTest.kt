@@ -153,7 +153,8 @@ class RevocationServiceStatusListIndexTest {
             userInfo = userInfo
         )
         val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
-        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).isSuccess shouldBe true
+        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId))
+            .onFailure { println(it) }.isSuccess shouldBe true
         return reference.statusListIndex
     }
 

@@ -150,7 +150,7 @@ class PublicController(
             validatorSdJwt = ValidatorSdJwt(
                 verifyJwsObject = VerifyJwsObject(
                     publicKeyLookup = {
-                        (it.payload as? JsonObject)?.get("iss")?.jsonPrimitive?.content?.let<String, Set<JsonWebKey>?> { iss ->
+                        (it.payload as? JsonObject)?.get("iss")?.jsonPrimitive?.content?.let { iss ->
                             val url = OAuth2Utils.insertWellKnownPath(iss, OpenIdConstants.WellKnownPaths.JwtVcIssuer)
                             Napier.i("Resolving Key for $iss from $url")
                             httpClient.get(url).body<JwtVcIssuerMetadata>().jsonWebKeySet?.keys?.toSet<JsonWebKey>()
@@ -191,7 +191,7 @@ class PublicController(
         model: ModelMap,
         request: HttpServletRequest,
         @RequestParam("error", required = false) error: String? = null,
-    ): ModelAndView {
+    ) = run {
         model["oauthUrls"] = clientRegistrations?.map {
             OAuth2ClientRegistration(it.clientName, it.loginUrl())
         }
@@ -209,7 +209,7 @@ class PublicController(
         model["loginPidUrl"] = qrCodeUrl
         model["loginPidQrCode"] = QRCode.ofSquares().build(qrCodeUrl).render().getBytes()
             .encodeToString(Base64())
-        return ModelAndView("login", model)
+        ModelAndView("login", model)
     }
 
     @Serializable

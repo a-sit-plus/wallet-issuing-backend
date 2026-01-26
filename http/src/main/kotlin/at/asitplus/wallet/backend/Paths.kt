@@ -27,4 +27,12 @@ object Paths {
             const val CurrentUrl = "/credentials/status/current"
         }
     }
+    object Schemes {
+        const val HaipVci = "haip-vci"
+        const val HaipVp = "haip-vp"
+        const val Av = "av"
+    }
+    object QueryParams {
+        const val CredentialOfferUri = "credential_offer_uri"
+    }
 }
