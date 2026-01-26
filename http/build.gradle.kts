@@ -69,7 +69,6 @@ dependencies {
     implementation(libs.wallet.por)
     implementation(libs.wallet.cor)
     implementation(libs.wallet.ehic)
-    implementation(libs.wallet.cr)
     implementation(libs.wallet.av)
     implementation(libs.wallet.vck.jvm)
     implementation(libs.wallet.vck.openid.ktor.jvm)

@@ -10,8 +10,6 @@ import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
-import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
-import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidCredential
@@ -156,25 +154,6 @@ class SpringBootSecurityIssuingTest {
         SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
             .reconstructedJsonObject.shouldNotBeNull()
             .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
-    }
-
-    @Test
-    @WithOAuth2AuthenticationToken
-    fun cr_sdjwt_ok() = runTest {
-        val requestOptions = RequestOptions(CompanyRegistrationScheme, SD_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
-            subject.shouldNotBeNull()
-            disclosureDigests.shouldBeNull()
-        }
-        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
-            .reconstructedJsonObject.shouldNotBeNull()
-            .keys.shouldContain(CompanyRegistrationDataElements.COMPANY_NAME)
     }
 
     @Test

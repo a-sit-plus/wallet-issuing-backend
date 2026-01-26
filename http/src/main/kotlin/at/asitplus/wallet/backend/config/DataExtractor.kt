@@ -6,8 +6,6 @@ import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
-import at.asitplus.wallet.companyregistration.CompanyRegistrationDataElements
-import at.asitplus.wallet.companyregistration.CompanyRegistrationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
 import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.ehic.EhicScheme
@@ -28,7 +26,6 @@ import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.LocalDate
 import kotlin.random.Random
 import kotlin.time.Instant
 
@@ -44,7 +41,6 @@ fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
         is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, false)
         is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, false)
         is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, true)
-        is CompanyRegistrationScheme -> userInfo.buildCompanyRegistrationClaims(false)
         is EhicScheme -> userInfo.buildEhicClaims(iss, exp, false)
         else -> TODO("$this is not implemented in buildSdJwtClaims()")
     },
@@ -267,47 +263,6 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(DOCUMENT_NUMBER, useSd) { randomIdentifier },
             claim(ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
-        )
-    }
-
-fun OidcUserInfoExtended.buildCompanyRegistrationClaims(useSd: Boolean) =
-    with(CompanyRegistrationDataElements) {
-        listOfNotNull(
-            claim(COMPANY_NAME, useSd) { legalName },
-            claim(COMPANY_TYPE, useSd) { "Einzelunternehmen" },
-            claim(COMPANY_STATUS, useSd) { "economically active" },
-            claim(COMPANY_ACTIVITY, useSd) {
-                with(CompanyRegistrationDataElements.CompanyActivity) {
-                    listOf(
-                        claim(NACE_CODE, useSd) { "J62" },
-                        //claim(ACTIVITY_DESCRIPTION, useSd){"7500"}
-                    )
-                }
-            },
-            claim(REGISTRATION_DATE, useSd) { LocalDate(2015, 6, 25) },
-            //claim(COMPANY_END_DATE, useSd) { LocalDate(2025, Random.nextInt(1, 12), Random.nextInt(1, 28)) },
-            claim(COMPANY_EUID, useSd) { "ATCHCUSP.69743824" },
-            claim(VAT_NUMBER, useSd) { "ATU69743824" },
-            claim(COMPANY_CONTACT_DATA, useSd) {
-                with(CompanyRegistrationDataElements.ContactData) {
-                    listOf(
-                        claim(EMAIL, useSd) { "office@a-sit.at" },
-                        claim(TELEPHONE, useSd) { "+43555${Random.nextInt(1000, 9999)}" }
-                    )
-                }
-            },
-            claim(REGISTERED_ADDRESS, useSd) {
-                with(CompanyRegistrationDataElements.Address) {
-                    listOf(
-                        claim(THOROUGHFARE, useSd) { "Seidlgasse" },
-                        claim(LOCATOR_DESIGNATOR, useSd) { "22/9" },
-                        claim(POST_CODE, useSd) { "1030" },
-                        claim(POST_NAME, useSd) { "Wien" },
-                        claim(ADMIN_UNIT_L_1, useSd) { "AT" },
-                        claim(ADMIN_UNIT_L_2, useSd) { "Wien" }
-                    )
-                }
-            },
         )
     }
 
