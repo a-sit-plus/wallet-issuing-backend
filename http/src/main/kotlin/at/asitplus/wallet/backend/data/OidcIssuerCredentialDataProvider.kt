@@ -2,9 +2,9 @@ package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.wallet.backend.config.buildEuPidCredential
 import at.asitplus.wallet.backend.config.buildIsoClaims
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
-import at.asitplus.wallet.backend.config.buildEuPidCredential
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
