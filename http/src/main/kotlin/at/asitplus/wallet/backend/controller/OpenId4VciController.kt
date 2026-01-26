@@ -18,12 +18,16 @@ import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.MetadataConfiguration
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.MediaTypes
 import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.wallet.lib.ktor.openid.DPoP
 import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
+import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestation
+import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestationPop
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -42,7 +46,6 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
@@ -76,16 +79,18 @@ class OpenId4VciController(
     fun issuerMetadata(): ResponseEntity<IssuerMetadata> {
         val metadata = credentialIssuer.metadata.copy(
             displayProperties = setOf(
-                DisplayProperties(
-                    name = "A-SIT Plus Wallet Issuer M7",
-                    locale = "en-US",
-                    logo = DisplayLogoProperties(uri = "https://wallet.a-sit.at/assets/images/logo.svg")
-                )
+                backendConfigurationProperties.metadata.toDisplayProperties()
             )
         )
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
         return ResponseEntity.ok(metadata)
     }
+
+    private fun MetadataConfiguration.toDisplayProperties() = DisplayProperties(
+        name = name,
+        locale = "en-US",
+        logo = DisplayLogoProperties(uri = logo)
+    )
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
     fun openidMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
@@ -143,6 +148,7 @@ class OpenId4VciController(
             buildTabItemAuthCode(
                 title = "PID-SD-JWT-Code",
                 description = "PID in SD-JWT with auth code",
+                // TODO deprecated
                 configurationId = encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
                 urlScheme = "haip-vci"
             ),
@@ -293,7 +299,7 @@ class OpenId4VciController(
         Napier.d("${Paths.ParUrl} returns $result")
         return@runBlocking ResponseEntity
             .status(HttpStatus.CREATED)
-            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
+            .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .body(vckJsonSerializer.encodeToString(result))
     }
 
@@ -307,8 +313,8 @@ class OpenId4VciController(
         }
         Napier.d("${Paths.NonceUrl} returns $result")
         return@runBlocking ResponseEntity.status(HttpStatus.OK)
-            .header(HttpHeaders.CACHE_CONTROL, "no-store")
-            .header(io.ktor.http.HttpHeaders.DPoPNonce, result.dpopNonce)
+            .header(HttpHeaders.CacheControl, "no-store")
+            .header(HttpHeaders.DPoPNonce, result.dpopNonce)
             .body(vckJsonSerializer.encodeToString(result.response))
     }
 
@@ -344,7 +350,7 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.AuthorizeUrl} returns ${result.url}")
-        val userAgent = request.getHeader(HttpHeaders.USER_AGENT)
+        val userAgent = request.getHeader(HttpHeaders.UserAgent)
         return@runBlocking if (userAgent?.isSafariOniPhone() == true) {
             model["url"] = result.url
             ModelAndView("iphone-redirect")
@@ -375,16 +381,16 @@ class OpenId4VciController(
         Napier.d("${Paths.TokenUrl} returns $result")
         return@runBlocking ResponseEntity
             .status(HttpStatus.OK)
-            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
+            .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
             .body(vckJsonSerializer.encodeToString(result))
     }
 
     private fun HttpServletRequest.toRequestInfo() = RequestInfo(
         url = requestURL.toString(),
         method = HttpMethod.parse(method),
-        dpop = getHeader("DPoP"),
-        clientAttestation = getHeader("OAuth-Client-Attestation"),
-        clientAttestationPop = getHeader("OAuth-Client-Attestation-PoP"),
+        dpop = getHeader(HttpHeaders.DPoP),
+        clientAttestation = getHeader(HttpHeaders.OAuthClientAttestation),
+        clientAttestationPop = getHeader(HttpHeaders.OAuthClientAttestationPop),
     )
 
     @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE])
@@ -393,7 +399,7 @@ class OpenId4VciController(
         request: HttpServletRequest,
     ): ResponseEntity<*> = runBlocking {
         Napier.i("${Paths.CredentialUrl} called")
-        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
+        val authorizationHeader = request.getHeader(HttpHeaders.Authorization)
         Napier.v("${Paths.CredentialUrl} called with $authorizationHeader and $requestBody")
         val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
             Napier.w("${Paths.CredentialUrl} can't parse request", it)
@@ -424,27 +430,27 @@ class OpenId4VciController(
 
     private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String?> =
         ResponseEntity.status(HttpStatus.OK)
-            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
-            .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JSON)
+            .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
+            .header(HttpHeaders.ContentType, MediaTypes.Application.JSON)
             .body(vckJsonSerializer.encodeToString(response))
 
     private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String?> =
         ResponseEntity
             .status(HttpStatus.OK)
-            .header(io.ktor.http.HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
-            .header(HttpHeaders.CONTENT_TYPE, MediaTypes.Application.JWT)
+            .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
+            .header(HttpHeaders.ContentType, MediaTypes.Application.JWT)
             .body(vckJsonSerializer.encodeToString(response.serialize()))
 
     private fun buildOidcRedirect(location: String): ResponseEntity<String> = ResponseEntity
         .status(HttpStatus.FOUND)
-        .header(HttpHeaders.LOCATION, location)
+        .header(HttpHeaders.Location, location)
         .build()
 
     private fun buildOidcErrorResponse(throwable: Throwable): ResponseEntity<OAuth2Error> =
         when (throwable) {
             is OAuth2Exception.UseDpopNonce -> ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .header("DPoP-Nonce", throwable.dpopNonce)
+                .header(HttpHeaders.DPoPNonce, throwable.dpopNonce)
                 .body(throwable.toOAuth2Error())
 
             is OAuth2Exception -> ResponseEntity

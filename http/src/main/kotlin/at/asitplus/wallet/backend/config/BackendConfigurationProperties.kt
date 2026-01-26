@@ -16,6 +16,13 @@ data class BackendConfigurationProperties(
     val verifierKey: KeyConfiguration = KeyConfiguration(),
     /** Configure details about revocation lists. */
     val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
+    /** Issuer name for OID4VCI metadata. */
+    val metadata: MetadataConfiguration = MetadataConfiguration(),
+)
+
+data class MetadataConfiguration(
+    val name: String = "A-SIT Plus Wallet Issuer",
+    val logo: String = "https://wallet.a-sit.at/assets/images/logo.svg",
 )
 
 data class CredentialConfigurationProperties(
