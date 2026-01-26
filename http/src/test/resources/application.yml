@@ -1,44 +1,9 @@
 logging:
   level:
-    at.asitplus: trace
+    at.asitplus: debug
 spring:
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        jdbc:
-          lob:
-            non_contextual_creation: true
   datasource:
     url: "jdbc:h2:mem:userstore;DB_CLOSE_ON_EXIT=FALSE"
   test:
     mockmvc:
       print: log_debug
-  config:
-    import:
-  cloud:
-    config:
-      enabled: false
-  security:
-    oauth2:
-      client:
-        registration:
-          eidea:
-            client-id: https://eid.a-sit.at/wallet
-            client-secret: MASKED
-            scope: "openid, profile"
-            client-authentication-method: client_secret_post
-            authorization-grant-type: authorization_code
-            redirect-uri: https://eid.a-sit.at/wallet/login/oauth2/code/eidea
-        provider:
-          eidea:
-            authorization-uri: "http://localhost:8080/"
-            token-uri: "http://localhost:8080/"
-backend:
-  authn:
-    device-binding:
-      attestation:
-        noop: true
-  attribute-source:
-    type: EIDAS

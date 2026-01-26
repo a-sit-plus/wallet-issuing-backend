@@ -1,6 +1,6 @@
 # Wallet Issuing Service (IDA)
 
-This service implements OpenID for Verifiable Credential Issuance (OpenID4VCI) using vc-k to issue Verifiable Credentials to compatible wallets.
+This service implements OpenID for Verifiable Credential Issuance (OpenID4VCI) using [VC-K](https://github.com/a-sit-plus/vck) to issue Verifiable Credentials to compatible wallets.
 
 ## Main Features
 
@@ -48,6 +48,7 @@ backend:
     regular-check-rate: PT1H
     path: cache/revocation-lists/
   issuer-key: {{ KEY_CONFIG }}
+  verifier-key: {{ KEY_CONFIG }}
 ```
 
 Options for the issuer public URL and credential lifetimes:
@@ -61,7 +62,7 @@ Options for revocation lists for Verifiable Credentials under `backend.revocatio
  - `regular-check-rate` to set the rate at which the service shall check for outdated revocation lists (see `regular-write-timeout`) that need to be written, defaults to `PT1H`, i.e. 1 hour.
  - `path` to set the directory for revocation list storage, e.g. `cache/revocation-lists/`
 
-Alternative configuration for the issuer signing key under `backend.issuer-key`, depicted as `{{ KEY_CONFIG }}` above:
+Alternative configuration for the issuer signing key under `backend.issuer-key`, or the verifier key under `backend.verifier-key`, depicted as `{{ KEY_CONFIG }}` above:
 
 ```yaml
 type: MEMORY
@@ -99,7 +100,7 @@ Issuer metadata and endpoints:
 - `/token` (token endpoint)
 - `/credential` (credential endpoint)
 
-OpenID4VCI handling is implemented with vc-k, and the issuer metadata uses `backend.public-context` as its base URL.
+OpenID4VCI handling is implemented with VC-K, and the issuer metadata uses `backend.public-context` as its base URL.
 
 To use the issuing process, clients need to authenticate using ID Austria first, see configuration below:
 
@@ -141,7 +142,6 @@ server:
 
 This Spring Boot service can be configured to log to a file:
 
-
 ```yaml
 logging:
   level:
@@ -169,7 +169,7 @@ spring:
 ```
 
 
-Configuration to use dedicated PGSQL database:
+Configuration to use dedicated Postgres database:
 
 ```yaml
 spring:

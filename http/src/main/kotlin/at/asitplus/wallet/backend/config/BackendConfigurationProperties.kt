@@ -6,49 +6,39 @@ import kotlin.time.Duration
 
 @ConfigurationProperties(prefix = "backend")
 data class BackendConfigurationProperties(
-    /**
-     * Public URL of this instance, used for several URLs in messages sent to the Wallet
-     */
+    /** Public URL of this instance, used for several URLs in messages sent to the Wallet. */
     val publicContext: String = "http://localhost:8080/", // TODO convert to URL?
-    /**
-     * Configuration for issued credentials
-     */
+    /** Configuration for issued credentials. */
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
-    /**
-     * Key used for signing issued credentials
-     */
+    /** Key used for signing issued credentials. */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
-    /**
-     * Configure details about revocation lists for Verifiable Credentials
-     */
+    /** Key used for signing authn requests for PID login */
+    val verifierKey: KeyConfiguration = KeyConfiguration(),
+    /** Configure details about revocation lists. */
     val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
 )
 
 data class CredentialConfigurationProperties(
-    /**
-     * Lifetime of the credentials issued, e.g. 60 minutes (`PT6M`) or 180 days (`P180D`)
-     */
-    private val lifetime: String = "PT6M",
+    /** Lifetime of the credentials issued, defaults to `P7D`. */
+    private val lifetime: String = "P7D",
 ) {
     //eager evaluation → fail on load
     val lifeTime: Duration = Duration.parse(lifetime)
 }
 
 data class RevocationListConfigurationProperties(
-    /**
-     * Lifetime of a single revocation list, defaults to `P7D`, i.e. 7 days.
-     */
+    /** Lifetime of a single revocation list, defaults to `P7D`, i.e. 7 days. */
     private val lifetime: String = "P7D",
-    /**
-     * Timeout after which to write revocation lists again, that have not been written recently, defaults to `P5D`.
-     */
+    /** Timeout after which to write revocation lists again, that have not been written recently, defaults to `P5D`. */
     private val regularWriteTimeout: String = "P5D",
     /**
-     * Rate at which to check for dirty revocation lists that shall be written after a credential got revoked, defaults to `PT10M`.
+     * Rate at which to check for dirty revocation lists that shall be written after a credential got revoked,
+     * defaults to `PT10M`.
      */
     private val dirtyCheckRate: String = "PT10M",
     /**
-     * Rate at which to check for outdated revocation lists that shall be written again, if nothing changed, defaults to `PT1H`.
+     * Rate at which to check for outdated revocation lists that shall be written again, if nothing changed,
+     * defaults to `PT1H`.
      */
     private val regularCheckRate: String = "PT1H",
     /**
@@ -60,8 +50,8 @@ data class RevocationListConfigurationProperties(
     val regularWriteTimeoutDuration: Duration = Duration.parse(regularWriteTimeout)
     val dirtyCheckRateDuration: Duration = Duration.parse(dirtyCheckRate)
     val regularCheckRateDuration: Duration = Duration.parse(regularCheckRate)
-    val cwtPath = path.apply { if (endsWith("/")) this else "$this/" } + "cwt/"
-    val jwtPath = path.apply { if (endsWith("/")) this else "$this/" } + "jwt/"
+    val cwtPath = path.let { if (it.endsWith("/")) it else "$it/" } + "cwt/"
+    val jwtPath = path.let { if (it.endsWith("/")) it else "$it/" } + "jwt/"
 }
 
 data class KeyConfiguration(
