@@ -20,6 +20,7 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import jakarta.transaction.Transactional
@@ -116,8 +117,10 @@ class RevocationServiceStatusListIndexTest {
         )
         val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
 
-        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).isSuccess shouldBe true
-        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).isFailure shouldBe true
+        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).getOrThrow()
+        shouldThrowAny {
+            revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).getOrThrow()
+        }
     }
 
     @Test
@@ -153,8 +156,7 @@ class RevocationServiceStatusListIndexTest {
             userInfo = userInfo
         )
         val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
-        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId))
-            .onFailure { println(it) }.isSuccess shouldBe true
+        revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).getOrThrow()
         return reference.statusListIndex
     }
 
