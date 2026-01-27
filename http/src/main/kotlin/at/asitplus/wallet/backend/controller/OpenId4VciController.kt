@@ -1,27 +1,20 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
-import at.asitplus.openid.CredentialFormatEnum.DC_SD_JWT
-import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.DisplayLogoProperties
 import at.asitplus.openid.DisplayProperties
 import at.asitplus.openid.IssuerMetadata
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
-import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.OpenIdConstants.Errors
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
-import at.asitplus.wallet.ageverification.AgeVerificationScheme
-import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.MetadataConfiguration
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
-import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.MediaTypes
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.ktor.openid.DPoP
@@ -31,23 +24,15 @@ import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestationPop
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
-import at.asitplus.wallet.lib.oidvci.DefaultMapStore
-import at.asitplus.wallet.lib.oidvci.MapStore
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
-import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
-import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
-import io.matthewnelson.encoding.base64.Base64
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -56,7 +41,6 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -64,9 +48,6 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
-import org.springframework.web.util.UriComponentsBuilder
-import qrcode.QRCode
-import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -78,8 +59,6 @@ class OpenId4VciController(
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
 ) {
-
-    private val nonceToOfferMap: MapStore<String, CredentialOffer> = DefaultMapStore(lifetime = 4.hours)
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
     fun issuerMetadata(): ResponseEntity<IssuerMetadata> = run {
@@ -124,171 +103,9 @@ class OpenId4VciController(
         ResponseEntity.ok(metadata)
     }
 
-    @GetMapping("${Paths.OfferUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
-        Napier.i("${Paths.OfferUrl}/$nonce called")
-        nonceToOfferMap.get(nonce)?.let {
-            Napier.d("${Paths.OfferUrl}/$nonce returns $it")
-            ResponseEntity.ok(it)
-        } ?: ResponseEntity.notFound().build()
-    }
-
-    @GetMapping("/")
-    fun index(
-        model: ModelMap,
-        session: HttpSession,
-        authentication: Authentication?,
-    ): ModelAndView = runBlocking {
-        Napier.i("/index called with session ${session.id} and $authentication")
-        val user = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
-            ?: SecurityContextHolder.getContext().authentication
-                ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
-        Napier.i("/index called with ${user?.userInfo?.subject}")
-        model["tabs"] = listOfNotNull(
-            buildTabItemAuthCode(
-                title = "All-Code",
-                description = "All credentials with auth code",
-                configurationIds = listOf(),
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "PID-SD-JWT-Code",
-                description = "PID in SD-JWT with auth code",
-                configurationId = DefaultCredentialSchemeMapper()
-                    .encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "PID-MDOC-Code",
-                description = "PID in ISO MDOC with auth code",
-                configurationId = EuPidScheme.isoNamespace,
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "MDL-MDOC-Code",
-                description = "mDL in ISO MDOC with auth code",
-                configurationId = MobileDrivingLicenceScheme.isoNamespace,
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "AV-MDOC-Code",
-                description = "Age Verification in ISO MDOC with auth code",
-                configurationId = AgeVerificationScheme.isoNamespace,
-                urlScheme = Paths.Schemes.Av
-            ),
-            user?.let {
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "All-pre",
-                    description = "All credentials with pre-authn",
-                    configurationIds = listOf(),
-                    urlScheme = Paths.Schemes.HaipVci
-                )
-            },
-            user?.let {
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "PID-SD-JWT-pre",
-                    description = "PID in SD-JWT with pre-authn",
-                    configurationId = DefaultCredentialSchemeMapper()
-                        .encodeToCredentialIdentifier(EuPidSdJwtScheme.sdJwtType, DC_SD_JWT),
-                    urlScheme = Paths.Schemes.HaipVci
-                )
-            },
-            user?.let {
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "PID-MDOC-pre",
-                    description = "PID in ISO MDOC with pre-authn",
-                    configurationId = EuPidScheme.isoNamespace,
-                    urlScheme = Paths.Schemes.HaipVci
-                )
-            },
-            user?.let {
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "MDL-MDOC-pre",
-                    description = "mDL in ISO MDOC with pre-authn",
-                    configurationId = MobileDrivingLicenceScheme.isoNamespace,
-                    urlScheme = Paths.Schemes.HaipVci
-                )
-            },
-            user?.let {
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "AV-MDOC-pre",
-                    description = "Age Verification in ISO MDOC with pre-authn",
-                    configurationId = AgeVerificationScheme.isoNamespace,
-                    urlScheme = Paths.Schemes.Av
-                )
-            },
-        )
-
-        ModelAndView("index")
-    }
-
-    private suspend fun buildTabItemPreAuthn(
-        user: OidcUserInfoExtended,
-        title: String,
-        description: String,
-        configurationId: String,
-        urlScheme: String,
-    ) = buildTabItemPreAuthn(user, title, description, listOf(configurationId), urlScheme)
-
-    private suspend fun buildTabItemPreAuthn(
-        user: OidcUserInfoExtended,
-        title: String,
-        description: String,
-        configurationIds: Collection<String>,
-        urlScheme: String,
-    ): TabItem = run {
-        val offer = authorizationService.credentialOfferWithPreAuthnForUser(
-            user = user,
-            credentialIssuer = credentialIssuer.metadata.credentialIssuer,
-            configurationIds = configurationIds
-        )
-        val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
-        val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
-        val url = UriComponentsBuilder.newInstance()
-            .scheme(urlScheme).queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
-            .toUriString()
-        val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        TabItem(nonce, title, description, qrBase64)
-    }
-
-    private suspend fun buildTabItemAuthCode(
-        title: String,
-        description: String,
-        configurationId: String,
-        urlScheme: String,
-    ): TabItem = buildTabItemAuthCode(title, description, setOf(configurationId), urlScheme)
-
-    private suspend fun buildTabItemAuthCode(
-        title: String,
-        description: String,
-        configurationIds: Collection<String>,
-        urlScheme: String,
-    ): TabItem = run {
-        val offer = authorizationService.credentialOfferWithAuthorizationCode(
-            credentialIssuer = credentialIssuer.metadata.credentialIssuer,
-            configurationIds = configurationIds
-        )
-        val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
-        val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
-        val url = UriComponentsBuilder.newInstance()
-            .scheme(urlScheme).queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
-            .toUriString()
-        val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        TabItem(nonce, title, description, qrBase64)
-    }
-
-    data class TabItem(
-        val id: String,
-        val title: String,
-        val description: String,
-        val qrBase64: String,
-    )
-
+    /**
+     * Called by the Wallet when pushing an authorization request, see [SimpleAuthorizationService.par]
+     */
     @PostMapping(Paths.ParUrl, produces = [APPLICATION_JSON_VALUE])
     fun par(
         @RequestBody requestBody: String,
@@ -298,29 +115,32 @@ class OpenId4VciController(
         Napier.v("${Paths.ParUrl} called with $requestBody")
         val params: RequestParameters = requestBody.decodeFromPostBody()
             ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
-        val result = authorizationService.par(
-            params,
-            request.toRequestInfo().also {
+        val result = authorizationService.parWithDpopNonce(
+            request = params,
+            httpRequest = request.toRequestInfo().also {
                 Napier.v("${Paths.ParUrl} called with $it")
             },
         ).getOrElse {
+            Napier.w("${Paths.ParUrl} got error", it)
             return@runBlocking buildOidcErrorResponse(it)
-                .also { Napier.w("${Paths.ParUrl} sends error $it") }
         }
         Napier.d("${Paths.ParUrl} returns $result")
-        ResponseEntity
-            .status(HttpStatus.CREATED)
-            .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
-            .body(vckJsonSerializer.encodeToString(result))
+        ResponseEntity.status(HttpStatus.CREATED)
+            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
+            .header(HttpHeaders.DPoPNonce, result.dpopNonce)
+            .body(vckJsonSerializer.encodeToString(result.response))
     }
 
+    /**
+     * Called by the Wallet to get a nonce for their proof-of-possessions, see [CredentialIssuer.nonceWithDpopNonce].
+     */
     @PostMapping(Paths.NonceUrl, produces = [APPLICATION_JSON_VALUE])
     fun nonce(
     ): ResponseEntity<*> = runBlocking {
         Napier.i("${Paths.NonceUrl} called")
         val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
+            Napier.w("${Paths.NonceUrl} got error", it)
             return@runBlocking buildOidcErrorResponse(it)
-                .also { Napier.w("${Paths.NonceUrl} sends error $it") }
         }
         Napier.d("${Paths.NonceUrl} returns $result")
         ResponseEntity.status(HttpStatus.OK)
@@ -333,6 +153,7 @@ class OpenId4VciController(
      * Logs out the user from the Spring Boot session, so that new requests need to be authorized again,
      * using the configured OAuth2 AS. Subsequent requests to [token] and [credential] are secured
      * by the authorization code returned here.
+     * See [SimpleAuthorizationService.authorize].
      */
     // TODO add "PreAuthorize" annotation?
     @RequestMapping(Paths.AuthorizeUrl, method = [RequestMethod.POST, RequestMethod.GET])
@@ -370,8 +191,12 @@ class OpenId4VciController(
         }.also { request.logout() }
     }
 
+    /** Display a manual redirect back into the Wallet app, but only for iPhones */
     private fun String.isSafariOniPhone() = contains("Safari") && contains("iPhone")
 
+    /**
+     * Handles the token request sent by Wallets, see [SimpleAuthorizationService.tokenWithDpopNonce].
+     */
     @PostMapping(Paths.TokenUrl, produces = [APPLICATION_JSON_VALUE])
     fun token(
         @RequestBody requestBody: String,
@@ -381,7 +206,7 @@ class OpenId4VciController(
         Napier.v("${Paths.TokenUrl} called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromPostBody()
             ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
-        val result = authorizationService.token(
+        val result = authorizationService.tokenWithDpopNonce(
             request = params,
             httpRequest = request.toRequestInfo()
                 .also { Napier.v("${Paths.TokenUrl} called with $it") }
@@ -390,10 +215,10 @@ class OpenId4VciController(
             return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.TokenUrl} returns $result")
-        ResponseEntity
-            .status(HttpStatus.OK)
-            .header(HttpHeaders.DPoPNonce, authorizationService.getDpopNonce())
-            .body(vckJsonSerializer.encodeToString(result))
+        ResponseEntity.status(HttpStatus.OK)
+            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
+            .header(HttpHeaders.DPoPNonce, result.dpopNonce)
+            .body(vckJsonSerializer.encodeToString(result.response))
     }
 
     private fun HttpServletRequest.toRequestInfo() = RequestInfo(
@@ -404,6 +229,10 @@ class OpenId4VciController(
         clientAttestationPop = getHeader(HttpHeaders.OAuthClientAttestationPop),
     )
 
+    /**
+     * Issues the credential, when the token sent by the Wallet is valid,
+     * see [CredentialIssuer.credential].
+     */
     @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE])
     fun credential(
         @RequestBody requestBody: String,
@@ -426,8 +255,8 @@ class OpenId4VciController(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
             ),
         ).getOrElse {
+            Napier.w("${Paths.CredentialUrl} got error", it)
             return@runBlocking buildOidcErrorResponse(it)
-                .also { Napier.w("${Paths.CredentialUrl} sends error $it") }
         }
         Napier.d("${Paths.CredentialUrl} returns $credential")
         credential.toResponseEntity()
