@@ -6,7 +6,7 @@ import java.security.MessageDigest
 
 object Extensions {
 
-    fun URL.appendPath(path: String) = UriComponentsBuilder.fromUri(toURI()).path(path).toUriString()
+    fun URL.appendPath(path: String): String = UriComponentsBuilder.fromUri(toURI()).path(path).toUriString()
 
     fun ByteArray.sha256(): ByteArray = MessageDigest.getInstance("SHA-256").digest(this)
 

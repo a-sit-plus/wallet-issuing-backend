@@ -3,7 +3,6 @@ package at.asitplus.wallet.backend.auth
 import at.asitplus.openid.OidcAddressClaim
 import at.asitplus.openid.OidcUserInfo
 import at.asitplus.openid.OidcUserInfoExtended
-import at.asitplus.wallet.backend.controller.ApiItem
 import at.asitplus.wallet.backend.controller.OpenId4VpUser
 import io.github.aakira.napier.Napier
 import kotlinx.serialization.json.JsonObject
@@ -24,7 +23,7 @@ object SpringSecurityAuthenticationSupplier {
         if (principal is OidcUser)
             return principal.idToken.toOidcUserInfoExtended()
         if (principal is OpenId4VpUser)
-            return principal.apiItem.toOidcUserInfoExtended()
+            return principal.toOidcUserInfoExtended()
         if (principal is User)
             return fakeOidcUserInfoExtended()
         return null
@@ -66,7 +65,7 @@ object SpringSecurityAuthenticationSupplier {
         }.toMap())
     )
 
-    private fun ApiItem.toOidcUserInfoExtended() = OidcUserInfoExtended(
+    private fun OpenId4VpUser.toOidcUserInfoExtended() = OidcUserInfoExtended(
         userInfo = OidcUserInfo(
             subject = id,
             name = "$firstname $lastname",

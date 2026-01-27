@@ -1,7 +1,5 @@
 package at.asitplus.wallet.backend
 
-import org.springframework.stereotype.Component
-
 object Paths {
     const val LoginUrl = "/login"
     const val RevocationUrl = "/revocation"

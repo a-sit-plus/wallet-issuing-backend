@@ -7,13 +7,10 @@ import at.asitplus.signum.indispensable.josef.JsonWebKey
 import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
-import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.agent.KeyMaterial
-import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.agent.ValidatorMdoc
 import at.asitplus.wallet.lib.agent.ValidatorSdJwt
@@ -22,7 +19,6 @@ import at.asitplus.wallet.lib.agent.validation.TokenStatusResolverImpl
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
@@ -44,7 +40,6 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
@@ -56,7 +51,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.apache.tomcat.websocket.AuthenticationException
-import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -80,25 +74,20 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.context.request.WebRequest
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import qrcode.QRCode
-import java.nio.file.Path
-import kotlin.io.path.Path
-import kotlin.io.path.exists
-import kotlin.io.path.isReadable
-import kotlin.io.path.readBytes
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.toJavaDuration
 
 private const val SESSION_KEY_OPENID4VP_USER = "sessionOpenId4VpResponse"
 
+/**
+ * Handles login of the user, either through OIDC or with an EU PID
+ */
 @RestController
 class PublicController(
-    private val statusListIssuer: StatusListIssuer,
     private val configurationProperties: BackendConfigurationProperties,
     private val clientRegistrations: InMemoryClientRegistrationRepository?,
     private val successHandler: AuthenticationSuccessHandler,
@@ -169,7 +158,7 @@ class PublicController(
     )
 
     fun buildQrCodeUrl(requestUrl: String): String =
-        ServletUriComponentsBuilder.fromUriString("haip-vp://").apply {
+        ServletUriComponentsBuilder.fromUriString(Paths.Schemes.HaipVp + "://").apply {
             JarRequestParameters(
                 clientId = clientIdScheme.clientId,
                 requestUri = requestUrl,
@@ -177,18 +166,13 @@ class PublicController(
                 .forEach { queryParam(it.key, it.value) }
         }.toUriString()
 
-    @GetMapping(Paths.Credentials.Status.CurrentUrl, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getStatutsListAggregation(): ResponseEntity<StatusListAggregation> = runBlocking {
-        Napier.i("${Paths.Credentials.Status.CurrentUrl} called")
-        val rl = statusListIssuer.provideStatusListAggregation()
-        Napier.i("${Paths.Credentials.Status.CurrentUrl} returns $rl")
-        ResponseEntity.ok(rl)
-    }
-
     data class OAuth2ClientRegistration(
         val name: String, val url: String,
     )
 
+    /**
+     * Displays configured OAuth2 client registrations and an QR Code to login with an EU PID
+     */
     @RequestMapping(Paths.LoginUrl)
     fun login(
         model: ModelMap,
@@ -218,6 +202,10 @@ class PublicController(
     @Serializable
     data class StatusResponse(val authenticated: Boolean, val redirectUrl: String?)
 
+    /**
+     * Will be called async. from `login.html` to redirect the user to the front page,
+     * once the authentication with the EU PID is completed.
+     */
     @GetMapping(Paths.LoginStatusUrl)
     fun status(
         request: HttpServletRequest,
@@ -233,6 +221,9 @@ class PublicController(
         StatusResponse(true, redirectUrl)
     }
 
+    /**
+     * Will be called from the Wallet when the user scans the QR Code to login with an EU PID.
+     */
     @GetMapping("${Paths.Transaction.GetUrl}/{transactionId}")
     @ResponseBody
     fun transactionGet(
@@ -278,8 +269,7 @@ class PublicController(
     )
 
     /**
-     * Expects SIOPv2 authn response as request body,
-     * called from Wallet App upon answering authn request from [transactionGet].
+     * Will be called from the Wallet when the user logs in with the EU PID.
      */
     @PostMapping("${Paths.Transaction.ResultUrl}/{id}")
     fun transactionPost(
@@ -332,13 +322,13 @@ class PublicController(
         requestBody: String,
         verifier: OpenId4VpVerifier,
     ): OpenId4VpUser? = when (val result = verifier.validateAuthnResponse(requestBody)) {
-        is AuthnResponseResult.VerifiableDCQLPresentationValidationResults -> result.validationResults.toOpenId4VpUser()
+        is AuthnResponseResult.VerifiableDCQLPresentationValidationResults -> result.toOpenId4VpUser()
+        is AuthnResponseResult.SuccessSdJwt -> result.toOpenId4VpUser()
+        is AuthnResponseResult.SuccessIso -> result.toOpenId4VpUser()
+        is AuthnResponseResult.VerifiablePresentationValidationResults -> result.toOpenId4VpUser()
         is AuthnResponseResult.Success -> throw RuntimeException("Plain JWT Success not expected")
-        is AuthnResponseResult.SuccessSdJwt -> result.toApiItemCredential().toOpenId4VpUser()
-        is AuthnResponseResult.SuccessIso -> result.toApiItem().toOpenId4VpUser()
         is AuthnResponseResult.Error -> throw RuntimeException(result.reason, result.cause)
         is AuthnResponseResult.ValidationError -> throw RuntimeException("Failed: ${result.field}", result.cause)
-        is AuthnResponseResult.VerifiablePresentationValidationResults -> result.toApiItem().toOpenId4VpUser()
         is AuthnResponseResult.IdToken -> throw RuntimeException("Only got id_token")
     }
 
@@ -347,62 +337,5 @@ class PublicController(
 
     private fun ClientRegistration.loginUrl(): String =
         "${OAuth2AuthorizationRequestRedirectFilter.DEFAULT_AUTHORIZATION_REQUEST_BASE_URI}/${registrationId}"
-
-    private val statusListJwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT)
-    private val statusListCwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT)
-
-    @GetMapping("${Paths.Credentials.StatusUrl}/{timePeriod}")
-    fun getStatusList(
-        @PathVariable timePeriod: Int,
-        request: WebRequest,
-    ): ResponseEntity<*> {
-        Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod called")
-        val acceptMediaTypes = request.getHeader(HttpHeaders.Accept)?.let { MediaType.parseMediaTypes(it) }
-        val contentType = acceptMediaTypes.toStatusListContentType()
-        val path = configurationProperties.revocationList.getPath(acceptMediaTypes, timePeriod)
-        val content = if (path.exists() && path.isReadable()) path.readBytes() else null
-        return if (content == null || content.isEmpty()) {
-            Napier.w("${Paths.Credentials.StatusUrl}/$timePeriod returns HTTP 404")
-            ResponseEntity.notFound().build<String>()
-        } else {
-            val etag = content.sha256().encodeToString(Base16()).uppercase()
-            val cacheControl =
-                CacheControl.maxAge(configurationProperties.revocationList.regularWriteTimeoutDuration.toJavaDuration())
-            // Spring (or Tomcat?) appends "-gzip" to the ETag set by us, so we'll need to check that variant too
-            val lastModified = path.toFile().lastModified()
-            if (request.checkNotModified(etag, lastModified)
-                || request.checkNotModified("${etag}-gzip", lastModified)
-            ) {
-                Napier.d("${Paths.Credentials.StatusUrl}/$timePeriod returns HTTP 304")
-                ResponseEntity.status(HttpStatus.NOT_MODIFIED)
-                    .cacheControl(cacheControl)
-                    .contentType(contentType)
-                    .build<String>()
-            } else {
-                Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod returns ${content.count()} chars")
-                ResponseEntity.ok()
-                    .cacheControl(cacheControl)
-                    .contentType(contentType)
-                    .body(content)
-            }
-        }
-    }
-
-    private fun RevocationListConfigurationProperties.getPath(types: List<MediaType>?, timePeriod: Int): Path =
-        if (types.isCompatibleWithCwt())
-            Path(cwtPath, timePeriod.toString())
-        else
-            Path(jwtPath, timePeriod.toString())
-
-    private fun List<MediaType>?.toStatusListContentType(): MediaType =
-        if (isCompatibleWithCwt()) statusListCwtType else
-            if (isCompatibleWithJwt()) statusListJwtType else
-                MediaType.TEXT_PLAIN
-
-    private fun List<MediaType>?.isCompatibleWithCwt() =
-        this?.any { it.isCompatibleWith(statusListCwtType) } == true
-
-    private fun List<MediaType>?.isCompatibleWithJwt() =
-        this?.any { it.isCompatibleWith(statusListJwtType) } == true
 
 }
