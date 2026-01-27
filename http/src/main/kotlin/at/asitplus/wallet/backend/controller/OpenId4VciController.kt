@@ -32,6 +32,8 @@ import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
+import at.asitplus.wallet.lib.oidvci.DefaultMapStore
+import at.asitplus.wallet.lib.oidvci.MapStore
 import at.asitplus.wallet.lib.oidvci.OAuth2Error
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.WalletService
@@ -64,6 +66,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import qrcode.QRCode
+import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -74,8 +77,9 @@ class OpenId4VciController(
     private val credentialIssuer: CredentialIssuer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
-    private val nonceToOfferMap: NonceToOfferMap,
 ) {
+
+    private val nonceToOfferMap: MapStore<String, CredentialOffer> = DefaultMapStore(lifetime = 4.hours)
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
     fun issuerMetadata(): ResponseEntity<IssuerMetadata> = run {
