@@ -1,13 +1,16 @@
-# Wallet Issuing Service (IDA)
+# Wallet Issuing Service
 
-This service implements OpenID for Verifiable Credential Issuance (OpenID4VCI) using [VC-K](https://github.com/a-sit-plus/vck) to issue Verifiable Credentials to compatible wallets.
+This service implements [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) (OpenID4VCI) using [VC-K](https://github.com/a-sit-plus/vck) to issue Verifiable Credentials to compatible wallets. Users can log in with [ID Austria](https://www.id-austria.gv.at/) (or any other notified eIDAS scheme) or with their EU PID to provide their identity data. This service then converts that data into the requested credential, with several [Verifiable Credential schemes](https://github.com/a-sit-plus/credentials-collection) being supported.
 
 ## Main Features
 
-- OpenID4VCI issuer endpoints for credential issuance
-- Configurable credential lifetime and issuer signing keys
-- Revocation list generation and refresh scheduling
-- Spring Boot service with standard server, logging, and database configuration
+- ✨ Full OpenID4VCI issuance stack: implements authorization code flow and pre-authorized flow for smooth wallet onboarding
+- 🧭 Built‑in OAuth2 authorization server purpose‑built for OID4VCI (pushed authorization, authorize, and token endpoints)
+- 🪪 EIDAS‑ready: converts identity data from the external ID Austria Service (or any other eIDAS‑notified e‑ID) into verifiable credentials
+- 🧩 Standards‑driven metadata: Publishes OID4VCI issuer and OAuth2/OIDC metadata for automatic client configuration
+- 🔐 Configurable credential lifetime and issuer signing keys
+- 🔁 Revocation list generation with refresh scheduling
+- ⚙️ Spring Boot service with standard server, logging, and database configuration
 
 ## Quick Start
 
@@ -15,12 +18,6 @@ Build and run the HTTP service:
 
 ```bash
 ./gradlew :http:bootRun
-```
-
-Build an executable jar:
-
-```bash
-./gradlew :http:bootJar
 ```
 
 ## Configuration
@@ -65,7 +62,7 @@ Options for revocation lists for Verifiable Credentials under `backend.revocatio
 
 There are several options to configure the issuer signing key under `backend.issuer-key`, or the verifier key under `backend.verifier-key`:
 
-The type `memory`:
+Key type `memory`:
 
 ```yaml
 type: MEMORY
@@ -74,7 +71,7 @@ type: MEMORY
 will create an ephemeral key pair with a self-signed certificate.
 
 
-The type `file`:
+Key type `file`:
 
 ```yaml
 type: FILE
@@ -86,7 +83,7 @@ file:
 
 will load the private key, public key and certificate from `PEM` encoded files.
 
-The type `keystore`:
+Key type `keystore`:
 
 ```yaml
 type: KEYSTORE
@@ -103,8 +100,6 @@ will load a Java KeyStore object and use key and certificate from there.
 
 ### OpenID for Verifiable Credential Issuance
 
-Clients may use [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) to retrieve credentials from this service.
-
 Issuer metadata and endpoints:
 - `/.well-known/openid-credential-issuer` (credential issuer metadata)
 - `/.well-known/openid-configuration` (OpenID provider metadata)
@@ -114,7 +109,19 @@ Issuer metadata and endpoints:
 - `/token` (token endpoint)
 - `/credential` (credential endpoint)
 
-OpenID4VCI handling is implemented with VC-K, and the issuer metadata uses `backend.public-context` as its base URL.
+When this service is deployed under a context, e.g. `https://example.com/issuer`, the metadata files need to be accessible from the root of the webserver too (`https://example.com/jwt-vc-issuer/issuer`). One possible way to implement this requirement is the following `.htaccess` file placed into the root of the webserver:
+
+```
+RewriteRule ^jwt-vc-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteRule ^mdoc-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteRule ^jar-issuer/(.*)$ /$1/.well-known/jwt-vc-issuer [L]
+RewriteRule ^oauth-authorization-server/(.*)$ /$1/.well-known/oauth-authorization-server [L]
+RewriteRule ^openid-credential-issuer/(.*)$ /$1/.well-known/openid-credential-issuer [L]
+RewriteRule ^openid-configuration/(.*)$ /$1/.well-known/openid-configuration [L]
+```
+
+
+### ID Austria
 
 To use the issuing process, clients need to authenticate using ID Austria first, see configuration below:
 
@@ -134,11 +141,10 @@ spring:
             redirect-uri: "https://example.com/login/oauth2/code/ida"
         provider:
           ida:
-            issuer-uri: "https://eid.egiz.gv.at"
+            issuer-uri: "https://idp.id-austria.gv.at"
 ```
 
-Clients may call this service at `http://example.com/login` to get redirected to the configured OpenID provider. After authentication at that external system, the client is redirected back to the URL configured above. This service then exchanges the received authorization code to an ID token at the OpenID provider. The client then gets set a session identifier in the header `X-Auth-Token`, that can be used to start the device binding process. 
-
+Note that any other OpenID Provider may be used to load the user's data.
 
 ### Server
 
@@ -225,4 +231,3 @@ management:
       exposure:
         include: "*"
 ```
-
