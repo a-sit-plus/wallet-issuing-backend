@@ -5,7 +5,6 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.data.StatusListCwt
 import at.asitplus.wallet.lib.data.StatusListJwt
-import at.asitplus.wallet.lib.data.StatusListToken
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.communication.primitives.StatusListTokenMediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -13,6 +12,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempFile
@@ -40,34 +40,44 @@ class RevocationListWriter(
         Dispatchers.IO.run {
             runBlocking {
                 with(configurationProperties.revocationList) {
-                    log.info("Writing revocation list for $timePeriod")
                     Path(jwtPath).createDirectories()
-                    Path(jwtPath, timePeriod.toString()).let { destinationFile ->
-                        statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Jwt)).let { token ->
-                            val content = token.second as StatusListJwt
-                            val text = content.value.serialize()
-                            createTempFile().apply {
-                                writeText(text)
-                                moveTo(destinationFile, true)
-                            }
-                            log.info("Wrote JWT status token for $timePeriod to ${destinationFile.pathString} with ${text.length} chars")
-                        }
-                    }
+                    writeStatusListJwt(Path(jwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
                     Path(cwtPath).createDirectories()
-                    Path(cwtPath, timePeriod.toString()).let { destinationFile ->
-                        statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Cwt)).let { token ->
-                            val content = token.second as StatusListCwt
-                            val bytes = coseCompliantSerializer.encodeToByteArray(content.value)
-                            createTempFile().apply {
-                                writeBytes(bytes)
-                                moveTo(destinationFile, true)
-                            }
-                            log.info("Wrote CWT status token for $timePeriod to ${destinationFile.pathString} with ${bytes.size} bytes")
-                        }
-                    }
+                    writeStatusListCwt(Path(cwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
                 }
             }
         }
+    }
+
+    private suspend fun writeStatusListJwt(
+        destinationFile: Path,
+        timePeriod: Int,
+        statusListIssuer: StatusListIssuer,
+    ) {
+        val token = statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Jwt))
+        val content = token.second as StatusListJwt
+        val text = content.value.serialize()
+        createTempFile().apply {
+            writeText(text)
+            moveTo(destinationFile, true)
+        }
+        log.info("Wrote JWT status token for $timePeriod to ${destinationFile.pathString} with ${text.length} chars")
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun writeStatusListCwt(
+        destinationFile: Path,
+        timePeriod: Int,
+        statusListIssuer: StatusListIssuer,
+    ) {
+        val token = statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Cwt))
+        val content = token.second as StatusListCwt
+        val bytes = coseCompliantSerializer.encodeToByteArray(content.value)
+        createTempFile().apply {
+            writeBytes(bytes)
+            moveTo(destinationFile, true)
+        }
+        log.info("Wrote CWT status token for $timePeriod to ${destinationFile.pathString} with ${bytes.size} bytes")
     }
 
 }
