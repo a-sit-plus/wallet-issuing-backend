@@ -27,6 +27,8 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.oauth2.OAuth2Utils
+import at.asitplus.wallet.lib.oidvci.DefaultMapStore
+import at.asitplus.wallet.lib.oidvci.MapStore
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.ClientIdScheme
@@ -89,6 +91,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.isReadable
 import kotlin.io.path.readBytes
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.toJavaDuration
 
 private const val SESSION_KEY_OPENID4VP_USER = "sessionOpenId4VpResponse"
@@ -99,10 +102,10 @@ class PublicController(
     private val configurationProperties: BackendConfigurationProperties,
     private val clientRegistrations: InMemoryClientRegistrationRepository?,
     private val successHandler: AuthenticationSuccessHandler,
-    private val transactionIdToSessionIdMap: NonceToSessionMap,
     private val sessionRepository: MapSessionRepository,
     private val verifierKeyMaterial: KeyMaterial,
 ) {
+    private val transactionIdToSessionIdMap: MapStore<String, String> = DefaultMapStore(lifetime = 4.hours)
 
     private val httpClient = HttpClient {
         install(ContentNegotiation) {
@@ -191,7 +194,7 @@ class PublicController(
         model: ModelMap,
         request: HttpServletRequest,
         @RequestParam("error", required = false) error: String? = null,
-    ) = run {
+    ) = runBlocking {
         model["oauthUrls"] = clientRegistrations?.map {
             OAuth2ClientRegistration(it.clientName, it.loginUrl())
         }
