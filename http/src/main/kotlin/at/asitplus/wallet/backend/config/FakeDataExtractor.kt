@@ -11,7 +11,7 @@ import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextUInt
 
-val OidcUserInfoExtended.fakeDrivingPrivilege
+val fakeDrivingPrivilege
     get() = DrivingPrivilege(
         vehicleCategoryCode = "B",
         issueDate = issueDate,
@@ -71,6 +71,15 @@ val randomWeight: UInt
     get() = Random.nextUInt(60u, 120u)
 val randomHeight: UInt
     get() = Random.nextUInt(150u, 210u)
+val randomPidId: String
+    get() = "PID" + Random.nextInt(100000000, 999999999).toString()
+val randomTaxNumber: String
+    get() = "ATU" + Random.nextInt(100000000, 999999999).toString()
+val fallbackIban: String
+    get() = "AT023200051286875134"
+val randomChurchTaxId: String
+    get() = "ATU" + Random.nextInt(100000000, 999999999).toString()
+
 val randomEyeColour
     get() = listOf(
         "black",
@@ -101,7 +110,7 @@ val randomHairColour
 
 data class Address(val postCode: String, val city: String, val state: String, val street: String, val locator: Int)
 
-val OidcUserInfoExtended.randomAddress: Address
+val randomAddress: Address
     get() = listOf(
         Address("6900", "Bregenz", "Vorarlberg", randomStreet, randomAddressLocator),
         Address("6010", "Innsbruck", "Tirol", randomStreet, randomAddressLocator),

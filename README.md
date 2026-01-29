@@ -1,6 +1,6 @@
 # Wallet Issuing Service
 
-This service implements [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) (OpenID4VCI) using [VC-K](https://github.com/a-sit-plus/vck) to issue Verifiable Credentials to compatible wallets. Users can log in with [ID Austria](https://www.id-austria.gv.at/) (or any other notified eIDAS scheme) or with their EU PID to provide their identity data. This service then converts that data into the requested credential, with several [Verifiable Credential schemes](https://github.com/a-sit-plus/credentials-collection) being supported.
+This service implements [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) (OpenID4VCI) using [VC-K](https://github.com/a-sit-plus/vck) to issue Verifiable Credentials to compatible Wallets. Users can log in with [ID Austria](https://www.id-austria.gv.at/) (or any other notified eIDAS scheme) or with their EU PID to provide their identity data. This service then converts that data into the requested credential, with several [Verifiable Credential schemes](https://github.com/a-sit-plus/credentials-collection) being supported.
 
 ## Main Features
 
@@ -120,10 +120,11 @@ RewriteRule ^openid-credential-issuer/(.*)$ /$1/.well-known/openid-credential-is
 RewriteRule ^openid-configuration/(.*)$ /$1/.well-known/openid-configuration [L]
 ```
 
+### Data Source
 
-### ID Austria
+To actually load data during the issuing process, clients need to authenticate at this service. This can happen with the pre-defined `user` and `password` (see `WebSecurityConfig.kt`), by using an OpenID provider, or by authenticating with an EU PID. All those options are available at `/login`.
 
-To use the issuing process, clients need to authenticate using ID Austria first, see configuration below:
+You may configure any OpenID provider using the [Spring Boot configuration](https://spring.io/guides/tutorials/spring-boot-oauth2), for example [ID Austria](https://www.id-austria.gv.at/de/developer/anbinden/anbindung-mit-openid-connect):
 
 ```yaml
 spring:
@@ -144,7 +145,7 @@ spring:
             issuer-uri: "https://idp.id-austria.gv.at"
 ```
 
-Note that any other OpenID Provider may be used to load the user's data.
+The file `DataExtractor.kt` is used to extract data from the user's authentication data and transform it into credentials suitable for the Wallet. Note that this service was designed to provide a rather complete set of claims for each and every credential, meaning that random and made-up claims will appear.
 
 ### Server
 
