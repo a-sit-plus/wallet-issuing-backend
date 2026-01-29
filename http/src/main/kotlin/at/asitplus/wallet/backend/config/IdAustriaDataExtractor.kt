@@ -86,11 +86,11 @@ fun String.mapToAlpha2() = when (this) {
 
 val OidcUserInfoExtended.legalName: String
     get() = getClaimAsString("urn:pvpgvat:oidc.mandator_legal_person_full_name")
-        ?: "A-SIT Plus GmbH"
+        ?: "ACME Inc."
 
 val OidcUserInfoExtended.legalPersonIdentifier: String
     get() = getClaimAsString("urn:pvpgvat:oidc.mandator_legal_person_source_pin")
-        ?: "XFN+436920f"
+        ?: "ZMK+437842q"
 
 private fun String.toState(): String = when {
     this.startsWith("1") -> "Wien"

@@ -244,8 +244,8 @@ fun OidcUserInfoExtended.buildPorClaims(iss: Instant, exp: Instant, useSd: Boole
 fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(TaxIdScheme.Attributes) {
         listOfNotNull(
-            claim(TAX_NUMBER, useSd) { "ATU12345678" },
-            claim(AFFILIATION_COUNTRY, useSd) { "AT" },
+            claim(TAX_NUMBER, useSd) { randomTaxNumber },
+            claim(AFFILIATION_COUNTRY, useSd) { fallbackAddressCountry },
             claim(REGISTERED_GIVEN_NAME, useSd) { userInfo.givenName },
             claim(REGISTERED_FAMILY_NAME, useSd) { userInfo.familyName },
             claim(RESIDENT_ADDRESS, useSd) {
@@ -253,9 +253,9 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
                     .let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city }
             },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(CHURCH_TAX_ID, useSd) { "ATU13339991" },
-            claim(IBAN, useSd) { "AT023200051286875134" },
-            claim(PID_ID, useSd) { "PID12345678" },
+            claim(CHURCH_TAX_ID, useSd) { randomChurchTaxId },
+            claim(IBAN, useSd) { fallbackIban },
+            claim(PID_ID, useSd) { randomPidId },
             claim(ISSUANCE_DATE, useSd) { iss },
             claim(EXPIRY_DATE, useSd) { exp },
             claim(ISSUING_AUTHORITY, useSd) { issuingAuthority },
