@@ -27,6 +27,7 @@ import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
 import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -140,13 +141,13 @@ class OpenId4VciController(
 
     private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String?> =
         ResponseEntity.status(HttpStatus.OK)
-            .header(HttpHeaders.ContentType, MediaTypes.Application.JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .body(vckJsonSerializer.encodeToString(response))
 
     private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String?> =
         ResponseEntity
             .status(HttpStatus.OK)
-            .header(HttpHeaders.ContentType, MediaTypes.Application.JWT)
+            .contentType(MediaType.parseMediaType(MediaTypes.Application.JWT))
             .body(vckJsonSerializer.encodeToString(response.serialize()))
 
     private fun buildOidcErrorResponse(throwable: Throwable): ResponseEntity<OAuth2Error> =
