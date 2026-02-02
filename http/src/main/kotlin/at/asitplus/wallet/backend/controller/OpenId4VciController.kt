@@ -58,7 +58,6 @@ class OpenId4VciController(
 
     private fun MetadataConfiguration.toDisplayProperties() = DisplayProperties(
         name = name,
-        locale = "en-US",
         logo = DisplayLogoProperties(uri = logo)
     )
 

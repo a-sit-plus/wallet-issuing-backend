@@ -10,6 +10,7 @@ import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.lib.RequestOptionsCredential
 import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.agent.ValidatorMdoc
@@ -23,14 +24,13 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.oauth2.OAuth2Utils
-import at.asitplus.wallet.lib.oidvci.DefaultMapStore
-import at.asitplus.wallet.lib.oidvci.MapStore
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.ClientIdScheme
+import at.asitplus.wallet.lib.openid.OpenId4VpRequestOptions
 import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
-import at.asitplus.wallet.lib.openid.RequestOptions
-import at.asitplus.wallet.lib.openid.RequestOptionsCredential
+import at.asitplus.wallet.lib.utils.DefaultMapStore
+import at.asitplus.wallet.lib.utils.MapStore
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
@@ -239,7 +239,7 @@ class PublicController(
                 .appendPath(Paths.Transaction.ResultUrl + "/" + transactionId)
             val state = uuid4().toString()
             val result = openIdVerifier.createAuthnRequestAsSignedRequestObject(
-                RequestOptions(
+                OpenId4VpRequestOptions(
                     state = state,
                     responseMode = OpenIdConstants.ResponseMode.DirectPost,
                     responseUrl = responseUrl,
@@ -292,7 +292,7 @@ class PublicController(
         Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
         session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
         sessionRepository.save(session)
-        ResponseEntity.ok().build<Void>()
+        ResponseEntity.ok().build()
     }
 
     private fun setAuthenticationInSession(

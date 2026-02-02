@@ -13,8 +13,8 @@ import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
-import at.asitplus.wallet.lib.oidvci.DefaultMapStore
-import at.asitplus.wallet.lib.oidvci.MapStore
+import at.asitplus.wallet.lib.utils.DefaultMapStore
+import at.asitplus.wallet.lib.utils.MapStore
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier

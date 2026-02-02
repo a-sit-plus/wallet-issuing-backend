@@ -87,9 +87,9 @@ fun VerifiablePresentationValidationResults.toParsedCredential(): List<ParsedCre
         it.toParsedCredential()
     }
 
-fun Map<DCQLCredentialQueryIdentifier, AuthnResponseResult>.toParsedCredential(): List<ParsedCredential> =
+fun Map<DCQLCredentialQueryIdentifier, List<AuthnResponseResult>>.toParsedCredential(): List<ParsedCredential> =
     values.flatMap {
-        it.toParsedCredential()
+        it.flatMap { it.toParsedCredential() }
     }
 
 private fun AuthnResponseResult.toParsedCredential(): Collection<ParsedCredential> = when (this) {
@@ -104,10 +104,10 @@ private fun AuthnResponseResult.toParsedCredential(): Collection<ParsedCredentia
 }
 
 fun VerifiableDCQLPresentationValidationResults.toParsedCredential(): Collection<ParsedCredential> =
-    validationResults.toParsedCredential()
+    allValidationResults.toParsedCredential()
 
 fun VerifiableDCQLPresentationValidationResults.toOpenId4VpUser(): OpenId4VpUser =
-    validationResults.toParsedCredential().toOpenId4VpUser()
+    allValidationResults.toParsedCredential().toOpenId4VpUser()
 
 fun SuccessSdJwt.toOpenId4VpUser(): OpenId4VpUser = toParsedCredential().toOpenId4VpUser()
 
