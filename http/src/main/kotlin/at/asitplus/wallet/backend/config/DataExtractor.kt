@@ -120,10 +120,8 @@ fun OidcUserInfoExtended.buildEuPidCredential(
 
 fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
     with(EuPidSdJwtScheme.SdJwtAttributes) {
-        val (postCode, city, state, street, locator) = addressOrRandom
-        val (_, ourBirthCity, ourBirthState, _) = randomAddress
-        val country = userInfo.address?.country ?: fallbackAddressCountry
-        val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
+        val address = addressOrRandom
+        val birthAddress = randomAddress
         listOfNotNull(
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
@@ -134,22 +132,22 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
             claim(PREFIX_PLACE_OF_BIRTH, useSd) {
                 with(EuPidSdJwtScheme.SdJwtAttributes.PlaceOfBirth) {
                     listOf(
-                        claim(LOCALITY, useSd) { ourBirthCity },
-                        claim(COUNTRY, useSd) { country },
-                        claim(REGION, useSd) { ourBirthState },
+                        claim(LOCALITY, useSd) { birthAddress.city },
+                        claim(COUNTRY, useSd) { birthAddress.country },
+                        claim(REGION, useSd) { birthAddress.state },
                     )
                 }
             },
             claim(PREFIX_ADDRESS, useSd) {
                 with(EuPidSdJwtScheme.SdJwtAttributes.Address) {
                     listOf(
-                        claim(FORMATTED, useSd) { formatted },
-                        claim(COUNTRY, useSd) { country },
-                        claim(REGION, useSd) { state },
-                        claim(LOCALITY, useSd) { city },
-                        claim(POSTAL_CODE, useSd) { postCode },
-                        claim(STREET, useSd) { street },
-                        claim(HOUSE_NUMBER, useSd) { locator },
+                        claim(FORMATTED, useSd) { address.formatted },
+                        claim(COUNTRY, useSd) { address.country },
+                        claim(REGION, useSd) { address.state },
+                        claim(LOCALITY, useSd) { address.city },
+                        claim(POSTAL_CODE, useSd) { address.postCode },
+                        claim(STREET, useSd) { address.street },
+                        claim(HOUSE_NUMBER, useSd) { address.locator },
                     )
                 }
             },
@@ -170,23 +168,27 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
 
 fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
     with(EuPidScheme.Attributes) {
-        val (postCode, city, state, street, locator) = addressOrRandom
-        val (_, ourBirthCity, ourBirthState, _) = randomAddress
-        val country = userInfo.address?.country ?: fallbackAddressCountry
-        val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
+        val address = addressOrRandom
+        val birthAddress = randomAddress
         listOfNotNull(
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
-            claim(PLACE_OF_BIRTH, useSd) { PlaceOfBirth(fallbackBirthCountry, ourBirthState, ourBirthCity) },
+            claim(PLACE_OF_BIRTH, useSd) {
+                PlaceOfBirth(
+                    country = birthAddress.country,
+                    region = birthAddress.state,
+                    locality = birthAddress.city
+                )
+            },
             claim(NATIONALITY, useSd) { setOf(nationality) },
-            claim(RESIDENT_ADDRESS, useSd) { formatted },
-            claim(RESIDENT_COUNTRY, useSd) { country },
-            claim(RESIDENT_STATE, useSd) { state },
-            claim(RESIDENT_CITY, useSd) { city },
-            claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
-            claim(RESIDENT_STREET, useSd) { street },
-            claim(RESIDENT_HOUSE_NUMBER, useSd) { locator.toString() },
+            claim(RESIDENT_ADDRESS, useSd) { address.formatted },
+            claim(RESIDENT_COUNTRY, useSd) { address.country },
+            claim(RESIDENT_STATE, useSd) { address.state },
+            claim(RESIDENT_CITY, useSd) { address.city },
+            claim(RESIDENT_POSTAL_CODE, useSd) { address.postCode },
+            claim(RESIDENT_STREET, useSd) { address.street },
+            claim(RESIDENT_HOUSE_NUMBER, useSd) { address.locator.toString() },
             claim(PERSONAL_ADMINISTRATIVE_NUMBER, useSd) { randomIdentifier },
             claim(PORTRAIT, useSd) { portrait },
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
@@ -218,7 +220,9 @@ private fun OidcAddressClaim.parseOidcAddress(): Address? =
             city = locality!!,
             state = region!!,
             street = street!!.substringBefore(" "),
-            locator = street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator
+            locator = street!!.substringAfter(" ").toIntOrNull() ?: randomAddressLocator,
+            country = country ?: "AT",
+            formattedInt = formatted
         )
     } else null
 
@@ -249,8 +253,7 @@ fun OidcUserInfoExtended.buildTaxIdClaims(iss: Instant, exp: Instant, useSd: Boo
             claim(REGISTERED_GIVEN_NAME, useSd) { userInfo.givenName },
             claim(REGISTERED_FAMILY_NAME, useSd) { userInfo.familyName },
             claim(RESIDENT_ADDRESS, useSd) {
-                addressOrRandom
-                    .let { it.street + " " + it.locator + ", " + it.postCode + " " + it.city }
+                addressOrRandom.formatted
             },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
             claim(CHURCH_TAX_ID, useSd) { randomChurchTaxId },
@@ -303,24 +306,23 @@ fun OidcUserInfoExtended.buildEhicClaims(iss: Instant, exp: Instant, useSd: Bool
 
 fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boolean) =
     with(CertificateOfResidenceDataElements) {
-        val (postCode, city, state, street, locator) = addressOrRandom
-        val country = userInfo.address?.country ?: fallbackAddressCountry
-        val fullAddress = formatAddress(street, locator, postCode, city)
         listOfNotNull(
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
             claim(BIRTH_DATE, useSd) { dateOfBirth },
             claim(RESIDENCE_ADDRESS, useSd) {
                 with(CertificateOfResidenceDataElements.Address) {
-                    listOf(
-                        claim(THOROUGHFARE, useSd) { street },
-                        claim(LOCATOR_DESIGNATOR, useSd) { locator },
-                        claim(POST_CODE, useSd) { postCode },
-                        claim(POST_NAME, useSd) { city },
-                        claim(ADMIN_UNIT_L_1, useSd) { country },
-                        claim(ADMIN_UNIT_L_2, useSd) { state },
-                        claim(FULL_ADDRESS, useSd) { fullAddress },
-                    )
+                    with(addressOrRandom) {
+                        listOf(
+                            claim(THOROUGHFARE, useSd) { street },
+                            claim(LOCATOR_DESIGNATOR, useSd) { locator },
+                            claim(POST_CODE, useSd) { postCode },
+                            claim(POST_NAME, useSd) { city },
+                            claim(ADMIN_UNIT_L_1, useSd) { country },
+                            claim(ADMIN_UNIT_L_2, useSd) { state },
+                            claim(FULL_ADDRESS, useSd) { formatted },
+                        )
+                    }
                 }
             },
             claim(GENDER, useSd) { gender },
@@ -339,9 +341,7 @@ fun OidcUserInfoExtended.buildCorClaims(iss: Instant, exp: Instant, useSd: Boole
 
 fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
     with(MobileDrivingLicenceDataElements) {
-        val (postCode, city, state, street, locator) = addressOrRandom
-        val country = userInfo.address?.country ?: fallbackAddressCountry
-        val formatted = userInfo.address?.formatted ?: formatAddress(street, locator, postCode, city)
+        val address = addressOrRandom
         listOfNotNull(
             claim(FAMILY_NAME, useSd) { userInfo.familyName },
             claim(GIVEN_NAME, useSd) { userInfo.givenName },
@@ -361,7 +361,7 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(EYE_COLOUR, useSd) { randomEyeColour },
             claim(HAIR_COLOUR, useSd) { randomHairColour },
             claim(BIRTH_PLACE, useSd) { randomAddress.city },
-            claim(RESIDENT_ADDRESS, useSd) { formatted },
+            claim(RESIDENT_ADDRESS, useSd) { address.formatted },
             claim(PORTRAIT_CAPTURE_DATE, useSd) { portraitCaptureDate },
             claim(AGE_IN_YEARS, useSd) { ageInYears },
             claim(AGE_BIRTH_YEAR, useSd) { dateOfBirth.year.toUInt() },
@@ -378,10 +378,10 @@ fun OidcUserInfoExtended.buildMdlClaims(useSd: Boolean) =
             claim(AGE_OVER_68, useSd) { ageOver68 },
             // Would need matching field in certificate claim(ISSUING_JURISDICTION, useSd) { issuingJurisdiction },
             claim(NATIONALITY, useSd) { nationality },
-            claim(RESIDENT_CITY, useSd) { city },
-            claim(RESIDENT_STATE, useSd) { state },
-            claim(RESIDENT_POSTAL_CODE, useSd) { postCode },
-            claim(RESIDENT_COUNTRY, useSd) { country },
+            claim(RESIDENT_CITY, useSd) { address.city },
+            claim(RESIDENT_STATE, useSd) { address.state },
+            claim(RESIDENT_POSTAL_CODE, useSd) { address.postCode },
+            claim(RESIDENT_COUNTRY, useSd) { address.country },
             claim(FAMILY_NAME_NATIONAL_CHARACTER, useSd) { userInfo.familyName + " \uD83E\uDD84" },
             claim(GIVEN_NAME_NATIONAL_CHARACTER, useSd) { userInfo.givenName + " \uD83E\uDD84" },
             claim(SIGNATURE_USUAL_MARK, useSd) { pictureTripleX },
@@ -464,9 +464,6 @@ private const val EHIC_VCTM = """
     LXNjaGVtYSIsInNjaGVtYV91cmkjaW50ZWdyaXR5Ijoic2hhMjU2LWNOUzJhalByNnBmWnp0RTBLNVlL
     NGg3RWlTNzNQQ2oxL3YvM1ZmMXpkMUU9In0
 """
-
-private fun formatAddress(street: String, locator: Int, postalCode: String, city: String) =
-    "$street $locator, $postalCode $city"
 
 private fun claim(key: String, useSd: Boolean, value: () -> Any?): ClaimToBeIssued? =
     value()?.let { ClaimToBeIssued(key, it, useSd) }
