@@ -37,14 +37,12 @@ class RevocationListWriter(
      */
     @OptIn(ExperimentalSerializationApi::class)
     fun writeRevocationList(timePeriod: Int) {
-        Dispatchers.IO.run {
-            runBlocking {
-                with(configurationProperties.revocationList) {
-                    Path(jwtPath).createDirectories()
-                    writeStatusListJwt(Path(jwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
-                    Path(cwtPath).createDirectories()
-                    writeStatusListCwt(Path(cwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
-                }
+        runBlocking(Dispatchers.IO) {
+            with(configurationProperties.revocationList) {
+                Path(jwtPath).createDirectories()
+                writeStatusListJwt(Path(jwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
+                Path(cwtPath).createDirectories()
+                writeStatusListCwt(Path(cwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
             }
         }
     }

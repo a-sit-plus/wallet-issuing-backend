@@ -108,7 +108,18 @@ val randomHairColour
         "unknown"
     ).random()
 
-data class Address(val postCode: String, val city: String, val state: String, val street: String, val locator: Int)
+data class Address(
+    val postCode: String,
+    val city: String,
+    val state: String,
+    val street: String,
+    val locator: Int,
+    val country: String = "AT",
+    val formattedInt: String? = null,
+) {
+    val formatted: String
+        get() = formattedInt ?: "$street $locator, $postCode $city"
+}
 
 val randomAddress: Address
     get() = listOf(

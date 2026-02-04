@@ -55,7 +55,9 @@ fun ParsedCredential.toOpenId4VpUser() = OpenId4VpUser(
     credentials = listOf(this)
 )
 
-private fun String?.toImage() = this?.let { "data:image;base64,${it.replace("-", "+").replace("_", "/")}" }
+private fun String?.toImage() = this?.let { "data:image;base64,${it.ensureBase64Encoding()}" }
+
+private fun String.ensureBase64Encoding(): String = replace("-", "+").replace("_", "/")
 
 private fun ParsedCredential.getPortrait() =
     getClaim(EuPidScheme.Attributes.PORTRAIT)
