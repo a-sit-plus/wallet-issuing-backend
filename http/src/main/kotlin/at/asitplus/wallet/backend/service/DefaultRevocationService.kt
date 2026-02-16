@@ -1,4 +1,5 @@
 package at.asitplus.wallet.backend.service
+
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.iso.sha256
@@ -110,7 +111,7 @@ class DefaultRevocationService(
     }
 
     private fun CryptoPublicKey.subjectId(): String =
-        catching { Base64.Default.Mime.encode(encodeToDer()).lines().joinToString("") }.getOrNull() ?: didEncoded
+        catching { Base64.Mime.encode(encodeToDer()).lines().joinToString("") }.getOrNull() ?: didEncoded
 
     override fun setStatus(
         timePeriod: Int,
@@ -142,7 +143,7 @@ class DefaultRevocationService(
     }
 
     override fun getStatusListView(timePeriod: Int): StatusListView =
-        StatusListView.Companion.fromTokenStatuses(tokenStatusForAllIndexes(timePeriod), TokenStatusBitSize.ONE)
+        StatusListView.fromTokenStatuses(tokenStatusForAllIndexes(timePeriod), TokenStatusBitSize.ONE)
 
     private fun tokenStatusForAllIndexes(timePeriod: Int): List<TokenStatus> {
         val revoked = revokedCredentialRepo.getByTimePeriod(timePeriod)
@@ -151,7 +152,7 @@ class DefaultRevocationService(
             revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
         )
         return List(maxRevocationListIndex.toInt()) { listIndex ->
-            TokenStatus(revoked.findIndex(listIndex)?.status ?: TokenStatus.Companion.Valid.value)
+            TokenStatus(revoked.findIndex(listIndex)?.status ?: TokenStatus.Valid.value)
         }
     }
 
