@@ -10,7 +10,7 @@ av = "1.0.0"
 qrcode = "4.5.0"
 pgsql = "42.7.7"
 mockito = "6.2.1"
-vck = "5.11.0-SNAPSHOT"
+vck = "5.11.0"
 nimbus = "10.7"
 
 spring-boot = "3.5.9"
