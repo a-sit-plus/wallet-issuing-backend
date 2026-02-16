@@ -7,6 +7,7 @@ import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -16,7 +17,7 @@ import org.springframework.context.annotation.Lazy
  */
 class IssuerCredentialStoreAdapter(
     private val revocationService: RevocationService,
-) : IssuerCredentialStore {
+) : IssuerCredentialStore, ReferencedTokenStore {
 
     // Break the circular dependency
     @Autowired

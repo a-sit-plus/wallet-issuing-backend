@@ -25,6 +25,7 @@ import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
@@ -183,11 +184,11 @@ class BackendConfiguration {
 
     @Bean
     fun statusListIssuer(
-        issuerCredentialStore: IssuerCredentialStore,
+        referencedTokenStore: ReferencedTokenStore,
         issuerKeyMaterial: KeyMaterial,
     ): StatusListIssuer = StatusListAgent(
         keyMaterial = issuerKeyMaterial,
-        issuerCredentialStore = issuerCredentialStore,
+        issuerCredentialStore = referencedTokenStore,
         statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
         statusListAggregationUrl = configuration.publicContext.appendPath(Paths.Credentials.Status.CurrentUrl),
         revocationListLifetime = configuration.revocationList.lifetimeDuration,
@@ -238,5 +239,4 @@ class BackendConfiguration {
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
         KotlinSerializationJsonHttpMessageConverter(vckJsonSerializer)
 }
-
 
