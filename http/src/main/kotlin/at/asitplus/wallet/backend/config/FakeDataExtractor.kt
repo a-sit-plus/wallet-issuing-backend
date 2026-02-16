@@ -63,8 +63,6 @@ val authenticSource: String
     get() = "Ministry of Love"
 val unDistinguishingSign: String
     get() = "A"
-val fallbackBirthCountry: String
-    get() = "AT"
 val fallbackAddressCountry: String
     get() = "AT"
 val randomWeight: UInt

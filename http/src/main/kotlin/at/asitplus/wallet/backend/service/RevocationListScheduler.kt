@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
@@ -9,6 +10,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlin.time.toJavaDuration
 
@@ -79,6 +81,9 @@ class RevocationListScheduler(
 
     private val Instant.isOutdated: Boolean
         get() {
-            return (Clock.System.now() - this) > (configurationProperties.revocationList.regularWriteTimeoutDuration - configurationProperties.revocationList.regularCheckRateDuration)
+            return (Clock.System.now() - this) > configurationProperties.revocationList.outdatedDuration()
         }
+
+    private fun RevocationListConfigurationProperties.outdatedDuration(): Duration =
+        (regularWriteTimeoutDuration - regularCheckRateDuration)
 }
