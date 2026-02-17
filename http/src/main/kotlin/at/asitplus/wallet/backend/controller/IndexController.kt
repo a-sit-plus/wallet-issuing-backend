@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
+import at.asitplus.dcapi.issuance.CredentialCreationOptions
 import at.asitplus.openid.CredentialFormatEnum.DC_SD_JWT
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.OidcUserInfoExtended
@@ -10,6 +11,7 @@ import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
@@ -57,6 +59,28 @@ class IndexController(
         nonceToOfferMap.get(nonce)?.let {
             Napier.d("${Paths.OfferUrl}/$nonce returns $it")
             ResponseEntity.ok(it)
+        } ?: ResponseEntity.notFound().build()
+    }
+
+    /**
+     * DC API issuance payload derived from the credential offer, returned as JSON.
+     */
+    @GetMapping("${Paths.DcApiCreateRequestUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
+    fun dcApiCreateRequest(@PathVariable nonce: String): ResponseEntity<String> = runBlocking {
+        Napier.i("${Paths.DcApiCreateRequestUrl}/$nonce called")
+        nonceToOfferMap.get(nonce)?.let { offer ->
+            require(offer.grants?.authorizationCode?.authorizationServer == null)
+            val enrichedOffer = offer.copy(
+                grants = offer.grants?.copy(
+                    preAuthorizedCode = offer.grants?.preAuthorizedCode?.copy(
+                        authorizationServer = null
+                    )
+                ),
+                authorizationServerMetadata = authorizationService.metadata(),
+                credentialIssuerMetadata = credentialIssuer.metadata.copy(authorizationServers = null),
+            )
+            val options = CredentialCreationOptions.create(enrichedOffer)
+            ResponseEntity.ok(vckJsonSerializer.encodeToString(options))
         } ?: ResponseEntity.notFound().build()
     }
 
@@ -216,5 +240,3 @@ class IndexController(
     )
 
 }
-
-
