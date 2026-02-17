@@ -12,6 +12,38 @@
 
         });
     </script>
+    <style>
+        .dcapi-container {
+            position: relative;
+        }
+        .dcapi-container .dcapi-content {
+            transition: filter 0.2s ease-in-out;
+        }
+        .dcapi-container.dcapi-consumed .dcapi-content {
+            filter: blur(4px);
+            pointer-events: none;
+        }
+        .dcapi-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            z-index: 2;
+        }
+        .dcapi-overlay [data-dcapi-message] {
+            display: inline-block;
+        }
+        .qr-block {
+            width: 500px;
+            max-width: 100%;
+        }
+    </style>
+    <script th:src="@{/js/dcapi.js}"></script>
 </head>
 <body style="" class="bg-light">
 <div th:replace="~{fragments/navbar.html :: navbar}"></div>
@@ -61,11 +93,48 @@
                      th:id="${'pane-' + tab.id}"
                      th:aria-labelledby="${'tab-' + tab.id}">
                     <p class="text-body-secondary" th:text="${tab.description}">Description</p>
-                    <img class="img-fluid rounded border"
-                         width="500"
-                         th:if="${tab.qrBase64 != null}"
-                         th:src="'data:image/png;base64,' + ${tab.qrBase64}"
-                         th:alt="${'QR code for ' + tab.title}"/>
+                    <div th:if="${tab.qrBase64 != null}">
+                        <div th:if="${#strings.contains(tab.title, 'pre')}"
+                             class="dcapi-container qr-block"
+                             data-dcapi-container>
+                            <div class="dcapi-content">
+                                <img class="img-fluid rounded border"
+                                     th:src="'data:image/png;base64,' + ${tab.qrBase64}"
+                                     th:alt="${'QR code for ' + tab.title}"/>
+                                <div class="mt-3">
+                                    <button type="button"
+                                            class="btn btn-outline-primary w-100"
+                                            th:attr="onclick=|invokeDigitalCredentialsApi(this)|"
+                                            th:data-dcapi-url="|${paths.DcApiCreateRequestUrl}/${tab.id}|">
+                                        Issue via Digital Credentials API
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="dcapi-overlay d-none" data-dcapi-result>
+                                <div class="alert mb-0" data-dcapi-message>
+                                    <span data-dcapi-message-text></span>
+                                    <button type="button"
+                                            class="btn btn-secondary w-100 mt-2"
+                                            onclick="reloadRequest()"
+                                            data-dcapi-reload>
+                                        Reload request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${!#strings.contains(tab.title, 'pre')}">
+                            <div class="qr-block">
+                                <img class="img-fluid rounded border"
+                                     width="500"
+                                     th:src="'data:image/png;base64,' + ${tab.qrBase64}"
+                                     th:alt="${'QR code for ' + tab.title}"/>
+                                <div class="alert alert-info mt-3 mb-0 w-100">
+                                    Digital Credentials API is only available on pre routes.
+                                    <span sec:authorize="isAnonymous()"> Login to view them.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

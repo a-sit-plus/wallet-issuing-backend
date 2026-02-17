@@ -12,6 +12,7 @@ object Paths {
     const val TokenUrl = "/token"
     const val CredentialUrl = "/credential"
     const val OfferUrl = "/offer"
+    const val DcApiCreateRequestUrl = "/dcapi/create-request"
 
     object Transaction {
         const val ResultUrl = "/transaction/result"
