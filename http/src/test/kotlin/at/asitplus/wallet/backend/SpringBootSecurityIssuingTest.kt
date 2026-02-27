@@ -50,6 +50,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -91,8 +93,11 @@ class SpringBootSecurityIssuingTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
         vckJsonSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
-            .vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
-            .birthDate shouldBe LocalDate(1983, 6, 4)
+            .vc.credentialSubject.shouldBeInstanceOf<JsonElement>().apply {
+                vckJsonSerializer.decodeFromJsonElement<EuPidCredential>(this).apply {
+                    birthDate shouldBe LocalDate(1983, 6, 4)
+                }
+            }
     }
 
     @Test

@@ -1,7 +1,8 @@
 # Changelog
 
 5.12.0 (unreleased):
- - tbd
+ - Update to VC-K 5.12.0
+ - Add DC API issuing process
 
 5.11.0:
  - Initial public release
