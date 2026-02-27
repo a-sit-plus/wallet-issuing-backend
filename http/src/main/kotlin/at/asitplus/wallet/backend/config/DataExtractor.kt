@@ -18,6 +18,7 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.jws.JwsHeaderModifierFun
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
@@ -26,6 +27,7 @@ import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.random.Random
 import kotlin.time.Instant
 
@@ -110,7 +112,9 @@ fun OidcUserInfoExtended.buildEuPidCredential(
         expiryDate = LocalDateOrInstant.LocalDate(expiryDate),
         issuingAuthority = issuingAuthority,
         issuingCountry = issuingCountry,
-    ).also { Napier.v("toEuPidCredential returns $it") },
+    ).let {
+        vckJsonSerializer.encodeToJsonElement(it)
+    }.also { Napier.v("toEuPidCredential returns $it") },
     expiration = exp,
     scheme = scheme,
     subjectPublicKey = pubKey,

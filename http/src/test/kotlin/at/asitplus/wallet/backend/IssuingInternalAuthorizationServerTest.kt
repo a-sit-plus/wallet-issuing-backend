@@ -51,7 +51,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -84,8 +86,11 @@ class IssuingInternalAuthorizationServerTest {
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
         val vcJws = vckJsonSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
-        vcJws.vc.credentialSubject.shouldBeInstanceOf<EuPidCredential>()
-            .birthDate shouldBe LocalDate(1983, 6, 4)
+        vcJws.vc.credentialSubject.shouldBeInstanceOf<JsonElement>().apply {
+            vckJsonSerializer.decodeFromJsonElement<EuPidCredential>(this).apply {
+                birthDate shouldBe LocalDate(1983, 6, 4)
+            }
+        }
     }
 
     @Test

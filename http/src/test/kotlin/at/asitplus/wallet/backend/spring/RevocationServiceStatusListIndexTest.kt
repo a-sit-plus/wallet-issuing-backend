@@ -12,11 +12,12 @@ import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.data.AtomicAttribute2023
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.CredentialSubject
 import at.asitplus.wallet.lib.data.VcDataModelConstants.VERIFIABLE_CREDENTIAL
 import at.asitplus.wallet.lib.data.VerifiableCredential
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
+import at.asitplus.wallet.lib.data.ktx.extractId
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
+import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -24,6 +25,8 @@ import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,7 +55,7 @@ class RevocationServiceStatusListIndexTest {
     private lateinit var attributeName: String
     private lateinit var subjectId: String
     private lateinit var validUntil: Instant
-    private lateinit var credentialSubject: CredentialSubject
+    private lateinit var credentialSubject: JsonElement
     private lateinit var issuanceDate: Instant
     private lateinit var expirationDate: Instant
     private lateinit var subjectPublicKey: CryptoPublicKey
@@ -69,7 +72,9 @@ class RevocationServiceStatusListIndexTest {
             subjectId,
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
-        )
+        ).let {
+            vckJsonSerializer.encodeToJsonElement(it)
+        }
         issuanceDate = Clock.System.now()
         expirationDate = Clock.System.now() + 60.seconds
         validUntil = Clock.System.now() + 2.seconds
@@ -183,7 +188,7 @@ class RevocationServiceStatusListIndexTest {
 
 private fun VerifiableCredential.toJws() = VerifiableCredentialJws(
     vc = this,
-    subject = credentialSubject.id,
+    subject = credentialSubject.extractId(),
     notBefore = issuanceDate,
     issuer = issuer,
     expiration = expirationDate,
