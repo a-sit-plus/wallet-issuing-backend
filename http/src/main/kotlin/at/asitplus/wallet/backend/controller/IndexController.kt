@@ -199,11 +199,11 @@ class IndexController(
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
-        val url = UriComponentsBuilder.newInstance()
-            .scheme(urlScheme).queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
+        val url = UriComponentsBuilder.fromUriString("$urlScheme://")
+            .queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
             .toUriString()
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        TabItem(nonce, title, description, qrBase64)
+        TabItem(nonce, title, description, qrBase64, url)
     }
 
     private suspend fun buildTabItemAuthCode(
@@ -225,11 +225,11 @@ class IndexController(
         )
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
-        val url = UriComponentsBuilder.newInstance()
-            .scheme(urlScheme).queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
+        val url = UriComponentsBuilder.fromUriString("$urlScheme://")
+            .queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
             .toUriString()
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        TabItem(nonce, title, description, qrBase64)
+        TabItem(nonce, title, description, qrBase64, url)
     }
 
     data class TabItem(
@@ -237,6 +237,7 @@ class IndexController(
         val title: String,
         val description: String,
         val qrBase64: String,
+        val offerUrl: String,
     )
 
 }
