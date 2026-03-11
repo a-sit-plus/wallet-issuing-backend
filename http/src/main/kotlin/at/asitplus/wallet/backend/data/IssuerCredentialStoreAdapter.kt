@@ -8,6 +8,8 @@ import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -30,19 +32,31 @@ class IssuerCredentialStoreAdapter(
         status: TokenStatus,
     ): Boolean = revocationService.setStatus(timePeriod, index, status)
 
-    override fun getStatusListView(timePeriod: Int): StatusListView = revocationService.getStatusListView(timePeriod)
+    override fun revokeIdentifier(timePeriod: Int, identifier: ByteArray): Boolean =
+        revocationService.revokeIdentifier(timePeriod, identifier)
+
+    override fun getStatusListView(timePeriod: Int): StatusListView =
+        revocationService.getStatusListView(timePeriod)
+
+    override fun getRawIdentifierList(timePeriod: Int): Map<Identifier, IdentifierInfo> =
+        revocationService.getRawIdentifierList(timePeriod)
 
     /**
      * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
      * [Issuer] will call [updateStoredCredential] with the issued credential afterwards.
      */
+    @Deprecated("Renamed", replaceWith = ReplaceWith("createStoredCredentialReference"))
     override suspend fun createStatusListIndex(
         credential: CredentialToBeIssued,
         timePeriod: Int,
-    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> = revocationService.createStatusListIndex(
-        credential = credential,
-        timePeriod = timePeriod
-    )
+    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> =
+        revocationService.createStoredCredentialReference(credential, timePeriod)
+
+    override suspend fun createStoredCredentialReference(
+        credential: CredentialToBeIssued,
+        timePeriod: Int,
+    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> =
+        revocationService.createStoredCredentialReference(credential, timePeriod)
 
     /**
      * Called by an [Issuer] when the credential has been signed and delivered to the holder.

@@ -116,7 +116,7 @@ class RevocationServiceStatusListIndexTest {
             subjectPublicKey = subjectPublicKey,
             userInfo = userInfo
         )
-        val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
+        val reference = revocationService.createStoredCredentialReference(credentialToBeIssued, timePeriod).getOrThrow()
 
         revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).getOrThrow()
         shouldThrowAny {
@@ -155,7 +155,7 @@ class RevocationServiceStatusListIndexTest {
             subjectPublicKey = subjectPublicKey,
             userInfo = userInfo
         )
-        val reference = revocationService.createStatusListIndex(credentialToBeIssued, timePeriod).getOrThrow()
+        val reference = revocationService.createStoredCredentialReference(credentialToBeIssued, timePeriod).getOrThrow()
         revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).getOrThrow()
         return reference.statusListIndex
     }

@@ -8,8 +8,9 @@ import jakarta.persistence.Id
 class RevokedCredential() {
 
     constructor(
-        revocationListIndex: Long,
         timePeriod: Int,
+        revocationListIndex: Long,
+        identifier: Long,
         status: UByte,
         userInfoSubject: String?,
     ) : this() {
@@ -29,12 +30,16 @@ class RevokedCredential() {
     var status: UByte = 0u
 
     @Column
+    var identifier: Long = 0L
+
+    @Column
     var userInfoSubject: String? = null
 
     override fun toString(): String {
         return "RevokedCredential(" +
-                "revocationListIndex=$revocationListIndex, " +
                 "timePeriod=$timePeriod, " +
+                "identifier=$identifier, " +
+                "revocationListIndex=$revocationListIndex, " +
                 "status=$status, " +
                 "userInfoSubject=$userInfoSubject" +
                 ")"
