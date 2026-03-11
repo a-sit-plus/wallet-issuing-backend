@@ -95,14 +95,12 @@ fun Map<DCQLCredentialQueryIdentifier, List<AuthnResponseResult>>.toParsedCreden
     }
 
 private fun AuthnResponseResult.toParsedCredential(): Collection<ParsedCredential> = when (this) {
-    is Error -> listOf()
-    is IdToken -> listOf()
-    is Success -> listOf()
-    is ValidationError -> listOf()
+    is Success -> this.toParsedCredential()
     is SuccessIso -> this.toParsedCredential()
     is SuccessSdJwt -> this.toParsedCredentials()
     is VerifiablePresentationValidationResults -> this.toParsedCredential()
     is VerifiableDCQLPresentationValidationResults -> this.toParsedCredential()
+    else -> listOf()
 }
 
 fun VerifiableDCQLPresentationValidationResults.toParsedCredential(): Collection<ParsedCredential> =

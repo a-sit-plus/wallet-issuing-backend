@@ -8,6 +8,8 @@ import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore.StoredCredentialReference
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import org.springframework.context.ApplicationEvent
 import kotlin.time.Instant
@@ -26,7 +28,7 @@ interface RevocationService {
      * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
      * [Issuer] will call [updateStoredCredential] with the issued credential afterwards.
      */
-    suspend fun createStatusListIndex(
+    suspend fun createStoredCredentialReference(
         credential: CredentialToBeIssued,
         timePeriod: Int,
     ): KmmResult<StoredCredentialReference>
@@ -64,6 +66,8 @@ interface RevocationService {
      */
     fun revoke(id: Long, userInfo: OidcUserInfoExtended): Boolean
 
+    fun revokeIdentifier(timePeriod: Int, identifier: ByteArray): Boolean
+
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
@@ -73,6 +77,8 @@ interface RevocationService {
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
      */
     fun deleteExpiredCredentialsBefore(cutoff: Instant): Int
+
+    fun getRawIdentifierList(timePeriod: Int): Map<Identifier, IdentifierInfo>
 
 }
 

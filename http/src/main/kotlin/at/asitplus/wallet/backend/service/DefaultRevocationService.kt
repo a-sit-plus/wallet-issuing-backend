@@ -20,6 +20,8 @@ import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
 import io.github.aakira.napier.Napier
@@ -28,6 +30,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import org.apache.commons.lang3.math.NumberUtils
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import kotlin.io.encoding.Base64
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Clock
@@ -53,7 +56,7 @@ class DefaultRevocationService(
      * Called by an [at.asitplus.wallet.lib.agent.Issuer] when creating a new credential to get a `statusListIndex` first.
      * [at.asitplus.wallet.lib.agent.Issuer] will call [updateStoredCredential] with the issued credential afterwards.
      */
-    override suspend fun createStatusListIndex(
+    override suspend fun createStoredCredentialReference(
         credential: CredentialToBeIssued,
         timePeriod: Int,
     ): KmmResult<IssuerCredentialStore.StoredCredentialReference> = catching {
@@ -123,12 +126,21 @@ class DefaultRevocationService(
         return revokeAllCredentials(listOf(credential), status) == 1
     }
 
+    override fun revokeIdentifier(timePeriod: Int, identifier: ByteArray): Boolean {
+        val id = identifier.decodeToString().toLongOrNull()
+            ?: return false
+        val credential = issuedCredentialRepo.findById(id).getOrNull()
+            ?: return false
+        return revokeAllCredentials(listOf(credential), TokenStatus.Invalid) == 1
+    }
+
     private fun revokeAllCredentials(toRevoke: Collection<IssuedCredential>, status: TokenStatus): Int {
         synchronized(CredentialRepositoriesLock) {
             revokedCredentialRepo.saveAll(toRevoke.map {
                 RevokedCredential(
-                    revocationListIndex = it.revocationListIndex,
                     timePeriod = it.timePeriod,
+                    revocationListIndex = it.revocationListIndex,
+                    identifier = it.id,
                     status = status.value,
                     userInfoSubject = it.userInfoSubject,
                 )
@@ -144,6 +156,11 @@ class DefaultRevocationService(
 
     override fun getStatusListView(timePeriod: Int): StatusListView =
         StatusListView.fromTokenStatuses(tokenStatusForAllIndexes(timePeriod), TokenStatusBitSize.ONE)
+
+    // TODO Long toString to ByteArray looks sketchy
+    override fun getRawIdentifierList(timePeriod: Int): Map<Identifier, IdentifierInfo> =
+        revokedCredentialRepo.getByTimePeriod(timePeriod)
+            .associate { Identifier(it.identifier.toString().encodeToByteArray()) to IdentifierInfo() }
 
     private fun tokenStatusForAllIndexes(timePeriod: Int): List<TokenStatus> {
         val revoked = revokedCredentialRepo.getByTimePeriod(timePeriod)
@@ -174,7 +191,10 @@ class DefaultRevocationService(
     }
 
     override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> =
-        issuedCredentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(userInfo.matchedSubject(), Clock.System.now().toJavaInstant())
+        issuedCredentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(
+            userInfo.matchedSubject(),
+            Clock.System.now().toJavaInstant()
+        )
 
     override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> =
         revokedCredentialRepo.findAllByUserInfoSubject(userInfo.matchedSubject())

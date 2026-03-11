@@ -326,10 +326,9 @@ class PublicController(
         is AuthnResponseResult.SuccessSdJwt -> result.toOpenId4VpUser()
         is AuthnResponseResult.SuccessIso -> result.toOpenId4VpUser()
         is AuthnResponseResult.VerifiablePresentationValidationResults -> result.toOpenId4VpUser()
-        is AuthnResponseResult.Success -> throw RuntimeException("Plain JWT Success not expected")
         is AuthnResponseResult.Error -> throw RuntimeException(result.reason, result.cause)
         is AuthnResponseResult.ValidationError -> throw RuntimeException("Failed: ${result.field}", result.cause)
-        is AuthnResponseResult.IdToken -> throw RuntimeException("Only got id_token")
+        else -> throw RuntimeException("Not expected: $result")
     }
 
     private fun HttpSession.getAuthnException(): String? =
