@@ -160,6 +160,7 @@ class DefaultRevocationService(
     // TODO Long toString to ByteArray looks sketchy
     override fun getRawIdentifierList(timePeriod: Int): Map<Identifier, IdentifierInfo> =
         revokedCredentialRepo.getByTimePeriod(timePeriod)
+            .filter { it.identifier != null }
             .associate { Identifier(it.identifier.toString().encodeToByteArray()) to IdentifierInfo() }
 
     private fun tokenStatusForAllIndexes(timePeriod: Int): List<TokenStatus> {

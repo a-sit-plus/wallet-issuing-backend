@@ -16,6 +16,7 @@ class RevokedCredential() {
     ) : this() {
         this.timePeriod = timePeriod
         this.revocationListIndex = revocationListIndex
+        this.identifier = identifier
         this.status = status
         this.userInfoSubject = userInfoSubject
     }
@@ -30,7 +31,7 @@ class RevokedCredential() {
     var status: UByte = 0u
 
     @Column
-    var identifier: Long = 0L
+    var identifier: Long? = null
 
     @Column
     var userInfoSubject: String? = null
