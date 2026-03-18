@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+.idea
+.kotlin
+.vscode
+build
+**/build
+cache
+metrics
+tmp
