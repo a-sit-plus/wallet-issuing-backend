@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import java.util.*
 import kotlin.random.Random
 import kotlin.time.Clock
@@ -48,6 +49,9 @@ class RevocationServiceStatusListIndexTest {
 
     @Autowired
     private lateinit var revocationService: RevocationService
+
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
 
     private lateinit var userInfo: OidcUserInfoExtended
     private lateinit var vcId: String
@@ -122,6 +126,16 @@ class RevocationServiceStatusListIndexTest {
         shouldThrowAny {
             revocationService.updateStoredCredential(reference, buildIssuedCredential(vcId)).getOrThrow()
         }
+    }
+
+    @Test
+    fun `issued credential insert should recover from a drifted identity column`() = runTest {
+        store(timePeriod, UUID.randomUUID().toString()) shouldBe 1uL
+
+        jdbcTemplate.execute("alter table issued_credential alter column id restart with 1")
+
+        store(timePeriod, UUID.randomUUID().toString()) shouldBe 2uL
+        credentialRepo.findAll().size shouldBe 2
     }
 
     @Test

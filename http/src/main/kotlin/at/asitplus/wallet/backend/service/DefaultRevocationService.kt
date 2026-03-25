@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
+import at.asitplus.wallet.backend.data.IdentityColumnResynchronizer
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.PreparedCredential
@@ -30,7 +31,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import org.apache.commons.lang3.math.NumberUtils
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
+import java.sql.SQLException
 import kotlin.io.encoding.Base64
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Clock
@@ -42,6 +43,7 @@ class DefaultRevocationService(
     private val issuedCredentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
+    private val identityColumnResynchronizer: IdentityColumnResynchronizer,
 ) : RevocationService {
 
     /**
@@ -67,7 +69,7 @@ class DefaultRevocationService(
                 issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
                 revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
             ) + 1
-            val savedCredential = preparedCredentialRepo.save(
+            val savedCredential = savePreparedCredential(
                 PreparedCredential(
                     timePeriod = timePeriod,
                     revocationListIndex = revocationListIndex
@@ -93,7 +95,7 @@ class DefaultRevocationService(
             val savedCredential = preparedCredentialRepo.findById(reference.id.toLong()).getOrNull()
                 ?: throw IllegalStateException("No credential found for id ${reference.id}")
 
-            val issuedCredential = issuedCredentialRepo.save(
+            val issuedCredential = saveIssuedCredential(
                 IssuedCredential(
                     vcId = credential.vcId,
                     subjectId = credential.subjectPublicKey.subjectId(),
@@ -111,6 +113,38 @@ class DefaultRevocationService(
                 issuedCredential.revocationListIndex.toULong()
             )
         }
+    }
+
+    private fun savePreparedCredential(preparedCredential: PreparedCredential): PreparedCredential =
+        saveWithIdentityRecovery(
+            tableName = "prepared_credential",
+            resetEntityId = { preparedCredential.id = 0 },
+        ) {
+            preparedCredentialRepo.save(preparedCredential)
+        }
+
+    private fun saveIssuedCredential(issuedCredential: IssuedCredential): IssuedCredential =
+        saveWithIdentityRecovery(
+            tableName = "issued_credential",
+            resetEntityId = { issuedCredential.id = 0 },
+        ) {
+            issuedCredentialRepo.save(issuedCredential)
+        }
+
+    private fun <T> saveWithIdentityRecovery(
+        tableName: String,
+        resetEntityId: () -> Unit,
+        save: () -> T,
+    ): T = try {
+        save()
+    } catch (exception: RuntimeException) {
+        if (!exception.isDuplicatePrimaryKeyOn(tableName)) {
+            throw exception
+        }
+        Napier.w("Detected a drifted identity column for $tableName, resynchronizing and retrying the insert", exception)
+        identityColumnResynchronizer.resynchronize(tableName)
+        resetEntityId()
+        save()
     }
 
     private fun CryptoPublicKey.subjectId(): String =
@@ -258,3 +292,15 @@ private val Issuer.IssuedCredential.validUntil: Instant
 
 private fun String.hashString() = this.encodeToByteArray().hashString()
 private fun ByteArray.hashString() = sha256().encodeToString(Base16Strict)
+
+private fun Throwable.isDuplicatePrimaryKeyOn(tableName: String): Boolean =
+    generateSequence(this) { it.cause }.any { cause ->
+        if (cause !is SQLException || cause.sqlState != "23505") {
+            return@any false
+        }
+        val message = cause.message?.lowercase() ?: return@any false
+        val normalizedTableName = tableName.lowercase()
+        message.contains(normalizedTableName) ||
+                message.contains("${normalizedTableName}_pkey") ||
+                message.contains("primary key")
+    }

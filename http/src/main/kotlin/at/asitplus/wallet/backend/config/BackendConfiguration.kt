@@ -4,6 +4,7 @@ import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
+import at.asitplus.wallet.backend.data.IdentityColumnResynchronizer
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
 import at.asitplus.wallet.backend.data.PreparedCredentialRepository
@@ -90,11 +91,13 @@ class BackendConfiguration {
         credentialRepo: IssuedCredentialRepository,
         revokedCredentialRepo: RevokedCredentialRepository,
         applicationEventPublisher: ApplicationEventPublisher,
+        identityColumnResynchronizer: IdentityColumnResynchronizer,
     ): RevocationService = DefaultRevocationService(
         preparedCredentialRepo = preparedCredentialRepo,
         issuedCredentialRepo = credentialRepo,
         revokedCredentialRepo = revokedCredentialRepo,
         applicationEventPublisher = applicationEventPublisher,
+        identityColumnResynchronizer = identityColumnResynchronizer,
     )
 
     @Bean
@@ -239,4 +242,3 @@ class BackendConfiguration {
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
         KotlinSerializationJsonHttpMessageConverter(vckJsonSerializer)
 }
-
