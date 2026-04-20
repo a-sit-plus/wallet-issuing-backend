@@ -25,8 +25,8 @@ import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.oauth2.OAuth2Utils
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
-import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.ClientIdScheme
+import at.asitplus.wallet.lib.openid.CredentialPresentationRequestBuilder
 import at.asitplus.wallet.lib.openid.OpenId4VpRequestOptions
 import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
 import at.asitplus.wallet.lib.utils.DefaultMapStore
@@ -243,9 +243,7 @@ class PublicController(
                     state = state,
                     responseMode = OpenIdConstants.ResponseMode.DirectPost,
                     responseUrl = responseUrl,
-                    credentials = setOf(
-                        requestPidSdJwt()
-                    ),
+                    presentationRequest = CredentialPresentationRequestBuilder(requestPidSdJwt()).toDCQLRequest()
                 )
             ).getOrThrow().serialize()
                 .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
@@ -258,14 +256,16 @@ class PublicController(
         }
     }
 
-    private fun requestPidSdJwt(): RequestOptionsCredential = RequestOptionsCredential(
-        credentialScheme = EuPidSdJwtScheme,
-        representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-        requestedAttributes = setOf(
-            EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME,
-            EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME,
-            EuPidSdJwtScheme.SdJwtAttributes.BIRTH_DATE
-        ),
+    private fun requestPidSdJwt() = listOf(
+        RequestOptionsCredential(
+            credentialScheme = EuPidSdJwtScheme,
+            representation = ConstantIndex.CredentialRepresentation.SD_JWT,
+            requestedAttributes = setOf(
+                EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME,
+                EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME,
+                EuPidSdJwtScheme.SdJwtAttributes.BIRTH_DATE
+            ),
+        )
     )
 
     /**
@@ -283,7 +283,7 @@ class PublicController(
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
         val user = try {
-            validateOpenId4VpResponse(requestBody, openIdVerifier)
+            openIdVerifier.validateAuthnResponse(requestBody).convertToUser()
         } catch (e: Throwable) {
             Napier.w("${Paths.Transaction.ResultUrl}/$id error", e)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage, e)
@@ -316,19 +316,6 @@ class PublicController(
         session.setAttribute(SPRING_SECURITY_CONTEXT_KEY, context)
         HttpSessionSecurityContextRepository().saveContext(context, request, response)
         return targetUrl
-    }
-
-    private suspend fun validateOpenId4VpResponse(
-        requestBody: String,
-        verifier: OpenId4VpVerifier,
-    ): OpenId4VpUser? = when (val result = verifier.validateAuthnResponse(requestBody)) {
-        is AuthnResponseResult.VerifiableDCQLPresentationValidationResults -> result.toOpenId4VpUser()
-        is AuthnResponseResult.SuccessSdJwt -> result.toOpenId4VpUser()
-        is AuthnResponseResult.SuccessIso -> result.toOpenId4VpUser()
-        is AuthnResponseResult.VerifiablePresentationValidationResults -> result.toOpenId4VpUser()
-        is AuthnResponseResult.Error -> throw RuntimeException(result.reason, result.cause)
-        is AuthnResponseResult.ValidationError -> throw RuntimeException("Failed: ${result.field}", result.cause)
-        else -> throw RuntimeException("Not expected: $result")
     }
 
     private fun HttpSession.getAuthnException(): String? =

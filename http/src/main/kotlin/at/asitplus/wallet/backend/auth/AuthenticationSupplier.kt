@@ -73,7 +73,7 @@ object SpringSecurityAuthenticationSupplier {
             familyName = lastname,
             picture = imageDataBase64?.removePrefix("data:image;base64,"),
         ),
-        jsonObject = credentials.firstOrNull()?.allFields ?: JsonObject(emptyMap())
+        jsonObject = credentials?.firstOrNull()?.allFields ?: JsonObject(emptyMap())
     )
 
     private fun fakeOidcUserInfoExtended(): OidcUserInfoExtended =

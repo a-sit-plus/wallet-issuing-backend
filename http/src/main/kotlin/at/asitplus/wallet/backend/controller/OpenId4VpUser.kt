@@ -1,16 +1,38 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.openid.dcql.DCQLCredentialQueryIdentifier
+import at.asitplus.KmmResult
+import at.asitplus.openid.IdToken
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.lib.agent.Verifier
+import at.asitplus.wallet.lib.agent.validation.CredentialFreshnessSummary
+import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidationSummary
+import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidationSummary.*
+import at.asitplus.wallet.lib.agent.validation.common.EntityExpiredError
+import at.asitplus.wallet.lib.agent.validation.common.EntityNotYetValidError
 import at.asitplus.wallet.lib.data.CredentialToJsonConverter.toJsonElement
+import at.asitplus.wallet.lib.data.IsoDocumentParsed
+import at.asitplus.wallet.lib.data.VcJwsVerificationResultWrapper
+import at.asitplus.wallet.lib.data.VerifiablePresentationParsed
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusValidationResult
+import at.asitplus.wallet.lib.iso.Iso180137AnnexCVerifiedPresentationResult
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
-import at.asitplus.wallet.lib.openid.AuthnResponseResult.*
+import at.asitplus.wallet.lib.openid.VpTokenValidationResult
+import at.asitplus.wallet.lib.openid.VpTokenValidationResultDCQL
+import at.asitplus.wallet.lib.openid.VpTokenValidationResultPresentationExchange
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -18,51 +40,35 @@ import org.springframework.security.core.AuthenticatedPrincipal
 import java.security.MessageDigest
 
 @Serializable
-class OpenId4VpUser(
-    val id: String,
-    val firstname: String,
-    val lastname: String,
-    val imageDataBase64: String?,
-    val credentials: List<ParsedCredential>,
+data class OpenId4VpUser(
+    val idToken: IdToken?,
+    val idTokenError: String?,
+    val credentials: Collection<ParsedCredential>?,
+    val presentationError: String?,
 ) : AuthenticatedPrincipal {
+    val id = Json.encodeToString(this).sha256()
+    val firstname = credentials?.firstNotNullOfOrNull { it.getGivenName() } ?: "N/A"
+    val lastname = credentials?.firstNotNullOfOrNull { it.getFamilyName() } ?: "N/A"
+    val imageDataBase64 = credentials?.firstNotNullOfOrNull { it.getPortrait() }?.toImage()
 
     override fun getName(): String = "$firstname $lastname ($id)"
-
-    override fun toString(): String = "OpenId4VpUser(credentials=$credentials)"
 
 }
 
 @Serializable
 data class ParsedCredential(
-    val allFields: JsonObject,
-    val credentialType: String,
+    val jwtCredential: JsonElement? = null,
+    val allFields: JsonObject? = null,
+    val credentialType: String? = null,
+    val error: String? = null,
 )
 
-
-fun List<ParsedCredential>.toOpenId4VpUser() = OpenId4VpUser(
-    id = Json.encodeToString(this).sha256(),
-    firstname = firstNotNullOfOrNull { it.getGivenName() } ?: "N/A",
-    lastname = firstNotNullOfOrNull { it.getFamilyName() } ?: "N/A",
-    imageDataBase64 = firstNotNullOfOrNull { it.getPortrait() }?.toImage(),
-    credentials = this
-)
-
-fun ParsedCredential.toOpenId4VpUser() = OpenId4VpUser(
-    id = Json.encodeToString(this).sha256(),
-    firstname = getGivenName() ?: "N/A",
-    lastname = getFamilyName() ?: "N/A",
-    imageDataBase64 = getPortrait()?.toImage(),
-    credentials = listOf(this)
-)
-
-private fun String?.toImage() = this?.let { "data:image;base64,${it.ensureBase64Encoding()}" }
-
-private fun String.ensureBase64Encoding(): String = replace("-", "+").replace("_", "/")
+private fun String?.toImage() = this?.let { "data:image;base64,${it.replace("-", "+").replace("_", "/")}" }
 
 private fun ParsedCredential.getPortrait() =
-    getClaim(EuPidScheme.Attributes.PORTRAIT)
+    getClaim(MobileDrivingLicenceDataElements.PORTRAIT)
         ?: getClaim(EuPidSdJwtScheme.SdJwtAttributes.PORTRAIT)
-        ?: getClaim(MobileDrivingLicenceDataElements.PORTRAIT)
+        ?: getClaim(EuPidScheme.Attributes.PORTRAIT)
 
 private fun ParsedCredential.getFamilyName() =
     getClaim(EuPidScheme.Attributes.FAMILY_NAME)
@@ -74,62 +80,166 @@ private fun ParsedCredential.getGivenName() =
         ?: getClaim(EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME)
         ?: getClaim(MobileDrivingLicenceDataElements.GIVEN_NAME)
 
-fun ParsedCredential.getClaim(claim: String) = this.allFields.entries
-    .firstOrNull { it.key == claim }?.value?.let {
+fun ParsedCredential.getClaim(claim: String) = allFields?.entries
+    ?.firstOrNull { it.key == claim }?.value
+    ?.let {
         when (it) {
             is JsonPrimitive -> it.content
             else -> it.toString()
         }
     }
 
-fun VerifiablePresentationValidationResults.toOpenId4VpUser(): OpenId4VpUser = toParsedCredential().toOpenId4VpUser()
+fun AuthnResponseResult.toUser() = OpenId4VpUser(
+    idToken = idTokenValidationResult?.getOrNull(),
+    idTokenError = idTokenValidationResult?.exceptionOrNull()?.message,
+    credentials = vpTokenValidationResult?.getOrNull()?.presentations()?.flatMap {
+        it.toApiItemCredentials()
+    },
+    presentationError = vpTokenValidationResult?.exceptionOrNull()?.message
+        ?: when (val presentation = vpTokenValidationResult?.getOrNull()) {
+            is VpTokenValidationResultDCQL -> presentation.submissionRequirementsValidationResult.exceptionOrNull()?.message
+            else -> null
+        },
+)
 
-fun VerifiablePresentationValidationResults.toParsedCredential(): List<ParsedCredential> =
-    validationResults.flatMap {
-        it.toParsedCredential()
+fun VpTokenValidationResult.presentations() = when (this) {
+    is VpTokenValidationResultDCQL -> credentialQueryResponseValidations.flatMap {
+        it.value
     }
 
-fun Map<DCQLCredentialQueryIdentifier, List<AuthnResponseResult>>.toParsedCredential(): List<ParsedCredential> =
-    values.flatMap {
-        it.flatMap { it.toParsedCredential() }
-    }
-
-private fun AuthnResponseResult.toParsedCredential(): Collection<ParsedCredential> = when (this) {
-    is Success -> this.toParsedCredential()
-    is SuccessIso -> this.toParsedCredential()
-    is SuccessSdJwt -> this.toParsedCredentials()
-    is VerifiablePresentationValidationResults -> this.toParsedCredential()
-    is VerifiableDCQLPresentationValidationResults -> this.toParsedCredential()
-    else -> listOf()
+    is VpTokenValidationResultPresentationExchange -> inputDescriptorResponseValidations.values
 }
 
-fun VerifiableDCQLPresentationValidationResults.toParsedCredential(): Collection<ParsedCredential> =
-    allValidationResults.toParsedCredential()
+fun KmmResult<Verifier.VerifyPresentationResult>.toApiItemCredentials() = exceptionOrNull()?.let {
+    listOf(ParsedCredential(error = it.message))
+} ?: when (val it = getOrThrow()) {
+    is Verifier.VerifyPresentationResult.Success -> it.toApiItemCredentials()
+    is Verifier.VerifyPresentationResult.SuccessIso -> it.toApiItemCredentials()
+    is Verifier.VerifyPresentationResult.SuccessSdJwt -> it.toApiItemCredentials()
+    is Verifier.VerifyPresentationResult.SuccessUnsigned -> it.toApiItemCredentials()
+}
 
-fun VerifiableDCQLPresentationValidationResults.toOpenId4VpUser(): OpenId4VpUser =
-    allValidationResults.toParsedCredential().toOpenId4VpUser()
+fun Verifier.VerifyPresentationResult.Success.toApiItemCredentials(): Collection<ParsedCredential> =
+    vp.toApiItemCredentials()
 
-fun SuccessSdJwt.toOpenId4VpUser(): OpenId4VpUser = toParsedCredential().toOpenId4VpUser()
+fun Iso180137AnnexCVerifiedPresentationResult.toUser() = OpenId4VpUser(
+    idToken = null,
+    idTokenError = null,
+    presentationError = null,
+    credentials = documents.map { it.toApiItemCredential() }
+)
 
-fun SuccessSdJwt.toParsedCredentials(): Collection<ParsedCredential> = listOf(toParsedCredential())
+fun KmmResult<AuthnResponseResult>.convertToUser(): OpenId4VpUser =
+    exceptionOrNull()?.let { throw RuntimeException("Failed: input", it) }
+        ?: getOrThrow().toUser()
 
-fun SuccessSdJwt.toParsedCredential(): ParsedCredential =
+fun VerifiablePresentationParsed.toApiItemCredentials(): List<ParsedCredential> =
+    freshVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {
+        it.map {
+            ParsedCredential(
+                jwtCredential = it.vcJws.vc.credentialSubject,
+                credentialType = EuPidScheme.vcType,
+            )
+        }
+    } ?: notVerifiablyFreshVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {
+        it.map { it.freshnessSummary }
+            .map { it.toApiItemCredential() }
+    } ?: invalidVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {
+        it.map { ParsedCredential(error = "Structure invalid: $it") }
+    } ?: listOf(ParsedCredential(error = "No result"))
+
+fun Verifier.VerifyPresentationResult.SuccessUnsigned.toApiItemCredentials(): List<ParsedCredential> =
+    vc.toApiItemCredentials()
+
+fun VcJwsVerificationResultWrapper.toApiItemCredentials(): List<ParsedCredential> = if (freshnessSummary.isFresh) {
+    listOf(this).map {
+        ParsedCredential(
+            jwtCredential = it.vcJws.vc.credentialSubject,
+            credentialType = it.vcJws.vc.type.first(),
+        )
+    }
+} else {
+    listOf(freshnessSummary.toApiItemCredential())
+}
+
+fun CredentialFreshnessSummary.VcJws.toApiItemCredential(): ParsedCredential =
+    ParsedCredential(error = errorMessage())
+
+fun Verifier.VerifyPresentationResult.SuccessSdJwt.toApiItemCredentials(): Collection<ParsedCredential> = listOf(
     ParsedCredential(
-        allFields = reconstructed,
+        allFields = reconstructedJsonObject,
         credentialType = verifiableCredentialSdJwt.verifiableCredentialType,
+        error = freshnessSummary.errorMessage()
     )
+)
 
-fun SuccessIso.toOpenId4VpUser(): OpenId4VpUser = toParsedCredential().toOpenId4VpUser()
+private fun CredentialTimelinessValidationSummary.errorMessage(): String? =
+    if (isNotYetValid) detailsNotYetValid()
+    else if (isExpired) detailsExpired()
+    else null
 
-fun SuccessIso.toParsedCredential(): List<ParsedCredential> = documents.map { doc ->
-    ParsedCredential(
-        allFields = buildJsonObject {
-            doc.validItems.forEach {
-                put(it.elementIdentifier, it.elementValue.toJsonElement())
-            }
-        },
-        credentialType = doc.mso.docType,
-    )
+fun CredentialTimelinessValidationSummary.detailsNotYetValid() = when (this) {
+    is Mdoc -> details.msoTimelinessValidationSummary?.mdocNotYetValidError?.errorMessage()
+    is SdJwt -> details.jwsNotYetValidError?.errorMessage()
+    is VcJws -> details.jwsNotYetValidError?.errorMessage()
+        ?: details.credentialNotYetValidError?.errorMessage()
+}
+
+private fun EntityNotYetValidError.errorMessage(): String =
+    "Not yet valid: ${notBeforeTime.formatted()}"
+
+fun CredentialTimelinessValidationSummary.detailsExpired() = when (this) {
+    is Mdoc -> details.msoTimelinessValidationSummary?.mdocExpiredError?.errorMessage()
+    is SdJwt -> details.jwsExpiredError?.errorMessage()
+    is VcJws -> details.jwsExpiredError?.errorMessage()
+        ?: details.credentialExpiredError?.errorMessage()
+}
+
+private fun EntityExpiredError.errorMessage(): String =
+    "Expired at: ${expirationTime.formatted()}"
+
+private fun kotlin.time.Instant.formatted(): String =
+    toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Format {
+        date(LocalDate.Format { year(); char('-'); monthNumber(); char('-'); day() })
+        char(' ')
+        time(LocalTime.Format { hour(); char(':'); minute(); char(':'); second() })
+    })
+
+fun Verifier.VerifyPresentationResult.SuccessIso.toApiItemCredentials(): Collection<ParsedCredential> =
+    documents.map { it.toApiItemCredential() }
+
+private fun IsoDocumentParsed.toApiItemCredential(): ParsedCredential = ParsedCredential(
+    allFields = buildJsonObject {
+        validItems.forEach {
+            put(it.elementIdentifier, it.elementValue.toJsonElement())
+        }
+    },
+    credentialType = mso.docType,
+    error = freshnessSummary.errorMessage(),
+)
+
+private fun CredentialFreshnessSummary.SdJwt.errorMessage(): String? =
+    if (isFresh) null else listOfNotNull(
+        tokenStatusValidationResult.errorMessage(),
+        timelinessValidationSummary.errorMessage()
+    ).takeIf { it.isNotEmpty() }?.joinToString()
+
+private fun CredentialFreshnessSummary.VcJws.errorMessage(): String? =
+    if (isFresh) null else listOfNotNull(
+        tokenStatusValidationResult.errorMessage(),
+        timelinessValidationSummary.errorMessage()
+    ).takeIf { it.isNotEmpty() }?.joinToString()
+
+private fun CredentialFreshnessSummary.Mdoc.errorMessage(): String? =
+    if (isFresh) null else listOfNotNull(
+        tokenStatusValidationResult.errorMessage(),
+        timelinessValidationSummary.errorMessage()
+    ).takeIf { it.isNotEmpty() }?.joinToString()
+
+private fun TokenStatusValidationResult.errorMessage(): String? = when (this) {
+    is TokenStatusValidationResult.Invalid -> "Invalid: Token status is ${this.tokenStatus}"
+    is TokenStatusValidationResult.Rejected -> "Rejected: Error is ${this.throwable.toString()}"
+    is TokenStatusValidationResult.Valid -> null
 }
 
 private fun String.sha256() = runCatching {
