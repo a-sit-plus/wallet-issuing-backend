@@ -32,6 +32,7 @@ import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationScheme
@@ -212,6 +213,11 @@ class BackendConfiguration {
         AgeVerificationScheme
     )
 
+    private val credentialSchemeMapper = FixedAvCredentialSchemeMapper(
+        delegate = DefaultCredentialSchemeMapper(),
+        fixedIdentifier = "proof_of_age" // per AV profile
+    )
+
     @Bean
     fun issuerService(
         authorizationServer: OAuth2AuthorizationServerAdapter,
@@ -223,12 +229,16 @@ class BackendConfiguration {
         issuer = issuer,
         credentialEndpointPath = Paths.CredentialUrl,
         nonceEndpointPath = Paths.NonceUrl,
+        credentialSchemeMapper = credentialSchemeMapper,
     )
 
     @Bean
     fun authorizationServer(
     ): SimpleAuthorizationService = SimpleAuthorizationService(
-        strategy = CredentialAuthorizationServiceStrategy(credentialSchemes),
+        strategy = CredentialAuthorizationServiceStrategy(
+            credentialSchemes = credentialSchemes,
+            mapper = credentialSchemeMapper
+        ),
         publicContext = configuration.publicContext.toString(),
         authorizationEndpointPath = Paths.AuthorizeUrl,
         tokenEndpointPath = Paths.TokenUrl,
