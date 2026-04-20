@@ -16,9 +16,9 @@ include("http")
 
 
 //If we have a working composite build, use it!
-if (File("../vck/signum").isDirectory && File("../vck/signum/build.gradle.kts").exists()) {
+if (File("../vck").isDirectory && File("../vck/build.gradle.kts").exists()) {
     logger.warn("\u001b[7m\u001b[1mDetected VC-K in ${File("../vck").absolutePath}.")
-    logger.warn("Including VC-K and Signum as composite build.")
+    logger.warn("Including VC-K as composite build.")
     logger.warn("If you do not want this, move the VC-K to another location!\u001b[0m")
     includeBuild("../vck")
 }
