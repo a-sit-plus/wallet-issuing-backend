@@ -216,6 +216,19 @@ class SpringBootSecurityIssuingTest {
     @WithOAuth2AuthenticationToken
     fun age_iso_ok() = runTest {
         val requestOptions = RequestOptions(AgeVerificationScheme, ISO_MDOC)
+        val client = Client()
+        val supportedCredentialConfigurations = credentialIssuer.metadata.supportedCredentialConfigurations.shouldNotBeNull()
+        val credentialFormat = client.oid4vciClient
+            .selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
+            .shouldNotBeNull()
+        val credentialConfigurationId = supportedCredentialConfigurations.entries
+            .firstOrNull { it.value == credentialFormat }
+            ?.key
+            .shouldNotBeNull()
+
+        credentialConfigurationId shouldBe "proof_of_age"
+        supportedCredentialConfigurations[credentialConfigurationId].shouldNotBeNull().scope shouldBe "proof_of_age"
+        credentialFormat.scope shouldBe "proof_of_age"
 
         val credential = loadCredential(requestOptions)
 
