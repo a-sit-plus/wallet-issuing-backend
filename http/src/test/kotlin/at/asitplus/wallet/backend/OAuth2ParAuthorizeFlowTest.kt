@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.openid.PushedAuthenticationResponseParameters
+import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.vckJsonSerializer
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -41,9 +43,9 @@ class OAuth2ParAuthorizeFlowTest {
         val scope = credentialIssuer.metadata.supportedCredentialConfigurations
             ?.values?.firstNotNullOfOrNull { it.scope }
             ?: error("No scope configured in issuer metadata")
-        val issuerState = authorizationServer.credentialOfferWithAuthorizationCode(
+        val issuerState = authorizationServer.offerWithAuthorizationCodeForSchemes(
             credentialIssuer = credentialIssuer.metadata.credentialIssuer,
-            configurationIds = listOf()
+            schemes = emptySet()
         ).grants?.authorizationCode?.issuerState
             ?: error("No issuer_state in generated credential offer")
         val state = uuid4().toString()
