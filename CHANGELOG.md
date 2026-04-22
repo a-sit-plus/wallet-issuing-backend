@@ -3,6 +3,7 @@
 5.12.0 (unreleased):
  - Update to VC-K 5.12.0
  - Add DC API issuing process
+ - Support explicit constants for [Age Verification](https://ageverification.dev/)
 
 5.11.0:
  - Initial public release
