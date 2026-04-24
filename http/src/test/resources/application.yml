@@ -2,6 +2,13 @@ logging:
   level:
     at.asitplus: debug
 spring:
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
   datasource:
     url: "jdbc:h2:mem:userstore;DB_CLOSE_ON_EXIT=FALSE"
   test:
