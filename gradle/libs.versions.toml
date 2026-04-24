@@ -14,6 +14,7 @@ vck = "5.12.0"
 nimbus = "10.7"
 
 spring-boot = "3.5.13"
+spring-cloud = "2025.0.2"
 spring-admin-starter-client = "3.5.8"
 
 webjars-locator = "0.47"
@@ -43,6 +44,8 @@ wallet-vck-jvm = { module = "at.asitplus.wallet:vck-jvm", version.ref = "vck" }
 wallet-vck-openid-ktor-jvm = { module = "at.asitplus.wallet:vck-openid-ktor-jvm", version.ref = "vck" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "pgsql" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito" }
+spring-cloud-config-dependencies = { module = "org.springframework.cloud:spring-cloud-dependencies", version.ref = "spring-cloud" }
+spring-cloud-starter-config = { module = "org.springframework.cloud:spring-cloud-starter-config" }
 
 [bundles]
 wallet = [
