@@ -402,6 +402,33 @@ management:
         include: "*"
 ```
 
+### Optional Spring Cloud Config Client
+
+The service includes the Spring Cloud Config client, but it stays inactive unless you enable a config
+import explicitly. This keeps local development and standalone deployments working without a config
+server.
+
+To enable remote configuration from an internal Spring Cloud Config Server, set these environment
+variables:
+
+```bash
+SPRING_CLOUD_CONFIG_ENABLED=true
+SPRING_CLOUD_CONFIG_URI=http://internal-config-service:8888
+```
+
+Recommended additions:
+
+- `SPRING_CONFIG_IMPORT=optional:configserver:` if you want to override the default import value explicitly
+- `SPRING_APPLICATION_NAME=wallet-issuing-backend` if your deployment overrides the application name and
+  you want the config server lookup key to stay stable.
+- `SPRING_PROFILES_ACTIVE=<profile>` if the remote config is profile-specific.
+
+Behavior notes:
+
+- With `optional:configserver:`, the service still starts if the internal config service is unavailable.
+- If you want startup to fail when the config service cannot be reached, remove `optional:` and use
+  `SPRING_CONFIG_IMPORT=configserver:`.
+
 ## Project Layout
 
 ```text
