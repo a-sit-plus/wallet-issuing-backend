@@ -13,6 +13,8 @@ data class BackendConfigurationProperties(
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
     /** Key used for signing issued credentials. */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
+    /** Optional key used for signing ISO mdoc credentials. Falls back to [issuerKey] when unset. */
+    val isoMdocIssuerKey: KeyConfiguration? = null,
     /** Key used for signing authn requests for PID login */
     val verifierKey: KeyConfiguration = KeyConfiguration(),
     /** Configure details about revocation lists. */
@@ -88,4 +90,3 @@ enum class KeyType {
     MEMORY,
     KEYSTORE,
 }
-

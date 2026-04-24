@@ -94,9 +94,9 @@ operational limitations:
 - **Sessions and transient issuance state are in memory.** Spring sessions use `MapSessionRepository`, and
   credential offers plus OpenID4VP login transactions use `DefaultMapStore`. Login state, offers, and
   transactions are lost on restart and are not shared across multiple service instances.
-- **Default keys are ephemeral.** `backend.issuer-key.type` and `backend.verifier-key.type` default to
-  `MEMORY`, which creates fresh self-signed key material on startup. A restart changes issuer/verifier
-  identity unless file or keystore-backed keys are configured.
+- **Default keys are ephemeral.** `backend.issuer-key.type`, `backend.iso-mdoc-issuer-key.type` when set,
+  and `backend.verifier-key.type` default to `MEMORY`, which creates fresh self-signed key material on
+  startup. A restart changes issuer/verifier identity unless file or keystore-backed keys are configured.
 - **Credential claims are partly synthetic.** The claim builders in `DataExtractor.kt` and
   `FakeDataExtractor.kt` fill many fields with random or placeholder values, including document numbers,
   tax data, driving privileges, address fallbacks, biometrics, and development-user identity data.
@@ -190,6 +190,8 @@ backend:
     logo: "https://wallet.a-sit.at/assets/images/logo.svg"
   issuer-key:
     type: MEMORY
+  iso-mdoc-issuer-key:
+    type: MEMORY
   verifier-key:
     type: MEMORY
 ```
@@ -201,7 +203,9 @@ Key settings:
 - `backend.credentials.lifetime` controls issued credential validity as an ISO-8601 duration, for example
   `PT60M`, `P7D`, or `P180D`.
 - `backend.metadata.name` and `backend.metadata.logo` populate OpenID4VCI display metadata.
-- `backend.issuer-key` signs issued credentials and status lists.
+- `backend.issuer-key` signs JWT VC and SD-JWT VC credentials and status lists.
+- `backend.iso-mdoc-issuer-key` optionally signs ISO mdoc credentials. When omitted, ISO mdoc credentials
+  are signed with `backend.issuer-key`.
 - `backend.verifier-key` signs OpenID4VP authentication requests for EU PID login.
 
 ### Key Material
@@ -211,6 +215,8 @@ For local development, `MEMORY` creates an ephemeral key pair with a self-signed
 ```yaml
 backend:
   issuer-key:
+    type: MEMORY
+  iso-mdoc-issuer-key:
     type: MEMORY
   verifier-key:
     type: MEMORY
@@ -226,6 +232,12 @@ backend:
       private-key: file:issuer-key-private.pem
       public-key: file:issuer-key-public.pem
       certificate: file:issuer-cert.pem
+  iso-mdoc-issuer-key:
+    type: FILE
+    file:
+      private-key: file:mdoc-issuer-key-private.pem
+      public-key: file:mdoc-issuer-key-public.pem
+      certificate: file:mdoc-issuer-cert.pem
 ```
 
 Or load a Java KeyStore:
@@ -240,6 +252,15 @@ backend:
       provider: BC
       password: changeit
       alias: key1
+      alias-password: changeit
+  iso-mdoc-issuer-key:
+    type: KEYSTORE
+    keystore:
+      path: file:/some/path/mdoc-keystore.p12
+      type: PKCS12
+      provider: BC
+      password: changeit
+      alias: mdoc-key
       alias-password: changeit
 ```
 

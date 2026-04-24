@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.KmmResult
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
@@ -15,6 +16,7 @@ import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.ehic.EhicScheme
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
 import at.asitplus.wallet.lib.agent.Issuer
@@ -46,6 +48,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
@@ -109,16 +112,19 @@ class BackendConfiguration {
     )
 
     @Bean("issuerKeyMaterial")
-    fun issuerKeyMaterial(): KeyMaterial = when (configuration.issuerKey.type) {
-        KeyType.FILE -> loadKeyFile(configuration.issuerKey.file!!, resourceLoader)
-        KeyType.KEYSTORE -> loadKeyStore(configuration.issuerKey.keystore!!)
-        KeyType.MEMORY -> EphemeralKeyWithSelfSignedCert()
-    }
+    fun issuerKeyMaterial(): KeyMaterial = loadKeyMaterial(configuration.issuerKey)
+
+    @Bean("isoMdocIssuerKeyMaterial")
+    fun isoMdocIssuerKeyMaterial(
+        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
+    ): KeyMaterial = configuration.isoMdocIssuerKey?.let { loadKeyMaterial(it) } ?: issuerKeyMaterial
 
     @Bean("verifierKeyMaterial")
-    fun verifierKeyMaterial(): KeyMaterial = when (configuration.verifierKey.type) {
-        KeyType.FILE -> loadKeyFile(configuration.verifierKey.file!!, resourceLoader)
-        KeyType.KEYSTORE -> loadKeyStore(configuration.verifierKey.keystore!!)
+    fun verifierKeyMaterial(): KeyMaterial = loadKeyMaterial(configuration.verifierKey)
+
+    private fun loadKeyMaterial(config: KeyConfiguration): KeyMaterial = when (config.type) {
+        KeyType.FILE -> loadKeyFile(config.file!!, resourceLoader)
+        KeyType.KEYSTORE -> loadKeyStore(config.keystore!!)
         KeyType.MEMORY -> EphemeralKeyWithSelfSignedCert()
     }
 
@@ -176,12 +182,21 @@ class BackendConfiguration {
     @Bean
     fun issuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
-        issuerKeyMaterial: KeyMaterial,
-    ): Issuer = IssuerAgent(
-        keyMaterial = issuerKeyMaterial,
+        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
+        @Qualifier("isoMdocIssuerKeyMaterial") isoMdocIssuerKeyMaterial: KeyMaterial,
+    ): Issuer = IsoMdocRoutingIssuer(
+        defaultIssuer = buildIssuerAgent(issuerCredentialStore, issuerKeyMaterial),
+        isoMdocIssuer = buildIssuerAgent(issuerCredentialStore, isoMdocIssuerKeyMaterial),
+    )
+
+    private fun buildIssuerAgent(
+        issuerCredentialStore: IssuerCredentialStore,
+        keyMaterial: KeyMaterial,
+    ): IssuerAgent = IssuerAgent(
+        keyMaterial = keyMaterial,
         issuerCredentialStore = issuerCredentialStore,
         statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
-        cryptoAlgorithms = setOf(issuerKeyMaterial.signatureAlgorithm),
+        cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
         timePeriodProvider = timePeriodProvider(),
         identifier = UniformResourceIdentifier(configuration.publicContext.toString())
     )
@@ -189,7 +204,7 @@ class BackendConfiguration {
     @Bean
     fun statusListIssuer(
         referencedTokenStore: ReferencedTokenStore,
-        issuerKeyMaterial: KeyMaterial,
+        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
     ): StatusListIssuer = StatusListAgent(
         keyMaterial = issuerKeyMaterial,
         issuerCredentialStore = referencedTokenStore,
@@ -222,11 +237,14 @@ class BackendConfiguration {
     fun issuerService(
         authorizationServer: OAuth2AuthorizationServerAdapter,
         issuer: Issuer,
+        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
+        @Qualifier("isoMdocIssuerKeyMaterial") isoMdocIssuerKeyMaterial: KeyMaterial,
     ): CredentialIssuer = CredentialIssuer(
         publicContext = configuration.publicContext.toString(),
         credentialSchemes = credentialSchemes,
         authorizationService = authorizationServer,
         issuer = issuer,
+        keyMaterial = setOf(issuerKeyMaterial, isoMdocIssuerKeyMaterial),
         credentialEndpointPath = Paths.CredentialUrl,
         nonceEndpointPath = Paths.NonceUrl,
         credentialSchemeMapper = credentialSchemeMapper,
@@ -251,4 +269,19 @@ class BackendConfiguration {
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
         KotlinSerializationJsonHttpMessageConverter(vckJsonSerializer)
+}
+
+private class IsoMdocRoutingIssuer(
+    private val defaultIssuer: Issuer,
+    private val isoMdocIssuer: Issuer,
+) : Issuer {
+    override val keyMaterial: KeyMaterial = defaultIssuer.keyMaterial
+    override val cryptoAlgorithms = defaultIssuer.cryptoAlgorithms + isoMdocIssuer.cryptoAlgorithms
+
+    override suspend fun issueCredential(credential: CredentialToBeIssued): KmmResult<Issuer.IssuedCredential> =
+        when (credential) {
+            is CredentialToBeIssued.Iso -> isoMdocIssuer.issueCredential(credential)
+            is CredentialToBeIssued.VcJwt,
+            is CredentialToBeIssued.VcSd -> defaultIssuer.issueCredential(credential)
+        }
 }
