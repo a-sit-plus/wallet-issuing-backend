@@ -25,11 +25,7 @@ WORKDIR /app
 ENV PORT=8080
 ENV JAVA_OPTS=""
 
-RUN groupadd --system app && useradd --system --gid app --create-home --home-dir /app app
-
 COPY --from=build /workspace/service.jar /app/app.jar
-
-USER app
 
 EXPOSE 8080
 
