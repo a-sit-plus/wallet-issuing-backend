@@ -45,6 +45,8 @@ class ActuatorSecurityDisabledTest {
         "spring.boot.admin.client.enabled=true",
         "spring.boot.admin.client.instance.metadata.user.name=actuator",
         "spring.boot.admin.client.instance.metadata.user.password=secret",
+        "spring.security.user.name=user",
+        "spring.security.user.password=password",
     ]
 )
 @AutoConfigureMockMvc
