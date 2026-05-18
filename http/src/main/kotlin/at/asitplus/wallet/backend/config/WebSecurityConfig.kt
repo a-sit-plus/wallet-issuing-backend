@@ -89,21 +89,19 @@ class WebSecurityConfig(
     }
 
     @Bean
-    fun userDetailsService(): UserDetailsService {
-        val defaultUser = User.withDefaultPasswordEncoder()
-            .username("user")
-            .password("password")
-            .roles("USER")
-            .build()
-        val (username, password) = actuatorCredentials
-            ?: return InMemoryUserDetailsManager(defaultUser)
-        return InMemoryUserDetailsManager(
-            defaultUser,
-            User.withUsername(username)
-                .password("{noop}$password")
-                .roles("ACTUATOR")
-                .build()
-        )
+    fun userDetailsService(
+        @Value("\${spring.security.user.name:user}") demoUsername: String,
+        @Value("\${spring.security.user.password:#{null}}") demoPassword: String?,
+    ): UserDetailsService {
+        val demoUser = demoPassword?.let {
+            User.withUsername(demoUsername).password("{noop}$it").roles("USER").build()
+        }
+        val (actuatorUsername, actuatorPassword) = actuatorCredentials
+            ?: return InMemoryUserDetailsManager(listOfNotNull(demoUser))
+        return InMemoryUserDetailsManager(listOfNotNull(
+            demoUser,
+            User.withUsername(actuatorUsername).password("{noop}$actuatorPassword").roles("ACTUATOR").build(),
+        ))
     }
 
     @Bean
