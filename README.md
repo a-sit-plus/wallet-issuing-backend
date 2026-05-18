@@ -456,6 +456,10 @@ spring:
     admin:
       client:
         url: http://localhost:9900
+        instance:
+          metadata:
+            user.name: actuator
+            user.password: changeit
 management:
   endpoint:
     health:
@@ -465,6 +469,18 @@ management:
       exposure:
         include: "*"
 ```
+
+The service protects `/actuator/**` with a dedicated security filter chain:
+
+- **SBA not configured** (`spring.boot.admin.client.enabled` absent or `false`): all actuator access
+  is denied with HTTP 403.
+- **SBA configured** (`spring.boot.admin.client.enabled=true`) and both `user.name` / `user.password`
+  set: the actuator endpoints require HTTP Basic auth using exactly those credentials. Requests without
+  credentials receive HTTP 401; wrong credentials receive HTTP 401; authenticated users without the
+  `ACTUATOR` role (including the demo `user` account) receive HTTP 403.
+
+Spring Boot Admin reads the same `user.name` / `user.password` metadata when it polls the actuator, so
+the credentials only need to be configured once.
 
 ### Optional Spring Cloud Config Client
 

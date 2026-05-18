@@ -3,12 +3,16 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.wallet.backend.Paths
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
@@ -27,10 +31,37 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration
 @EnableMethodSecurity
 @EnableSpringHttpSession
-class WebSecurityConfig {
+class WebSecurityConfig(
+    @Value("\${spring.boot.admin.client.enabled:false}") private val adminClientEnabled: Boolean,
+    @Value("\${spring.boot.admin.client.instance.metadata.user.name:#{null}}") private val adminUsername: String?,
+    @Value("\${spring.boot.admin.client.instance.metadata.user.password:#{null}}") private val adminPassword: String?,
+) {
+
+    // Non-null only when the admin client is enabled and both credentials are provided.
+    private val actuatorCredentials: Pair<String, String>?
+        get() = if (adminClientEnabled && adminUsername != null && adminPassword != null)
+        adminUsername to adminPassword
+        else null
 
     @Bean
-    fun filterChain(
+    @Order(1)
+    fun actuatorSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http.securityMatcher("/actuator/**")
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .csrf { it.disable() }
+        val creds = actuatorCredentials
+        if (creds != null) {
+            http.authorizeHttpRequests { it.anyRequest().hasRole("ACTUATOR") }
+                .httpBasic(Customizer.withDefaults())
+        } else {
+            http.authorizeHttpRequests { it.anyRequest().denyAll() }
+        }
+        return http.build()
+    }
+
+    @Bean
+    @Order(2)
+    fun securityFilterChain(
         http: HttpSecurity,
         clientRegistrations: InMemoryClientRegistrationRepository?
     ): SecurityFilterChain {
@@ -58,13 +89,22 @@ class WebSecurityConfig {
     }
 
     @Bean
-    fun userDetailsService() = InMemoryUserDetailsManager(
-        User.withDefaultPasswordEncoder()
+    fun userDetailsService(): UserDetailsService {
+        val defaultUser = User.withDefaultPasswordEncoder()
             .username("user")
             .password("password")
             .roles("USER")
             .build()
-    )
+        val (username, password) = actuatorCredentials
+            ?: return InMemoryUserDetailsManager(defaultUser)
+        return InMemoryUserDetailsManager(
+            defaultUser,
+            User.withUsername(username)
+                .password("{noop}$password")
+                .roles("ACTUATOR")
+                .build()
+        )
+    }
 
     @Bean
     fun sessionRepository() = MapSessionRepository(ConcurrentHashMap())
