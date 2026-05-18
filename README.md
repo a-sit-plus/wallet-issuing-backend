@@ -95,9 +95,10 @@ This repository is useful as a reference implementation and test issuer, but it 
 unchanged as a production service. The current code has several deliberate development shortcuts and
 operational limitations:
 
-- **Demo authentication is enabled.** `WebSecurityConfig` defines an in-memory `user` / `password` account
-  with `withDefaultPasswordEncoder()`, disables CSRF protection, and permits every request except
-  `/authorize` unless method-level annotations add further checks.
+- **Demo authentication requires explicit configuration.** A form-login demo user is only created when
+  `spring.security.user.password` is set; without it no demo user exists and the only way to log in is
+  through a configured OIDC provider or an EU PID presentation. CSRF protection is disabled, and every
+  request is permitted except `/authorize` unless method-level annotations add further checks.
 - **Sessions and transient issuance state are in memory.** Spring sessions use `MapSessionRepository`, and
   credential offers plus OpenID4VP login transactions use `DefaultMapStore`. Login state, offers, and
   transactions are lost on restart and are not shared across multiple service instances.
@@ -321,6 +322,23 @@ The service supports:
 - A development username/password user configured by Spring Security.
 - Any Spring Security OAuth2 client registration.
 - EU PID login through OpenID4VP presentation.
+
+### Demo User
+
+A form-login demo user is only created when `spring.security.user.password` is explicitly set.
+Without it no local user exists and login is only possible through a configured OIDC provider or
+an EU PID presentation.
+
+```yaml
+spring:
+  security:
+    user:
+      name: alice        # defaults to "user" when omitted
+      password: changeit
+```
+
+The password is stored in plain text internally (no hashing), so this account is intended only for
+development and testing. Do not use it in production.
 
 Example OIDC client registration for ID Austria:
 
