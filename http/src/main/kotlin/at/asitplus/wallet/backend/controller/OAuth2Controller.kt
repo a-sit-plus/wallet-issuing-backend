@@ -3,19 +3,19 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.catching
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.OpenIdConstants
-import at.asitplus.openid.OpenIdConstants.Errors
+import at.asitplus.openid.PushedAuthenticationResponseParameters
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
+import at.asitplus.openid.TokenResponseParameters
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.ktor.openid.DPoP
 import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
 import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestation
 import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestationPop
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.OAuth2Error
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
 import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
@@ -23,8 +23,6 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
@@ -50,34 +48,31 @@ class OAuth2Controller(
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
-    fun openidMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
+    suspend fun openidMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
         val metadata = authorizationService.metadata()
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $metadata")
-        ResponseEntity.ok(metadata)
+        return ResponseEntity.ok(metadata)
     }
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER, produces = [APPLICATION_JSON_VALUE])
-    fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> = runBlocking {
+    suspend fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
         val metadata = authorizationService.metadata()
         Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $metadata")
-        ResponseEntity.ok(metadata)
+        return ResponseEntity.ok(metadata)
     }
 
     /**
      * Called by the Wallet when pushing an authorization request, see [SimpleAuthorizationService.par]
      */
-    // Note: suspend fun cannot return ResponseEntity in Spring MVC 7 (Mono wrapper not unwrapped).
-    // Status and custom headers are set directly on HttpServletResponse instead.
     @PostMapping(Paths.ParUrl, produces = [APPLICATION_JSON_VALUE])
-    fun par(
+    suspend fun par(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-        response: HttpServletResponse,
-    ): String = runBlocking {
+    ): ResponseEntity<PushedAuthenticationResponseParameters> {
         Napier.i("${Paths.ParUrl} called")
         Napier.v("${Paths.ParUrl} called with $requestBody")
         val params: RequestParameters = requestBody.decodeFromPostBody()
-            ?: return@runBlocking writeOidcError(response, OAuth2Exception.InvalidRequest())
+            ?: throw OAuth2Exception.InvalidRequest()
         val result = authorizationService.parWithDpopNonce(
             request = params,
             httpRequest = request.toRequestInfo().also {
@@ -85,13 +80,13 @@ class OAuth2Controller(
             },
         ).getOrElse {
             Napier.w("${Paths.ParUrl} got error", it)
-            return@runBlocking writeOidcError(response, it)
+            throw it
         }
         Napier.d("${Paths.ParUrl} returns $result")
-        response.status = HttpStatus.CREATED.value()
-        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-        result.dpopNonce?.let { response.addHeader(HttpHeaders.DPoPNonce, it) }
-        joseCompliantSerializer.encodeToString(result.response)
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
+            .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
+            .body(result.response)
     }
 
     /**
@@ -102,13 +97,13 @@ class OAuth2Controller(
      */
     // TODO add "PreAuthorize" annotation?
     @RequestMapping(Paths.AuthorizeUrl, method = [RequestMethod.POST, RequestMethod.GET])
-    fun authorize(
+    suspend fun authorize(
         @RequestParam requestParams: Map<String, String>,
         @RequestBody requestBody: String?,
         request: HttpServletRequest,
         model: ModelMap,
         authentication: Authentication? = null,
-    ): Any = runBlocking {
+    ): Any {
         Napier.i("${Paths.AuthorizeUrl} called")
         Napier.v("${Paths.AuthorizeUrl} called with $requestParams and $requestBody")
         val params: RequestParameters =
@@ -124,11 +119,11 @@ class OAuth2Controller(
             }
         }.getOrElse {
             Napier.w("${Paths.AuthorizeUrl} got error", it)
-            return@runBlocking buildOidcErrorResponse(it)
+            throw it
         }
         Napier.d("${Paths.AuthorizeUrl} returns ${result.url}")
         val userAgent = request.getHeader(HttpHeaders.UserAgent)
-        if (userAgent?.isSafariOniPhone() == true) {
+        return if (userAgent?.isSafariOniPhone() == true) {
             model["url"] = result.url
             ModelAndView("iphone-redirect")
         } else {
@@ -143,27 +138,27 @@ class OAuth2Controller(
      * Handles the token request sent by Wallets, see [SimpleAuthorizationService.tokenWithDpopNonce].
      */
     @PostMapping(Paths.TokenUrl, produces = [APPLICATION_JSON_VALUE])
-    fun token(
+    suspend fun token(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-    ): ResponseEntity<*> = runBlocking {
+    ): ResponseEntity<TokenResponseParameters> {
         Napier.i("${Paths.TokenUrl} called")
         Napier.v("${Paths.TokenUrl} called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromPostBody()
-            ?: return@runBlocking buildOidcErrorResponse(OAuth2Exception.InvalidRequest())
+            ?: throw OAuth2Exception.InvalidRequest()
         val result = authorizationService.tokenWithDpopNonce(
             request = params,
             httpRequest = request.toRequestInfo()
                 .also { Napier.v("${Paths.TokenUrl} called with $it") }
         ).getOrElse {
             Napier.w("${Paths.TokenUrl} got error", it)
-            return@runBlocking buildOidcErrorResponse(it)
+            throw it
         }
         Napier.d("${Paths.TokenUrl} returns $result")
-        ResponseEntity.status(HttpStatus.OK)
+        return ResponseEntity.status(HttpStatus.OK)
             .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
             .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
-            .body(joseCompliantSerializer.encodeToString(result.response))
+            .body(result.response)
     }
 
     private fun HttpServletRequest.toRequestInfo() = RequestInfo(
@@ -178,35 +173,6 @@ class OAuth2Controller(
         .status(HttpStatus.FOUND)
         .header(HttpHeaders.Location, location)
         .build()
-
-    private fun buildOidcErrorResponse(throwable: Throwable): ResponseEntity<OAuth2Error> =
-        when (throwable) {
-            is OAuth2Exception.UseDpopNonce -> ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .header(HttpHeaders.DPoPNonce, throwable.dpopNonce)
-                .body(throwable.toOAuth2Error())
-
-            is OAuth2Exception -> ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(throwable.toOAuth2Error())
-
-            else -> ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(OAuth2Error(error = Errors.INVALID_REQUEST))
-        }
-
-    private fun writeOidcError(response: HttpServletResponse, throwable: Throwable): String {
-        response.status = HttpStatus.BAD_REQUEST.value()
-        val error = when (throwable) {
-            is OAuth2Exception.UseDpopNonce -> {
-                response.addHeader(HttpHeaders.DPoPNonce, throwable.dpopNonce)
-                throwable.toOAuth2Error()
-            }
-            is OAuth2Exception -> throwable.toOAuth2Error()
-            else -> OAuth2Error(error = Errors.INVALID_REQUEST)
-        }
-        return joseCompliantSerializer.encodeToString(error)
-    }
 
 }
 

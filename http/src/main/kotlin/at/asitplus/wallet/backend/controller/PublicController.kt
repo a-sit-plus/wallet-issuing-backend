@@ -174,11 +174,11 @@ class PublicController(
      * Displays configured OAuth2 client registrations and an QR Code to login with an EU PID
      */
     @RequestMapping(Paths.LoginUrl)
-    fun login(
+    suspend fun login(
         model: ModelMap,
         request: HttpServletRequest,
         @RequestParam("error", required = false) error: String? = null,
-    ): ModelAndView = runBlocking {
+    ): ModelAndView {
         clientRegistrations?.map {
             OAuth2ClientRegistration(it.clientName, it.loginUrl())
         }?.let { model["oauthUrls"] = it }
@@ -196,7 +196,7 @@ class PublicController(
         model["loginPidUrl"] = qrCodeUrl
         model["loginPidQrCode"] = QRCode.ofSquares().build(qrCodeUrl).render().getBytes()
             .encodeToString(Base64())
-        ModelAndView("login", model)
+        return ModelAndView("login", model)
     }
 
     @Serializable
@@ -207,18 +207,18 @@ class PublicController(
      * once the authentication with the EU PID is completed.
      */
     @GetMapping(Paths.LoginStatusUrl)
-    fun status(
+    suspend fun status(
         request: HttpServletRequest,
         response: HttpServletResponse,
         session: HttpSession,
-    ): StatusResponse = runBlocking {
+    ): StatusResponse {
         val user = session.getAttribute(SESSION_KEY_OPENID4VP_USER) as? OpenId4VpUser?
-            ?: return@runBlocking StatusResponse(false, null)
+            ?: return StatusResponse(false, null)
 
         Napier.i("${Paths.LoginStatusUrl} got successful authentication in session ${session.id}: $user")
         val targetUrl = setAuthenticationInSession(user, session, request, response)
         val redirectUrl = if (targetUrl.isNotEmpty()) targetUrl.toString() else "/"
-        StatusResponse(true, redirectUrl)
+        return StatusResponse(true, redirectUrl)
     }
 
     /**
@@ -226,34 +226,33 @@ class PublicController(
      */
     @GetMapping("${Paths.Transaction.GetUrl}/{transactionId}")
     @ResponseBody
-    fun transactionGet(
+    suspend fun transactionGet(
         @PathVariable transactionId: String,
-    ): ResponseEntity<String> = runBlocking {
+    ): ResponseEntity<String> {
         Napier.i("${Paths.Transaction.GetUrl}/$transactionId called")
         if (transactionIdToSessionIdMap.get(transactionId) == null)
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
                 .also { Napier.w("${Paths.Transaction.GetUrl}/$transactionId returns NOT_FOUND") }
 
-        try {
-            val responseUrl = configurationProperties.publicContext
-                .appendPath(Paths.Transaction.ResultUrl + "/" + transactionId)
-            val state = uuid4().toString()
-            val result = openIdVerifier.createAuthnRequestAsSignedRequestObject(
-                OpenId4VpRequestOptions(
-                    state = state,
-                    responseMode = OpenIdConstants.ResponseMode.DirectPost,
-                    responseUrl = responseUrl,
-                    presentationRequest = CredentialPresentationRequestBuilder(requestPidSdJwt()).toDCQLRequest()
-                )
-            ).getOrThrow().serialize()
-                .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
-            ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/" + JwsContentTypeConstants.OAUTH_AUTHZ_REQUEST))
-                .body(result)
-        } catch (e: Exception) {
-            Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", e)
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage)
+        val responseUrl = configurationProperties.publicContext
+            .appendPath(Paths.Transaction.ResultUrl + "/" + transactionId)
+        val state = uuid4().toString()
+        val result = openIdVerifier.createAuthnRequestAsSignedRequestObject(
+            OpenId4VpRequestOptions(
+                state = state,
+                responseMode = OpenIdConstants.ResponseMode.DirectPost,
+                responseUrl = responseUrl,
+                presentationRequest = CredentialPresentationRequestBuilder(requestPidSdJwt()).toDCQLRequest()
+            )
+        ).getOrElse {
+            Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", it)
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
         }
+            .serialize()
+            .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/" + JwsContentTypeConstants.OAUTH_AUTHZ_REQUEST))
+            .body(result)
     }
 
     private fun requestPidSdJwt() = listOf(
@@ -272,27 +271,26 @@ class PublicController(
      * Will be called from the Wallet when the user logs in with the EU PID.
      */
     @PostMapping("${Paths.Transaction.ResultUrl}/{id}")
-    fun transactionPost(
+    suspend fun transactionPost(
         @PathVariable id: String,
         @RequestBody requestBody: String,
-    ): ResponseEntity<Void> = runBlocking {
+    ): ResponseEntity<Void> {
         Napier.i("${Paths.Transaction.ResultUrl}/$id called with $requestBody")
         val desktopSessionId = transactionIdToSessionIdMap.remove(id)
         if (desktopSessionId == null) {
             Napier.w("${Paths.Transaction.ResultUrl}/$id returns NOT_FOUND")
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
-        val user = try {
-            openIdVerifier.validateAuthnResponse(requestBody).convertToUser()
-        } catch (e: Throwable) {
-            Napier.w("${Paths.Transaction.ResultUrl}/$id error", e)
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.localizedMessage, e)
-        }
+        val user = openIdVerifier.validateAuthnResponse(requestBody)
+            .getOrElse {
+                Napier.w("${Paths.Transaction.ResultUrl}/$id error", it)
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
+            }.toUser()
         val session = sessionRepository.findById(desktopSessionId)
         Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
         session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
         sessionRepository.save(session)
-        ResponseEntity.ok().build()
+        return ResponseEntity.ok().build()
     }
 
     private fun setAuthenticationInSession(
