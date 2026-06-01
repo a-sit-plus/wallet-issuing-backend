@@ -4,7 +4,7 @@ import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -35,7 +35,7 @@ class PublicControllerWebClientTest {
             .returnResult<String>()
 
         webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
-            .header(HttpHeaders.IF_NONE_MATCH, firstResult.responseHeaders[HttpHeaders.ETAG]?.first())
+            .header(HttpHeaders.IF_NONE_MATCH, firstResult.responseHeaders[HttpHeaders.ETAG]?.first() ?: "")
             .exchange()
             .expectStatus().isNotModified
             .expectHeader().exists(HttpHeaders.ETAG)
@@ -64,7 +64,7 @@ class PublicControllerWebClientTest {
         }
 
         webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
-            .header(HttpHeaders.IF_NONE_MATCH, etag)
+            .header(HttpHeaders.IF_NONE_MATCH, etag ?: "")
             .exchange()
             .expectStatus().isNotModified
             .expectHeader().exists(HttpHeaders.ETAG)

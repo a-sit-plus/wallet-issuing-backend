@@ -25,7 +25,6 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -77,17 +76,16 @@ class OpenId4VciController(
      * Called by the Wallet to get a nonce for their proof-of-possessions, see [CredentialIssuer.nonceWithDpopNonce].
      */
     @PostMapping(Paths.NonceUrl, produces = [APPLICATION_JSON_VALUE])
-    fun nonce(
-    ): ResponseEntity<*> = runBlocking {
+    suspend fun nonce(): ResponseEntity<*> {
         Napier.i("${Paths.NonceUrl} called")
         val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
             Napier.w("${Paths.NonceUrl} got error", it)
-            return@runBlocking buildOidcErrorResponse(it)
+            return buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.NonceUrl} returns $result")
-        ResponseEntity.status(HttpStatus.OK)
+        return ResponseEntity.status(HttpStatus.OK)
             .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-            .header(HttpHeaders.DPoPNonce, result.dpopNonce)
+            .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
             .body(vckJsonSerializer.encodeToString(result.response))
     }
 
@@ -104,16 +102,16 @@ class OpenId4VciController(
      * see [CredentialIssuer.credential].
      */
     @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE])
-    fun credential(
+    suspend fun credential(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-    ): ResponseEntity<*> = runBlocking {
+    ): ResponseEntity<*> {
         Napier.i("${Paths.CredentialUrl} called")
         val authorizationHeader = request.getHeader(HttpHeaders.Authorization)
         Napier.v("${Paths.CredentialUrl} called with $authorizationHeader and $requestBody")
         val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
             Napier.w("${Paths.CredentialUrl} can't parse request", it)
-            return@runBlocking buildOidcErrorResponse(it)
+            return buildOidcErrorResponse(it)
         }
         val credential = credentialIssuer.credential(
             authorizationHeader = authorizationHeader,
@@ -126,24 +124,24 @@ class OpenId4VciController(
             ),
         ).getOrElse {
             Napier.w("${Paths.CredentialUrl} got error", it)
-            return@runBlocking buildOidcErrorResponse(it)
+            return buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.CredentialUrl} returns $credential")
-        credential.toResponseEntity()
+        return credential.toResponseEntity()
     }
 
-    private suspend fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String?> =
+    private suspend fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String> =
         when (this) {
             is CredentialIssuer.CredentialResponse.Encrypted -> this.toResponseEntity()
             is CredentialIssuer.CredentialResponse.Plain -> this.toResponseEntity()
         }
 
-    private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String?> =
+    private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String> =
         ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.APPLICATION_JSON)
             .body(vckJsonSerializer.encodeToString(response))
 
-    private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String?> =
+    private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String> =
         ResponseEntity
             .status(HttpStatus.OK)
             .contentType(MediaType.parseMediaType(MediaTypes.Application.JWT))

@@ -7,7 +7,7 @@ import at.asitplus.wallet.lib.data.StatusListCwt
 import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.communication.primitives.StatusListTokenMediaType
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import org.slf4j.LoggerFactory
@@ -36,14 +36,12 @@ class RevocationListWriter(
      * operations should never read a partial file.
      */
     @OptIn(ExperimentalSerializationApi::class)
-    fun writeRevocationList(timePeriod: Int) {
-        runBlocking(Dispatchers.IO) {
-            with(configurationProperties.revocationList) {
-                Path(jwtPath).createDirectories()
-                writeStatusListJwt(Path(jwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
-                Path(cwtPath).createDirectories()
-                writeStatusListCwt(Path(cwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
-            }
+    suspend fun writeRevocationList(timePeriod: Int) = withContext(Dispatchers.IO) {
+        with(configurationProperties.revocationList) {
+            Path(jwtPath).createDirectories()
+            writeStatusListJwt(Path(jwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
+            Path(cwtPath).createDirectories()
+            writeStatusListCwt(Path(cwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
         }
     }
 

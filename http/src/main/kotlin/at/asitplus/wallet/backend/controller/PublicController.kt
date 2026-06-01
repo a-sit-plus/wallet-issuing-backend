@@ -174,14 +174,14 @@ class PublicController(
      * Displays configured OAuth2 client registrations and an QR Code to login with an EU PID
      */
     @RequestMapping(Paths.LoginUrl)
-    fun login(
+    suspend fun login(
         model: ModelMap,
         request: HttpServletRequest,
         @RequestParam("error", required = false) error: String? = null,
-    ) = runBlocking {
-        model["oauthUrls"] = clientRegistrations?.map {
+    ): ModelAndView {
+        clientRegistrations?.map {
             OAuth2ClientRegistration(it.clientName, it.loginUrl())
-        }
+        }?.let { model["oauthUrls"] = it }
         if (error != null) {
             // from DefaultLoginPageGeneratingFilter
             model["loginError"] = request.getSession(false).getAuthnException()?.ifEmpty { null }
@@ -196,7 +196,7 @@ class PublicController(
         model["loginPidUrl"] = qrCodeUrl
         model["loginPidQrCode"] = QRCode.ofSquares().build(qrCodeUrl).render().getBytes()
             .encodeToString(Base64())
-        ModelAndView("login", model)
+        return ModelAndView("login", model)
     }
 
     @Serializable
@@ -207,18 +207,18 @@ class PublicController(
      * once the authentication with the EU PID is completed.
      */
     @GetMapping(Paths.LoginStatusUrl)
-    fun status(
+    suspend fun status(
         request: HttpServletRequest,
         response: HttpServletResponse,
         session: HttpSession,
-    ) = runBlocking {
+    ): StatusResponse {
         val user = session.getAttribute(SESSION_KEY_OPENID4VP_USER) as? OpenId4VpUser?
-            ?: return@runBlocking StatusResponse(false, null)
+            ?: return StatusResponse(false, null)
 
         Napier.i("${Paths.LoginStatusUrl} got successful authentication in session ${session.id}: $user")
         val targetUrl = setAuthenticationInSession(user, session, request, response)
         val redirectUrl = if (targetUrl.isNotEmpty()) targetUrl.toString() else "/"
-        StatusResponse(true, redirectUrl)
+        return StatusResponse(true, redirectUrl)
     }
 
     /**
@@ -226,15 +226,15 @@ class PublicController(
      */
     @GetMapping("${Paths.Transaction.GetUrl}/{transactionId}")
     @ResponseBody
-    fun transactionGet(
+    suspend fun transactionGet(
         @PathVariable transactionId: String,
-    ): ResponseEntity<String> = runBlocking {
+    ): ResponseEntity<String> {
         Napier.i("${Paths.Transaction.GetUrl}/$transactionId called")
         if (transactionIdToSessionIdMap.get(transactionId) == null)
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
                 .also { Napier.w("${Paths.Transaction.GetUrl}/$transactionId returns NOT_FOUND") }
 
-        try {
+        return try {
             val responseUrl = configurationProperties.publicContext
                 .appendPath(Paths.Transaction.ResultUrl + "/" + transactionId)
             val state = uuid4().toString()
@@ -272,10 +272,10 @@ class PublicController(
      * Will be called from the Wallet when the user logs in with the EU PID.
      */
     @PostMapping("${Paths.Transaction.ResultUrl}/{id}")
-    fun transactionPost(
+    suspend fun transactionPost(
         @PathVariable id: String,
         @RequestBody requestBody: String,
-    ): ResponseEntity<Void> = runBlocking {
+    ): ResponseEntity<Void> {
         Napier.i("${Paths.Transaction.ResultUrl}/$id called with $requestBody")
         val desktopSessionId = transactionIdToSessionIdMap.remove(id)
         if (desktopSessionId == null) {
@@ -292,7 +292,7 @@ class PublicController(
         Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
         session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
         sessionRepository.save(session)
-        ResponseEntity.ok().build()
+        return ResponseEntity.ok().build()
     }
 
     private fun setAuthenticationInSession(

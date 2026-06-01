@@ -47,13 +47,17 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-web") {
+        exclude(group = "com.fasterxml.jackson.core")
+        exclude(group = "com.fasterxml.jackson.module")
+        exclude(group = "com.fasterxml.jackson.datatype")
+    }
     implementation("org.springframework.session:spring-session-core")
     implementation(libs.spring.boot.admin.starter.client)
     implementation(libs.spring.cloud.starter.config)
 
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
 
@@ -84,8 +88,11 @@ dependencies {
 
     runtimeOnly("com.h2database:h2")
     runtimeOnly(libs.postgresql)
+    runtimeOnly("org.springframework.boot:spring-boot-properties-migrator")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-webtestclient")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation(libs.mockito.kotlin)
@@ -111,7 +118,6 @@ tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar
     //this is only relevant for a composite build and will nicely print out the warning that
     //the VC-K jar from the composite build overwrites the one from the gradle cache, just like we want it
     duplicatesStrategy = DuplicatesStrategy.WARN
-    launchScript()
 }
 
 springBoot {
