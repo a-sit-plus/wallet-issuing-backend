@@ -11,11 +11,11 @@ import io.github.aakira.napier.Napier
 import io.ktor.http.*
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
@@ -41,12 +41,14 @@ class StatusListController(
     private val statusListJwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT)
     private val statusListCwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT)
 
+    // Note: returns body directly (not wrapped in ResponseEntity) because Spring MVC 7 does not
+    // correctly handle suspend fun returning ResponseEntity<*> — the Mono wrapper is not unwrapped.
     @GetMapping(Paths.Credentials.Status.CurrentUrl, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getStatutsListAggregation(): ResponseEntity<StatusListAggregation> = runBlocking {
+    suspend fun getStatutsListAggregation(): StatusListAggregation {
         Napier.i("${Paths.Credentials.Status.CurrentUrl} called")
         val rl = statusListIssuer.provideStatusListAggregation()
         Napier.i("${Paths.Credentials.Status.CurrentUrl} returns $rl")
-        ResponseEntity.ok(rl)
+        return rl
     }
 
     @GetMapping("${Paths.Credentials.StatusUrl}/{timePeriod}")

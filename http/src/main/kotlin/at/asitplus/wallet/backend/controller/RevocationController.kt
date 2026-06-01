@@ -4,7 +4,6 @@ import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.service.RevocationService
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -26,28 +25,28 @@ class RevocationController(
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping(Paths.RevocationUrl)
-    fun list(
+    suspend fun list(
         model: ModelMap,
         authentication: Authentication?,
-    ): ModelAndView = runBlocking {
+    ): ModelAndView {
         val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
         Napier.i("${Paths.RevocationUrl} called with ${authenticatedUser?.userInfo?.subject}")
         authenticatedUser?.let {
             model["credentials"] = revocationService.getAllNonRevokedForUser(it).sortedBy { it.revocationListIndex }
             model["revokedCredentials"] = revocationService.getAllRevokedForUser(it).sortedBy { it.revocationListIndex }
         }
-        ModelAndView("revocation")
+        return ModelAndView("revocation")
     }
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("${Paths.RevokeUrl}/{id}", produces = [APPLICATION_JSON_VALUE])
-    fun revoke(
+    suspend fun revoke(
         @PathVariable id: String,
         authentication: Authentication?,
-    ): ResponseEntity<String> = runBlocking {
+    ): ResponseEntity<String> {
         val authenticatedUser = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
         Napier.i("${Paths.RevokeUrl}/$id called with ${authenticatedUser?.userInfo?.subject}")
-        authenticatedUser?.let {
+        return authenticatedUser?.let {
             if (revocationService.revoke(id.toLong(), it)) {
                 Napier.d("${Paths.RevokeUrl}/$id returns OK")
                 ResponseEntity.ok().build()

@@ -2,6 +2,10 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -33,20 +37,21 @@ class RevocationListSchedulerTest {
             timePeriodProvider,
             BackendConfigurationProperties(),
             mock(),
+            CoroutineScope(Dispatchers.Unconfined + SupervisorJob()),
         ).also { it.postConstruct() }
     }
 
     @Test
-    fun testDirty() {
+    fun testDirty() = runBlocking {
         val timePeriod = Random.nextInt()
-        scheduler.onRevocationEvent(RevocationEvent(this, timePeriod))
+        scheduler.onRevocationEvent(RevocationEvent(this@RevocationListSchedulerTest, timePeriod))
         scheduler.writeDirtyRevocationList()
 
         verify(writer).writeRevocationList(eq(timePeriod))
     }
 
     @Test
-    fun testRegular() {
+    fun testRegular() = runBlocking {
         scheduler.writeRegularRevocationList()
 
         listOfTimePeriods.forEach {

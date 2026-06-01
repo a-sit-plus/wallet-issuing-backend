@@ -4,6 +4,10 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationStartedEvent
 import org.springframework.context.event.EventListener
@@ -21,6 +25,7 @@ class RevocationListScheduler(
     private val timePeriodProvider: TimePeriodProvider,
     private val configurationProperties: BackendConfigurationProperties,
     private val taskScheduler: TaskScheduler,
+    private val schedulerScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
 ) {
 
     private val log = LoggerFactory.getLogger(this.javaClass)
@@ -61,21 +66,25 @@ class RevocationListScheduler(
     fun writeDirtyRevocationList() {
         mapTimePeriodDirty
             .filterValues { it }
-            .forEach {
-                log.debug("writeDirtyRevocationList for ${it.key}")
-                revocationListWriter.writeRevocationList(it.key)
-                mapTimePeriodTimestamp[it.key] = Clock.System.now()
-                mapTimePeriodDirty[it.key] = false
+            .forEach { (timePeriod, _) ->
+                log.debug("writeDirtyRevocationList for $timePeriod")
+                schedulerScope.launch {
+                    revocationListWriter.writeRevocationList(timePeriod)
+                }
+                mapTimePeriodTimestamp[timePeriod] = Clock.System.now()
+                mapTimePeriodDirty[timePeriod] = false
             }
     }
 
     fun writeRegularRevocationList() {
         mapTimePeriodTimestamp
             .filterValues { it.isOutdated }
-            .forEach {
-                log.debug("writeRegularRevocationList for ${it.key}")
-                revocationListWriter.writeRevocationList(it.key)
-                mapTimePeriodTimestamp[it.key] = Clock.System.now()
+            .forEach { (timePeriod, _) ->
+                log.debug("writeRegularRevocationList for $timePeriod")
+                schedulerScope.launch {
+                    revocationListWriter.writeRevocationList(timePeriod)
+                }
+                mapTimePeriodTimestamp[timePeriod] = Clock.System.now()
             }
     }
 

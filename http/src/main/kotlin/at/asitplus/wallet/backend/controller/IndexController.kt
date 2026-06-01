@@ -23,7 +23,6 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpSession
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -54,9 +53,9 @@ class IndexController(
      * Will be called by the Wallet when loading an offer that is presented as a QR Code on the index page
      */
     @GetMapping("${Paths.OfferUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
+    suspend fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> {
         Napier.i("${Paths.OfferUrl}/$nonce called")
-        nonceToOfferMap.get(nonce)?.let {
+        return nonceToOfferMap.get(nonce)?.let {
             Napier.d("${Paths.OfferUrl}/$nonce returns $it")
             ResponseEntity.ok(it)
         } ?: ResponseEntity.notFound().build()
@@ -66,9 +65,9 @@ class IndexController(
      * DC API issuance payload derived from the credential offer, returned as JSON.
      */
     @GetMapping("${Paths.DcApiCreateRequestUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    fun dcApiCreateRequest(@PathVariable nonce: String): ResponseEntity<String> = runBlocking {
+    suspend fun dcApiCreateRequest(@PathVariable nonce: String): ResponseEntity<String> {
         Napier.i("${Paths.DcApiCreateRequestUrl}/$nonce called")
-        nonceToOfferMap.get(nonce)?.let { offer ->
+        return nonceToOfferMap.get(nonce)?.let { offer ->
             require(offer.grants?.authorizationCode?.authorizationServer == null)
             val enrichedOffer = offer.copy(
                 grants = offer.grants?.copy(
@@ -90,11 +89,11 @@ class IndexController(
      * as well as offers for pre-authorized flows when the user is logged in.
      */
     @GetMapping("/")
-    fun index(
+    suspend fun index(
         model: ModelMap,
         session: HttpSession,
         authentication: Authentication?,
-    ): ModelAndView = runBlocking {
+    ): ModelAndView {
         Napier.i("/index called with session ${session.id} and $authentication")
         val user = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
             ?: SecurityContextHolder.getContext().authentication
@@ -172,7 +171,7 @@ class IndexController(
             )
         } ?: listOf()
         model["tabs"] = authCodeTabs + preAuthTabs
-        ModelAndView("index")
+        return ModelAndView("index")
     }
 
     private suspend fun buildTabItemPreAuthn(

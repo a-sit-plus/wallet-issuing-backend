@@ -1,6 +1,9 @@
 spring:
   application:
     name: ${SPRING_APPLICATION_NAME:wallet-issuing-backend}
+  threads:
+    virtual:
+      enabled: true
   config:
     import: ${SPRING_CONFIG_IMPORT:optional:configserver:}
   cloud:

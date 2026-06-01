@@ -7,7 +7,7 @@ import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -42,7 +42,7 @@ class PublicControllerTest {
         mockMvc.get("${Paths.Credentials.StatusUrl}/$timePeriod") {
             accept(MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT))
             headers {
-                ifNoneMatch = listOf(firstResult.response.getHeader(HttpHeaders.ETAG))
+                ifNoneMatch = listOfNotNull(firstResult.response.getHeader(HttpHeaders.ETAG))
             }
         }.andExpect {
             status { isNotModified() }
