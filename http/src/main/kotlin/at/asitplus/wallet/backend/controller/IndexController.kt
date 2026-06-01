@@ -12,7 +12,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.utils.DefaultMapStore
@@ -23,6 +23,7 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpSession
+import kotlinx.coroutines.runBlocking
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -53,9 +54,9 @@ class IndexController(
      * Will be called by the Wallet when loading an offer that is presented as a QR Code on the index page
      */
     @GetMapping("${Paths.OfferUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    suspend fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> {
+    fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
         Napier.i("${Paths.OfferUrl}/$nonce called")
-        return nonceToOfferMap.get(nonce)?.let {
+        nonceToOfferMap.get(nonce)?.let {
             Napier.d("${Paths.OfferUrl}/$nonce returns $it")
             ResponseEntity.ok(it)
         } ?: ResponseEntity.notFound().build()
@@ -65,9 +66,9 @@ class IndexController(
      * DC API issuance payload derived from the credential offer, returned as JSON.
      */
     @GetMapping("${Paths.DcApiCreateRequestUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    suspend fun dcApiCreateRequest(@PathVariable nonce: String): ResponseEntity<String> {
+    fun dcApiCreateRequest(@PathVariable nonce: String): ResponseEntity<String> = runBlocking {
         Napier.i("${Paths.DcApiCreateRequestUrl}/$nonce called")
-        return nonceToOfferMap.get(nonce)?.let { offer ->
+        nonceToOfferMap.get(nonce)?.let { offer ->
             require(offer.grants?.authorizationCode?.authorizationServer == null)
             val enrichedOffer = offer.copy(
                 grants = offer.grants?.copy(
@@ -79,7 +80,7 @@ class IndexController(
                 credentialIssuerMetadata = credentialIssuer.metadata.copy(authorizationServers = null),
             )
             val options = CredentialCreationOptions.create(enrichedOffer)
-            ResponseEntity.ok(vckJsonSerializer.encodeToString(options))
+            ResponseEntity.ok(joseCompliantSerializer.encodeToString(options))
         } ?: ResponseEntity.notFound().build()
     }
 
@@ -89,11 +90,11 @@ class IndexController(
      * as well as offers for pre-authorized flows when the user is logged in.
      */
     @GetMapping("/")
-    suspend fun index(
+    fun index(
         model: ModelMap,
         session: HttpSession,
         authentication: Authentication?,
-    ): ModelAndView {
+    ): ModelAndView = runBlocking {
         Napier.i("/index called with session ${session.id} and $authentication")
         val user = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
             ?: SecurityContextHolder.getContext().authentication
@@ -171,7 +172,7 @@ class IndexController(
             )
         } ?: listOf()
         model["tabs"] = authCodeTabs + preAuthTabs
-        return ModelAndView("index")
+        ModelAndView("index")
     }
 
     private suspend fun buildTabItemPreAuthn(

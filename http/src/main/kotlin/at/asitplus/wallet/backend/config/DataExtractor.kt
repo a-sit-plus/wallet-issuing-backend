@@ -18,7 +18,7 @@ import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.jws.JwsHeaderModifierFun
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
@@ -102,7 +102,7 @@ fun OidcUserInfoExtended.buildEuPidCredential(
         issuingAuthority = issuingAuthority,
         issuingCountry = issuingCountry,
     ).let {
-        vckJsonSerializer.encodeToJsonElement(it)
+        joseCompliantSerializer.encodeToJsonElement(it)
     }.also { Napier.v("toEuPidCredential returns $it") },
     expiration = exp,
     scheme = scheme,

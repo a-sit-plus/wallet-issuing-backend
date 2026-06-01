@@ -11,7 +11,7 @@ import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.MetadataConfiguration
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.MediaTypes
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.ktor.openid.DPoP
 import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
 import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestation
@@ -25,6 +25,7 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
+import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -76,17 +77,17 @@ class OpenId4VciController(
      * Called by the Wallet to get a nonce for their proof-of-possessions, see [CredentialIssuer.nonceWithDpopNonce].
      */
     @PostMapping(Paths.NonceUrl, produces = [APPLICATION_JSON_VALUE])
-    suspend fun nonce(): ResponseEntity<*> {
+    fun nonce(): ResponseEntity<*> = runBlocking {
         Napier.i("${Paths.NonceUrl} called")
         val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
             Napier.w("${Paths.NonceUrl} got error", it)
-            return buildOidcErrorResponse(it)
+            return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.NonceUrl} returns $result")
-        return ResponseEntity.status(HttpStatus.OK)
+        ResponseEntity.status(HttpStatus.OK)
             .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
             .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
-            .body(vckJsonSerializer.encodeToString(result.response))
+            .body(joseCompliantSerializer.encodeToString(result.response))
     }
 
     private fun HttpServletRequest.toRequestInfo() = RequestInfo(
@@ -102,16 +103,16 @@ class OpenId4VciController(
      * see [CredentialIssuer.credential].
      */
     @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE])
-    suspend fun credential(
+    fun credential(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-    ): ResponseEntity<*> {
+    ): ResponseEntity<*> = runBlocking {
         Napier.i("${Paths.CredentialUrl} called")
         val authorizationHeader = request.getHeader(HttpHeaders.Authorization)
         Napier.v("${Paths.CredentialUrl} called with $authorizationHeader and $requestBody")
         val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
             Napier.w("${Paths.CredentialUrl} can't parse request", it)
-            return buildOidcErrorResponse(it)
+            return@runBlocking buildOidcErrorResponse(it)
         }
         val credential = credentialIssuer.credential(
             authorizationHeader = authorizationHeader,
@@ -124,10 +125,10 @@ class OpenId4VciController(
             ),
         ).getOrElse {
             Napier.w("${Paths.CredentialUrl} got error", it)
-            return buildOidcErrorResponse(it)
+            return@runBlocking buildOidcErrorResponse(it)
         }
         Napier.d("${Paths.CredentialUrl} returns $credential")
-        return credential.toResponseEntity()
+        credential.toResponseEntity()
     }
 
     private suspend fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<String> =
@@ -139,13 +140,13 @@ class OpenId4VciController(
     private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity(): ResponseEntity<String> =
         ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(vckJsonSerializer.encodeToString(response))
+            .body(joseCompliantSerializer.encodeToString(response))
 
     private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity(): ResponseEntity<String> =
         ResponseEntity
             .status(HttpStatus.OK)
             .contentType(MediaType.parseMediaType(MediaTypes.Application.JWT))
-            .body(vckJsonSerializer.encodeToString(response.serialize()))
+            .body(joseCompliantSerializer.encodeToString(response.serialize()))
 
     private fun buildOidcErrorResponse(throwable: Throwable): ResponseEntity<OAuth2Error> =
         when (throwable) {

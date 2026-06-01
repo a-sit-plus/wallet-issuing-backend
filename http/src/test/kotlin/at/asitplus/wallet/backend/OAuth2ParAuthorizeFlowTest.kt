@@ -3,7 +3,7 @@ package at.asitplus.wallet.backend
 import at.asitplus.openid.PushedAuthenticationResponseParameters
 import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -64,7 +64,7 @@ class OAuth2ParAuthorizeFlowTest {
         }.andReturn()
 
         val parResponse: PushedAuthenticationResponseParameters =
-            vckJsonSerializer.decodeFromString(parResult.response.contentAsString)
+            joseCompliantSerializer.decodeFromString(parResult.response.contentAsString)
 
         mockMvc.get(Paths.AuthorizeUrl) {
             param("client_id", oauth2Client.clientId)

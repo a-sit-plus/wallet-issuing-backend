@@ -29,7 +29,7 @@ import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
@@ -268,7 +268,7 @@ class BackendConfiguration {
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
-        KotlinSerializationJsonHttpMessageConverter(vckJsonSerializer)
+        KotlinSerializationJsonHttpMessageConverter(joseCompliantSerializer)
 }
 
 private class IsoMdocRoutingIssuer(
