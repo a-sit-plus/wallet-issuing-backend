@@ -7,7 +7,6 @@ import at.asitplus.openid.PushedAuthenticationResponseParameters
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.openid.TokenResponseParameters
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.lib.ktor.openid.DPoP
@@ -23,9 +22,10 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
-import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
@@ -48,27 +48,27 @@ class OAuth2Controller(
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
-    suspend fun openidMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
-        val metadata = authorizationService.metadata()
-        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $metadata")
-        return ResponseEntity.ok(metadata)
+    suspend fun openidMetadata(): OAuth2AuthorizationServerMetadata {
+        return authorizationService.metadata()
+            .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $it") }
     }
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER, produces = [APPLICATION_JSON_VALUE])
-    suspend fun oauthMetadata(): ResponseEntity<OAuth2AuthorizationServerMetadata> {
-        val metadata = authorizationService.metadata()
-        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $metadata")
-        return ResponseEntity.ok(metadata)
+    suspend fun oauthMetadata(): OAuth2AuthorizationServerMetadata {
+        return authorizationService.metadata()
+            .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $it") }
     }
 
     /**
      * Called by the Wallet when pushing an authorization request, see [SimpleAuthorizationService.par]
      */
     @PostMapping(Paths.ParUrl, produces = [APPLICATION_JSON_VALUE])
+    @ResponseStatus(HttpStatus.CREATED)
     suspend fun par(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-    ): ResponseEntity<PushedAuthenticationResponseParameters> {
+        response: HttpServletResponse,
+    ): PushedAuthenticationResponseParameters {
         Napier.i("${Paths.ParUrl} called")
         Napier.v("${Paths.ParUrl} called with $requestBody")
         val params: RequestParameters = requestBody.decodeFromPostBody()
@@ -83,10 +83,9 @@ class OAuth2Controller(
             throw it
         }
         Napier.d("${Paths.ParUrl} returns $result")
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-            .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
-            .body(result.response)
+        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
+        result.dpopNonce?.let { response.addHeader(HttpHeaders.DPoPNonce, it) }
+        return result.response
     }
 
     /**
@@ -103,7 +102,7 @@ class OAuth2Controller(
         request: HttpServletRequest,
         model: ModelMap,
         authentication: Authentication? = null,
-    ): Any {
+    ): ModelAndView {
         Napier.i("${Paths.AuthorizeUrl} called")
         Napier.v("${Paths.AuthorizeUrl} called with $requestParams and $requestBody")
         val params: RequestParameters =
@@ -122,13 +121,13 @@ class OAuth2Controller(
             throw it
         }
         Napier.d("${Paths.AuthorizeUrl} returns ${result.url}")
-        val userAgent = request.getHeader(HttpHeaders.UserAgent)
-        return if (userAgent?.isSafariOniPhone() == true) {
+        request.logout()
+        return if (request.getHeader(HttpHeaders.UserAgent)?.isSafariOniPhone() == true) {
             model["url"] = result.url
             ModelAndView("iphone-redirect")
         } else {
-            buildOidcRedirect(result.url)
-        }.also { request.logout() }
+            ModelAndView("redirect:${result.url}")
+        }
     }
 
     /** Display a manual redirect back into the Wallet app, but only for iPhones */
@@ -141,7 +140,8 @@ class OAuth2Controller(
     suspend fun token(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-    ): ResponseEntity<TokenResponseParameters> {
+        response: HttpServletResponse,
+    ): TokenResponseParameters {
         Napier.i("${Paths.TokenUrl} called")
         Napier.v("${Paths.TokenUrl} called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromPostBody()
@@ -155,10 +155,9 @@ class OAuth2Controller(
             throw it
         }
         Napier.d("${Paths.TokenUrl} returns $result")
-        return ResponseEntity.status(HttpStatus.OK)
-            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-            .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
-            .body(result.response)
+        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
+        result.dpopNonce?.let { response.addHeader(HttpHeaders.DPoPNonce, it) }
+        return result.response
     }
 
     private fun HttpServletRequest.toRequestInfo() = RequestInfo(
@@ -168,11 +167,6 @@ class OAuth2Controller(
         clientAttestation = getHeader(HttpHeaders.OAuthClientAttestation),
         clientAttestationPop = getHeader(HttpHeaders.OAuthClientAttestationPop),
     )
-
-    private fun buildOidcRedirect(location: String): ResponseEntity<String> = ResponseEntity
-        .status(HttpStatus.FOUND)
-        .header(HttpHeaders.Location, location)
-        .build()
 
 }
 
