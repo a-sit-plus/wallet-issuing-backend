@@ -17,7 +17,7 @@ import at.asitplus.wallet.lib.data.VerifiableCredential
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.ktx.extractId
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -77,7 +77,7 @@ class RevocationServiceStatusListIndexTest {
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
         ).let {
-            vckJsonSerializer.encodeToJsonElement(it)
+            joseCompliantSerializer.encodeToJsonElement(it)
         }
         issuanceDate = Clock.System.now()
         expirationDate = Clock.System.now() + 60.seconds

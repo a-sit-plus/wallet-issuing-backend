@@ -41,17 +41,6 @@ class IssuerCredentialStoreAdapter(
     override fun getRawIdentifierList(timePeriod: Int): Map<Identifier, IdentifierInfo> =
         revocationService.getRawIdentifierList(timePeriod)
 
-    /**
-     * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
-     * [Issuer] will call [updateStoredCredential] with the issued credential afterwards.
-     */
-    @Deprecated("Renamed", replaceWith = ReplaceWith("createStoredCredentialReference"))
-    override suspend fun createStatusListIndex(
-        credential: CredentialToBeIssued,
-        timePeriod: Int,
-    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> =
-        revocationService.createStoredCredentialReference(credential, timePeriod)
-
     override suspend fun createStoredCredentialReference(
         credential: CredentialToBeIssued,
         timePeriod: Int,

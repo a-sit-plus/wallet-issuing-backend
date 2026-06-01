@@ -20,7 +20,7 @@ import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
 import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
-import at.asitplus.wallet.lib.data.vckJsonSerializer
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -92,9 +92,9 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
+        joseCompliantSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
             .vc.credentialSubject.shouldBeInstanceOf<JsonElement>().apply {
-                vckJsonSerializer.decodeFromJsonElement<EuPidCredential>(this).apply {
+                joseCompliantSerializer.decodeFromJsonElement<EuPidCredential>(this).apply {
                     birthDate shouldBe LocalDate(1983, 6, 4)
                 }
             }
@@ -110,7 +110,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
             .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
@@ -138,7 +138,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
             .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
@@ -152,7 +152,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -171,7 +171,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -189,7 +189,7 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        vckJsonSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
