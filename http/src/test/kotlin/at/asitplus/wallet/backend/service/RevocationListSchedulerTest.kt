@@ -5,7 +5,7 @@ import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -42,7 +42,7 @@ class RevocationListSchedulerTest {
     }
 
     @Test
-    fun testDirty() = runBlocking {
+    fun testDirty() = runTest {
         val timePeriod = Random.nextInt()
         scheduler.onRevocationEvent(RevocationEvent(this@RevocationListSchedulerTest, timePeriod))
         scheduler.writeDirtyRevocationList()
@@ -51,7 +51,7 @@ class RevocationListSchedulerTest {
     }
 
     @Test
-    fun testRegular() = runBlocking {
+    fun testRegular() = runTest {
         scheduler.writeRegularRevocationList()
 
         listOfTimePeriods.forEach {

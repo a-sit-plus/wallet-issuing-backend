@@ -12,7 +12,6 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.utils.DefaultMapStore
@@ -23,15 +22,15 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpSession
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
-import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import qrcode.QRCode
@@ -54,34 +53,31 @@ class IndexController(
      * Will be called by the Wallet when loading an offer that is presented as a QR Code on the index page
      */
     @GetMapping("${Paths.OfferUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    fun offerForNonce(@PathVariable nonce: String): ResponseEntity<CredentialOffer> = runBlocking {
+    suspend fun offerForNonce(@PathVariable nonce: String): CredentialOffer {
         Napier.i("${Paths.OfferUrl}/$nonce called")
-        nonceToOfferMap.get(nonce)?.let {
-            Napier.d("${Paths.OfferUrl}/$nonce returns $it")
-            ResponseEntity.ok(it)
-        } ?: ResponseEntity.notFound().build()
+        return nonceToOfferMap.get(nonce)
+            ?.also { Napier.d("${Paths.OfferUrl}/$nonce returns $it") }
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
     }
 
     /**
      * DC API issuance payload derived from the credential offer, returned as JSON.
      */
     @GetMapping("${Paths.DcApiCreateRequestUrl}/{nonce}", produces = [APPLICATION_JSON_VALUE])
-    fun dcApiCreateRequest(@PathVariable nonce: String): ResponseEntity<String> = runBlocking {
+    suspend fun dcApiCreateRequest(@PathVariable nonce: String): CredentialCreationOptions {
         Napier.i("${Paths.DcApiCreateRequestUrl}/$nonce called")
-        nonceToOfferMap.get(nonce)?.let { offer ->
-            require(offer.grants?.authorizationCode?.authorizationServer == null)
-            val enrichedOffer = offer.copy(
-                grants = offer.grants?.copy(
-                    preAuthorizedCode = offer.grants?.preAuthorizedCode?.copy(
-                        authorizationServer = null
-                    )
-                ),
-                authorizationServerMetadata = authorizationService.metadata(),
-                credentialIssuerMetadata = credentialIssuer.metadata.copy(authorizationServers = null),
-            )
-            val options = CredentialCreationOptions.create(enrichedOffer)
-            ResponseEntity.ok(joseCompliantSerializer.encodeToString(options))
-        } ?: ResponseEntity.notFound().build()
+        val offer = nonceToOfferMap.get(nonce) ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+        require(offer.grants?.authorizationCode?.authorizationServer == null)
+        val enrichedOffer = offer.copy(
+            grants = offer.grants?.copy(
+                preAuthorizedCode = offer.grants?.preAuthorizedCode?.copy(
+                    authorizationServer = null
+                )
+            ),
+            authorizationServerMetadata = authorizationService.metadata(),
+            credentialIssuerMetadata = credentialIssuer.metadata.copy(authorizationServers = null),
+        )
+        return CredentialCreationOptions.create(enrichedOffer)
     }
 
     /**
@@ -90,11 +86,11 @@ class IndexController(
      * as well as offers for pre-authorized flows when the user is logged in.
      */
     @GetMapping("/")
-    fun index(
+    suspend fun index(
         model: ModelMap,
         session: HttpSession,
         authentication: Authentication?,
-    ): ModelAndView = runBlocking {
+    ): ModelAndView {
         Napier.i("/index called with session ${session.id} and $authentication")
         val user = SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(authentication)
             ?: SecurityContextHolder.getContext().authentication
@@ -172,7 +168,7 @@ class IndexController(
             )
         } ?: listOf()
         model["tabs"] = authCodeTabs + preAuthTabs
-        ModelAndView("index")
+        return ModelAndView("index")
     }
 
     private suspend fun buildTabItemPreAuthn(
