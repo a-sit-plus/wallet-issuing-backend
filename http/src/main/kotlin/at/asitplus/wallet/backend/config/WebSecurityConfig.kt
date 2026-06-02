@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.Paths
+import jakarta.servlet.DispatcherType
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
@@ -74,6 +75,9 @@ class WebSecurityConfig(
             }.headers {
                 it.frameOptions { it.sameOrigin() }
             }.authorizeHttpRequests {
+                // Suspend MVC handlers resume through an internal ASYNC dispatch after the initial request was secured.
+                // Requiring authentication again on that redispatch can replace the handler response with /login.
+                it.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 it.requestMatchers(Paths.AuthorizeUrl).authenticated()
                 it.anyRequest().permitAll()
             }.formLogin {
