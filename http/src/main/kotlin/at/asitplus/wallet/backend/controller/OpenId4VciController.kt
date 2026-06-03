@@ -4,6 +4,7 @@ import at.asitplus.openid.ClientNonceResponse
 import at.asitplus.openid.DisplayLogoProperties
 import at.asitplus.openid.DisplayProperties
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.MetadataConfiguration
@@ -20,6 +21,7 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
+import kotlinx.serialization.encodeToString
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -130,7 +132,7 @@ class OpenId4VciController(
     private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity() =
         ResponseEntity.status(HttpStatus.OK)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(response)
+            .body(joseCompliantSerializer.encodeToString(response))
 
     private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity() =
         ResponseEntity.status(HttpStatus.OK)
@@ -138,4 +140,3 @@ class OpenId4VciController(
             .body(response.serialize())
 
 }
-
