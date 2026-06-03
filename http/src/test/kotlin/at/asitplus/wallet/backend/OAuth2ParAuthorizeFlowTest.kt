@@ -1,10 +1,12 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.catching
+import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.PushedAuthenticationResponseParameters
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
+import at.asitplus.wallet.backend.controller.IndexController
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -126,6 +128,48 @@ class OAuth2ParAuthorizeFlowTest {
             ),
             state = state,
             scope = scope,
+        )
+        val dpop = BuildDPoPHeader(
+            signDpop = SignJwt<JsonWebToken>(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk()),
+            url = Paths.TokenUrl,
+        )
+
+        val tokenResult = mockMvc.post(Paths.TokenUrl) {
+            contentType = MediaType.APPLICATION_FORM_URLENCODED
+            content = tokenRequest.encodeToParameters().formUrlEncode()
+            header(KtorHttpHeaders.DPoP, dpop)
+        }.andExpect { request { asyncStarted() } }.andReturn()
+
+        mockMvc.perform(asyncDispatch(tokenResult))
+            .andExpect(status().isBadRequest)
+            .andExpect(header().string(KtorHttpHeaders.DPoPNonce, not(emptyString())))
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun `pre-authorized token error response from index offer includes DPoP nonce when proof nonce is missing`() = runTest {
+        val oauth2Client = OAuth2Client()
+        val indexResult = mockMvc.perform(
+            asyncDispatch(
+                mockMvc.get("/") {
+                }.andExpect { request { asyncStarted() } }.andReturn()
+            )
+        ).andExpect(status().isOk).andReturn()
+        val tabs = indexResult.modelAndView?.model?.get("tabs")
+            .shouldBeInstanceOf<List<IndexController.TabItem>>()
+        val preAuthTab = tabs.first { it.title == "PID-SD-JWT-pre" }
+        val offerResult = mockMvc.perform(
+            asyncDispatch(
+                mockMvc.get("${Paths.OfferUrl}/${preAuthTab.id}") {
+                }.andExpect { request { asyncStarted() } }.andReturn()
+            )
+        ).andExpect(status().isOk).andReturn()
+        val credentialOffer = joseCompliantSerializer.decodeFromString<CredentialOffer>(
+            offerResult.response.contentAsString
+        )
+        val preAuthCode = credentialOffer.grants?.preAuthorizedCode?.preAuthorizedCode.shouldNotBeNull()
+        val tokenRequest = oauth2Client.createTokenRequestParameters(
+            authorization = OAuth2Client.AuthorizationForToken.PreAuthCode(preAuthCode),
         )
         val dpop = BuildDPoPHeader(
             signDpop = SignJwt<JsonWebToken>(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk()),
