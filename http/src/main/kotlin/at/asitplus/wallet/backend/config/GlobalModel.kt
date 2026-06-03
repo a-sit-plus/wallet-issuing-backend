@@ -22,19 +22,28 @@ class GlobalModel {
     @ModelAttribute("paths")
     fun paths() = Paths
 
-    @ExceptionHandler(Exception::class)
-    fun handle(throwable: Throwable) = when (throwable) {
+    @ExceptionHandler(value = [OAuth2Exception::class, Exception::class])
+    fun handle(throwable: Throwable) = when (val oauth2Exception = throwable.oauth2Exception()) {
         is OAuth2Exception.UseDpopNonce -> ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .header(HttpHeaders.DPoPNonce, throwable.dpopNonce)
-            .body(throwable.toOAuth2Error())
+            .header(HttpHeaders.DPoPNonce, oauth2Exception.dpopNonce)
+            .body(oauth2Exception.toOAuth2Error())
 
         is OAuth2Exception -> ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .body(throwable.toOAuth2Error())
+            .body(oauth2Exception.toOAuth2Error())
 
         else -> ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(OAuth2Error(error = Errors.INVALID_REQUEST))
+    }
+
+    private fun Throwable.oauth2Exception(): OAuth2Exception? {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is OAuth2Exception) return current
+            current = current.cause?.takeUnless { it === current }
+        }
+        return null
     }
 }
