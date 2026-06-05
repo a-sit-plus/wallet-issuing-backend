@@ -10,7 +10,7 @@ av = "1.1.0"
 qrcode = "4.5.0"
 pgsql = "42.7.7"
 mockito = "6.2.1"
-vck = "5.13.0"
+vck = "6.0.0-SNAPSHOT"
 nimbus = "10.7"
 
 spring-boot = "4.0.6"
@@ -40,8 +40,9 @@ wallet-por = { module = "at.asitplus.wallet:powerofrepresentation", version.ref 
 wallet-cor = { module = "at.asitplus.wallet:certificateofresidence", version.ref = "cor" }
 wallet-ehic = { module = "at.asitplus.wallet:ehic", version.ref = "ehic" }
 wallet-av = { module = "at.asitplus.wallet:ageverification", version.ref = "av" }
-wallet-vck-jvm = { module = "at.asitplus.wallet:vck-jvm", version.ref = "vck" }
-wallet-vck-openid-ktor-jvm = { module = "at.asitplus.wallet:vck-openid-ktor-jvm", version.ref = "vck" }
+wallet-vck = { module = "at.asitplus.wallet:vck", version.ref = "vck" }
+wallet-vck-openid-ktor = { module = "at.asitplus.wallet:vck-openid-ktor", version.ref = "vck" }
+
 postgresql = { module = "org.postgresql:postgresql", version.ref = "pgsql" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito" }
 spring-cloud-config-dependencies = { module = "org.springframework.cloud:spring-cloud-dependencies", version.ref = "spring-cloud" }
@@ -57,6 +58,6 @@ wallet = [
   "wallet-cor",
   "wallet-ehic",
   "wallet-av",
-  "wallet-vck-jvm",
-  "wallet-vck-openid-ktor-jvm"
+  "wallet-vck",
+  "wallet-vck-openid-ktor"
 ]
