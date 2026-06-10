@@ -1,12 +1,18 @@
 package at.asitplus.wallet.backend.spring
 
 import at.asitplus.wallet.backend.Paths
+import at.asitplus.wallet.backend.service.RevocationListScheduler
+import at.asitplus.wallet.backend.service.RevocationListWriter
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import io.kotest.matchers.nulls.shouldNotBeNull
+import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.http.HttpHeaders
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import kotlin.time.Clock
@@ -24,6 +30,18 @@ class PublicControllerWebClientTest {
 
     @Autowired
     private lateinit var timePeriodProvider: TimePeriodProvider
+
+    @Autowired
+    private lateinit var revocationListWriter: RevocationListWriter
+
+    @MockitoBean
+    private lateinit var revocationListScheduler: RevocationListScheduler
+
+    @BeforeEach
+    fun setUpRevocationList() = runBlocking {
+        val timePeriod = timePeriodProvider.getRelevantTimePeriods(Clock.System).first()
+        revocationListWriter.writeRevocationList(timePeriod)
+    }
 
     @Test
     fun `GET status list with If-None-Match in second request`() {
@@ -61,10 +79,10 @@ class PublicControllerWebClientTest {
             } else {
                 it
             }
-        }
+        }.shouldNotBeNull()
 
         webClient.get().uri("${Paths.Credentials.StatusUrl}/$timePeriod")
-            .header(HttpHeaders.IF_NONE_MATCH, etag ?: "")
+            .header(HttpHeaders.IF_NONE_MATCH, etag)
             .exchange()
             .expectStatus().isNotModified
             .expectHeader().exists(HttpHeaders.ETAG)
