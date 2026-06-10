@@ -57,7 +57,7 @@ class OAuth2WebClientTest {
         val dpop = BuildDPoPHeader(
             signDpop = SignJwt<JsonWebToken>(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk()),
             url = tokenUrl,
-        )
+        ).jws.toString()
 
         webClient.post().uri(Paths.TokenUrl)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
