@@ -52,7 +52,7 @@ class RevocationListWriter(
     ) {
         val token = statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Jwt))
         val content = token.second as StatusListJwt
-        val text = content.value.serialize()
+        val text = content.value.jws.toString()
         createTempFile().apply {
             writeText(text)
             moveTo(destinationFile, true)

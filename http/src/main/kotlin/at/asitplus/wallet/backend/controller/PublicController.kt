@@ -4,7 +4,7 @@ import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.josef.JsonWebKey
-import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.signum.indispensable.josef.JwsCompactTyped
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
@@ -49,7 +49,7 @@ import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
 import org.apache.tomcat.websocket.AuthenticationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -126,9 +126,11 @@ class PublicController(
                         header(HttpHeaders.Accept, MediaTypes.Application.STATUSLIST_JWT)
                     }.body<String>()
                 }.let {
-                    JwsSigned.deserialize<StatusListTokenPayload>(StatusListTokenPayload.serializer(), it).getOrThrow()
+                    JwsCompactTyped<StatusListTokenPayload>(
+                        it
+                    )
                 }.let {
-                    StatusListJwt(it, Clock.System.now())
+                    StatusListJwt(value = it, resolvedAt = Clock.System.now())
                 }
             },
         ),
@@ -141,8 +143,8 @@ class PublicController(
             identifier = clientIdScheme.clientId,
             validatorSdJwt = ValidatorSdJwt(
                 verifyJwsObject = VerifyJwsObject(
-                    publicKeyLookup = {
-                        (it.payload as? JsonObject)?.get("iss")?.jsonPrimitive?.content?.let { iss ->
+                    publicKeyLookup = { jwsCompact ->
+                        (jwsCompact.getPayload<JsonObject>().getOrNull()?.get("iss") as? JsonPrimitive?)?.content?.let { iss ->
                             val url = OAuth2Utils.insertWellKnownPath(iss, OpenIdConstants.WellKnownPaths.JwtVcIssuer)
                             Napier.i("Resolving Key for $iss from $url")
                             httpClient.get(url).body<JwtVcIssuerMetadata>().jsonWebKeySet?.keys?.toSet<JsonWebKey>()
@@ -248,7 +250,7 @@ class PublicController(
             Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", it)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
         }
-            .serialize()
+            .jws.toString()
             .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType("application/" + JwsContentTypeConstants.OAUTH_AUTHZ_REQUEST))
