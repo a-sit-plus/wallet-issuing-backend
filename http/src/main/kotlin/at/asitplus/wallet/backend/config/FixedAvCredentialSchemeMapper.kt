@@ -5,10 +5,9 @@ import at.asitplus.openid.CredentialFormatEnum.JWT_VC
 import at.asitplus.openid.SupportedCredentialFormat
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
-import at.asitplus.wallet.lib.data.ConstantIndex.CredentialScheme
-import at.asitplus.wallet.lib.data.ConstantIndex.supportsIso
-import at.asitplus.wallet.lib.data.ConstantIndex.supportsSdJwt
-import at.asitplus.wallet.lib.data.ConstantIndex.supportsVcJwt
+import at.asitplus.wallet.lib.data.IsoMdocCredentialScheme
+import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
+import at.asitplus.wallet.lib.data.VcJwtCredentialScheme
 import at.asitplus.wallet.lib.oidvci.CredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.toIsoMdocSupportedCredentialFormat
 import at.asitplus.wallet.lib.oidvci.toPlainJwtSupportedCredentialFormat
@@ -22,21 +21,21 @@ class FixedAvCredentialSchemeMapper(
     val fixedIdentifier: String = "proof_of_age",
 ) : CredentialSchemeMapper by delegate {
 
-    override fun map(scheme: CredentialScheme): Map<String, SupportedCredentialFormat> =
+    override fun map(scheme: at.asitplus.wallet.lib.data.CredentialScheme): Map<String, SupportedCredentialFormat> =
         listOfNotNull(
-            if (scheme.supportsIso) scheme.toIsoMdocSupportedCredentialFormat(
+            if (scheme is IsoMdocCredentialScheme) scheme.toIsoMdocSupportedCredentialFormat(
                 toCredentialIdentifier(scheme, CredentialRepresentation.ISO_MDOC)
             ) else null,
-            if (scheme.supportsVcJwt) scheme.toPlainJwtSupportedCredentialFormat(
+            if (scheme is VcJwtCredentialScheme) scheme.toPlainJwtSupportedCredentialFormat(
                 toCredentialIdentifier(scheme, CredentialRepresentation.PLAIN_JWT)
             ) else null,
-            if (scheme.supportsSdJwt) scheme.toSdJwtSupportedCredentialFormat(
+            if (scheme is SdJwtCredentialScheme) scheme.toSdJwtSupportedCredentialFormat(
                 toCredentialIdentifier(scheme, CredentialRepresentation.SD_JWT)
             ) else null
         ).toMap()
 
     override fun toCredentialIdentifier(
-        scheme: CredentialScheme,
+        scheme: at.asitplus.wallet.lib.data.CredentialScheme,
         rep: CredentialRepresentation,
     ) = when (rep) {
         CredentialRepresentation.PLAIN_JWT -> encodeToCredentialIdentifier(scheme.vcType!!, JWT_VC)

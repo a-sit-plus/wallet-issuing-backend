@@ -5,25 +5,28 @@ import at.asitplus.openid.OidcAddressClaim
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.cor.CertificateOfResidenceDataElements
-import at.asitplus.wallet.cor.CertificateOfResidenceScheme
 import at.asitplus.wallet.ehic.EhicScheme
+import at.asitplus.wallet.eupid.EU_PID_DOCTYPE
 import at.asitplus.wallet.eupid.EuPidCredential
-import at.asitplus.wallet.eupid.EuPidScheme
+import at.asitplus.wallet.eupid.EuPidDataElements
 import at.asitplus.wallet.eupid.PlaceOfBirth
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.eupidsdjwt.EU_PID_SD_JWT_VCT
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.data.CredentialScheme
+import at.asitplus.wallet.lib.data.IsoMdocCredentialScheme
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
+import at.asitplus.wallet.lib.data.VcJwtCredentialScheme
 import at.asitplus.wallet.lib.jws.JwsHeaderModifierFun
+import at.asitplus.wallet.mdl.MDL_DOCTYPE
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
-import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import at.asitplus.wallet.por.PowerOfRepresentationDataElements
-import at.asitplus.wallet.por.PowerOfRepresentationScheme
 import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -31,19 +34,18 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.random.Random
 import kotlin.time.Instant
 
-fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
+fun SdJwtCredentialScheme.buildSdJwtClaims(
     userInfo: OidcUserInfoExtended,
     iss: Instant,
     exp: Instant,
     subjectPublicKey: CryptoPublicKey,
 ) = CredentialToBeIssued.VcSd(
-    claims = when (this) {
-        is EuPidScheme -> userInfo.buildEupidClaims(true)
-        is EuPidSdJwtScheme -> userInfo.buildEupidClaimsSdJwt(true)
-        is TaxIdScheme -> userInfo.buildTaxIdClaims(iss, exp, false)
-        is PowerOfRepresentationScheme -> userInfo.buildPorClaims(iss, exp, false)
-        is CertificateOfResidenceScheme -> userInfo.buildCorClaims(iss, exp, true)
-        is EhicScheme -> userInfo.buildEhicClaims(iss, exp, false)
+    claims = when (sdJwtType) {
+        EU_PID_SD_JWT_VCT -> userInfo.buildEupidClaimsSdJwt(true)
+        "urn:eu.europa.ec.eudi:tax:1" -> userInfo.buildTaxIdClaims(iss, exp, false)
+        "urn:eu.europa.ec.eudi:por:1" -> userInfo.buildPorClaims(iss, exp, false)
+        "eu.europa.ec.eudi.cor.1" -> userInfo.buildCorClaims(iss, exp, true)
+        "urn:eudi:ehic:1" -> userInfo.buildEhicClaims(iss, exp, false)
         else -> TODO("$this is not implemented in buildSdJwtClaims()")
     },
     expiration = exp,
@@ -53,7 +55,7 @@ fun ConstantIndex.CredentialScheme.buildSdJwtClaims(
     modifyHeader = appendEhicVctm()
 ).also { Napier.v("${this}.buildSdJwtClaims returns $it") }
 
-private fun ConstantIndex.CredentialScheme.appendEhicVctm(): JwsHeaderModifierFun = {
+private fun CredentialScheme.appendEhicVctm(): JwsHeaderModifierFun = {
     if (this is EhicScheme)
         it.copy(
             vcTypeMetadata = setOf(EHIC_VCTM.trimIndent().replace("\n", ""))
@@ -62,15 +64,15 @@ private fun ConstantIndex.CredentialScheme.appendEhicVctm(): JwsHeaderModifierFu
         it
 }
 
-fun ConstantIndex.CredentialScheme.buildIsoClaims(
+fun IsoMdocCredentialScheme.buildIsoClaims(
     userInfo: OidcUserInfoExtended,
     exp: Instant,
     subjectPublicKey: CryptoPublicKey,
 ) = CredentialToBeIssued.Iso(
-    issuerSignedItems = when (this) {
-        is EuPidScheme -> userInfo.buildEupidClaims(true)
-        is MobileDrivingLicenceScheme -> userInfo.buildMdlClaims(true)
-        is AgeVerificationScheme -> userInfo.buildAgeClaims(true)
+    issuerSignedItems = when (this.isoDocType) {
+        EU_PID_DOCTYPE -> userInfo.buildEupidClaims(true)
+        MDL_DOCTYPE -> userInfo.buildMdlClaims(true)
+        "eu.europa.ec.av.1" -> userInfo.buildAgeClaims(true)
         else -> TODO("$this is not implemented in buildIsoClaims()")
     }.mapIndexed { idx, it -> it.buildIssuerSignedItem(idx) },
     expiration = exp,
@@ -89,7 +91,7 @@ fun ClaimToBeIssued.buildIssuerSignedItem(index: Int) = IssuerSignedItem(
 fun OidcUserInfoExtended.buildEuPidCredential(
     pubKey: CryptoPublicKey,
     exp: Instant,
-    scheme: ConstantIndex.CredentialScheme,
+    scheme: VcJwtCredentialScheme,
 ) = CredentialToBeIssued.VcJwt(
     subject = EuPidCredential(
         id = pubKey.didEncoded,
@@ -112,7 +114,7 @@ fun OidcUserInfoExtended.buildEuPidCredential(
 
 
 fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
-    with(EuPidSdJwtScheme.SdJwtAttributes) {
+    with(EuPidSdJwtDataElements) {
         val address = addressOrRandom
         val birthAddress = randomAddress
         listOfNotNull(
@@ -123,7 +125,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
             claim(FAMILY_NAME_BIRTH, useSd) { userInfo.familyName },
             claim(GIVEN_NAME_BIRTH, useSd) { userInfo.givenName },
             claim(PREFIX_PLACE_OF_BIRTH, useSd) {
-                with(EuPidSdJwtScheme.SdJwtAttributes.PlaceOfBirth) {
+                with(EuPidSdJwtDataElements.PlaceOfBirth) {
                     listOf(
                         claim(LOCALITY, useSd) { birthAddress.city },
                         claim(COUNTRY, useSd) { birthAddress.country },
@@ -132,7 +134,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
                 }
             },
             claim(PREFIX_ADDRESS, useSd) {
-                with(EuPidSdJwtScheme.SdJwtAttributes.Address) {
+                with(EuPidSdJwtDataElements.Address) {
                     listOf(
                         claim(FORMATTED, useSd) { address.formatted },
                         claim(COUNTRY, useSd) { address.country },
@@ -160,7 +162,7 @@ fun OidcUserInfoExtended.buildEupidClaimsSdJwt(useSd: Boolean) =
     }
 
 fun OidcUserInfoExtended.buildEupidClaims(useSd: Boolean) =
-    with(EuPidScheme.Attributes) {
+    with(EuPidDataElements) {
         val address = addressOrRandom
         val birthAddress = randomAddress
         listOfNotNull(

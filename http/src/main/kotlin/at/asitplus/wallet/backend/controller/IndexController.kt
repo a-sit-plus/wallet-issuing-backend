@@ -12,6 +12,7 @@ import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
+import at.asitplus.wallet.lib.data.CredentialScheme
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.utils.DefaultMapStore
@@ -175,7 +176,7 @@ class IndexController(
         user: OidcUserInfoExtended,
         title: String,
         description: String,
-        credential: Pair<ConstantIndex.CredentialScheme, CredentialRepresentation>,
+        credential: Pair<CredentialScheme, CredentialRepresentation>,
         urlScheme: String,
     ) = buildTabItemPreAuthn(
         user = user,
@@ -189,7 +190,7 @@ class IndexController(
         user: OidcUserInfoExtended,
         title: String,
         description: String,
-        credentials: Set<Pair<ConstantIndex.CredentialScheme, CredentialRepresentation>>,
+        credentials: Set<Pair<CredentialScheme, CredentialRepresentation>>,
         urlScheme: String,
     ): TabItem = buildTabItem(
         offer = authorizationService.offerWithPreAuthnForUserForSchemes(
@@ -205,7 +206,7 @@ class IndexController(
     private suspend fun buildTabItemAuthCode(
         title: String,
         description: String,
-        credential: Pair<ConstantIndex.CredentialScheme, CredentialRepresentation>,
+        credential: Pair<CredentialScheme, CredentialRepresentation>,
         urlScheme: String,
     ): TabItem = buildTabItemAuthCode(
         title = title,
@@ -217,7 +218,7 @@ class IndexController(
     private suspend fun buildTabItemAuthCode(
         title: String,
         description: String,
-        credentials: Set<Pair<ConstantIndex.CredentialScheme, CredentialRepresentation>>,
+        credentials: Set<Pair<CredentialScheme, CredentialRepresentation>>,
         urlScheme: String,
     ): TabItem = buildTabItem(
         offer = authorizationService.offerWithAuthorizationCodeForSchemes(

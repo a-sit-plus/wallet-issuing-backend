@@ -1,5 +1,9 @@
 # Changelog
 
+7.0.0 (unreleased):
+ - Update to VC-K 7.0.0-SNAPSHOT
+ - Rework resolving credential schemes
+
 6.0.0:
  - Update to VC-K 6.0.0
  - Update to EU PID 3.5.0

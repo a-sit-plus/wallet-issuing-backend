@@ -5,9 +5,11 @@ import at.asitplus.catching
 import at.asitplus.wallet.backend.config.buildEuPidCredential
 import at.asitplus.wallet.backend.config.buildIsoClaims
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
-import at.asitplus.wallet.eupid.EuPidScheme
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
+import at.asitplus.wallet.lib.data.IsoMdocCredentialScheme
+import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
+import at.asitplus.wallet.lib.data.VcJwtCredentialScheme
 import at.asitplus.wallet.lib.oidvci.CredentialDataProviderFun
 import at.asitplus.wallet.lib.oidvci.CredentialDataProviderInput
 import io.github.aakira.napier.Napier
@@ -28,23 +30,24 @@ class OidcIssuerCredentialDataProvider(
         val expiration = (issuance + lifetime).toJavaInstant().truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
         Napier.v("getCredential for ${input.credentialScheme} and ${input.subjectPublicKey.didEncoded}")
         Napier.v("getCredential user is ${input.userInfo}")
-        with(input) {
-            if (credentialScheme.supportedRepresentations.contains(credentialRepresentation)) {
-                when (credentialRepresentation) {
-                    ConstantIndex.CredentialRepresentation.PLAIN_JWT -> when (credentialScheme) {
-                        EuPidScheme -> userInfo.buildEuPidCredential(subjectPublicKey, expiration, credentialScheme)
-                        else -> throw IllegalArgumentException("$credentialScheme not supporting $credentialRepresentation")
-                    }
 
-                    ConstantIndex.CredentialRepresentation.SD_JWT ->
-                        credentialScheme.buildSdJwtClaims(userInfo, issuance, expiration, subjectPublicKey)
-
-                    ConstantIndex.CredentialRepresentation.ISO_MDOC ->
-                        credentialScheme.buildIsoClaims(userInfo, expiration, subjectPublicKey)
+        when (val scheme = input.credentialScheme) {
+            is VcJwtCredentialScheme if input.credentialRepresentation == PLAIN_JWT ->
+                when (scheme.vcType) {
+                    "EuPid2023" -> input.userInfo.buildEuPidCredential(input.subjectPublicKey, expiration, scheme)
+                    else -> throw IllegalArgumentException("$scheme not supporting ${input.credentialRepresentation}")
                 }
-            } else throw IllegalArgumentException("$credentialScheme not supporting $credentialRepresentation")
+
+            is SdJwtCredentialScheme if input.credentialRepresentation == SD_JWT ->
+                scheme.buildSdJwtClaims(input.userInfo, issuance, expiration, input.subjectPublicKey)
+
+            is IsoMdocCredentialScheme if input.credentialRepresentation == ISO_MDOC ->
+                scheme.buildIsoClaims(input.userInfo, expiration, input.subjectPublicKey)
+
+            else -> throw IllegalArgumentException("No data for $scheme")
         }
     }
+
 }
 
 
