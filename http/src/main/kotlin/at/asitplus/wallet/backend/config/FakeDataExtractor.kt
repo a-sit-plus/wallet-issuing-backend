@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.openid.OidcUserInfoExtended
-import at.asitplus.wallet.mdl.DrivingPrivilege
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.LocalDate
