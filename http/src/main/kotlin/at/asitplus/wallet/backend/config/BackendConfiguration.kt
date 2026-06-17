@@ -88,6 +88,7 @@ class BackendConfiguration {
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
         at.asitplus.wallet.ageverification.Initializer.initWithVCK()
         LibraryInitializer.registerCredentialMetadataRegistry(buildRemoteRegistry(httpClient))
+        registerCredentialSerializers()
     }
 
     @Bean
