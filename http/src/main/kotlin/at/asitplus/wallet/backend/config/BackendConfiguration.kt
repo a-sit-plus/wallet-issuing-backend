@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
@@ -12,10 +11,7 @@ import at.asitplus.wallet.backend.data.PreparedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
-import at.asitplus.wallet.cor.CertificateOfResidenceScheme
-import at.asitplus.wallet.ehic.EhicScheme
-import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.lib.LibraryInitializer
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
@@ -27,6 +23,8 @@ import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import at.asitplus.wallet.lib.data.AttributeIndex
+import at.asitplus.wallet.lib.data.CredentialScheme
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -36,10 +34,10 @@ import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
-import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
-import at.asitplus.wallet.por.PowerOfRepresentationScheme
-import at.asitplus.wallet.taxid.TaxIdScheme
 import io.github.aakira.napier.Napier
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import kotlinx.coroutines.runBlocking
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -75,6 +73,8 @@ class BackendConfiguration {
     @Autowired
     private lateinit var resourceLoader: ResourceLoader
 
+    private val httpClient = HttpClient(CIO)
+
     init {
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
@@ -87,6 +87,7 @@ class BackendConfiguration {
         at.asitplus.wallet.por.Initializer.initWithVCK()
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
         at.asitplus.wallet.ageverification.Initializer.initWithVCK()
+        LibraryInitializer.registerCredentialMetadataRegistry(buildRemoteRegistry(httpClient))
     }
 
     @Bean
@@ -217,16 +218,24 @@ class BackendConfiguration {
     @Bean
     fun timePeriodProvider(): TimePeriodProvider = FixedTimePeriodProvider
 
-    private val credentialSchemes = setOf(
-        EuPidScheme,
-        EuPidSdJwtScheme,
-        MobileDrivingLicenceScheme,
-        PowerOfRepresentationScheme,
-        CertificateOfResidenceScheme,
-        TaxIdScheme,
-        EhicScheme,
-        AgeVerificationScheme
-    )
+    /**
+     * Resolved at boot from the remote type metadata documents (see [CredentialDocs]). The issuer and the
+     * authorization strategy still need the scheme set up front to build `.well-known/openid-credential-issuer`;
+     * resolving via [AttributeIndex.resolveIdentifier] also registers each scheme globally so the (synchronous)
+     * scheme mapper can decode credential identifiers later. Fails fast if a document cannot be fetched.
+     */
+    private val credentialSchemes: Set<CredentialScheme> by lazy {
+        runBlocking {
+            CredentialDocs.all.map { doc ->
+                val scheme = AttributeIndex.resolveIdentifier(doc.identifier, doc.representation)
+                require(scheme.schemaUri == doc.url) {
+                    "Could not resolve remote metadata for ${doc.vct} from ${doc.url} " +
+                        "(got ${scheme::class.simpleName} with schemaUri=${scheme.schemaUri})"
+                }
+                scheme
+            }.toSet()
+        }
+    }
 
     private val credentialSchemeMapper = FixedAvCredentialSchemeMapper(
         delegate = DefaultCredentialSchemeMapper(),
