@@ -3,21 +3,21 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.dcapi.issuance.CredentialCreationOptions
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.OidcUserInfoExtended
-import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
+import at.asitplus.wallet.backend.config.AV_DOCTYPE
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
-import at.asitplus.wallet.lib.data.ConstantIndex
+import at.asitplus.wallet.backend.config.CredentialOffering
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.PLAIN_JWT
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.data.CredentialScheme
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.utils.DefaultMapStore
 import at.asitplus.wallet.lib.utils.MapStore
-import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
@@ -46,6 +46,7 @@ class IndexController(
     private val credentialIssuer: CredentialIssuer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
+    private val credentialOfferings: List<CredentialOffering>,
 ) {
 
     private val nonceToOfferMap: MapStore<String, CredentialOffer> = DefaultMapStore(lifetime = 4.hours)
@@ -98,78 +99,42 @@ class IndexController(
                 ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
         Napier.i("/index called with ${user?.userInfo?.subject}")
         val authCodeTabs = listOf(
+            buildTabItemAuthCode("All", "All credentials with auth code", setOf(), Paths.Schemes.HaipVci)
+        ) + credentialOfferings.map { offering ->
             buildTabItemAuthCode(
-                title = "All-Code",
-                description = "All credentials with auth code",
-                credentials = setOf(),
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "PID-SD-JWT-Code",
-                description = "PID in SD-JWT with auth code",
-                credential = EuPidSdJwtScheme to CredentialRepresentation.SD_JWT,
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "PID-MDOC-Code",
-                description = "PID in ISO MDOC with auth code",
-                credential = EuPidScheme to CredentialRepresentation.ISO_MDOC,
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "MDL-MDOC-Code",
-                description = "mDL in ISO MDOC with auth code",
-                credential = MobileDrivingLicenceScheme to CredentialRepresentation.ISO_MDOC,
-                urlScheme = Paths.Schemes.HaipVci
-            ),
-            buildTabItemAuthCode(
-                title = "AV-MDOC-Code",
-                description = "Age Verification in ISO MDOC with auth code",
-                credential = AgeVerificationScheme to CredentialRepresentation.ISO_MDOC,
-                urlScheme = Paths.Schemes.Av
-            ),
-        )
-        val preAuthTabs = user?.let {
-            listOf(
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "All-pre",
-                    description = "All credentials with pre-authn",
-                    credentials = setOf(),
-                    urlScheme = Paths.Schemes.HaipVci
-                ),
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "PID-SD-JWT-pre",
-                    description = "PID in SD-JWT with pre-authn",
-                    credential = EuPidSdJwtScheme to CredentialRepresentation.SD_JWT,
-                    urlScheme = Paths.Schemes.HaipVci
-                ),
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "PID-MDOC-pre",
-                    description = "PID in ISO MDOC with pre-authn",
-                    credential = EuPidScheme to CredentialRepresentation.ISO_MDOC,
-                    urlScheme = Paths.Schemes.HaipVci
-                ),
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "MDL-MDOC-pre",
-                    description = "mDL in ISO MDOC with pre-authn",
-                    credential = MobileDrivingLicenceScheme to CredentialRepresentation.ISO_MDOC,
-                    urlScheme = Paths.Schemes.HaipVci
-                ),
-                buildTabItemPreAuthn(
-                    user = user,
-                    title = "AV-MDOC-pre",
-                    description = "Age Verification in ISO MDOC with pre-authn",
-                    credential = AgeVerificationScheme to CredentialRepresentation.ISO_MDOC,
-                    urlScheme = Paths.Schemes.Av
-                )
+                title = offering.tabTitle(),
+                description = offering.description ?: "",
+                credential = offering.scheme to offering.representation,
+                urlScheme = offering.urlScheme(),
             )
+        }
+        val preAuthTabs = user?.let { u ->
+            listOf(
+                buildTabItemPreAuthn(u, "All (pre-auth)", "All credentials with pre-authn", setOf(), Paths.Schemes.HaipVci)
+            ) + credentialOfferings.map { offering ->
+                buildTabItemPreAuthn(
+                    user = u,
+                    title = offering.tabTitle(preAuth = true),
+                    description = offering.description ?: "",
+                    credential = offering.scheme to offering.representation,
+                    urlScheme = offering.urlScheme(),
+                )
+            }
         } ?: listOf()
         model["tabs"] = authCodeTabs + preAuthTabs
         return ModelAndView("index")
+    }
+
+    private fun CredentialOffering.urlScheme() =
+        if (scheme.isoDocType == AV_DOCTYPE) Paths.Schemes.Av else Paths.Schemes.HaipVci
+
+    private fun CredentialOffering.tabTitle(preAuth: Boolean = false) =
+        "$name · ${representation.label()}" + if (preAuth) " (pre-auth)" else ""
+
+    private fun CredentialRepresentation.label() = when (this) {
+        SD_JWT -> "SD-JWT"
+        ISO_MDOC -> "mdoc"
+        PLAIN_JWT -> "JWT"
     }
 
     private suspend fun buildTabItemPreAuthn(
@@ -200,7 +165,8 @@ class IndexController(
         ),
         urlScheme = urlScheme,
         title = title,
-        description = description
+        description = description,
+        preAuth = true,
     )
 
     private suspend fun buildTabItemAuthCode(
@@ -227,7 +193,8 @@ class IndexController(
         ),
         urlScheme = urlScheme,
         title = title,
-        description = description
+        description = description,
+        preAuth = false,
     )
 
     private suspend fun buildTabItem(
@@ -235,6 +202,7 @@ class IndexController(
         urlScheme: String,
         title: String,
         description: String,
+        preAuth: Boolean,
     ): TabItem = run {
         val nonce = uuid4().toString().also { nonceToOfferMap.put(it, offer) }
         val credentialOfferUrl = backendConfigurationProperties.publicContext.appendPath(Paths.OfferUrl + "/" + nonce)
@@ -242,7 +210,7 @@ class IndexController(
             .queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
             .toUriString()
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        TabItem(nonce, title, description, qrBase64, url)
+        TabItem(nonce, title, description, qrBase64, url, preAuth)
     }
 
     data class TabItem(
@@ -251,6 +219,7 @@ class IndexController(
         val description: String,
         val qrBase64: String,
         val offerUrl: String,
+        val preAuth: Boolean,
     )
 
 }

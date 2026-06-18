@@ -91,7 +91,7 @@
                      th:aria-labelledby="${'tab-' + tab.id}">
                     <p class="text-body-secondary" th:text="${tab.description}">Description</p>
                     <div th:if="${tab.qrBase64 != null}">
-                        <div th:if="${#strings.contains(tab.title, 'pre')}"
+                        <div th:if="${tab.preAuth}"
                              class="dcapi-container qr-block"
                              data-dcapi-container>
                             <div class="dcapi-content">
@@ -125,7 +125,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div th:if="${!#strings.contains(tab.title, 'pre')}">
+                        <div th:if="${!tab.preAuth}">
                             <div class="qr-block">
                                 <img class="img-fluid rounded border"
                                      width="500"

@@ -4,7 +4,9 @@ import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.data.CredentialMetadataLookup
+import at.asitplus.wallet.lib.data.CredentialScheme
 import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
+import at.asitplus.wallet.sdjwt.SdJwtTypeMetadata
 import at.asitplus.wallet.sdjwt.SdJwtVcType
 import io.ktor.client.*
 import kotlin.time.Clock
@@ -44,6 +46,21 @@ object CredentialDocs {
         Doc(AV_DOCTYPE, "age-verification.json", ISO_MDOC, isoDocType = AV_DOCTYPE),
     )
 }
+
+/** A credential the issuer offers, with display info taken from its remote type metadata document. */
+data class CredentialOffering(
+    val scheme: CredentialScheme,
+    val representation: CredentialRepresentation,
+    val name: String,
+    val description: String?,
+)
+
+private fun SdJwtTypeMetadata?.displayFor(locale: String = "en-US") =
+    this?.display?.let { d -> d.firstOrNull { it.locale.string == locale } ?: d.firstOrNull() }
+
+fun SdJwtTypeMetadata?.displayName(fallback: String) = displayFor()?.name ?: this?.name ?: fallback
+
+fun SdJwtTypeMetadata?.displayDescription() = displayFor()?.description ?: this?.description
 
 fun buildRemoteRegistry(httpClient: HttpClient) = RemoteCredentialMetadataRegistry(
     httpClient = httpClient,

@@ -75,6 +75,8 @@ class BackendConfiguration {
 
     private val httpClient = HttpClient(CIO)
 
+    private val remoteRegistry = buildRemoteRegistry(httpClient)
+
     init {
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
@@ -87,7 +89,7 @@ class BackendConfiguration {
         at.asitplus.wallet.por.Initializer.initWithVCK()
         at.asitplus.wallet.ehic.Initializer.initWithVCK()
         at.asitplus.wallet.ageverification.Initializer.initWithVCK()
-        LibraryInitializer.registerCredentialMetadataRegistry(buildRemoteRegistry(httpClient))
+        LibraryInitializer.registerCredentialMetadataRegistry(remoteRegistry)
         registerCredentialSerializers()
     }
 
@@ -220,23 +222,30 @@ class BackendConfiguration {
     fun timePeriodProvider(): TimePeriodProvider = FixedTimePeriodProvider
 
     /**
-     * Resolved at boot from the remote type metadata documents (see [CredentialDocs]). The issuer and the
-     * authorization strategy still need the scheme set up front to build `.well-known/openid-credential-issuer`;
-     * resolving via [AttributeIndex.resolveIdentifier] also registers each scheme globally so the (synchronous)
-     * scheme mapper can decode credential identifiers later. Fails fast if a document cannot be fetched.
+     * Resolved at boot from the remote type metadata documents (see [CredentialDocs]), carrying display info for the
+     * UI. The issuer and the authorization strategy still need the scheme set up front to build
+     * `.well-known/openid-credential-issuer`; resolving via [AttributeIndex.resolveIdentifier] also registers each
+     * scheme globally so the (synchronous) scheme mapper can decode credential identifiers later. Fails fast if a
+     * document cannot be fetched.
      */
-    private val credentialSchemes: Set<CredentialScheme> by lazy {
+    private val resolvedOfferings: List<CredentialOffering> by lazy {
         runBlocking {
             CredentialDocs.all.map { doc ->
+                val metadata = remoteRegistry.findEntry(doc.identifier, doc.representation)?.metadata
                 val scheme = AttributeIndex.resolveIdentifier(doc.identifier, doc.representation)
                 require(scheme.schemaUri == doc.url) {
                     "Could not resolve remote metadata for ${doc.vct} from ${doc.url} " +
                         "(got ${scheme::class.simpleName} with schemaUri=${scheme.schemaUri})"
                 }
-                scheme
-            }.toSet()
+                CredentialOffering(scheme, doc.representation, metadata.displayName(doc.vct), metadata.displayDescription())
+            }
         }
     }
+
+    private val credentialSchemes: Set<CredentialScheme> get() = resolvedOfferings.map { it.scheme }.toSet()
+
+    @Bean
+    fun credentialOfferings(): List<CredentialOffering> = resolvedOfferings
 
     private val credentialSchemeMapper = FixedAvCredentialSchemeMapper(
         delegate = DefaultCredentialSchemeMapper(),
