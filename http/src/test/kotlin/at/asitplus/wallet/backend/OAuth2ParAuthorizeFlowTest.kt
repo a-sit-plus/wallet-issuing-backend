@@ -157,7 +157,7 @@ class OAuth2ParAuthorizeFlowTest {
         ).andExpect(status().isOk).andReturn()
         val tabs = indexResult.modelAndView?.model?.get("tabs")
             .shouldBeInstanceOf<List<IndexController.TabItem>>()
-        val preAuthTab = tabs.first { it.title == "PID-SD-JWT-pre" }
+        val preAuthTab = tabs.first { it.preAuth }
         val offerResult = mockMvc.perform(
             asyncDispatch(
                 mockMvc.get("${Paths.OfferUrl}/${preAuthTab.id}") {
