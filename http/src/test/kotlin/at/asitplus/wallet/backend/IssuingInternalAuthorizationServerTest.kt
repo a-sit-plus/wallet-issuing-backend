@@ -9,17 +9,11 @@ import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.JwsSigned
-import at.asitplus.wallet.ageverification.AgeVerificationScheme
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
-import at.asitplus.wallet.cor.CertificateOfResidenceScheme
-import at.asitplus.wallet.ehic.EhicScheme
-import at.asitplus.wallet.eupid.EuPidCredential
-import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
+import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
-import at.asitplus.wallet.lib.data.VerifiableCredentialJws
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
@@ -33,10 +27,6 @@ import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
-import at.asitplus.wallet.mdl.MobileDrivingLicenceScheme
-import at.asitplus.wallet.por.PowerOfRepresentationDataElements
-import at.asitplus.wallet.por.PowerOfRepresentationScheme
-import at.asitplus.wallet.taxid.TaxIdScheme
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -77,25 +67,8 @@ class IssuingInternalAuthorizationServerTest {
     private lateinit var authorizationServer: SimpleAuthorizationService
 
     @Test
-    fun pid_vc_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidScheme, PLAIN_JWT)
-
-        val credential = loadCredential(requestOptions)
-
-        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
-            .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential).getOrThrow()
-        val vcJws = joseCompliantSerializer.decodeFromString<VerifiableCredentialJws>(jws.payload.decodeToString())
-        vcJws.vc.credentialSubject.shouldBeInstanceOf<JsonElement>().apply {
-            joseCompliantSerializer.decodeFromJsonElement<EuPidCredential>(this).apply {
-                birthDate shouldBe LocalDate(1983, 6, 4)
-            }
-        }
-    }
-
-    @Test
     fun pid_new_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidSdJwtScheme, SD_JWT)
+        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eudi:pid:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -108,7 +81,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun pid_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EuPidScheme, ISO_MDOC)
+        val requestOptions = WalletService.RequestOptions(isoScheme("eu.europa.ec.eudi.pid.1"), ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -121,7 +94,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun cor_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(CertificateOfResidenceScheme, SD_JWT)
+        val requestOptions = WalletService.RequestOptions(sdJwtScheme("eu.europa.ec.eudi.cor.1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -134,7 +107,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun por_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(PowerOfRepresentationScheme, SD_JWT)
+        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eu.europa.ec.eudi:por:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -148,12 +121,12 @@ class IssuingInternalAuthorizationServerTest {
         SdJwtDecoded(
             SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
         ).reconstructedJsonObject.shouldNotBeNull()
-            .keys.shouldContain(PowerOfRepresentationDataElements.ISSUING_AUTHORITY)
+            .keys.shouldContain("issuing_authority")
     }
 
     @Test
     fun ehic_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(EhicScheme, SD_JWT)
+        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eudi:ehic:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -171,7 +144,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun taxid_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(TaxIdScheme, SD_JWT)
+        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eu.europa.ec.eudi:tax:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -189,7 +162,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun mdl_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(MobileDrivingLicenceScheme, ISO_MDOC)
+        val requestOptions = WalletService.RequestOptions(isoScheme("org.iso.18013.5.1.mDL"), ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -202,7 +175,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun age_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(AgeVerificationScheme, ISO_MDOC)
+        val requestOptions = WalletService.RequestOptions(isoScheme("eu.europa.ec.av.1"), ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -212,6 +185,13 @@ class IssuingInternalAuthorizationServerTest {
             .namespaces?.values?.firstOrNull()
             ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
     }
+
+    // Schemes are resolved from remote type metadata and registered at boot.
+    private fun sdJwtScheme(vct: String) =
+        AttributeIndex.resolveSdJwtAttributeType(vct) ?: error("SD-JWT scheme not resolved: $vct")
+
+    private fun isoScheme(docType: String) =
+        AttributeIndex.resolveIsoDoctype(docType) ?: error("ISO mdoc scheme not resolved: $docType")
 
     private suspend fun loadCredential(requestOptions: WalletService.RequestOptions): CredentialResponseParameters {
         val client = Client()

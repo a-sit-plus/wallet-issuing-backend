@@ -6,8 +6,8 @@ import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
+import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -92,7 +92,11 @@ class CredentialEndpointSerializationTest {
     ): Pair<TokenResponseParameters, WalletService.CredentialRequest.Plain> {
         val credentialFormat = client.oid4vciClient
             .selectSupportedCredentialFormat(
-                WalletService.RequestOptions(EuPidSdJwtScheme, SD_JWT),
+                WalletService.RequestOptions(
+                    AttributeIndex.resolveSdJwtAttributeType("urn:eudi:pid:1")
+                        ?: error("EU PID SD-JWT scheme not resolved"),
+                    SD_JWT,
+                ),
                 credentialIssuer.metadata,
             ).shouldNotBeNull()
         val scope = credentialFormat.scope
