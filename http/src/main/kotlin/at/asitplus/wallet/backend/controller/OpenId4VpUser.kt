@@ -3,8 +3,8 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.KmmResult
 import at.asitplus.openid.IdToken
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.wallet.eupid.EuPidScheme
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
+import at.asitplus.wallet.eupid.EuPidDataElements
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
 import at.asitplus.wallet.lib.agent.Verifier
 import at.asitplus.wallet.lib.agent.validation.CredentialFreshnessSummary
 import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidationSummary
@@ -82,20 +82,18 @@ data class ParsedCredential(
 
 private fun String?.toImage() = this?.let { "data:image;base64,${it.replace("-", "+").replace("_", "/")}" }
 
-private fun ParsedCredential.getPortrait() =
-    getClaim(MobileDrivingLicenceDataElements.PORTRAIT)
-        ?: getClaim(EuPidSdJwtScheme.SdJwtAttributes.PORTRAIT)
-        ?: getClaim(EuPidScheme.Attributes.PORTRAIT)
+// mdl/eupid use "portrait"; eupid SD-JWT uses "picture"
+private fun ParsedCredential.getPortrait() = getClaim(EuPidDataElements.PORTRAIT)
+    ?: getClaim(EuPidSdJwtDataElements.PORTRAIT)
+    ?: getClaim(MobileDrivingLicenceDataElements.PORTRAIT)
 
-private fun ParsedCredential.getFamilyName() =
-    getClaim(EuPidScheme.Attributes.FAMILY_NAME)
-        ?: getClaim(EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME)
-        ?: getClaim(MobileDrivingLicenceDataElements.FAMILY_NAME)
+private fun ParsedCredential.getFamilyName() = getClaim(EuPidDataElements.FAMILY_NAME)
+    ?: getClaim(EuPidSdJwtDataElements.FAMILY_NAME)
+    ?: getClaim(MobileDrivingLicenceDataElements.FAMILY_NAME)
 
-private fun ParsedCredential.getGivenName() =
-    getClaim(EuPidScheme.Attributes.GIVEN_NAME)
-        ?: getClaim(EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME)
-        ?: getClaim(MobileDrivingLicenceDataElements.GIVEN_NAME)
+private fun ParsedCredential.getGivenName() = getClaim(EuPidDataElements.GIVEN_NAME)
+    ?: getClaim(EuPidSdJwtDataElements.GIVEN_NAME)
+    ?: getClaim(MobileDrivingLicenceDataElements.GIVEN_NAME)
 
 fun ParsedCredential.getClaim(claim: String) = allFields?.entries
     ?.firstOrNull { it.key == claim }?.value
@@ -155,7 +153,7 @@ fun VerifiablePresentationParsed.toApiItemCredentials(): List<ParsedCredential> 
         it.map {
             ParsedCredential(
                 jwtCredential = it.vcJws.vc.credentialSubject,
-                credentialType = EuPidScheme.vcType,
+                credentialType = "EuPid2023",
             )
         }
     } ?: notVerifiablyFreshVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {

@@ -9,8 +9,8 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.RequestOptionsCredential
+import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.agent.ValidatorMdoc
@@ -259,13 +259,11 @@ class PublicController(
 
     private fun requestPidSdJwt() = listOf(
         RequestOptionsCredential(
-            credentialScheme = EuPidSdJwtScheme,
+            // resolved from remote type metadata, registered at boot
+            credentialScheme = AttributeIndex.resolveSdJwtAttributeType("urn:eudi:pid:1")
+                ?: error("EU PID SD-JWT scheme not resolved"),
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-            requestedAttributes = setOf(
-                EuPidSdJwtScheme.SdJwtAttributes.FAMILY_NAME,
-                EuPidSdJwtScheme.SdJwtAttributes.GIVEN_NAME,
-                EuPidSdJwtScheme.SdJwtAttributes.BIRTH_DATE
-            ),
+            requestedAttributes = setOf("family_name", "given_name", "birthdate"),
         )
     )
 
