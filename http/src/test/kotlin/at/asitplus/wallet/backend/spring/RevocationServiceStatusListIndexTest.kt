@@ -98,6 +98,22 @@ class RevocationServiceStatusListIndexTest {
 
 
     @Test
+    fun `status list view should include freshly issued credential indexes as valid`() = runTest {
+        // Issue enough credentials that the highest index (8, since indexes are 1-based) lands on a byte
+        // boundary: with 1-bit statuses packed 8 per byte, index 8 requires a second byte to exist.
+        val indexes = (1..8).map { store(timePeriod, UUID.randomUUID().toString()) }
+        indexes.last() shouldBe 8uL
+
+        val statusListView = revocationService.getStatusListView(timePeriod)
+
+        indexes.forEach { index ->
+            withClue("status list must be large enough to contain index $index and report it as valid") {
+                statusListView.getOrNull(index) shouldBe TokenStatus.Valid
+            }
+        }
+    }
+
+    @Test
     fun `revocation list indexes should be grouped by time period`() = runTest {
         storeNewCredential(timePeriod) shouldBe 1uL
         storeNewCredential(timePeriod) shouldBe 2uL
