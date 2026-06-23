@@ -203,7 +203,9 @@ class DefaultRevocationService(
             issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
             revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
         )
-        return List(maxRevocationListIndex.toInt()) { listIndex ->
+        // Revocation list indexes are 1-based, so the list needs `maxRevocationListIndex + 1` entries
+        // for the credential at the highest index (e.g. the one just issued) to be included and reported as valid.
+        return List(maxRevocationListIndex.toInt() + 1) { listIndex ->
             TokenStatus(revoked.findIndex(listIndex)?.status ?: TokenStatus.Valid.value)
         }
     }
