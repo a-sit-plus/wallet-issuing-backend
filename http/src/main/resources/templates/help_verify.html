@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <title>A-SIT Plus Wallet</title>
+    <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
+</head>
+<body style="background: #ececec;">
+<div th:replace="~{fragments/navbar.html :: navbar}"></div>
+<div class="container pt-3">
+    <h1 class="display-4">Verify Credentials</h1>
+    <p class="lead">
+        You've received an invitation to verify credentials of a Wallet App.
+        Please install the Verifier App and scan the QR code again.
+    </p>
+</div>
+</body>
+</html>

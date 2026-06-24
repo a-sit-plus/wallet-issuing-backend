@@ -1,0 +1,94 @@
+variables:
+  LC_ALL: "en_US.UTF-8"
+  LANG: "en_US.UTF-8"
+  LANGUAGE: "en_US"
+  LIB_NAME: "backend"
+  GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.console=plain -Dmaven.repo.local=${CI_PROJECT_DIR}/.m2/repository"
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_STRATEGY: clone
+  SECRET_DETECTION_EXCLUDED_PATHS: ".gradle,gradle,.m2"
+
+include:
+  - template: Dependency-Scanning.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Secret-Detection.gitlab-ci.yml
+
+default:
+  image: gradle:jdk17
+  tags:
+    - docker
+
+stages:
+  - assemble
+  - test
+  - package
+  - release
+
+cache:
+  paths:
+    - ".gradle/wrapper"
+    - ".gradle/caches"
+    - ".m2/repository"
+
+assembleJdk17:
+  stage: assemble
+  except:
+    - tags
+  script: |
+    ./gradlew --continue clean assemble test build
+  artifacts:
+    when: always
+    reports:
+      junit: "**/build/test-results/test/**/TEST-*.xml"
+
+publish:
+  stage: package
+  except:
+    - tags
+  only:
+    - master
+    - development
+  script: |
+    export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
+    echo "Publishing version $VERSION for $LIB_NAME"
+    ./gradlew --continue clean assemble publishAllPublicationsToGitlabRepository
+    echo "VERSION=$VERSION" >> variables.env
+  artifacts:
+    when: always
+    paths:
+      - "http/build/libs/http*jar"
+    reports:
+      dotenv: variables.env
+
+publishSnapshot:
+  stage: package
+  except:
+    - tags
+  when: manual
+  script: |
+    export VERSION=$(./gradlew properties | grep "^version: " | grep -Po "\d+\.\d+\.\d+((-\w*)+)?")
+    echo "Publishing version $VERSION for $LIB_NAME"
+    ./gradlew --continue clean assemble publishAllPublicationsToGitlabRepository
+    echo "VERSION=$VERSION" >> variables.env
+  artifacts:
+    when: always
+    paths:
+      - "http/build/libs/http*jar"
+    reports:
+      dotenv: variables.env
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: publish
+      artifacts: true
+  when: manual
+  only:
+    - master
+  script: |
+    echo "Releasing version $VERSION of $LIB_NAME"
+    release-cli create --name "$VERSION" --tag-name "v$VERSION" --ref "$CI_COMMIT_SHA" --description "$(cat README.md)" \
+        --assets-link "{\"name\":\"$LIB_NAME-$VERSION.pom\",\"url\":\"${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/maven/at/asitplus/wallet/$LIB_NAME/$VERSION/$LIB_NAME-$VERSION.pom\"}" \
+        --assets-link "{\"name\":\"$LIB_NAME-$VERSION.jar\",\"url\":\"${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/maven/at/asitplus/wallet/$LIB_NAME/$VERSION/$LIB_NAME-$VERSION.jar\"}"
