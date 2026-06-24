@@ -24,6 +24,11 @@ toolkit. It wires VC-K's issuer agent, OpenID4VCI issuer, OAuth2 authorization s
 verifier, credential scheme mapper, and token status list support into a Spring Boot application that
 can authenticate users, derive credential claims, and deliver wallet-ready credentials.
 
+
+| ⚠️ Warning                                             |
+|:-------------------------------------------------------|
+| This service is intended as a Technology Demonstrator! |
+
 ## What It Does
 
 - Issues credentials over [OpenID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html)
