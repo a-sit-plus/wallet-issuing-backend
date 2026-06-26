@@ -1,0 +1,69 @@
+/* 1. declare transition */
+.fade-move,
+.fade-enter-active,
+.fade-leave-active {
+    transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+}
+
+/* 2. declare enter from and leave to state */
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: scaleY(0.01) scaleX(0.01);
+}
+
+/* 3. ensure leaving items are taken out of layout flow so that moving
+      animations can be calculated correctly. */
+.fade-leave-active {
+    position: absolute;
+}
+
+.foldout {
+    position: relative;
+    overflow: hidden;
+}
+
+.foldout-preview {
+    max-height: 150px;
+}
+
+.foldout-button {
+    float: right;
+}
+
+.foldout-preview .foldout-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3em;
+    width: 100%;
+    background: linear-gradient(to top,
+    rgba(var(--bs-light-rgb), 1) 0%,
+    rgba(var(--bs-light-rgb), 0) 100%
+    );
+    pointer-events: none; /* so the text is still selectable */
+}
+
+/* other styles */
+.blur {
+    filter: blur(8px);
+}
+
+body {
+    background-color: #f3f3f3;
+}
+
+.app-navbar {
+    background-color: #b4232f;
+}
+
+.options-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.option-card {
+    flex: 1 1 320px;
+    min-width: 280px;
+}

@@ -6,9 +6,9 @@
     <link th:rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.1/css/bootstrap.min.css} "/>
 </head>
 <body>
-<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark app-navbar">
     <div class="container">
-        <a class="navbar-brand" th:href="@{/}" th:text="${config.metadata.name}">Issuing Service</a>
+        <a class="navbar-brand fs-3 fw-bold" th:href="@{/}" th:text="${config.metadata.name}">Issuing Service</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
                 aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
