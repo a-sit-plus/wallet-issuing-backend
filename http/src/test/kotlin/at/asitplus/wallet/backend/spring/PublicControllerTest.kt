@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import kotlin.time.Clock
@@ -29,6 +30,16 @@ class PublicControllerTest {
 
     @Autowired
     private lateinit var timePeriodProvider: TimePeriodProvider
+
+    @Test
+    fun `POST transaction result without id is not rewritten to OAuth bad request`() {
+        mockMvc.post(Paths.Transaction.ResultUrl) {
+            contentType = MediaType.APPLICATION_FORM_URLENCODED
+            content = "vp_token=unused"
+        }.andExpect {
+            status { isNotFound() }
+        }
+    }
 
     @Test
     fun `GET CWT status list with If-None-Match in second request`() {
