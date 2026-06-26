@@ -13,8 +13,10 @@ import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.lib.openid.OpenId4VpHolder
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.http.Url
+import jakarta.servlet.http.Cookie
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -45,7 +47,14 @@ class PidLoginFlowTest {
 
     @Test
     fun `login with PID from wallet completes session login`() = runTest {
-        val holderOid4vp = holderWithPid()
+        val browserLogin = browserStartsPidLogin()
+
+        walletCompletesPidAuthentication(holderWithPid(), browserLogin.requestUri)
+
+        browserSeesAuthenticatedSession(browserLogin.sessionCookies)
+    }
+
+    private fun browserStartsPidLogin(): BrowserLogin {
         val loginResult = mockMvc.perform(asyncDispatch(
             mockMvc.get(Paths.LoginUrl)
                 .andExpect { request { asyncStarted() } }
@@ -53,13 +62,19 @@ class PidLoginFlowTest {
         ))
             .andExpect(status().isOk)
             .andReturn()
-        val authToken = loginResult.response.getHeader("X-Auth-Token").shouldNotBeNull()
+        val sessionCookies = loginResult.response.cookies
+        sessionCookies.size shouldNotBe 0
         val loginPidUrl = loginResult.modelAndView?.model?.get("loginPidUrl")
             .shouldBeInstanceOf<String>()
-        val requestUri = Url(loginPidUrl).parameters["request_uri"].shouldNotBeNull()
+        return BrowserLogin(
+            sessionCookies = sessionCookies,
+            requestUri = Url(loginPidUrl).parameters["request_uri"].shouldNotBeNull(),
+        )
+    }
 
+    private suspend fun walletCompletesPidAuthentication(holderOid4vp: OpenId4VpHolder, requestUri: String) {
         val authnRequest = mockMvc.perform(asyncDispatch(
-            mockMvc.perform(mvcGet(URI(requestUri).rawPath).header("X-Auth-Token", authToken))
+            mockMvc.perform(mvcGet(URI(requestUri).rawPath))
                 .andExpect(request().asyncStarted())
                 .andReturn()
         ))
@@ -74,7 +89,6 @@ class PidLoginFlowTest {
         mockMvc.perform(asyncDispatch(
             mockMvc.perform(
                 mvcPost(URI(authnResponse.url).rawPath)
-                    .header("X-Auth-Token", authToken)
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .content(authnResponse.params.formUrlEncode())
             )
@@ -82,15 +96,22 @@ class PidLoginFlowTest {
                 .andReturn()
         ))
             .andExpect(status().isOk)
+    }
 
+    private fun browserSeesAuthenticatedSession(sessionCookies: Array<Cookie>) {
         mockMvc.perform(asyncDispatch(
-            mockMvc.perform(mvcGet(Paths.LoginStatusUrl).header("X-Auth-Token", authToken))
+            mockMvc.perform(mvcGet(Paths.LoginStatusUrl).cookie(*sessionCookies))
                 .andExpect(request().asyncStarted())
                 .andReturn()
         ))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.authenticated").value(true))
     }
+
+    private data class BrowserLogin(
+        val sessionCookies: Array<Cookie>,
+        val requestUri: String,
+    )
 
     private suspend fun holderWithPid(): OpenId4VpHolder {
         val holderKey = EphemeralKeyWithoutCert()

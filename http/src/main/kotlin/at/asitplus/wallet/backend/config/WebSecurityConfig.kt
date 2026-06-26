@@ -2,8 +2,6 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.Paths
 import jakarta.servlet.DispatcherType
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,9 +18,6 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler
 import org.springframework.session.MapSessionRepository
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession
-import org.springframework.session.web.http.CookieHttpSessionIdResolver
-import org.springframework.session.web.http.HeaderHttpSessionIdResolver
-import org.springframework.session.web.http.HttpSessionIdResolver
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -111,36 +106,6 @@ class WebSecurityConfig(
     @Bean
     fun sessionRepository() = MapSessionRepository(ConcurrentHashMap())
 
-    /**
-     * We need cookie-based sessions on the Web, and header-based sessions for mobile clients
-     */
-    @Bean
-    fun httpSessionIdResolver() =
-        DelegatingSessionIdResolver(CookieHttpSessionIdResolver(), HeaderHttpSessionIdResolver.xAuthToken())
-
     @Bean
     fun successHandler() = SavedRequestAwareAuthenticationSuccessHandler()
-}
-
-/**
- * Set session identifier into header `X-Auth-Token` (App clients) and cookie `SESSION` (Web clients).
- */
-class DelegatingSessionIdResolver(private vararg val resolvers: HttpSessionIdResolver) : HttpSessionIdResolver {
-
-    override fun resolveSessionIds(request: HttpServletRequest?): MutableList<String> {
-        return resolvers.map { it.resolveSessionIds(request) }.flatten().toMutableList()
-    }
-
-    override fun setSessionId(request: HttpServletRequest?, response: HttpServletResponse?, sessionId: String?) {
-        resolvers.forEach {
-            it.setSessionId(request, response, sessionId)
-        }
-    }
-
-    override fun expireSession(request: HttpServletRequest?, response: HttpServletResponse?) {
-        resolvers.forEach {
-            it.expireSession(request, response)
-        }
-    }
-
 }
