@@ -31,6 +31,7 @@ import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -46,14 +47,29 @@ data class OpenId4VpUser(
     val credentials: Collection<ParsedCredential>?,
     val presentationError: String?,
 ) : AuthenticatedPrincipal {
-    val id = Json.encodeToString(this).sha256()
+    @Transient
+    val id = Json.encodeToString(OpenId4VpUserIdSource(idToken, idTokenError, credentials, presentationError)).sha256()
+
+    @Transient
     val firstname = credentials?.firstNotNullOfOrNull { it.getGivenName() } ?: "N/A"
+
+    @Transient
     val lastname = credentials?.firstNotNullOfOrNull { it.getFamilyName() } ?: "N/A"
+
+    @Transient
     val imageDataBase64 = credentials?.firstNotNullOfOrNull { it.getPortrait() }?.toImage()
 
     override fun getName(): String = "$firstname $lastname ($id)"
 
 }
+
+@Serializable
+private data class OpenId4VpUserIdSource(
+    val idToken: IdToken?,
+    val idTokenError: String?,
+    val credentials: Collection<ParsedCredential>?,
+    val presentationError: String?,
+)
 
 @Serializable
 data class ParsedCredential(
@@ -245,4 +261,3 @@ private fun TokenStatusValidationResult.errorMessage(): String? = when (this) {
 private fun String.sha256() = runCatching {
     MessageDigest.getInstance("SHA-256").digest(this.encodeToByteArray()).encodeToString(Base64UrlStrict)
 }.getOrElse { this.hashCode().toString() }
-
