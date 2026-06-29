@@ -51,15 +51,16 @@ data class OpenId4VpUser(
     val id = Json.encodeToString(OpenId4VpUserIdSource(idToken, idTokenError, credentials, presentationError)).sha256()
 
     @Transient
-    val firstname = credentials?.firstNotNullOfOrNull { it.getGivenName() } ?: "N/A"
+    val firstname = credentials?.firstNotNullOfOrNull { it.getGivenName() }
 
     @Transient
-    val lastname = credentials?.firstNotNullOfOrNull { it.getFamilyName() } ?: "N/A"
+    val lastname = credentials?.firstNotNullOfOrNull { it.getFamilyName() }
 
     @Transient
     val imageDataBase64 = credentials?.firstNotNullOfOrNull { it.getPortrait() }?.toImage()
 
-    override fun getName(): String = "$firstname $lastname ($id)"
+    override fun getName(): String =
+        (listOfNotNull(firstname, lastname).joinToString(" ") + " ($id)").trim()
 
 }
 

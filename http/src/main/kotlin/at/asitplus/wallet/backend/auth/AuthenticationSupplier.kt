@@ -68,7 +68,7 @@ object SpringSecurityAuthenticationSupplier {
     private fun OpenId4VpUser.toOidcUserInfoExtended() = OidcUserInfoExtended(
         userInfo = OidcUserInfo(
             subject = id,
-            name = "$firstname $lastname",
+            name = listOfNotNull(firstname, lastname).joinToString(" ").ifBlank { null },
             givenName = firstname,
             familyName = lastname,
             picture = imageDataBase64?.removePrefix("data:image;base64,"),
