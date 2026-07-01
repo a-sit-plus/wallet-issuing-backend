@@ -248,9 +248,12 @@ class BackendConfiguration {
             CredentialDocs.all.map { doc ->
                 val metadata = remoteRegistry.findEntry(doc.identifier, doc.representation)?.metadata
                 val scheme = AttributeIndex.resolveIdentifier(doc.identifier, doc.representation)
-                require(scheme.schemaUri == doc.url) {
+                // findEntry returns null on fetch/integrity failure (resolveIdentifier then yields a fallback
+                // scheme), so a non-null entry confirms the remote document actually resolved. vck deprecated
+                // CredentialScheme.schemaUri, so we can no longer compare it against doc.url.
+                require(metadata != null) {
                     "Could not resolve remote metadata for ${doc.vct} from ${doc.url} " +
-                        "(got ${scheme::class.simpleName} with schemaUri=${scheme.schemaUri})"
+                        "(got ${scheme::class.simpleName})"
                 }
                 CredentialOffering(scheme, doc.representation, metadata.displayName(doc.vct), metadata.displayDescription())
             }
