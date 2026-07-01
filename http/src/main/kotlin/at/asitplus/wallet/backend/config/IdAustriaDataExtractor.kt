@@ -1,6 +1,8 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.wallet.eupid.IsoIec5218Gender
+import at.asitplus.wallet.mdl.IsoSexEnum
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.LocalDate

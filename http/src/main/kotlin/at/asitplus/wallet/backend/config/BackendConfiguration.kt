@@ -28,12 +28,16 @@ import at.asitplus.wallet.lib.data.CredentialScheme
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.wallet.eupid.EuPidItemValueSerializerMap
+import at.asitplus.wallet.eupid.EuPidJsonValueEncoder
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
+import at.asitplus.wallet.mdl.MobileDrivingLicenceItemValueSerializerMap
+import at.asitplus.wallet.mdl.MobileDrivingLicenceJsonValueEncoder
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -83,6 +87,25 @@ class BackendConfiguration {
         Security.addProvider(BouncyCastleProvider())
         LibraryInitializer.registerCredentialMetadataRegistry(remoteRegistry)
         registerCredentialSerializers()
+    }
+
+    /**
+     * Registers the value (de)serializers for the complex claim types of the mDL and EU PID credentials.
+     *
+     * Remote type metadata carries claim names and display, but not the CBOR/JSON encoding of non-primitive values
+     * (dates with tag 1004, portraits, driving privileges, gender/sex enums). Only mDL and EU PID (ISO) carry such
+     * values; every other credential's claims are primitives that vck encodes directly. Uses the maps and encoders
+     * shipped with vck instead of reproducing them here.
+     */
+    fun registerCredentialSerializers() {
+        LibraryInitializer.registerCredentialSerializers(
+            jsonValueEncoder = MobileDrivingLicenceJsonValueEncoder,
+            itemValueSerializerMap = MobileDrivingLicenceItemValueSerializerMap,
+        )
+        LibraryInitializer.registerCredentialSerializers(
+            jsonValueEncoder = EuPidJsonValueEncoder,
+            itemValueSerializerMap = EuPidItemValueSerializerMap,
+        )
     }
 
     @Bean

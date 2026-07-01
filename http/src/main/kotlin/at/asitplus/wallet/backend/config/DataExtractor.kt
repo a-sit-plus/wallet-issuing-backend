@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.wallet.lib.agent.ClaimToBeIssued
 import at.asitplus.wallet.lib.agent.ClaimToBeIssuedArrayElement
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
+import at.asitplus.wallet.eupid.PlaceOfBirth
 import at.asitplus.wallet.lib.data.IsoMdocCredentialScheme
 import at.asitplus.wallet.lib.data.LocalDateOrInstant
 import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
