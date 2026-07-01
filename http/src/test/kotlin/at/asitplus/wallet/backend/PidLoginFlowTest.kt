@@ -2,12 +2,13 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtScheme
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.HolderAgent
 import at.asitplus.wallet.lib.agent.IssuerAgent
 import at.asitplus.wallet.lib.agent.RandomSource
 import at.asitplus.wallet.lib.agent.toStoreCredentialInput
+import at.asitplus.wallet.lib.data.AttributeIndex
+import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
 import at.asitplus.wallet.lib.data.rfc3986.toUri
 import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
@@ -122,7 +123,7 @@ class PidLoginFlowTest {
                 identifier = "https://issuer.example.com/".toUri(),
                 randomSource = RandomSource.Default,
             ).issueCredential(
-                EuPidSdJwtScheme.buildSdJwtClaims(
+                pidSdJwtScheme().buildSdJwtClaims(
                     userInfo = pidUserInfo(),
                     iss = now,
                     exp = now + 1.days,
@@ -132,6 +133,11 @@ class PidLoginFlowTest {
         ).getOrThrow()
         return OpenId4VpHolder(holder = holder, randomSource = RandomSource.Default)
     }
+
+    // Scheme is resolved from remote type metadata registered at boot, not the removed library scheme object.
+    private fun pidSdJwtScheme() =
+        AttributeIndex.resolveSdJwtAttributeType("urn:eudi:pid:1") as? SdJwtCredentialScheme
+            ?: error("SD-JWT scheme not resolved: urn:eudi:pid:1")
 
     private fun pidUserInfo() = OidcUserInfoExtended.fromJsonObject(buildJsonObject {
         put(IdTokenClaimNames.SUB, "IFOQP3T5XYLMSDOQAEGMF52MWGMWBPXN")
