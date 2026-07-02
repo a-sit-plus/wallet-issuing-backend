@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
 import at.asitplus.wallet.lib.RequestOptionsCredential
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.agent.KeyMaterial
@@ -126,9 +127,7 @@ class PublicController(
                         header(HttpHeaders.Accept, MediaTypes.Application.STATUSLIST_JWT)
                     }.body<String>()
                 }.let {
-                    JwsCompactTyped<StatusListTokenPayload>(
-                        it
-                    )
+                    JwsCompactTyped<StatusListTokenPayload>(it)
                 }.let {
                     StatusListJwt(value = it, resolvedAt = Clock.System.now())
                 }
@@ -144,7 +143,8 @@ class PublicController(
             validatorSdJwt = ValidatorSdJwt(
                 verifyJwsObject = VerifyJwsObject(
                     publicKeyLookup = { jwsCompact ->
-                        (jwsCompact.getPayload<JsonObject>().getOrNull()?.get("iss") as? JsonPrimitive?)?.content?.let { iss ->
+                        (jwsCompact.getPayload<JsonObject>().getOrNull()
+                            ?.get("iss") as? JsonPrimitive?)?.content?.let { iss ->
                             val url = OAuth2Utils.insertWellKnownPath(iss, OpenIdConstants.WellKnownPaths.JwtVcIssuer)
                             Napier.i("Resolving Key for $iss from $url")
                             httpClient.get(url).body<JwtVcIssuerMetadata>().jsonWebKeySet?.keys?.toSet<JsonWebKey>()
@@ -263,7 +263,11 @@ class PublicController(
             credentialScheme = AttributeIndex.resolveSdJwtAttributeType("urn:eudi:pid:1")
                 ?: error("EU PID SD-JWT scheme not resolved"),
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-            requestedAttributes = setOf("family_name", "given_name", "birthdate"),
+            requestedAttributes = setOf(
+                EuPidSdJwtDataElements.FAMILY_NAME,
+                EuPidSdJwtDataElements.GIVEN_NAME,
+                EuPidSdJwtDataElements.BIRTH_DATE
+            ),
         )
     )
 
