@@ -19,15 +19,16 @@ class FixedAvCredentialSchemeMapper(
     val fixedIdentifier: String = "proof_of_age",
 ) : CredentialSchemeMapper by delegate {
 
-    private fun isAv(scheme: CredentialScheme) = scheme.isoDocType == AV_DOCTYPE
+    private val CredentialScheme.isAv: Boolean
+        get() = isoDocType == AV_DOCTYPE
 
     override fun map(scheme: CredentialScheme): Map<String, SupportedCredentialFormat> =
-        if (isAv(scheme) && scheme is IsoMdocCredentialScheme)
+        if (scheme.isAv && scheme is IsoMdocCredentialScheme)
             mapOf(scheme.toIsoMdocSupportedCredentialFormat(fixedIdentifier))
         else delegate.map(scheme)
 
     override fun toCredentialIdentifier(scheme: CredentialScheme, rep: CredentialRepresentation) =
-        if (rep == ISO_MDOC && isAv(scheme)) fixedIdentifier
+        if (rep == ISO_MDOC && scheme.isAv) fixedIdentifier
         else delegate.toCredentialIdentifier(scheme, rep)
 
     override fun decodeFromCredentialIdentifier(input: String) =
