@@ -8,14 +8,14 @@ import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JsonWebToken
-import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.signum.indispensable.josef.JwsTyped
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.AttributeIndex
-import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -32,18 +32,14 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -74,8 +70,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload
             .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
@@ -100,8 +95,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload
             .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
@@ -113,8 +107,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -132,8 +125,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             issuer.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -150,8 +142,7 @@ class IssuingInternalAuthorizationServerTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             issuer.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }

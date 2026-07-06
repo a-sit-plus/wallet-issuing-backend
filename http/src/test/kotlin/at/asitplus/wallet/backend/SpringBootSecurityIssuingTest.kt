@@ -6,15 +6,15 @@ import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JsonWebToken
-import at.asitplus.signum.indispensable.josef.JwsSigned
+import at.asitplus.signum.indispensable.josef.JwsTyped
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
 import at.asitplus.wallet.lib.data.AttributeIndex
-import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.*
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.data.VerifiableCredentialSdJwt
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.jws.SignJwt
@@ -37,11 +37,8 @@ import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDate
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.decodeFromJsonElement
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -81,8 +78,7 @@ class SpringBootSecurityIssuingTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload
             .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
@@ -109,8 +105,7 @@ class SpringBootSecurityIssuingTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString())
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload
             .disclosureDigests.shouldNotBeNull().size shouldBeGreaterThan 1
     }
 
@@ -123,8 +118,7 @@ class SpringBootSecurityIssuingTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -142,8 +136,7 @@ class SpringBootSecurityIssuingTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -160,8 +153,7 @@ class SpringBootSecurityIssuingTest {
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
-        val jws = JwsSigned.deserialize(serializedCredential.substringBefore("~")).getOrThrow()
-        joseCompliantSerializer.decodeFromString<VerifiableCredentialSdJwt>(jws.payload.decodeToString()).apply {
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
         }
@@ -229,7 +221,7 @@ class SpringBootSecurityIssuingTest {
         val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
         val authorizationCode = authorizationServer.authorize(authnRequest) {
             catching {
-                toOidcUserInfoExtended(SecurityContextHolder.getContext()?.authentication)
+                toOidcUserInfoExtended(SecurityContextHolder.getContext().authentication)
                     ?: throw IllegalArgumentException("No authenticated user")
             }
         }.getOrThrow()
