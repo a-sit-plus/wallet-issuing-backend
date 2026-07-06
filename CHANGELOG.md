@@ -3,6 +3,7 @@
 7.0.0 (unreleased):
  - Update to VC-K 7.0.0-SNAPSHOT
  - Rework resolving credential schemes
+ - Update to Spring Boot 4.1.0
 
 6.0.0:
  - Update to VC-K 6.0.0

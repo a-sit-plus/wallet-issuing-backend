@@ -31,7 +31,7 @@ object SpringSecurityAuthenticationSupplier {
 
     private fun OidcIdToken.toOidcUserInfoExtended() = OidcUserInfoExtended(
         OidcUserInfo(
-            subject = subject,
+            subject = subject ?: "[unknown]",
             name = fullName,
             givenName = givenName,
             familyName = familyName,

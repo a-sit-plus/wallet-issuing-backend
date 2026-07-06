@@ -5,9 +5,9 @@ mockito = "6.2.1"
 vck = "7.0.0-SNAPSHOT"
 nimbus = "10.7"
 
-spring-boot = "4.0.6"
-spring-cloud = "2025.1.1"
-spring-admin-starter-client = "4.0.4"
+spring-boot = "4.1.0"
+spring-cloud = "2025.1.2"
+spring-admin-starter-client = "4.1.1"
 
 webjars-locator = "0.47"
 webjars-bootstrap = "5.3.1"

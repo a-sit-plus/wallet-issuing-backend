@@ -11,13 +11,13 @@ import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
 import at.asitplus.wallet.lib.RequestOptionsCredential
-import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.Validator
 import at.asitplus.wallet.lib.agent.ValidatorMdoc
 import at.asitplus.wallet.lib.agent.ValidatorSdJwt
 import at.asitplus.wallet.lib.agent.VerifierAgent
 import at.asitplus.wallet.lib.agent.validation.TokenStatusResolverImpl
+import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
@@ -290,10 +290,11 @@ class PublicController(
                 Napier.w("${Paths.Transaction.ResultUrl}/$id error", it)
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
             }.toUser()
-        val session = sessionRepository.findById(desktopSessionId)
-        Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
-        session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
-        sessionRepository.save(session)
+        sessionRepository.findById(desktopSessionId)?.let { session ->
+            Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
+            session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
+            sessionRepository.save(session)
+        }
         return ResponseEntity.ok().build()
     }
 
