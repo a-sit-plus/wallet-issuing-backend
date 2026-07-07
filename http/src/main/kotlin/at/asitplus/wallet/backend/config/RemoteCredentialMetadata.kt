@@ -9,6 +9,9 @@ import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
 import at.asitplus.wallet.sdjwt.SdJwtTypeMetadata
 import at.asitplus.wallet.sdjwt.SdJwtVcType
 import io.ktor.client.*
+import io.ktor.client.engine.cio.CIO
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import kotlin.time.Clock
 
 /** ISO docType / namespace of the Age Verification credential; needs the fixed `proof_of_age` config id. */
@@ -61,6 +64,17 @@ private fun SdJwtTypeMetadata?.displayFor(locale: String = "en-US") =
 fun SdJwtTypeMetadata?.displayName(fallback: String) = displayFor()?.name ?: this?.name ?: fallback
 
 fun SdJwtTypeMetadata?.displayDescription() = displayFor()?.description ?: this?.description
+
+/**
+ * Fetches the SD-JWT Type Metadata documents live from the hosted collection. Tests override this with a
+ * [io.ktor.client.engine.mock.MockEngine] serving the cached documents from test resources
+ * (see `CachedTypeMetadataConfiguration` in the test sources), so no test ever talks to GitHub.
+ */
+@Configuration
+class MetadataHttpClientConfiguration {
+    @Bean
+    fun metadataHttpClient(): HttpClient = HttpClient(CIO)
+}
 
 fun buildRemoteRegistry(httpClient: HttpClient) = RemoteCredentialMetadataRegistry(
     httpClient = httpClient,

@@ -90,6 +90,7 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testImplementation(ktor("client-java"))
+    testImplementation(ktor("client-mock"))
 }
 
 tasks.test {

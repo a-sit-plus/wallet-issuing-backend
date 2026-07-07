@@ -39,8 +39,8 @@ import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceItemValueSerializerMap
 import at.asitplus.wallet.mdl.MobileDrivingLicenceJsonValueEncoder
 import io.github.aakira.napier.Napier
+import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -69,7 +69,7 @@ import java.security.Security
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
 @EnableScheduling
-class BackendConfiguration {
+class BackendConfiguration(metadataHttpClient: HttpClient) {
 
     @Autowired
     private lateinit var configuration: BackendConfigurationProperties
@@ -77,9 +77,7 @@ class BackendConfiguration {
     @Autowired
     private lateinit var resourceLoader: ResourceLoader
 
-    private val httpClient = HttpClient(CIO)
-
-    private val remoteRegistry = buildRemoteRegistry(httpClient)
+    private val remoteRegistry = buildRemoteRegistry(metadataHttpClient)
 
     init {
         Napier.takeLogarithm()
@@ -88,6 +86,9 @@ class BackendConfiguration {
         LibraryInitializer.registerCredentialMetadataRegistry(remoteRegistry)
         registerCredentialSerializers()
     }
+
+    @Bean
+    fun credentialMetadataRegistry(): RemoteCredentialMetadataRegistry = remoteRegistry
 
     /**
      * Registers the value (de)serializers for the complex claim types of the mDL and EU PID credentials.
