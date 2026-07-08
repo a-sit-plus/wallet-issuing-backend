@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Primary
  * of the main application's component scan when tests run, so every Spring test picks this up without an explicit
  * `@Import`.
  *
- * Refresh the snapshot by re-downloading the documents listed in [CredentialDocs] from [CredentialDocs.BASE].
+ * Refresh the snapshot by re-downloading the documents listed in [CredentialCatalog] from [CredentialCatalog.BASE_URL].
  */
 @Configuration
 class CachedTypeMetadataConfiguration {

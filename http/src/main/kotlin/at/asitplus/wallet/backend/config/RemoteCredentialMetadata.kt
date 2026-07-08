@@ -5,14 +5,8 @@ import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MD
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.data.CredentialMetadataLookup
 import at.asitplus.wallet.lib.data.CredentialScheme
-import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
 import at.asitplus.wallet.sdjwt.SdJwtTypeMetadata
 import at.asitplus.wallet.sdjwt.SdJwtVcType
-import io.ktor.client.*
-import io.ktor.client.engine.cio.CIO
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import kotlin.time.Clock
 
 /** ISO docType / namespace of the Age Verification credential; needs the fixed `proof_of_age` config id. */
 const val AV_DOCTYPE = "eu.europa.ec.av.1"
@@ -22,32 +16,46 @@ const val AV_DOCTYPE = "eu.europa.ec.av.1"
  * `a-sit-plus/credentials-collection@feature/type-metadata`. Schemes (claims, display, format) are resolved
  * remotely from these raw URLs at boot — this project no longer depends on the per-credential libraries.
  */
-object CredentialDocs {
-    const val BASE = "https://raw.githubusercontent.com/a-sit-plus/credentials-collection/main"
+object CredentialCatalog {
+    const val BASE_URL = "https://raw.githubusercontent.com/a-sit-plus/credentials-collection/main"
 
-    /** [isoDocType] is set for `mso_mdoc` docs, whose lookup identifier is the docType rather than the vct. */
-    data class Doc(
+    /**
+     * @param vct the document's `vct` value, used as the registry key
+     * @param fileName document file name within the collection
+     * @param representation how this credential is requested and presented
+     * @param isoDocType for ISO mdoc credentials, the `vck.isoDocType` used as the lookup identifier
+     */
+    data class Entry(
         val vct: String,
-        val file: String,
+        val fileName: String,
         val representation: CredentialRepresentation,
         val isoDocType: String? = null,
     ) {
-        val url get() = "$BASE/$file"
+        val url get() = "$BASE_URL/$fileName"
 
         /** The identifier the issuer/wallet uses to request this credential (vct for SD-JWT, docType for mdoc). */
         val identifier get() = isoDocType ?: vct
     }
 
-    val all = listOf(
-        Doc("urn:eudi:pid:1", "eu-pid-sdjwt.json", SD_JWT),
-        Doc("EuPid2023", "eu-pid.json", ISO_MDOC, isoDocType = "eu.europa.ec.eudi.pid.1"),
-        Doc("org.iso.18013.5.1.mDL", "mdl.json", ISO_MDOC, isoDocType = "org.iso.18013.5.1.mDL"),
-        Doc("urn:eu.europa.ec.eudi:por:1", "power-of-representation.json", SD_JWT),
-        Doc("urn:eu.europa.ec.eudi:tax:1", "tax-id-credential.json", SD_JWT),
-        Doc("eu.europa.ec.eudi.cor.1", "certificate-of-residence.json", SD_JWT),
-        Doc("urn:eudi:ehic:1", "ehic.json", SD_JWT),
-        Doc(AV_DOCTYPE, "age-verification.json", ISO_MDOC, isoDocType = AV_DOCTYPE),
+    val entries = listOf(
+        Entry("urn:eudi:pid:1", "eu-pid-sdjwt.json", SD_JWT),
+        Entry("EuPid2023", "eu-pid.json", ISO_MDOC, isoDocType = "eu.europa.ec.eudi.pid.1"),
+        Entry("org.iso.18013.5.1.mDL", "mdl.json", ISO_MDOC, isoDocType = "org.iso.18013.5.1.mDL"),
+        Entry("urn:eu.europa.ec.eudi:por:1", "power-of-representation.json", SD_JWT),
+        Entry("urn:eu.europa.ec.eudi:tax:1", "tax-id-credential.json", SD_JWT),
+        Entry("eu.europa.ec.eudi.cor.1", "certificate-of-residence.json", SD_JWT),
+        Entry("urn:eudi:ehic:1", "ehic.json", SD_JWT),
+        Entry(AV_DOCTYPE, "age-verification.json", ISO_MDOC, isoDocType = AV_DOCTYPE),
     )
+
+    /** `vct` -> hosted document URL; the registry owns this map. */
+    fun documentUrls(): MutableMap<SdJwtVcType, String> =
+        entries.associate { SdJwtVcType(it.vct) to it.url }.toMutableMap()
+
+    /** ISO mdoc docTypes have no direct `vct` fallback, so alias each to its document's `vct`. */
+    fun aliases(): Map<CredentialMetadataLookup, SdJwtVcType> =
+        entries.filter { it.representation == ISO_MDOC }
+            .associate { CredentialMetadataLookup(it.representation, it.identifier) to SdJwtVcType(it.vct) }
 }
 
 /** A credential the issuer offers, with display info taken from its remote type metadata document. */
@@ -65,23 +73,3 @@ fun SdJwtTypeMetadata?.displayName(fallback: String) = displayFor()?.name ?: thi
 
 fun SdJwtTypeMetadata?.displayDescription() = displayFor()?.description ?: this?.description
 
-/**
- * Fetches the SD-JWT Type Metadata documents live from the hosted collection. Tests override this with a
- * [io.ktor.client.engine.mock.MockEngine] serving the cached documents from test resources
- * (see `CachedTypeMetadataConfiguration` in the test sources), so no test ever talks to GitHub.
- */
-@Configuration
-class MetadataHttpClientConfiguration {
-    @Bean
-    fun metadataHttpClient(): HttpClient = HttpClient(CIO)
-}
-
-fun buildRemoteRegistry(httpClient: HttpClient) = RemoteCredentialMetadataRegistry(
-    httpClient = httpClient,
-    clock = Clock.System,
-    documentUrls = CredentialDocs.all.associate { SdJwtVcType(it.vct) to it.url }.toMutableMap(),
-    // mso_mdoc docs are looked up by docType, so alias (ISO_MDOC, docType) -> vct.
-    aliases = CredentialDocs.all.filter { it.isoDocType != null }.associate {
-        CredentialMetadataLookup(it.representation, it.isoDocType!!) to SdJwtVcType(it.vct)
-    },
-)

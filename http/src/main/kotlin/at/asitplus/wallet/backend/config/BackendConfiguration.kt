@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
@@ -11,6 +12,8 @@ import at.asitplus.wallet.backend.data.PreparedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
+import at.asitplus.wallet.eupid.EuPidItemValueSerializerMap
+import at.asitplus.wallet.eupid.EuPidJsonValueEncoder
 import at.asitplus.wallet.lib.LibraryInitializer
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
@@ -24,12 +27,9 @@ import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AttributeIndex
-import at.asitplus.wallet.lib.data.CredentialScheme
-import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.wallet.eupid.EuPidItemValueSerializerMap
-import at.asitplus.wallet.eupid.EuPidJsonValueEncoder
+import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
+import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
@@ -39,8 +39,7 @@ import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceItemValueSerializerMap
 import at.asitplus.wallet.mdl.MobileDrivingLicenceJsonValueEncoder
 import io.github.aakira.napier.Napier
-import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
-import io.ktor.client.HttpClient
+import io.ktor.client.*
 import kotlinx.coroutines.runBlocking
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -65,11 +64,12 @@ import java.nio.charset.Charset
 import java.security.KeyStore
 import java.security.PublicKey
 import java.security.Security
+import kotlin.time.Clock
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
 @EnableScheduling
-class BackendConfiguration(metadataHttpClient: HttpClient) {
+class BackendConfiguration {
 
     @Autowired
     private lateinit var configuration: BackendConfigurationProperties
@@ -77,28 +77,24 @@ class BackendConfiguration(metadataHttpClient: HttpClient) {
     @Autowired
     private lateinit var resourceLoader: ResourceLoader
 
-    private val remoteRegistry = buildRemoteRegistry(metadataHttpClient)
+
+    /**
+     * Fetches the SD-JWT Type Metadata documents live from the hosted collection. Tests override this with a
+     * [io.ktor.client.engine.mock.MockEngine] serving the cached documents from test resources
+     * (see `CachedTypeMetadataConfiguration` in the test sources), so no test ever talks to GitHub.
+     */
+    @Bean
+    fun metadataHttpClient(): HttpClient = HttpClient()
+
 
     init {
         Napier.takeLogarithm()
         Napier.base(AntilogSlf4jAdapter())
         Security.addProvider(BouncyCastleProvider())
-        LibraryInitializer.registerCredentialMetadataRegistry(remoteRegistry)
-        registerCredentialSerializers()
     }
 
     @Bean
-    fun credentialMetadataRegistry(): RemoteCredentialMetadataRegistry = remoteRegistry
-
-    /**
-     * Registers the value (de)serializers for the complex claim types of the mDL and EU PID credentials.
-     *
-     * Remote type metadata carries claim names and display, but not the CBOR/JSON encoding of non-primitive values
-     * (dates with tag 1004, portraits, driving privileges, gender/sex enums). Only mDL and EU PID (ISO) carry such
-     * values; every other credential's claims are primitives that vck encodes directly. Uses the maps and encoders
-     * shipped with vck instead of reproducing them here.
-     */
-    fun registerCredentialSerializers() {
+    fun credentialMetadataRegistry(metadataHttpClient: HttpClient): RemoteCredentialMetadataRegistry {
         LibraryInitializer.registerCredentialSerializers(
             jsonValueEncoder = MobileDrivingLicenceJsonValueEncoder,
             itemValueSerializerMap = MobileDrivingLicenceItemValueSerializerMap,
@@ -107,6 +103,12 @@ class BackendConfiguration(metadataHttpClient: HttpClient) {
             jsonValueEncoder = EuPidJsonValueEncoder,
             itemValueSerializerMap = EuPidItemValueSerializerMap,
         )
+        return RemoteCredentialMetadataRegistry(
+            httpClient = metadataHttpClient,
+            clock = Clock.System,
+            documentUrls = CredentialCatalog.documentUrls(),
+            aliases = CredentialCatalog.aliases()
+        ).also { LibraryInitializer.registerCredentialMetadataRegistry(it) }
     }
 
     @Bean
@@ -238,33 +240,33 @@ class BackendConfiguration(metadataHttpClient: HttpClient) {
     fun timePeriodProvider(): TimePeriodProvider = FixedTimePeriodProvider
 
     /**
-     * Resolved at boot from the remote type metadata documents (see [CredentialDocs]), carrying display info for the
+     * Resolved at boot from the remote type metadata documents (see [CredentialCatalog]), carrying display info for the
      * UI. The issuer and the authorization strategy still need the scheme set up front to build
      * `.well-known/openid-credential-issuer`; resolving via [AttributeIndex.resolveIdentifier] also registers each
      * scheme globally so the (synchronous) scheme mapper can decode credential identifiers later. Fails fast if a
      * document cannot be fetched.
      */
-    private val resolvedOfferings: List<CredentialOffering> by lazy {
-        runBlocking {
-            CredentialDocs.all.map { doc ->
-                val metadata = remoteRegistry.findEntry(doc.identifier, doc.representation)?.metadata
-                val scheme = AttributeIndex.resolveIdentifier(doc.identifier, doc.representation)
-                // findEntry returns null on fetch/integrity failure (resolveIdentifier then yields a fallback
-                // scheme), so a non-null entry confirms the remote document actually resolved. vck deprecated
-                // CredentialScheme.schemaUri, so we can no longer compare it against doc.url.
-                require(metadata != null) {
-                    "Could not resolve remote metadata for ${doc.vct} from ${doc.url} " +
-                        "(got ${scheme::class.simpleName})"
-                }
-                CredentialOffering(scheme, doc.representation, metadata.displayName(doc.vct), metadata.displayDescription())
-            }
-        }
-    }
-
-    private val credentialSchemes: Set<CredentialScheme> get() = resolvedOfferings.map { it.scheme }.toSet()
-
     @Bean
-    fun credentialOfferings(): List<CredentialOffering> = resolvedOfferings
+    fun credentialOfferings(
+        credentialMetadataRegistry: RemoteCredentialMetadataRegistry,
+    ): List<CredentialOffering> = CredentialCatalog.entries.map { doc ->
+        val metadata =
+            runBlocking { credentialMetadataRegistry.findEntry(doc.identifier, doc.representation)?.metadata }
+        val scheme = runBlocking { AttributeIndex.resolveIdentifier(doc.identifier, doc.representation) }
+        // findEntry returns null on fetch/integrity failure (resolveIdentifier then yields a fallback
+        // scheme), so a non-null entry confirms the remote document actually resolved. vck deprecated
+        // CredentialScheme.schemaUri, so we can no longer compare it against doc.url.
+        require(metadata != null) {
+            "Could not resolve remote metadata for ${doc.vct} from ${doc.url} " +
+                    "(got ${scheme::class.simpleName})"
+        }
+        CredentialOffering(
+            scheme,
+            doc.representation,
+            metadata.displayName(doc.vct),
+            metadata.displayDescription()
+        )
+    }
 
     private val credentialSchemeMapper = FixedAvCredentialSchemeMapper(
         delegate = DefaultCredentialSchemeMapper(),
@@ -277,9 +279,10 @@ class BackendConfiguration(metadataHttpClient: HttpClient) {
         issuer: Issuer,
         @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
         @Qualifier("isoMdocIssuerKeyMaterial") isoMdocIssuerKeyMaterial: KeyMaterial,
+        credentialOfferings: List<CredentialOffering>,
     ): CredentialIssuer = CredentialIssuer(
         publicContext = configuration.publicContext.toString(),
-        credentialSchemes = credentialSchemes,
+        credentialSchemes = credentialOfferings.map { it.scheme }.toSet(),
         authorizationService = authorizationServer,
         issuer = issuer,
         keyMaterial = setOf(issuerKeyMaterial, isoMdocIssuerKeyMaterial),
@@ -290,9 +293,10 @@ class BackendConfiguration(metadataHttpClient: HttpClient) {
 
     @Bean
     fun authorizationServer(
+        credentialOfferings: List<CredentialOffering>,
     ): SimpleAuthorizationService = SimpleAuthorizationService(
         strategy = CredentialAuthorizationServiceStrategy(
-            credentialSchemes = credentialSchemes,
+            credentialSchemes = credentialOfferings.map { it.scheme }.toSet(),
             mapper = credentialSchemeMapper
         ),
         publicContext = configuration.publicContext.toString(),
@@ -320,6 +324,7 @@ private class IsoMdocRoutingIssuer(
         when (credential) {
             is CredentialToBeIssued.Iso -> isoMdocIssuer.issueCredential(credential)
             is CredentialToBeIssued.VcJwt,
-            is CredentialToBeIssued.VcSd -> defaultIssuer.issueCredential(credential)
+            is CredentialToBeIssued.VcSd,
+                -> defaultIssuer.issueCredential(credential)
         }
 }

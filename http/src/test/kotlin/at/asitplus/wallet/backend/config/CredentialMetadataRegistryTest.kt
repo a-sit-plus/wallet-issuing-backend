@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest
 
 /**
  * Verifies that the registry works against the cached type metadata documents in `src/test/resources` (served by
- * [CachedTypeMetadataConfiguration]) — i.e. that the snapshot is complete, parses, and matches [CredentialDocs].
+ * [CachedTypeMetadataConfiguration]) — i.e. that the snapshot is complete, parses, and matches [CredentialCatalog].
  */
 @SpringBootTest
 class CredentialMetadataRegistryTest {
@@ -24,16 +24,16 @@ class CredentialMetadataRegistryTest {
 
     @Test
     fun `every credential doc resolves from the cached documents`() = runTest {
-        CredentialDocs.all.forEach { doc ->
+        CredentialCatalog.entries.forEach { doc ->
             val resolved = registry.findEntry(doc.identifier, doc.representation)
-            assertNotNull(resolved) { "${doc.identifier}: no cached document for ${doc.file}" }
-            assertEquals(doc.vct, resolved!!.metadata.vct.string) { "${doc.file}: vct mismatch" }
+            assertNotNull(resolved) { "${doc.identifier}: no cached document for ${doc.fileName}" }
+            assertEquals(doc.vct, resolved!!.metadata.vct.string) { "${doc.fileName}: vct mismatch" }
         }
     }
 
     @Test
     fun `credential offerings are resolved at startup from the cached documents`() {
-        assertEquals(CredentialDocs.all.size, credentialOfferings.size)
+        assertEquals(CredentialCatalog.entries.size, credentialOfferings.size)
         credentialOfferings.forEach { assertTrue(it.name.isNotBlank()) { "${it.scheme}: blank display name" } }
     }
 }
