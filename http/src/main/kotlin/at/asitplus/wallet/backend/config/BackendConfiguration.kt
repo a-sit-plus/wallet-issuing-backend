@@ -119,7 +119,6 @@ class BackendConfiguration {
         applicationEventPublisher: ApplicationEventPublisher,
         identityColumnResynchronizer: IdentityColumnResynchronizer,
     ): RevocationService = DefaultRevocationService(
-        preparedCredentialRepo = preparedCredentialRepo,
         issuedCredentialRepo = credentialRepo,
         revokedCredentialRepo = revokedCredentialRepo,
         applicationEventPublisher = applicationEventPublisher,

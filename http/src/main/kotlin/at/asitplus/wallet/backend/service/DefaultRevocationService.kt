@@ -12,15 +12,14 @@ import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
 import at.asitplus.wallet.backend.data.IdentityColumnResynchronizer
 import at.asitplus.wallet.backend.data.IssuedCredential
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
-import at.asitplus.wallet.backend.data.PreparedCredential
-import at.asitplus.wallet.backend.data.PreparedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
-import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.RevocationListInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
@@ -39,7 +38,6 @@ import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
 class DefaultRevocationService(
-    private val preparedCredentialRepo: PreparedCredentialRepository,
     private val issuedCredentialRepo: IssuedCredentialRepository,
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
@@ -48,7 +46,6 @@ class DefaultRevocationService(
 
     /**
      * Checks whether a credential with [vcId] is revoked i.e. whether it exists or not
-     *
      */
     override fun isRevoked(vcId: String, timePeriod: Int): Boolean {
         return issuedCredentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) == null
@@ -58,70 +55,52 @@ class DefaultRevocationService(
      * Called by an [at.asitplus.wallet.lib.agent.Issuer] when creating a new credential to get a `statusListIndex` first.
      * [at.asitplus.wallet.lib.agent.Issuer] will call [updateStoredCredential] with the issued credential afterwards.
      */
-    override suspend fun createStoredCredentialReference(
+    override suspend fun storeReferencedToken(
         credential: CredentialToBeIssued,
         timePeriod: Int,
-    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> = catching {
+    ): KmmResult<ReferencedTokenStore.StoredCredentialReference> = catching {
         synchronized(CredentialRepositoriesLock) {
             Napier.v("Storing new credential for $credential")
             val revocationListIndex: Long = NumberUtils.max(
-                preparedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
                 issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
                 revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
             ) + 1
-            val savedCredential = savePreparedCredential(
-                PreparedCredential(
+            val savedCredential = saveIssuedCredential(
+                IssuedCredential(
+                    vcId = "dontcare",
+                    subjectId = credential.subjectPublicKey.subjectId(),
+                    userInfoSubject = credential.userInfo.matchedSubject(),
+                    validUntil = credential.expiration.toJavaInstant(),
                     timePeriod = timePeriod,
+                    attributeName = credential.credentialName,
                     revocationListIndex = revocationListIndex
                 )
             )
-            IssuerCredentialStore.StoredCredentialReference(
-                savedCredential.id.toString(),
-                timePeriod,
-                revocationListIndex.toULong()
+            ReferencedTokenStore.StoredCredentialReference(
+                id = savedCredential.id.toString(),
+                timePeriod = timePeriod,
+                statusListIndex = revocationListIndex.toULong()
             )
         }
     }
 
-    /**
-     * Called by an [at.asitplus.wallet.lib.agent.Issuer] when the credential has been signed and delivered to the holder.
-     */
+    @Suppress("DEPRECATION")
     override suspend fun updateStoredCredential(
         reference: IssuerCredentialStore.StoredCredentialReference,
         credential: Issuer.IssuedCredential,
     ): KmmResult<IssuerCredentialStore.StoredCredentialReference> = catching {
-        synchronized(CredentialRepositoriesLock) {
-            Napier.v("Storing new credential for $credential")
-            val savedCredential = preparedCredentialRepo.findById(reference.id.toLong()).getOrNull()
-                ?: throw IllegalStateException("No credential found for id ${reference.id}")
-
-            val issuedCredential = saveIssuedCredential(
-                IssuedCredential(
-                    vcId = credential.vcId,
-                    subjectId = credential.subjectPublicKey.subjectId(),
-                    userInfoSubject = credential.userInfo.matchedSubject(),
-                    validUntil = credential.validUntil.toJavaInstant(),
-                    timePeriod = savedCredential.timePeriod,
-                    attributeName = credential.credentialName,
-                    revocationListIndex = savedCredential.revocationListIndex,
-                )
-            )
-            preparedCredentialRepo.delete(savedCredential)
-            IssuerCredentialStore.StoredCredentialReference(
-                issuedCredential.id.toString(),
-                FixedTimePeriodProvider.timePeriod,
-                issuedCredential.revocationListIndex.toULong()
-            )
-        }
+        TODO() // Should never be called from VC-K, safe to throw here
     }
 
-    private fun savePreparedCredential(preparedCredential: PreparedCredential): PreparedCredential =
-        saveWithIdentityRecovery(
-            tableName = "prepared_credential",
-            resetEntityId = { preparedCredential.id = 0 },
-        ) {
-            preparedCredentialRepo.save(preparedCredential)
+    override suspend fun onCredentialIssued(
+        credential: Issuer.IssuedCredential,
+    ) {
+        catching {
+            synchronized(CredentialRepositoriesLock) {
+                // TODO: Probably nothing to do, since we've already stored the issuedCredential in storeReferencedToken
+            }
         }
+    }
 
     private fun saveIssuedCredential(issuedCredential: IssuedCredential): IssuedCredential =
         saveWithIdentityRecovery(
@@ -141,7 +120,10 @@ class DefaultRevocationService(
         if (!exception.isDuplicatePrimaryKeyOn(tableName)) {
             throw exception
         }
-        Napier.w("Detected a drifted identity column for $tableName, resynchronizing and retrying the insert", exception)
+        Napier.w(
+            "Detected a drifted identity column for $tableName, resynchronizing and retrying the insert",
+            exception
+        )
         identityColumnResynchronizer.resynchronize(tableName)
         resetEntityId()
         save()
@@ -279,9 +261,16 @@ private val Issuer.IssuedCredential.vcId: String
 
 private val Issuer.IssuedCredential.credentialName: String
     get() = when (this) {
-        is Issuer.IssuedCredential.Iso -> this.scheme.isoNamespace ?: this.scheme.schemaUri
-        is Issuer.IssuedCredential.VcJwt -> this.scheme.vcType ?: this.scheme.schemaUri
-        is Issuer.IssuedCredential.VcSdJwt -> this.scheme.sdJwtType ?: this.scheme.schemaUri
+        is Issuer.IssuedCredential.Iso -> this.scheme.isoNamespace
+        is Issuer.IssuedCredential.VcJwt -> this.scheme.vcType
+        is Issuer.IssuedCredential.VcSdJwt -> this.scheme.sdJwtType
+    }
+
+private val CredentialToBeIssued.credentialName: String
+    get() = when (this) {
+        is CredentialToBeIssued.Iso -> this.scheme.isoNamespace
+        is CredentialToBeIssued.VcJwt -> this.scheme.vcType
+        is CredentialToBeIssued.VcSd -> this.scheme.sdJwtType
     }
 
 private val Issuer.IssuedCredential.validUntil: Instant

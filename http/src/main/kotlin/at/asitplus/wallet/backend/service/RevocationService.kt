@@ -7,7 +7,9 @@ import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore.StoredCredentialReference
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.RevocationListInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
+import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
@@ -26,20 +28,22 @@ interface RevocationService {
 
     /**
      * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
-     * [Issuer] will call [updateStoredCredential] with the issued credential afterwards.
+     * [Issuer] will call [onCredentialIssued] with the issued credential afterward.
      */
-    suspend fun createStoredCredentialReference(
+    suspend fun storeReferencedToken(
         credential: CredentialToBeIssued,
         timePeriod: Int,
-    ): KmmResult<StoredCredentialReference>
+    ): KmmResult<ReferencedTokenStore.StoredCredentialReference>
 
-    /**
-     * Called by an [Issuer] when the credential has been signed and delivered to the holder.
-     */
+    @Suppress("DEPRECATION")
     suspend fun updateStoredCredential(
         reference: StoredCredentialReference,
         credential: Issuer.IssuedCredential,
     ): KmmResult<StoredCredentialReference>
+
+    suspend fun onCredentialIssued(
+        credential: Issuer.IssuedCredential,
+    )
 
     /**
      * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.

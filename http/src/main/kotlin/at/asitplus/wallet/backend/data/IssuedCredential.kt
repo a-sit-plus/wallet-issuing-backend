@@ -70,6 +70,7 @@ class IssuedCredential() {
                 "validUntil=$validUntil, " +
                 "userInfoSubject=$userInfoSubject, " +
                 "timePeriod=$timePeriod, " +
-                "revocationListIndex=$revocationListIndex)"
+                "revocationListIndex=$revocationListIndex, " +
+                "revoked=$revoked)"
     }
 }
