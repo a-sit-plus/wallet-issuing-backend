@@ -7,7 +7,6 @@ import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore.StoredCredentialReference
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.RevocationListInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
@@ -44,11 +43,6 @@ interface RevocationService {
     suspend fun onCredentialIssued(
         credential: Issuer.IssuedCredential,
     )
-
-    /**
-     * Checks whether a credential with [vcId] is revoked. May return null, if the [vcId] is unknown.
-     */
-    fun isRevoked(vcId: String, timePeriod: Int): Boolean?
 
     /**
      * Lists all non-revoked credentials that have been issued

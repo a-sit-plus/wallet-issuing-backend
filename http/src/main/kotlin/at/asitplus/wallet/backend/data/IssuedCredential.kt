@@ -12,7 +12,6 @@ import java.time.Instant
 class IssuedCredential() {
 
     constructor(
-        vcId: String,
         subjectId: String,
         userInfoSubject: String,
         validUntil: Instant,
@@ -20,7 +19,6 @@ class IssuedCredential() {
         attributeName: String,
         revocationListIndex: Long,
     ) : this() {
-        this.vcId = vcId
         this.subjectId = subjectId
         this.userInfoSubject = userInfoSubject
         this.attributeName = attributeName
@@ -36,9 +34,6 @@ class IssuedCredential() {
     @Column
     @CreationTimestamp
     lateinit var createdOn: Instant
-
-    @Column
-    lateinit var vcId: String
 
     @Column
     lateinit var subjectId: String
@@ -64,7 +59,6 @@ class IssuedCredential() {
     override fun toString(): String {
         return "IssuedCredential(id=$id, " +
                 "createdOn=$createdOn, " +
-                "vcId='$vcId', " +
                 "subjectId='$subjectId', " +
                 "attributeName='$attributeName', " +
                 "validUntil=$validUntil, " +

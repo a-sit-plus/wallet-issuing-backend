@@ -13,8 +13,6 @@ import java.util.*
 @Repository
 interface IssuedCredentialRepository : JpaRepository<IssuedCredential, Long> {
 
-    fun findBytimePeriodAndVcId(timePeriod: Int, vcId: String): IssuedCredential?
-
     fun findBytimePeriodAndRevocationListIndex(timePeriod: Int, revocationListIndex: Long): IssuedCredential?
 
     fun findAllByValidUntilAfter(validUntil: Instant): Collection<IssuedCredential>

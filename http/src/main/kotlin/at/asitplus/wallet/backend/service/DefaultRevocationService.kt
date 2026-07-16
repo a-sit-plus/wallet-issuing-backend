@@ -2,11 +2,8 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.iso.sha256
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.cosef.io.Base16Strict
-import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
 import at.asitplus.wallet.backend.data.IdentityColumnResynchronizer
@@ -17,7 +14,6 @@ import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerCredentialStore
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.RevocationListInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
@@ -25,9 +21,6 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusBitSize
 import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToByteArray
 import org.apache.commons.lang3.math.NumberUtils
 import org.springframework.context.ApplicationEventPublisher
 import java.sql.SQLException
@@ -45,15 +38,8 @@ class DefaultRevocationService(
 ) : RevocationService {
 
     /**
-     * Checks whether a credential with [vcId] is revoked i.e. whether it exists or not
-     */
-    override fun isRevoked(vcId: String, timePeriod: Int): Boolean {
-        return issuedCredentialRepo.findBytimePeriodAndVcId(timePeriod, vcId) == null
-    }
-
-    /**
-     * Called by an [at.asitplus.wallet.lib.agent.Issuer] when creating a new credential to get a `statusListIndex` first.
-     * [at.asitplus.wallet.lib.agent.Issuer] will call [updateStoredCredential] with the issued credential afterwards.
+     * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
+     * [Issuer] will call [onCredentialIssued] with the issued credential afterward.
      */
     override suspend fun storeReferencedToken(
         credential: CredentialToBeIssued,
@@ -67,7 +53,6 @@ class DefaultRevocationService(
             ) + 1
             val savedCredential = saveIssuedCredential(
                 IssuedCredential(
-                    vcId = "dontcare",
                     subjectId = credential.subjectPublicKey.subjectId(),
                     userInfoSubject = credential.userInfo.matchedSubject(),
                     validUntil = credential.expiration.toJavaInstant(),
@@ -199,21 +184,21 @@ class DefaultRevocationService(
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.
      */
-    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long> {
-        return revokedCredentialRepo.getRevocationListIndexByTimePeriod(timePeriod)
-    }
+    override fun getRevokedStatusListIndexList(timePeriod: Int): Collection<Long> =
+        revokedCredentialRepo.getRevocationListIndexByTimePeriod(timePeriod)
 
     /**
      * Lists all non-revoked credentials that have been issued
      */
-    override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> {
-        return issuedCredentialRepo.findAllByValidUntilAfter(Clock.System.now().toJavaInstant())
-    }
+    override fun getAllNonRevokedWithDetails(): Collection<IssuedCredential> =
+        issuedCredentialRepo.findAllByValidUntilAfter(
+            validUntil = Clock.System.now().toJavaInstant()
+        )
 
     override fun getAllNonRevokedForUser(userInfo: OidcUserInfoExtended): Collection<IssuedCredential> =
         issuedCredentialRepo.findAllByUserInfoSubjectAndValidUntilAfter(
-            userInfo.matchedSubject(),
-            Clock.System.now().toJavaInstant()
+            subject = userInfo.matchedSubject(),
+            validUntil = Clock.System.now().toJavaInstant()
         )
 
     override fun getAllRevokedForUser(userInfo: OidcUserInfoExtended): Collection<RevokedCredential> =
@@ -240,31 +225,17 @@ class DefaultRevocationService(
      * Deletes all issued credentials that are not valid on the [cutoff] date any more.
      */
     override fun deleteExpiredCredentialsBefore(cutoff: Instant): Int {
-        // TODO Use synchronized(CredentialRepositoriesLock) here?
-        val list = issuedCredentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
-        list.forEach {
-            Napier.i("Deleting credential")
-            Napier.v("vcId: ${it.vcId}")
-            issuedCredentialRepo.delete(it)
+        synchronized(CredentialRepositoriesLock) {
+            val list = issuedCredentialRepo.findAllByValidUntilBefore(cutoff.toJavaInstant())
+            list.forEach {
+                Napier.i("Deleting credential")
+                Napier.v("id: ${it.id}")
+                issuedCredentialRepo.delete(it)
+            }
+            return list.size
         }
-        return list.size
     }
 }
-
-@OptIn(ExperimentalSerializationApi::class)
-private val Issuer.IssuedCredential.vcId: String
-    get() = when (this) {
-        is Issuer.IssuedCredential.Iso -> coseCompliantSerializer.encodeToByteArray(this.issuerSigned).hashString()
-        is Issuer.IssuedCredential.VcJwt -> this.vc.id
-        is Issuer.IssuedCredential.VcSdJwt -> this.sdJwtVc.jwtId ?: this.signedSdJwtVc.serialize().hashString()
-    }
-
-private val Issuer.IssuedCredential.credentialName: String
-    get() = when (this) {
-        is Issuer.IssuedCredential.Iso -> this.scheme.isoNamespace
-        is Issuer.IssuedCredential.VcJwt -> this.scheme.vcType
-        is Issuer.IssuedCredential.VcSdJwt -> this.scheme.sdJwtType
-    }
 
 private val CredentialToBeIssued.credentialName: String
     get() = when (this) {
@@ -272,18 +243,6 @@ private val CredentialToBeIssued.credentialName: String
         is CredentialToBeIssued.VcJwt -> this.scheme.vcType
         is CredentialToBeIssued.VcSd -> this.scheme.sdJwtType
     }
-
-private val Issuer.IssuedCredential.validUntil: Instant
-    get() = when (this) {
-        is Issuer.IssuedCredential.Iso -> this.issuerSigned.issuerAuth.payload?.validityInfo?.validUntil
-            ?: Instant.DISTANT_PAST
-
-        is Issuer.IssuedCredential.VcJwt -> this.vc.expirationDate ?: Instant.DISTANT_PAST
-        is Issuer.IssuedCredential.VcSdJwt -> this.sdJwtVc.expiration ?: Instant.DISTANT_PAST
-    }
-
-private fun String.hashString() = this.encodeToByteArray().hashString()
-private fun ByteArray.hashString() = sha256().encodeToString(Base16Strict)
 
 private fun Throwable.isDuplicatePrimaryKeyOn(tableName: String): Boolean =
     generateSequence(this) { it.cause }.any { cause ->
