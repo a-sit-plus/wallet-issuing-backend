@@ -5,23 +5,19 @@ import at.asitplus.openid.DisplayLogoProperties
 import at.asitplus.openid.DisplayProperties
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.wallet.backend.Extensions.toRequestInfo
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.MetadataConfiguration
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.MediaTypes
-import at.asitplus.wallet.lib.ktor.openid.DPoP
 import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
-import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestation
-import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestationPop
-import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.WalletService
 import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
-import kotlinx.serialization.encodeToString
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -81,14 +77,6 @@ class OpenId4VciController(
             .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
             .body(result.response)
     }
-
-    private fun HttpServletRequest.toRequestInfo() = RequestInfo(
-        url = requestURL.toString(),
-        method = HttpMethod.parse(method),
-        dpop = getHeader(HttpHeaders.DPoP),
-        clientAttestation = getHeader(HttpHeaders.OAuthClientAttestation),
-        clientAttestationPop = getHeader(HttpHeaders.OAuthClientAttestationPop),
-    )
 
     /**
      * Issues the credential, when the token sent by the Wallet is valid,

@@ -3,13 +3,16 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
+import at.asitplus.openid.dcql.DCQLClaimsPathPointer
 import at.asitplus.signum.indispensable.josef.JsonWebKey
 import at.asitplus.signum.indispensable.josef.JwsCompactTyped
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements.BIRTH_DATE
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements.FAMILY_NAME
+import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements.GIVEN_NAME
 import at.asitplus.wallet.lib.RequestOptionsCredential
 import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.Validator
@@ -263,11 +266,7 @@ class PublicController(
             credentialScheme = AttributeIndex.resolveSdJwtAttributeType("urn:eudi:pid:1")
                 ?: error("EU PID SD-JWT scheme not resolved"),
             representation = ConstantIndex.CredentialRepresentation.SD_JWT,
-            requestedAttributes = setOf(
-                EuPidSdJwtDataElements.FAMILY_NAME,
-                EuPidSdJwtDataElements.GIVEN_NAME,
-                EuPidSdJwtDataElements.BIRTH_DATE
-            ),
+            attributePaths = setOf(FAMILY_NAME, GIVEN_NAME, BIRTH_DATE).map { DCQLClaimsPathPointer(it) }.toSet(),
         )
     )
 

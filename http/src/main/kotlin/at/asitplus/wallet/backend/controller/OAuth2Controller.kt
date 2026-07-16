@@ -7,13 +7,10 @@ import at.asitplus.openid.PushedAuthenticationResponseParameters
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
 import at.asitplus.openid.TokenResponseParameters
+import at.asitplus.wallet.backend.Extensions.toRequestInfo
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.lib.ktor.openid.DPoP
 import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
-import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestation
-import at.asitplus.wallet.lib.ktor.openid.OAuthClientAttestationPop
-import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
@@ -25,7 +22,6 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
@@ -35,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 
@@ -160,14 +157,4 @@ class OAuth2Controller(
         return result.response
     }
 
-    private fun HttpServletRequest.toRequestInfo() = RequestInfo(
-        url = requestURL.toString(),
-        method = HttpMethod.parse(method),
-        dpop = getHeader(HttpHeaders.DPoP),
-        clientAttestation = getHeader(HttpHeaders.OAuthClientAttestation),
-        clientAttestationPop = getHeader(HttpHeaders.OAuthClientAttestationPop),
-    )
-
 }
-
-
