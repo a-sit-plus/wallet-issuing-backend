@@ -203,30 +203,31 @@ class BackendConfiguration {
     @Bean
     fun issuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
+        statusListIssuer: StatusListAgent,
         @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
         @Qualifier("isoMdocIssuerKeyMaterial") isoMdocIssuerKeyMaterial: KeyMaterial,
     ): Issuer = IsoMdocRoutingIssuer(
-        defaultIssuer = buildIssuerAgent(issuerCredentialStore, issuerKeyMaterial),
-        isoMdocIssuer = buildIssuerAgent(issuerCredentialStore, isoMdocIssuerKeyMaterial),
+        defaultIssuer = buildIssuerAgent(issuerCredentialStore, statusListIssuer, issuerKeyMaterial),
+        isoMdocIssuer = buildIssuerAgent(issuerCredentialStore, statusListIssuer, isoMdocIssuerKeyMaterial),
     )
 
     private fun buildIssuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
+        statusListIssuer: StatusListAgent,
         keyMaterial: KeyMaterial,
     ): IssuerAgent = IssuerAgent(
         keyMaterial = keyMaterial,
         issuerCredentialStore = issuerCredentialStore,
-        statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
         cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
-        timePeriodProvider = timePeriodProvider(),
-        identifier = UniformResourceIdentifier(configuration.publicContext.toString())
+        identifier = UniformResourceIdentifier(configuration.publicContext.toString()),
+        statusListAgent = statusListIssuer
     )
 
     @Bean
     fun statusListIssuer(
         referencedTokenStore: ReferencedTokenStore,
         @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
-    ): StatusListIssuer = StatusListAgent(
+    ): StatusListAgent = StatusListAgent(
         keyMaterial = issuerKeyMaterial,
         issuerCredentialStore = referencedTokenStore,
         statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),

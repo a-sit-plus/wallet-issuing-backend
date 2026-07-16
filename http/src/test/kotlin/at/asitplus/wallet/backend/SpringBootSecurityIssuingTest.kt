@@ -92,8 +92,10 @@ class SpringBootSecurityIssuingTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
-            .namespaces?.values?.firstOrNull()
-            ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
+            .apply {
+                namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
+                issuerAuth.payload.shouldNotBeNull().status.shouldNotBeNull()
+            }
     }
 
     @Test
@@ -121,10 +123,12 @@ class SpringBootSecurityIssuingTest {
         JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
+            statusElement.shouldNotBeNull()
         }
-        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
-            .reconstructedJsonObject.shouldNotBeNull()
-            .keys.shouldContain("issuing_authority")
+        SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow()).apply {
+            reconstructedJsonObject.shouldNotBeNull()
+                .keys.shouldContain("issuing_authority")
+        }
     }
 
     @Test
@@ -139,6 +143,7 @@ class SpringBootSecurityIssuingTest {
         JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
+            statusElement.shouldNotBeNull()
         }
         SdJwtDecoded(SdJwtSigned.parseCatching(serializedCredential).getOrThrow())
             .reconstructedJsonObject.shouldNotBeNull()
@@ -156,6 +161,7 @@ class SpringBootSecurityIssuingTest {
         JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
+            statusElement.shouldNotBeNull()
         }
         SdJwtDecoded(
             SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
@@ -181,7 +187,8 @@ class SpringBootSecurityIssuingTest {
     fun age_iso_ok() = runTest {
         val requestOptions = RequestOptions(isoScheme("eu.europa.ec.av.1"), ISO_MDOC)
         val client = Client()
-        val supportedCredentialConfigurations = credentialIssuer.metadata.supportedCredentialConfigurations.shouldNotBeNull()
+        val supportedCredentialConfigurations =
+            credentialIssuer.metadata.supportedCredentialConfigurations.shouldNotBeNull()
         val credentialFormat = client.oid4vciClient
             .selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
             .shouldNotBeNull()

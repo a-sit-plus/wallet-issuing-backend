@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend
 
 
 import at.asitplus.iso.IssuerSigned
-import at.asitplus.iso.IssuerSignedList
 import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.openid.TokenResponseParameters
@@ -37,7 +36,6 @@ import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -83,8 +81,10 @@ class IssuingInternalAuthorizationServerTest {
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
             .credentialString.shouldNotBeNull()
         coseCompliantSerializer.decodeFromByteArray<IssuerSigned>(serializedCredential.decodeToByteArray(Base64()))
-            .namespaces?.values?.firstOrNull<@Contextual IssuerSignedList>()?.entries?.size.shouldNotBeNull()
-            .shouldBeGreaterThan(1)
+            .apply {
+                namespaces?.values?.firstOrNull()?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
+                issuerAuth.payload.shouldNotBeNull().status.shouldNotBeNull()
+            }
     }
 
     @Test
@@ -110,6 +110,7 @@ class IssuingInternalAuthorizationServerTest {
         JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             subject.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
+            statusElement.shouldNotBeNull()
         }
         SdJwtDecoded(
             SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
@@ -128,6 +129,7 @@ class IssuingInternalAuthorizationServerTest {
         JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             issuer.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
+            statusElement.shouldNotBeNull()
         }
         SdJwtDecoded(
             SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
@@ -145,6 +147,7 @@ class IssuingInternalAuthorizationServerTest {
         JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload.apply {
             issuer.shouldNotBeNull()
             disclosureDigests.shouldBeNull()
+            statusElement.shouldNotBeNull()
         }
         SdJwtDecoded(
             SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
