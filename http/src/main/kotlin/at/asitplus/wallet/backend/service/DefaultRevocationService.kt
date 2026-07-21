@@ -13,7 +13,6 @@ import at.asitplus.wallet.backend.data.RevokedCredential
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
-import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListView
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
@@ -39,7 +38,6 @@ class DefaultRevocationService(
 
     /**
      * Called by an [Issuer] when creating a new credential to get a `statusListIndex` first.
-     * [Issuer] will call [onCredentialIssued] with the issued credential afterward.
      */
     override suspend fun storeReferencedToken(
         credential: CredentialToBeIssued,
@@ -66,24 +64,6 @@ class DefaultRevocationService(
                 timePeriod = timePeriod,
                 statusListIndex = revocationListIndex.toULong()
             )
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    override suspend fun updateStoredCredential(
-        reference: IssuerCredentialStore.StoredCredentialReference,
-        credential: Issuer.IssuedCredential,
-    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> = catching {
-        TODO() // Should never be called from VC-K, safe to throw here
-    }
-
-    override suspend fun onCredentialIssued(
-        credential: Issuer.IssuedCredential,
-    ) {
-        catching {
-            synchronized(CredentialRepositoriesLock) {
-                // TODO: Probably nothing to do, since we've already stored the issuedCredential in storeReferencedToken
-            }
         }
     }
 
