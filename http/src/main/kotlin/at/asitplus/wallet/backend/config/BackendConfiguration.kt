@@ -8,7 +8,6 @@ import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.data.IdentityColumnResynchronizer
 import at.asitplus.wallet.backend.data.IssuedCredentialRepository
 import at.asitplus.wallet.backend.data.IssuerCredentialStoreAdapter
-import at.asitplus.wallet.backend.data.PreparedCredentialRepository
 import at.asitplus.wallet.backend.data.RevokedCredentialRepository
 import at.asitplus.wallet.backend.service.DefaultRevocationService
 import at.asitplus.wallet.backend.service.RevocationService
@@ -24,7 +23,6 @@ import at.asitplus.wallet.lib.agent.IssuerCredentialStore
 import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
-import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
@@ -113,7 +111,6 @@ class BackendConfiguration {
 
     @Bean
     fun revocationService(
-        preparedCredentialRepo: PreparedCredentialRepository,
         credentialRepo: IssuedCredentialRepository,
         revokedCredentialRepo: RevokedCredentialRepository,
         applicationEventPublisher: ApplicationEventPublisher,
