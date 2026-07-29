@@ -13,7 +13,7 @@ class IdentityColumnResynchronizer(
 
     @EventListener(ApplicationReadyEvent::class)
     fun resynchronizeCredentialTablesOnStartup() {
-        listOf("prepared_credential", "issued_credential").forEach(::resynchronize)
+        listOf("issued_credential").forEach(::resynchronize)
     }
 
     fun resynchronize(tableName: String, columnName: String = "id") {
