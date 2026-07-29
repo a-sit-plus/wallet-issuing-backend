@@ -25,6 +25,9 @@ import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.data.AttributeIndex
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
+import at.asitplus.wallet.lib.data.CredentialMetadataRegistry
+import at.asitplus.wallet.lib.data.StaticCredentialMetadataRegistry
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
@@ -36,9 +39,14 @@ import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.mdl.MobileDrivingLicenceItemValueSerializerMap
 import at.asitplus.wallet.mdl.MobileDrivingLicenceJsonValueEncoder
+import at.asitplus.wallet.sdjwt.SdJwtTypeMetadataDocument
+import at.asitplus.wallet.sdjwt.SdJwtTypeMetadataDocumentRegistry
+import at.asitplus.wallet.sdjwt.SdJwtVcType
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -92,7 +100,7 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun credentialMetadataRegistry(metadataHttpClient: HttpClient): RemoteCredentialMetadataRegistry {
+    fun credentialMetadataRegistry(metadataHttpClient: HttpClient): CredentialMetadataRegistry {
         LibraryInitializer.registerCredentialSerializers(
             jsonValueEncoder = MobileDrivingLicenceJsonValueEncoder,
             itemValueSerializerMap = MobileDrivingLicenceItemValueSerializerMap,
@@ -101,12 +109,28 @@ class BackendConfiguration {
             jsonValueEncoder = EuPidJsonValueEncoder,
             itemValueSerializerMap = EuPidItemValueSerializerMap,
         )
-        return RemoteCredentialMetadataRegistry(
+        val remote = RemoteCredentialMetadataRegistry(
             httpClient = metadataHttpClient,
             clock = Clock.System,
             documentUrls = CredentialCatalog.documentUrls(),
             aliases = CredentialCatalog.aliases()
-        ).also { LibraryInitializer.registerCredentialMetadataRegistry(it) }
+        )
+        val local = StaticCredentialMetadataRegistry(
+            documentRegistry = SdJwtTypeMetadataDocumentRegistry(
+                CredentialCatalog.localEntries.associate {
+                    SdJwtVcType(it.vct) to Json.decodeFromString<SdJwtTypeMetadataDocument>(
+                        loadResource(resourceLoader, it.url)
+                    )
+                }
+            ),
+            documentUrls = CredentialCatalog.localEntries.associate { SdJwtVcType(it.vct) to it.url },
+        )
+        return object : CredentialMetadataRegistry {
+            override fun preloadEntries() = local.preloadEntries()
+
+            override suspend fun findEntry(identifier: String, representation: CredentialRepresentation) =
+                local.findEntry(identifier, representation) ?: remote.findEntry(identifier, representation)
+        }.also { LibraryInitializer.registerCredentialMetadataRegistry(it) }
     }
 
     @Bean
@@ -237,7 +261,7 @@ class BackendConfiguration {
     fun timePeriodProvider(): TimePeriodProvider = FixedTimePeriodProvider
 
     /**
-     * Resolved at boot from the remote type metadata documents (see [CredentialCatalog]), carrying display info for the
+     * Resolved at boot from the type metadata documents (see [CredentialCatalog]), carrying display info for the
      * UI. The issuer and the authorization strategy still need the scheme set up front to build
      * `.well-known/openid-credential-issuer`; resolving via [AttributeIndex.resolveIdentifier] also registers each
      * scheme globally so the (synchronous) scheme mapper can decode credential identifiers later. Fails fast if a
@@ -245,16 +269,16 @@ class BackendConfiguration {
      */
     @Bean
     fun credentialOfferings(
-        credentialMetadataRegistry: RemoteCredentialMetadataRegistry,
+        credentialMetadataRegistry: CredentialMetadataRegistry,
     ): List<CredentialOffering> = CredentialCatalog.entries.map { doc ->
         val metadata =
             runBlocking { credentialMetadataRegistry.findEntry(doc.identifier, doc.representation)?.metadata }
         val scheme = runBlocking { AttributeIndex.resolveIdentifier(doc.identifier, doc.representation) }
-        // findEntry returns null on fetch/integrity failure (resolveIdentifier then yields a fallback
-        // scheme), so a non-null entry confirms the remote document actually resolved. vck deprecated
+        // findEntry returns null on load/integrity failure (resolveIdentifier then yields a fallback
+        // scheme), so a non-null entry confirms the document actually resolved. vck deprecated
         // CredentialScheme.schemaUri, so we can no longer compare it against doc.url.
         require(metadata != null) {
-            "Could not resolve remote metadata for ${doc.vct} from ${doc.url} " +
+            "Could not resolve metadata for ${doc.vct} from ${doc.url} " +
                     "(got ${scheme::class.simpleName})"
         }
         CredentialOffering(

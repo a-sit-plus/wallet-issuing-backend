@@ -12,9 +12,8 @@ import at.asitplus.wallet.sdjwt.SdJwtVcType
 const val AV_DOCTYPE = "eu.europa.ec.av.1"
 
 /**
- * The credential type metadata documents we offer, hosted in
- * `a-sit-plus/credentials-collection@feature/type-metadata`. Schemes (claims, display, format) are resolved
- * remotely from these raw URLs at boot — this project no longer depends on the per-credential libraries.
+ * The credential type metadata documents we offer. Most are resolved remotely from
+ * `a-sit-plus/credentials-collection`; entries with a `classpath:` URL are bundled with this project.
  */
 object CredentialCatalog {
     const val BASE_URL = "https://raw.githubusercontent.com/a-sit-plus/credentials-collection/main"
@@ -30,9 +29,8 @@ object CredentialCatalog {
         val fileName: String,
         val representation: CredentialRepresentation,
         val isoDocType: String? = null,
+        val url: String = "$BASE_URL/$fileName",
     ) {
-        val url get() = "$BASE_URL/$fileName"
-
         /** The identifier the issuer/wallet uses to request this credential (vct for SD-JWT, docType for mdoc). */
         val identifier get() = isoDocType ?: vct
     }
@@ -46,11 +44,21 @@ object CredentialCatalog {
         Entry("eu.europa.ec.eudi.cor.1", "certificate-of-residence.json", SD_JWT),
         Entry("urn:eudi:ehic:1", "ehic.json", SD_JWT),
         Entry(AV_DOCTYPE, "age-verification.json", ISO_MDOC, isoDocType = AV_DOCTYPE),
+        Entry(
+            Ida15BindingClaims.VCT,
+            "ida-15-binding.json",
+            SD_JWT,
+            url = "classpath:credential-metadata/ida-15-binding.json",
+        ),
     )
 
-    /** `vct` -> hosted document URL; the registry owns this map. */
+    /** `vct` -> hosted document URL for remotely loaded entries. */
     fun documentUrls(): MutableMap<SdJwtVcType, String> =
-        entries.associate { SdJwtVcType(it.vct) to it.url }.toMutableMap()
+        entries.filterNot { it.url.startsWith("classpath:") }
+            .associate { SdJwtVcType(it.vct) to it.url }
+            .toMutableMap()
+
+    val localEntries get() = entries.filter { it.url.startsWith("classpath:") }
 
     /** ISO mdoc docTypes have no direct `vct` fallback, so alias each to its document's `vct`. */
     fun aliases(): Map<CredentialMetadataLookup, SdJwtVcType> =
@@ -72,4 +80,3 @@ private fun SdJwtTypeMetadata?.displayFor(locale: String = "en-US") =
 fun SdJwtTypeMetadata?.displayName(fallback: String) = displayFor()?.name ?: this?.name ?: fallback
 
 fun SdJwtTypeMetadata?.displayDescription() = displayFor()?.description ?: this?.description
-
