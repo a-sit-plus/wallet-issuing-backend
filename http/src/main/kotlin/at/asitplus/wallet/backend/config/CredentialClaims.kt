@@ -98,6 +98,16 @@ object EhicClaims {
     const val NAME = "name"
 }
 
+/** vct `urn:eidgvat:credentials.ida15binding`. */
+object Ida15BindingClaims {
+    const val VCT = "urn:eidgvat:credentials.ida15binding"
+    const val SIGNER_CERTIFICATE = "urn:oid:1.2.40.0.10.2.1.1.261.66"
+    const val IDENTITY_TYPE = "urn:oid:1.2.40.0.10.2.1.1.261.109"
+    const val ISSUING_COUNTRY = "urn:oid:1.2.40.0.10.2.1.1.261.32"
+    const val EID_STATUS = "urn:eidgvat:attributes.eid.status"
+    const val VSZ_SHA256 = "urn:eidgvat:attributes.vsz.sha256"
+}
+
 /** ISO docType `eu.europa.ec.av.1`; dispatched via [AV_DOCTYPE]. */
 object AgeVerificationClaims {
     const val AGE_OVER_12 = "age_over_12"

@@ -1,0 +1,95 @@
+{
+  "vct": "urn:eidgvat:credentials.ida15binding",
+  "name": "IDA 1.5 Binding",
+  "vck": {
+    "format": "dc+sd-jwt"
+  },
+  "display": [
+    {
+      "locale": "en-US",
+      "name": "IDA 1.5 Binding"
+    }
+  ],
+  "claims": [
+    {
+      "path": [
+        "urn:eidgvat:attributes.vsz.sha256"
+      ],
+      "display": [
+        {
+          "locale": "de",
+          "label": "Hash der vSZ"
+        },
+        {
+          "locale": "en",
+          "label": "Hash of encrypted source PIN"
+        }
+      ],
+      "sd": "never"
+    },
+    {
+      "path": [
+        "urn:eidgvat:attributes.eid.status"
+      ],
+      "display": [
+        {
+          "locale": "de",
+          "label": "Status des E-ID"
+        },
+        {
+          "locale": "en",
+          "label": "State of the E-ID"
+        }
+      ],
+      "sd": "never"
+    },
+    {
+      "path": [
+        "urn:oid:1.2.40.0.10.2.1.1.261.32"
+      ],
+      "display": [
+        {
+          "locale": "de",
+          "label": "Ausstellungsland"
+        },
+        {
+          "locale": "en",
+          "label": "Issuing country"
+        }
+      ],
+      "sd": "never"
+    },
+    {
+      "path": [
+        "urn:oid:1.2.40.0.10.2.1.1.261.109"
+      ],
+      "display": [
+        {
+          "locale": "de",
+          "label": "Typ der Identität"
+        },
+        {
+          "locale": "en",
+          "label": "Type of the identity"
+        }
+      ],
+      "sd": "never"
+    },
+    {
+      "path": [
+        "urn:oid:1.2.40.0.10.2.1.1.261.66"
+      ],
+      "display": [
+        {
+          "locale": "de",
+          "label": "Signaturzertifikat"
+        },
+        {
+          "locale": "en",
+          "label": "E-ID signer certificate"
+        }
+      ],
+      "sd": "never"
+    }
+  ]
+}

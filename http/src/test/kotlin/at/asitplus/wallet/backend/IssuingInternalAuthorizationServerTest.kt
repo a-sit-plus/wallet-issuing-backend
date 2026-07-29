@@ -8,6 +8,7 @@ import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.JwsTyped
+import at.asitplus.wallet.backend.config.Ida15BindingClaims
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.SdJwtDecoded
@@ -155,6 +156,28 @@ class IssuingInternalAuthorizationServerTest {
     }
 
     @Test
+    fun ida15_binding_ok() = runTest {
+        val credential = loadCredential(
+            WalletService.RequestOptions(sdJwtScheme(Ida15BindingClaims.VCT), SD_JWT)
+        )
+
+        val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
+            .credentialString.shouldNotBeNull()
+        JwsTyped<VerifiableCredentialSdJwt>(serializedCredential.substringBefore("~")).payload
+            .disclosureDigests.shouldBeNull()
+        val claims = SdJwtDecoded(
+            SdJwtSigned.parseCatching(serializedCredential).getOrThrow()
+        ).reconstructedJsonObject.shouldNotBeNull()
+        claims.apply {
+            keys.shouldContain(Ida15BindingClaims.SIGNER_CERTIFICATE)
+            keys.shouldContain(Ida15BindingClaims.IDENTITY_TYPE)
+            keys.shouldContain(Ida15BindingClaims.ISSUING_COUNTRY)
+            keys.shouldContain(Ida15BindingClaims.EID_STATUS)
+            keys.shouldContain(Ida15BindingClaims.VSZ_SHA256)
+        }
+    }
+
+    @Test
     fun mdl_iso_ok() = runTest {
         val requestOptions = WalletService.RequestOptions(isoScheme("org.iso.18013.5.1.mDL"), ISO_MDOC)
 
@@ -180,7 +203,7 @@ class IssuingInternalAuthorizationServerTest {
             ?.entries?.size.shouldNotBeNull() shouldBeGreaterThan 1
     }
 
-    // Schemes are resolved from remote type metadata and registered at boot.
+    // Schemes are resolved from type metadata and registered at boot.
     private fun sdJwtScheme(vct: String) =
         AttributeIndex.resolveSdJwtAttributeType(vct) ?: error("SD-JWT scheme not resolved: $vct")
 
@@ -243,5 +266,5 @@ private fun mockOidcUserInfoExtended() = OidcUserInfoExtended.fromJsonObject(bui
     put("given_name", "XXXŐzgür")
     put("family_name", "XXXTüzekçi")
     put("urn:pvpgvat:oidc.bpk", "ZP-MH:KQMY8Sl9WsmBxrYrYOiFS2VkLyo=")
+    put("urn:pvpgvat:oidc.eid_signer_certificate", "fake-value")
 })
-
