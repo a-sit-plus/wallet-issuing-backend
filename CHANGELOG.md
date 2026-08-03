@@ -1,9 +1,10 @@
 # Changelog
 
-7.0.0 (unreleased):
- - Update to VC-K 7.0.0-SNAPSHOT
+7.0.0:
+ - Update to VC-K 7.0.0
  - Rework resolving credential schemes
  - Update to Spring Boot 4.1.0
+ - Issue IDA 1.5 Binding credential
 
 6.0.0:
  - Update to VC-K 6.0.0
