@@ -1,5 +1,14 @@
 # Changelog
 
+Unreleased:
+ - Select the credential signing key per credential scheme with `backend.credential-keys`, keyed by `vct` (SD-JWT)
+   or ISO docType (mdoc)
+ - Publish every configured signing key in the issuer JWKS
+ - Give each configured credential its own status list, signed by its own key and served under
+   `/credentials/status/<slug>/<timePeriod>`; `/credentials/status/current` aggregates all of them
+ - **Breaking:** `backend.iso-mdoc-issuer-key` has been replaced by `backend.credential-keys`; list each mdoc
+   docType explicitly to keep a separate mdoc key
+
 7.0.0:
  - Update to VC-K 7.0.0
  - Rework resolving credential schemes

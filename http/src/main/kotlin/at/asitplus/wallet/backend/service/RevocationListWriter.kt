@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.service
 
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.StatusListGroup
+import at.asitplus.wallet.backend.config.StatusListGroups
 import at.asitplus.wallet.lib.agent.StatusListIssuer
 import at.asitplus.wallet.lib.data.StatusListCwt
 import at.asitplus.wallet.lib.data.StatusListJwt
@@ -23,7 +25,7 @@ import kotlin.io.path.writeText
 
 @Service
 class RevocationListWriter(
-    private val statusListIssuer: StatusListIssuer,
+    private val statusListGroups: StatusListGroups,
     private val configurationProperties: BackendConfigurationProperties,
 ) {
 
@@ -37,11 +39,17 @@ class RevocationListWriter(
      */
     @OptIn(ExperimentalSerializationApi::class)
     suspend fun writeRevocationList(timePeriod: Int) = withContext(Dispatchers.IO) {
+        statusListGroups.all.forEach { write(it, timePeriod) }
+    }
+
+    /** Every group publishes the same revocation data, but signed with its own key and under its own path. */
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun write(group: StatusListGroup, timePeriod: Int) {
         with(configurationProperties.revocationList) {
-            Path(jwtPath).createDirectories()
-            writeStatusListJwt(Path(jwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
-            Path(cwtPath).createDirectories()
-            writeStatusListCwt(Path(cwtPath, timePeriod.toString()), timePeriod, statusListIssuer)
+            Path(jwtPath(group.slug)).createDirectories()
+            writeStatusListJwt(Path(jwtPath(group.slug), timePeriod.toString()), timePeriod, group.statusListAgent)
+            Path(cwtPath(group.slug)).createDirectories()
+            writeStatusListCwt(Path(cwtPath(group.slug), timePeriod.toString()), timePeriod, group.statusListAgent)
         }
     }
 

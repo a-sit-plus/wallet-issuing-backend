@@ -240,8 +240,9 @@ backend:
     logo: "https://wallet.a-sit.at/assets/images/logo.svg"
   issuer-key:
     type: MEMORY
-  iso-mdoc-issuer-key:
-    type: MEMORY
+  credential-keys:
+    "eu.europa.ec.eudi.pid.1":
+      type: MEMORY
   verifier-key:
     type: MEMORY
 ```
@@ -253,9 +254,11 @@ Key settings:
 - `backend.credentials.lifetime` controls issued credential validity as an ISO-8601 duration, for example
   `PT60M`, `P7D`, or `P180D`.
 - `backend.metadata.name` and `backend.metadata.logo` populate OpenID4VCI display metadata.
-- `backend.issuer-key` signs JWT VC and SD-JWT VC credentials and status lists.
-- `backend.iso-mdoc-issuer-key` optionally signs ISO mdoc credentials. When omitted, ISO mdoc credentials
-  are signed with `backend.issuer-key`.
+- `backend.issuer-key` signs every credential without its own key in `backend.credential-keys`, and that
+  credential's status lists.
+- `backend.credential-keys` selects the signing key per credential, keyed by `vct` (SD-JWT) or ISO docType
+  (mdoc), i.e. the identifier the wallet requests the credential under. See
+  [Per-Credential Signing Keys](#per-credential-signing-keys).
 - `backend.verifier-key` signs OpenID4VP authentication requests for EU PID login.
 
 ### Key Material
@@ -265,8 +268,6 @@ For local development, `MEMORY` creates an ephemeral key pair with a self-signed
 ```yaml
 backend:
   issuer-key:
-    type: MEMORY
-  iso-mdoc-issuer-key:
     type: MEMORY
   verifier-key:
     type: MEMORY
@@ -282,12 +283,6 @@ backend:
       private-key: file:issuer-key-private.pem
       public-key: file:issuer-key-public.pem
       certificate: file:issuer-cert.pem
-  iso-mdoc-issuer-key:
-    type: FILE
-    file:
-      private-key: file:mdoc-issuer-key-private.pem
-      public-key: file:mdoc-issuer-key-public.pem
-      certificate: file:mdoc-issuer-cert.pem
 ```
 
 Or load a Java KeyStore:
@@ -303,16 +298,49 @@ backend:
       password: changeit
       alias: key1
       alias-password: changeit
-  iso-mdoc-issuer-key:
-    type: KEYSTORE
-    keystore:
-      path: file:/some/path/mdoc-keystore.p12
-      type: PKCS12
-      provider: BC
-      password: changeit
-      alias: mdoc-key
-      alias-password: changeit
 ```
+
+### Per-Credential Signing Keys
+
+Different credentials often need different PKI, for example an IACA-chained document signer certificate for
+mdocs and a separate certificate for PID. `backend.credential-keys` assigns a signing key per credential,
+keyed by the identifier the wallet requests it under: the `vct` for SD-JWT credentials, the ISO docType for
+mdoc credentials. Both keys are the values listed in
+[`CredentialCatalog`](http/src/main/kotlin/at/asitplus/wallet/backend/config/RemoteCredentialMetadata.kt); an
+unknown identifier fails startup.
+
+```yaml
+backend:
+  issuer-key:
+    type: KEYSTORE
+    keystore: { path: "file:/some/path/keystore.p12", type: PKCS12, alias: key1 }
+  credential-keys:
+    "eu.europa.ec.eudi.pid.1":       # EU PID as mdoc
+      type: KEYSTORE
+      keystore: { path: "file:/some/path/pid-mdoc.p12", type: PKCS12, alias: pid-ds }
+    "urn:eudi:pid:1":                # EU PID as SD-JWT
+      type: FILE
+      file:
+        private-key: file:pid-sdjwt-private.pem
+        certificate: file:pid-sdjwt-cert.pem
+```
+
+Every configured key is published in the issuer's JWKS at `/.well-known/openid-credential-issuer`.
+
+A credential with its own key also gets its own status list, signed by that key and served under
+`/credentials/status/<slug>/<timePeriod>`, where `<slug>` is the identifier with every character outside
+`[A-Za-z0-9._-]` replaced by `-`, e.g. `urn-eudi-pid-1`. Credentials signed with `backend.issuer-key` keep
+using `/credentials/status/<timePeriod>`, so credentials issued before this setting existed keep resolving.
+`/credentials/status/current` aggregates the lists of all keys.
+
+All status lists share one index space, so a list may contain bits for indices issued under another key.
+Those indices are never referenced by a credential in that list, so they cannot cause a false revocation, but
+it does mean the lists are not partitioned per credential type.
+
+> [!NOTE]
+> `backend.iso-mdoc-issuer-key` has been replaced by `backend.credential-keys`. To keep a separate mdoc key,
+> list each mdoc docType you issue explicitly. Note that its credentials then move to the new status list
+> path; already-issued mdocs keep pointing at the old path, which stays served.
 
 ### Revocation And Status Lists
 
