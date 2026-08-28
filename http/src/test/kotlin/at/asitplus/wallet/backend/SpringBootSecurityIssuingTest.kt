@@ -217,59 +217,8 @@ class SpringBootSecurityIssuingTest {
     private fun isoScheme(docType: String) =
         AttributeIndex.resolveIsoDoctype(docType) ?: error("ISO mdoc scheme not resolved: $docType")
 
-    private suspend fun loadCredential(requestOptions: RequestOptions): CredentialResponseParameters {
-        val client = Client()
-        val signDpop: SignJwtFun<JsonWebToken> = SignJwt(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk())
-        val state = uuid4().toString()
-        val credentialFormat = client.oid4vciClient
-            .selectSupportedCredentialFormat(requestOptions, credentialIssuer.metadata)
-            .shouldNotBeNull()
-        val scope = credentialFormat.scope
-        val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-        val authorizationCode = authorizationServer.authorize(authnRequest) {
-            catching {
-                toOidcUserInfoExtended(SecurityContextHolder.getContext().authentication)
-                    ?: throw IllegalArgumentException("No authenticated user")
-            }
-        }.getOrThrow()
-        authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
-        val tokenRequest = client.oauth2Client.createTokenRequestParameters(
-            OAuth2Client.AuthorizationForToken.Code(authorizationCode.params.shouldNotBeNull().code.shouldNotBeNull()),
-            state = state,
-            authorizationDetails = null,
-            scope = scope
-        )
-        val accessToken: TokenResponseParameters = authorizationServer.token(
-            request = tokenRequest,
-            httpRequest = RequestInfo(
-                url = Paths.TokenUrl,
-                method = HttpMethod.Post,
-                dpop = BuildDPoPHeader(
-                    signDpop = signDpop,
-                    url = Paths.TokenUrl,
-                    httpMethod = HttpMethod.Post.value,
-                    nonce = authorizationServer.getDpopNonce(),
-                )
-            )
-        ).getOrThrow()
-        val credentialRequest = client.oid4vciClient.createCredential(
-            tokenResponse = accessToken,
-            metadata = credentialIssuer.metadata,
-            credentialFormat = credentialFormat,
-            clientNonce = credentialIssuer.nonceWithDpopNonce().getOrThrow().response.clientNonce
-        ).getOrThrow()
-        val credential = credentialIssuer.credential(
-            authorizationHeader = accessToken.toHttpHeaderValue(),
-            params = credentialRequest.first(),
-            credentialDataProvider = OidcIssuerCredentialDataProvider(
-                lifetime = 1.minutes,
-            ),
-        ).getOrThrow()
-        return credential
-            .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()
-            .response
-    }
-
+    private suspend fun loadCredential(requestOptions: RequestOptions) =
+        loadCredential(credentialIssuer, authorizationServer, requestOptions)
 }
 
 /**

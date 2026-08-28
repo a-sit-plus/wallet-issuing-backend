@@ -4,7 +4,7 @@ import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
-import at.asitplus.wallet.lib.agent.StatusListIssuer
+import at.asitplus.wallet.backend.config.StatusListGroups
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import io.github.aakira.napier.Napier
@@ -35,33 +35,59 @@ import kotlin.time.toJavaDuration
  */
 @RestController
 class StatusListController(
-    private val statusListIssuer: StatusListIssuer,
+    private val statusListGroups: StatusListGroups,
     private val configurationProperties: BackendConfigurationProperties,
 ) {
 
     private val statusListJwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_JWT)
     private val statusListCwtType = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT)
 
+    /** Lists the status lists of every signing key, since each group publishes under its own path. */
     @GetMapping(Paths.Credentials.Status.CurrentUrl, produces = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun getStatutsListAggregation(): StatusListAggregation {
         Napier.i("${Paths.Credentials.Status.CurrentUrl} called")
-        return statusListIssuer.provideStatusListAggregation().also {
+        return StatusListAggregation(
+            statusLists = statusListGroups.all.flatMap { it.statusListAgent.provideStatusListAggregation().statusLists }
+        ).also {
             Napier.i("${Paths.Credentials.Status.CurrentUrl} returns $it")
         }
     }
 
+    /** Status list of the default signing key, i.e. the path credentials issued before per-credential keys point at. */
     @GetMapping("${Paths.Credentials.StatusUrl}/{timePeriod}")
     fun getStatusList(
         @PathVariable timePeriod: Int,
         request: HttpServletRequest,
+    ): ResponseEntity<ByteArray> = respondWithStatusList(statusListGroups.default.slug, timePeriod, request)
+
+    /** Status list of the signing key configured for one specific credential, see [StatusListGroups]. */
+    @GetMapping("${Paths.Credentials.StatusUrl}/{slug}/{timePeriod}")
+    fun getStatusList(
+        @PathVariable slug: String,
+        @PathVariable timePeriod: Int,
+        request: HttpServletRequest,
     ): ResponseEntity<ByteArray> {
-        Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod called")
+        val group = statusListGroups.bySlug(slug)
+        if (group == null || group.isDefault) {
+            Napier.w("${Paths.Credentials.StatusUrl}/$slug/$timePeriod returns HTTP 404, unknown status list")
+            return ResponseEntity.notFound().build()
+        }
+        return respondWithStatusList(group.slug, timePeriod, request)
+    }
+
+    private fun respondWithStatusList(
+        slug: String,
+        timePeriod: Int,
+        request: HttpServletRequest,
+    ): ResponseEntity<ByteArray> {
+        val url = Paths.Credentials.StatusUrl + (if (slug.isEmpty()) "" else "/$slug") + "/$timePeriod"
+        Napier.i("$url called")
         val acceptMediaTypes = request.getHeader(HttpHeaders.ACCEPT)?.let { MediaType.parseMediaTypes(it) }
         val statusListContentType = acceptMediaTypes.toStatusListContentType()
-        val path = configurationProperties.revocationList.getPath(acceptMediaTypes, timePeriod)
+        val path = configurationProperties.revocationList.getPath(acceptMediaTypes, slug, timePeriod)
         val content = if (path.exists() && path.isReadable()) path.readBytes() else null
         return if (content == null || content.isEmpty()) {
-            Napier.w("${Paths.Credentials.StatusUrl}/$timePeriod returns HTTP 404")
+            Napier.w("$url returns HTTP 404")
             ResponseEntity.notFound().build()
         } else {
             val etag = content.sha256().encodeToString(Base16()).uppercase()
@@ -76,12 +102,12 @@ class StatusListController(
             }
 
             if (request.matchesNotModified(etag, lastModified)) {
-                Napier.d("${Paths.Credentials.StatusUrl}/$timePeriod returns HTTP 304")
+                Napier.d("$url returns HTTP 304")
                 ResponseEntity.status(HttpStatus.NOT_MODIFIED)
                     .headers(headers)
                     .build()
             } else {
-                Napier.i("${Paths.Credentials.StatusUrl}/$timePeriod returns ${content.count()} chars")
+                Napier.i("$url returns ${content.count()} chars")
                 ResponseEntity.ok()
                     .headers(headers)
                     .body(content)
@@ -117,11 +143,15 @@ class StatusListController(
         return lastModifiedSeconds <= ifModifiedSinceSeconds
     }
 
-    private fun RevocationListConfigurationProperties.getPath(types: List<MediaType>?, timePeriod: Int): Path =
+    private fun RevocationListConfigurationProperties.getPath(
+        types: List<MediaType>?,
+        slug: String,
+        timePeriod: Int,
+    ): Path =
         if (types.isCompatibleWithCwt())
-            Path(cwtPath, timePeriod.toString())
+            Path(cwtPath(slug), timePeriod.toString())
         else
-            Path(jwtPath, timePeriod.toString())
+            Path(jwtPath(slug), timePeriod.toString())
 
     private fun List<MediaType>?.toStatusListContentType(): MediaType =
         if (isCompatibleWithCwt()) statusListCwtType else

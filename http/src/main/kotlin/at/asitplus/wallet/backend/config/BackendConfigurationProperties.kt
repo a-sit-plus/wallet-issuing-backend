@@ -11,10 +11,13 @@ data class BackendConfigurationProperties(
     val publicContext: URL = URL("http://localhost:8080"),
     /** Configuration for issued credentials. */
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
-    /** Key used for signing issued credentials. */
+    /** Key used for signing issued credentials, and fallback for credentials absent from [credentialKeys]. */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
-    /** Optional key used for signing ISO mdoc credentials. Falls back to [issuerKey] when unset. */
-    val isoMdocIssuerKey: KeyConfiguration? = null,
+    /**
+     * Signing key per credential, keyed by `vct` (SD-JWT) or ISO docType (mdoc).
+     * Credentials not listed here are signed with [issuerKey].
+     */
+    val credentialKeys: Map<String, KeyConfiguration> = emptyMap(),
     /** Key used for signing authn requests for PID login */
     val verifierKey: KeyConfiguration = KeyConfiguration(),
     /** Configure details about revocation lists. */
@@ -25,7 +28,7 @@ data class BackendConfigurationProperties(
 
 data class MetadataConfiguration(
     val name: String = "A-SIT Plus Wallet Issuer",
-    val logo: String = "https://wallet.a-sit.at/assets/images/logo.svg",
+    val logo: String = "https://wallet.a-sit.plus/assets/images/logo.svg",
 )
 
 data class CredentialConfigurationProperties(
@@ -60,8 +63,16 @@ data class RevocationListConfigurationProperties(
     val regularWriteTimeoutDuration: Duration = Duration.parse(regularWriteTimeout)
     val dirtyCheckRateDuration: Duration = Duration.parse(dirtyCheckRate)
     val regularCheckRateDuration: Duration = Duration.parse(regularCheckRate)
-    val cwtPath = path.let { if (it.endsWith("/")) it else "$it/" } + "cwt/"
-    val jwtPath = path.let { if (it.endsWith("/")) it else "$it/" } + "jwt/"
+    private val basePath = path.let { if (it.endsWith("/")) it else "$it/" }
+
+    /**
+     * Cache directory for the CWT status list tokens of one status list group. The default group passes an empty
+     * [slug], resolving to the legacy path, so cache files written by earlier versions stay valid.
+     */
+    fun cwtPath(slug: String = "") = basePath + "cwt/" + if (slug.isEmpty()) "" else "$slug/"
+
+    /** Cache directory for the JWT status list tokens of one status list group, see [cwtPath]. */
+    fun jwtPath(slug: String = "") = basePath + "jwt/" + if (slug.isEmpty()) "" else "$slug/"
 }
 
 data class KeyConfiguration(

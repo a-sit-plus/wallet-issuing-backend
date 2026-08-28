@@ -45,7 +45,6 @@ import at.asitplus.wallet.sdjwt.SdJwtVcType
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -55,7 +54,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
@@ -153,14 +151,6 @@ class BackendConfiguration {
         revocationService = revocationService,
     )
 
-    @Bean("issuerKeyMaterial")
-    fun issuerKeyMaterial(): KeyMaterial = loadKeyMaterial(configuration.issuerKey)
-
-    @Bean("isoMdocIssuerKeyMaterial")
-    fun isoMdocIssuerKeyMaterial(
-        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
-    ): KeyMaterial = configuration.isoMdocIssuerKey?.let { loadKeyMaterial(it) } ?: issuerKeyMaterial
-
     @Bean("verifierKeyMaterial")
     fun verifierKeyMaterial(): KeyMaterial = loadKeyMaterial(configuration.verifierKey)
 
@@ -221,40 +211,67 @@ class BackendConfiguration {
             PEMParser(StringReader(loadResource(resourceLoader, src.toString()))).readObject() as X509CertificateHolder
         )
 
+    /**
+     * One group per credential signing key: the [BackendConfigurationProperties.issuerKey] default plus one for every
+     * entry in [BackendConfigurationProperties.credentialKeys]. Fails fast on an identifier this issuer does not offer,
+     * or on two identifiers that would share a status list URL.
+     */
+    @Bean
+    fun statusListGroups(
+        referencedTokenStore: ReferencedTokenStore,
+    ): StatusListGroups {
+        requireKnownCredentialIdentifiers(
+            configured = configuration.credentialKeys.keys,
+            known = CredentialCatalog.entries.map { it.identifier }.toSet(),
+        )
+        val defaultStatusListGroup = buildStatusListGroup(null, configuration.issuerKey, referencedTokenStore)
+        val statusListGroupsForIdentifiers = configuration.credentialKeys.map { (identifier, key) ->
+            buildStatusListGroup(identifier, key, referencedTokenStore)
+        }
+        return StatusListGroups(listOf(defaultStatusListGroup) + statusListGroupsForIdentifiers)
+    }
+
+    private fun buildStatusListGroup(
+        credentialIdentifier: String?,
+        key: KeyConfiguration,
+        referencedTokenStore: ReferencedTokenStore,
+    ): StatusListGroup {
+        val keyMaterial = loadKeyMaterial(key)
+        val slug = credentialIdentifier?.toStatusListSlug() ?: ""
+        return StatusListGroup(
+            credentialIdentifier = credentialIdentifier,
+            slug = slug,
+            keyMaterial = keyMaterial,
+            statusListAgent = StatusListAgent(
+                keyMaterial = keyMaterial,
+                issuerCredentialStore = referencedTokenStore,
+                statusListBaseUrl = configuration.publicContext.appendPath(StatusListGroup.statusListPath(slug)),
+                statusListAggregationUrl = configuration.publicContext.appendPath(Paths.Credentials.Status.CurrentUrl),
+                revocationListLifetime = configuration.revocationList.lifetimeDuration,
+                timePeriodProvider = timePeriodProvider(),
+            ),
+        )
+    }
+
     @Bean
     fun issuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
-        statusListIssuer: StatusListAgent,
-        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
-        @Qualifier("isoMdocIssuerKeyMaterial") isoMdocIssuerKeyMaterial: KeyMaterial,
-    ): Issuer = IsoMdocRoutingIssuer(
-        defaultIssuer = buildIssuerAgent(issuerCredentialStore, statusListIssuer, issuerKeyMaterial),
-        isoMdocIssuer = buildIssuerAgent(issuerCredentialStore, statusListIssuer, isoMdocIssuerKeyMaterial),
+        statusListGroups: StatusListGroups,
+    ): Issuer = SchemeRoutingIssuer(
+        byCredentialIdentifier = statusListGroups.all.filterNot { it.isDefault }
+            .associate { it.credentialIdentifier!! to buildIssuerAgent(issuerCredentialStore, it) },
+        default = buildIssuerAgent(issuerCredentialStore, statusListGroups.default),
     )
 
     private fun buildIssuerAgent(
         issuerCredentialStore: IssuerCredentialStore,
-        statusListIssuer: StatusListAgent,
-        keyMaterial: KeyMaterial,
+        group: StatusListGroup,
     ): IssuerAgent = IssuerAgent(
-        keyMaterial = keyMaterial,
+        keyMaterial = group.keyMaterial,
         issuerCredentialStore = issuerCredentialStore,
-        cryptoAlgorithms = setOf(keyMaterial.signatureAlgorithm),
+        cryptoAlgorithms = setOf(group.keyMaterial.signatureAlgorithm),
         identifier = UniformResourceIdentifier(configuration.publicContext.toString()),
-        statusListAgent = statusListIssuer
-    )
-
-    @Bean
-    fun statusListIssuer(
-        referencedTokenStore: ReferencedTokenStore,
-        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
-    ): StatusListAgent = StatusListAgent(
-        keyMaterial = issuerKeyMaterial,
-        issuerCredentialStore = referencedTokenStore,
-        statusListBaseUrl = configuration.publicContext.appendPath(Paths.Credentials.StatusUrl),
-        statusListAggregationUrl = configuration.publicContext.appendPath(Paths.Credentials.Status.CurrentUrl),
-        revocationListLifetime = configuration.revocationList.lifetimeDuration,
-        timePeriodProvider = timePeriodProvider(),
+        statusListAgent = group.statusListAgent
     )
 
     @Bean
@@ -298,15 +315,15 @@ class BackendConfiguration {
     fun issuerService(
         authorizationServer: OAuth2AuthorizationServerAdapter,
         issuer: Issuer,
-        @Qualifier("issuerKeyMaterial") issuerKeyMaterial: KeyMaterial,
-        @Qualifier("isoMdocIssuerKeyMaterial") isoMdocIssuerKeyMaterial: KeyMaterial,
+        statusListGroups: StatusListGroups,
         credentialOfferings: List<CredentialOffering>,
     ): CredentialIssuer = CredentialIssuer(
         publicContext = configuration.publicContext.toString(),
         credentialSchemes = credentialOfferings.map { it.scheme }.toSet(),
         authorizationService = authorizationServer,
         issuer = issuer,
-        keyMaterial = setOf(issuerKeyMaterial, isoMdocIssuerKeyMaterial),
+        // every signing key must appear here, or wallets cannot verify credentials signed with it
+        keyMaterial = statusListGroups.all.map { it.keyMaterial }.toSet(),
         credentialEndpointPath = Paths.CredentialUrl,
         nonceEndpointPath = Paths.NonceUrl,
         credentialSchemeMapper = credentialSchemeMapper,
@@ -334,18 +351,30 @@ class BackendConfiguration {
         KotlinSerializationJsonHttpMessageConverter(joseCompliantSerializer)
 }
 
-private class IsoMdocRoutingIssuer(
-    private val defaultIssuer: Issuer,
-    private val isoMdocIssuer: Issuer,
+/**
+ * Signs each credential with the key configured for it in [BackendConfigurationProperties.credentialKeys], falling back
+ * to [default] for credentials without their own key.
+ */
+private class SchemeRoutingIssuer(
+    private val byCredentialIdentifier: Map<String, Issuer>,
+    private val default: Issuer,
 ) : Issuer {
-    override val keyMaterial: KeyMaterial = defaultIssuer.keyMaterial
-    override val cryptoAlgorithms = defaultIssuer.cryptoAlgorithms + isoMdocIssuer.cryptoAlgorithms
+    override val keyMaterial: KeyMaterial = default.keyMaterial
+    override val cryptoAlgorithms =
+        (byCredentialIdentifier.values + default).flatMap { it.cryptoAlgorithms }.toSet()
 
     override suspend fun issueCredential(credential: CredentialToBeIssued): KmmResult<Issuer.IssuedCredential> =
-        when (credential) {
-            is CredentialToBeIssued.Iso -> isoMdocIssuer.issueCredential(credential)
-            is CredentialToBeIssued.VcJwt,
-            is CredentialToBeIssued.VcSd,
-                -> defaultIssuer.issueCredential(credential)
-        }
+        (byCredentialIdentifier[credential.credentialIdentifier] ?: default).issueCredential(credential)
 }
+
+/**
+ * The identifier this credential is configured under, matching [CredentialCatalog.Entry.identifier]. Dispatches on the
+ * [CredentialToBeIssued] subtype rather than on `isoDocType ?: sdJwtType`, because a scheme such as EU PID implements
+ * both interfaces and would otherwise collapse its SD-JWT and mdoc variants onto one key.
+ */
+private val CredentialToBeIssued.credentialIdentifier: String?
+    get() = when (this) {
+        is CredentialToBeIssued.Iso -> scheme.isoDocType
+        is CredentialToBeIssued.VcSd -> scheme.sdJwtType
+        is CredentialToBeIssued.VcJwt -> scheme.vcType
+    }
