@@ -67,12 +67,12 @@ data class RevocationListConfigurationProperties(
 
     /**
      * Cache directory for the CWT status list tokens of one status list group. The default group passes an empty
-     * [group], resolving to the legacy path, so cache files written by earlier versions stay valid.
+     * [slug], resolving to the legacy path, so cache files written by earlier versions stay valid.
      */
-    fun cwtPath(group: String = "") = basePath + "cwt/" + if (group.isEmpty()) "" else "$group/"
+    fun cwtPath(slug: String = "") = basePath + "cwt/" + if (slug.isEmpty()) "" else "$slug/"
 
     /** Cache directory for the JWT status list tokens of one status list group, see [cwtPath]. */
-    fun jwtPath(group: String = "") = basePath + "jwt/" + if (group.isEmpty()) "" else "$group/"
+    fun jwtPath(slug: String = "") = basePath + "jwt/" + if (slug.isEmpty()) "" else "$slug/"
 }
 
 data class KeyConfiguration(
