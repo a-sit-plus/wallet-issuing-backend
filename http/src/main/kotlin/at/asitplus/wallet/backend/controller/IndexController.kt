@@ -83,9 +83,9 @@ class IndexController(
     }
 
     /**
-     * Displays several QR Codes to start the issuance process in the Wallet,
-     * including the offers for auth-code flows,
-     * as well as offers for pre-authorized flows when the user is logged in.
+     * Displays several QR Codes to start the issuance process in the Wallet:
+     * offers for pre-authorized flows when the user is logged in,
+     * otherwise offers for auth-code flows.
      */
     @GetMapping("/")
     suspend fun index(
@@ -98,38 +98,37 @@ class IndexController(
             ?: SecurityContextHolder.getContext().authentication
                 ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
         Napier.i("/index called with ${user?.userInfo?.subject}")
-        val authCodeTabs = listOf(
-            buildTabItemAuthCode("All", "All credentials with auth code", setOf(), Paths.Schemes.HaipVci)
-        ) + credentialOfferings.map { offering ->
-            buildTabItemAuthCode(
-                title = offering.tabTitle(),
-                description = offering.description ?: "",
-                credential = offering.scheme to offering.representation,
-                urlScheme = offering.urlScheme(),
-            )
-        }
-        val preAuthTabs = user?.let { u ->
-            listOf(
-                buildTabItemPreAuthn(u, "All (pre-auth)", "All credentials with pre-authn", setOf(), Paths.Schemes.HaipVci)
-            ) + credentialOfferings.map { offering ->
-                buildTabItemPreAuthn(
-                    user = u,
-                    title = offering.tabTitle(preAuth = true),
-                    description = offering.description ?: "",
-                    credential = offering.scheme to offering.representation,
-                    urlScheme = offering.urlScheme(),
-                )
-            }
-        } ?: listOf()
-        model["tabs"] = authCodeTabs + preAuthTabs
+        model["tabs"] = user?.let { buildPreAuthnTabs(it) } ?: buildAuthCodeTabs()
         return ModelAndView("index")
+    }
+
+    private suspend fun buildAuthCodeTabs(): List<TabItem> = listOf(
+        buildTabItemAuthCode("All", "All credentials with auth code", setOf(), Paths.Schemes.HaipVci)
+    ) + credentialOfferings.map { offering ->
+        buildTabItemAuthCode(
+            title = offering.tabTitle(),
+            description = offering.description ?: "",
+            credential = offering.scheme to offering.representation,
+            urlScheme = offering.urlScheme(),
+        )
+    }
+
+    private suspend fun buildPreAuthnTabs(user: OidcUserInfoExtended): List<TabItem> = listOf(
+        buildTabItemPreAuthn(user, "All", "All credentials with pre-authn", setOf(), Paths.Schemes.HaipVci)
+    ) + credentialOfferings.map { offering ->
+        buildTabItemPreAuthn(
+            user = user,
+            title = offering.tabTitle(),
+            description = offering.description ?: "",
+            credential = offering.scheme to offering.representation,
+            urlScheme = offering.urlScheme(),
+        )
     }
 
     private fun CredentialOffering.urlScheme() =
         if (scheme.isoDocType == AV_DOCTYPE) Paths.Schemes.Av else Paths.Schemes.HaipVci
 
-    private fun CredentialOffering.tabTitle(preAuth: Boolean = false) =
-        "$name · ${representation.label()}" + if (preAuth) " (pre-auth)" else ""
+    private fun CredentialOffering.tabTitle() = "$name · ${representation.label()}"
 
     private fun CredentialRepresentation.label() = when (this) {
         SD_JWT -> "SD-JWT"

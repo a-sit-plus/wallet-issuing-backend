@@ -241,7 +241,7 @@ backend:
   issuer-key:
     type: MEMORY
   credential-keys:
-    "eu.europa.ec.eudi.pid.1":
+    "[eu.europa.ec.eudi.pid.1]":
       type: MEMORY
   verifier-key:
     type: MEMORY
