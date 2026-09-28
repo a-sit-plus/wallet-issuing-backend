@@ -361,6 +361,7 @@ class BackendConfiguration {
             ),
             signMetadata = metadataSigner,
             credentialSchemeMapper = credentialSchemeMapper,
+            displayProperties = setOf(configuration.metadata.toDisplayProperties()),
         )
     }
 

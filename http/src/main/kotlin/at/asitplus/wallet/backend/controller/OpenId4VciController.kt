@@ -1,14 +1,11 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.ClientNonceResponse
-import at.asitplus.openid.DisplayLogoProperties
-import at.asitplus.openid.DisplayProperties
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.toRequestInfo
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.config.MetadataConfiguration
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.MediaTypes
 import at.asitplus.wallet.lib.oauth2.DPoPNonce
@@ -38,25 +35,24 @@ class OpenId4VciController(
     private val backendConfigurationProperties: BackendConfigurationProperties,
 ) {
 
-    @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE, "application/jwt"])
+    @GetMapping(
+        OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER,
+        produces = [APPLICATION_JSON_VALUE, MediaTypes.Application.JWT]
+    )
     suspend fun issuerMetadata(@RequestHeader(HttpHeaders.Accept, required = false) accept: String?): ResponseEntity<*> {
-        val metadata = credentialIssuer.metadata.copy(
-            displayProperties = setOf(backendConfigurationProperties.metadata.toDisplayProperties())
-        )
-        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
-        if (accept?.split(',')?.any { it.trim().substringBefore(';') == "application/jwt" } == true) {
+        if (accept?.split(',')?.any { it.trim().substringBefore(';') == MediaTypes.Application.JWT } == true) {
             val signed = credentialIssuer.signedMetadata().getOrThrow()
+            Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $signed")
             return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/jwt"))
+                .contentType(MediaType.parseMediaType(MediaTypes.Application.JWT))
                 .body(signed.toString())
         }
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(metadata)
+        val metadata = credentialIssuer.metadata
+        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
+        // Serialize explicitly, because Spring would pick Jackson for the untyped ResponseEntity
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
+            .body(joseCompliantSerializer.encodeToString(metadata))
     }
-
-    private fun MetadataConfiguration.toDisplayProperties() = DisplayProperties(
-        name = name,
-        logo = DisplayLogoProperties(uri = logo)
-    )
 
     @GetMapping(
         value = [OpenIdConstants.PATH_WELL_KNOWN_JWT_VC_ISSUER_METADATA,

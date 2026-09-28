@@ -1,5 +1,7 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.openid.DisplayLogoProperties
+import at.asitplus.openid.DisplayProperties
 import at.asitplus.wallet.lib.etsi.LoTEStage
 import at.asitplus.wallet.lib.etsi.LoteProfile
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -51,7 +53,12 @@ data class WalletAttestationConfiguration(
 data class MetadataConfiguration(
     val name: String = "A-SIT Plus Wallet Issuer",
     val logo: String = "https://wallet.a-sit.plus/assets/images/logo.svg",
-)
+) {
+    fun toDisplayProperties() = DisplayProperties(
+        name = name,
+        logo = DisplayLogoProperties(uri = logo)
+    )
+}
 
 data class CredentialConfigurationProperties(
     /** Lifetime of the credentials issued, defaults to `P7D`. */
