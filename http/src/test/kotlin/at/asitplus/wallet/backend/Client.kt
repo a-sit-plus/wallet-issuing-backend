@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.catching
 import at.asitplus.openid.CredentialResponseParameters
+import at.asitplus.openid.AuthenticationRequestParameters
+import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
@@ -37,6 +39,12 @@ class Client {
 
 }
 
+/** Exercise the authorization-code path through the PAR endpoint required by current VC-K. */
+suspend fun SimpleAuthorizationService.pushedRequest(request: AuthenticationRequestParameters): JarRequestParameters {
+    val pushed = par(request, null).getOrThrow()
+    return JarRequestParameters(clientId = request.clientId.shouldNotBeNull(), requestUri = pushed.requestUri.shouldNotBeNull())
+}
+
 /**
  * Runs the whole issuance flow for [requestOptions] against the internal authorization server, taking the user from
  * the current Spring Security context, and returns the credential response.
@@ -55,7 +63,7 @@ suspend fun loadCredential(
         .shouldNotBeNull()
     val scope = credentialFormat.scope
     val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-    val authorizationCode = authorizationServer.authorize(authnRequest) {
+    val authorizationCode = authorizationServer.authorize(authorizationServer.pushedRequest(authnRequest)) {
         catching {
             toOidcUserInfoExtended(SecurityContextHolder.getContext().authentication)
                 ?: throw IllegalArgumentException("No authenticated user")
@@ -91,6 +99,16 @@ suspend fun loadCredential(
         authorizationHeader = accessToken.toHttpHeaderValue(),
         params = credentialRequest.first(),
         credentialDataProvider = OidcIssuerCredentialDataProvider(lifetime = lifetime),
+        request = RequestInfo(
+            url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
+            method = HttpMethod.Post,
+            dpop = BuildDPoPHeader(
+                signDpop = signDpop,
+                url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
+                accessToken = accessToken.accessToken,
+                nonce = authorizationServer.getDpopNonce(),
+            ),
+        ),
     ).getOrThrow()
         .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()
         .response

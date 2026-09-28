@@ -30,6 +30,7 @@ import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.oauth2.OAuth2Utils
 import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.ClientIdScheme
+import at.asitplus.wallet.lib.openid.CreationOptions
 import at.asitplus.wallet.lib.openid.CredentialPresentationRequestBuilder
 import at.asitplus.wallet.lib.openid.OpenId4VpRequestOptions
 import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
@@ -242,18 +243,28 @@ class PublicController(
         val responseUrl = configurationProperties.publicContext
             .appendPath(Paths.Transaction.ResultUrl + "/" + transactionId)
         val state = uuid4().toString()
-        val result = openIdVerifier.createAuthnRequestAsSignedRequestObject(
+        val requestUrl = configurationProperties.publicContext
+            .appendPath(Paths.Transaction.GetUrl + "/" + transactionId)
+        val createdRequest = openIdVerifier.createAuthnRequest(
             OpenId4VpRequestOptions(
                 state = state,
                 responseMode = OpenIdConstants.ResponseMode.DirectPost,
                 responseUrl = responseUrl,
                 presentationRequest = CredentialPresentationRequestBuilder(requestPidSdJwt()).toDCQLRequest()
-            )
+            ),
+            CreationOptions.SignedRequestByReference(
+                walletUrl = "${Paths.Schemes.HaipVp}://",
+                requestUrl = requestUrl,
+            ),
         ).getOrElse {
             Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", it)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
         }
-            .jws.toString()
+        val result = requireNotNull(createdRequest.loadRequestObject)(null)
+            .getOrElse {
+                Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", it)
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
+            }
             .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType("application/" + JwsContentTypeConstants.OAUTH_AUTHZ_REQUEST))

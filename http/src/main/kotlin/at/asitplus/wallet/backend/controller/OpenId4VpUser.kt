@@ -16,7 +16,7 @@ import at.asitplus.wallet.lib.data.IsoDocumentParsed
 import at.asitplus.wallet.lib.data.VcJwsVerificationResultWrapper
 import at.asitplus.wallet.lib.data.VerifiablePresentationParsed
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusValidationResult
-import at.asitplus.wallet.lib.iso.Iso180137AnnexCVerifiedPresentationResult
+import at.asitplus.wallet.lib.openid.Iso180137AnnexCWrapper
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.openid.VpTokenValidationResult
 import at.asitplus.wallet.lib.openid.VpTokenValidationResultDCQL
@@ -137,7 +137,7 @@ fun KmmResult<Verifier.VerifyPresentationResult>.toApiItemCredentials() = except
 fun Verifier.VerifyPresentationResult.Success.toApiItemCredentials(): Collection<ParsedCredential> =
     vp.toApiItemCredentials()
 
-fun Iso180137AnnexCVerifiedPresentationResult.toUser() = OpenId4VpUser(
+fun Iso180137AnnexCWrapper.toUser() = OpenId4VpUser(
     idToken = null,
     idTokenError = null,
     presentationError = null,

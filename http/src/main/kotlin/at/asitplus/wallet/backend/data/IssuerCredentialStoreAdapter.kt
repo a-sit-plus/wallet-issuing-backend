@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.wallet.backend.service.RevocationListWriter
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
@@ -50,29 +49,6 @@ class IssuerCredentialStoreAdapter(
 
     override fun getRawIdentifierList(timePeriod: Int): Map<Identifier, IdentifierInfo> =
         revocationService.getRawIdentifierList(timePeriod)
-
-    @Deprecated("Use method from `ReferencedTokenStore` instead")
-    @Suppress("DEPRECATION")
-    override suspend fun createStoredCredentialReference(
-        credential: CredentialToBeIssued,
-        timePeriod: Int,
-    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> =
-        revocationService.storeReferencedToken(credential, timePeriod).map {
-            IssuerCredentialStore.StoredCredentialReference(
-                id = it.id,
-                timePeriod = it.timePeriod,
-                statusListIndex = it.statusListIndex
-            )
-        }
-
-    @Suppress("DEPRECATION")
-    @Deprecated("Issuer will call onCredentialStored instead")
-    override suspend fun updateStoredCredential(
-        reference: IssuerCredentialStore.StoredCredentialReference,
-        credential: Issuer.IssuedCredential,
-    ): KmmResult<IssuerCredentialStore.StoredCredentialReference> =catching {
-        TODO() // Should never be called from VC-K, safe to throw here
-    }
 
     /**
      * Called by an [Issuer] when the credential has been signed and delivered to the holder.

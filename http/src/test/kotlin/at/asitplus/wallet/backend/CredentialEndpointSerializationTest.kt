@@ -12,7 +12,7 @@ import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
 import at.asitplus.wallet.lib.jws.SignJwtFun
-import at.asitplus.wallet.lib.ktor.openid.DPoP
+import at.asitplus.wallet.lib.oauth2.DPoP
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -106,7 +106,7 @@ class CredentialEndpointSerializationTest {
             authorizationDetails = null,
             scope = scope,
         )
-        val authorizationCode = authorizationServer.authorize(authnRequest) {
+        val authorizationCode = authorizationServer.authorize(authorizationServer.pushedRequest(authnRequest)) {
             catching {
                 toOidcUserInfoExtended(SecurityContextHolder.getContext().authentication)
                     ?: error("No authenticated user")

@@ -1,12 +1,9 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.etsi.TrustListPayload
-import at.asitplus.etsi.TrustedEntitiesList
-import at.asitplus.etsi.TrustedEntityServices
 import at.asitplus.signum.indispensable.josef.JwsCompact
 import at.asitplus.wallet.lib.etsi.LoTEFilterService
-import at.asitplus.wallet.lib.etsi.LoTEFilterCriteria
-import at.asitplus.wallet.lib.etsi.LoTEServiceType
+import at.asitplus.wallet.lib.etsi.LoteProfile
 import at.asitplus.wallet.lib.jws.VerifyJwsObjectJades
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.Dispatchers
@@ -79,28 +76,9 @@ class WalletProviderTrustService(
                     require(validity.listIssueDateTime <= now && now < validity.nextUpdate) {
                         "Wallet Provider LoTE is not currently valid"
                     }
-                    require(validity.loteType?.toString() == WALLET_LOTE_TYPE &&
-                        validity.statusDeterminationApproach?.toString() == WALLET_STATUS_APPROACH &&
-                        validity.schemeTerritory?.string == "EU" &&
-                        validity.schemeTypeCommunityRules?.any {
-                            it.uniformResourceIdentifier.toString() == WALLET_COMMUNITY_RULES
-                        } == true
-                    ) { "Unexpected Wallet Provider LoTE profile" }
-                    // VC-K 7.0's generic filter matches the word "wallet" in both issuance and
-                    // revocation service types. Scope it to issuance before asking VC-K to extract anchors.
-                    val issuanceEntities = lote.trustedEntitiesList.orEmpty().mapNotNull { entity ->
-                        val services = entity.trustedEntityServices.filter {
-                            it.serviceInformation.serviceTypeIdentifier?.string == WALLET_ISSUANCE_TYPE
-                        }
-                        if (services.isEmpty()) null
-                        else entity.copy(trustedEntityServices = TrustedEntityServices(services))
-                    }
-                    val scopedLote = lote.copy(
-                        trustedEntitiesList = issuanceEntities.takeIf { it.isNotEmpty() }?.let(::TrustedEntitiesList),
-                    )
                     val factory = java.security.cert.CertificateFactory.getInstance("X.509")
                     val anchors = LoTEFilterService()
-                        .extractTrustedCertificates(url, scopedLote, LoTEFilterCriteria(LoTEServiceType.WALLET))
+                        .extractIssuanceCertificates(lote, LoteProfile.WALLET)
                         .mapNotNull { it.certificate }
                         .map { factory.generateCertificate(it.encodeToDer().inputStream()) as X509Certificate }
                         .toSet()
@@ -114,11 +92,6 @@ class WalletProviderTrustService(
         }
     }
 }
-
-private const val WALLET_LOTE_TYPE = "http://uri.etsi.org/19602/LoTEType/EUWalletProvidersList"
-private const val WALLET_STATUS_APPROACH = "http://uri.etsi.org/19602/WalletProvidersList/StatusDetn/EU"
-private const val WALLET_COMMUNITY_RULES = "http://uri.etsi.org/19602/WalletProvidersList/schemerules/EU"
-private const val WALLET_ISSUANCE_TYPE = "http://uri.etsi.org/19602/SvcType/WalletSolution/Issuance"
 
 private suspend fun fetchWalletProviderLote(url: String): String = withContext(Dispatchers.IO) {
     val request = HttpRequest.newBuilder(URI(url))

@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.config
 
-import at.asitplus.wallet.lib.etsi.LoTEServiceType
+import at.asitplus.wallet.lib.etsi.LoTEStage
+import at.asitplus.wallet.lib.etsi.LoteProfile
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import java.net.URL
@@ -36,8 +37,8 @@ data class WalletAttestationConfiguration(
     val enabled: Boolean = false,
     /** Wallet Provider LoTE URLs from the Commission acceptance and development environments. */
     val walletProviderLoteUrls: List<String> = listOf(
-        LoTEServiceType.WALLET.defaultUrl(),
-        LoTEServiceType.WALLET.defaultUrl("https://development.trust.tech.ec.europa.eu/lists/eudiw"),
+        LoTEStage.ACCEPTANCE.fetchUrl(LoteProfile.WALLET),
+        LoTEStage.DEVELOPMENT.fetchUrl(LoteProfile.WALLET),
     ),
     /** Optional PEM anchors for the LoTE JWS signer. If absent, trust relies on HTTPS and JAdES verification. */
     val loteSignerCertificates: List<String> = emptyList(),

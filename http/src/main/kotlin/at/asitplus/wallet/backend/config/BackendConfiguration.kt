@@ -41,6 +41,8 @@ import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.ClientAuthenticationService
+import at.asitplus.wallet.lib.oauth2.AttestationBasedClientAuthenticationService
+import at.asitplus.wallet.lib.oauth2.NoopClientAuthenticationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -415,10 +417,9 @@ internal fun walletClientAuthenticationService(
     issuerIdentifier: String,
     trustService: WalletProviderTrustService,
 ): ClientAuthenticationService {
-    if (!configuration.enabled) return ClientAuthenticationService(enforceClientAuthentication = false)
+    if (!configuration.enabled) return NoopClientAuthenticationService
 
-    return ClientAuthenticationService(
-        enforceClientAuthentication = true,
+    return AttestationBasedClientAuthenticationService(
         issuerIdentifier = issuerIdentifier,
         // Bind the signature to the x5c leaf. The generic verifier may otherwise use a JWK asserted in the JWS.
         verifyJwsObject = trustedAttestationVerifier { trustService.walletProviderAnchors() },

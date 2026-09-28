@@ -3,11 +3,13 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import at.asitplus.wallet.lib.oidvci.ProofValidator
-import at.asitplus.wallet.lib.etsi.LoTEServiceType
+import at.asitplus.wallet.lib.etsi.LoTEStage
+import at.asitplus.wallet.lib.etsi.LoteProfile
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -29,19 +31,17 @@ class WalletAttestationConfigurationTest {
             walletClientAuthenticationService(
                 WalletAttestationConfiguration(), "https://issuer.example",
                 WalletProviderTrustService(WalletAttestationConfiguration(), DefaultResourceLoader()),
-            ).authenticateClient(null, null)
+            ).authenticateClient(null, null, null)
         }
     }
 
     @Test
     fun `enabled client authentication rejects missing attestation`() {
         runBlocking {
-            shouldThrow<OAuth2Exception.InvalidClient> {
-                walletClientAuthenticationService(
+            walletClientAuthenticationService(
                     WalletAttestationConfiguration(enabled = true), "https://issuer.example",
                     WalletProviderTrustService(WalletAttestationConfiguration(enabled = true), DefaultResourceLoader()),
-                ).authenticateClient(null, null)
-            }
+                ).authenticateClient(null, null, null).exceptionOrNull().shouldBeInstanceOf<OAuth2Exception.InvalidClient>()
         }
     }
 
@@ -61,7 +61,7 @@ class WalletAttestationConfigurationTest {
                     DefaultResourceLoader(),
                 ),
             )
-            shouldThrow<OAuth2Exception.InvalidClient> { service.authenticateClient(null, null) }
+            service.authenticateClient(null, null, null).exceptionOrNull().shouldBeInstanceOf<OAuth2Exception.InvalidClient>()
 
             val anchor = CertificateFactory.getInstance("X.509")
                 .generateCertificate(trusted.encodeToDer().inputStream()) as X509Certificate
@@ -113,8 +113,8 @@ class WalletAttestationConfigurationTest {
 
             val anchors = service.walletProviderAnchors()
             fetched shouldBe listOf(
-                LoTEServiceType.WALLET.defaultUrl(),
-                LoTEServiceType.WALLET.defaultUrl("https://development.trust.tech.ec.europa.eu/lists/eudiw"),
+                LoTEStage.ACCEPTANCE.fetchUrl(LoteProfile.WALLET),
+                LoTEStage.DEVELOPMENT.fetchUrl(LoteProfile.WALLET),
             )
             anchors.single().subjectX500Principal.name.contains("O=A-SIT") shouldBe true
             service.keyAttestationAnchors() shouldBe anchors

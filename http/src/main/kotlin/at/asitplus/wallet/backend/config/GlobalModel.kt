@@ -1,7 +1,7 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.Paths
-import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
+import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import io.ktor.http.*
 import org.springframework.http.HttpStatus

@@ -219,7 +219,7 @@ class IssuingInternalAuthorizationServerTest {
             .shouldNotBeNull()
         val scope = credentialFormat.scope
         val authnRequest = client.oauth2Client.createAuthRequest(state, authorizationDetails = null, scope = scope)
-        val authorizationCode = authorizationServer.authorize(authnRequest) { mockOidcUserInfoExtended() }.getOrThrow()
+        val authorizationCode = authorizationServer.authorize(authorizationServer.pushedRequest(authnRequest)) { mockOidcUserInfoExtended() }.getOrThrow()
         authorizationCode.shouldBeInstanceOf<AuthenticationResponseResult.Redirect>()
         val tokenRequest = client.oauth2Client.createTokenRequestParameters(
             OAuth2Client.AuthorizationForToken.Code(authorizationCode.params.shouldNotBeNull().code.shouldNotBeNull()),
@@ -251,6 +251,16 @@ class IssuingInternalAuthorizationServerTest {
             params = credentialRequest.first(),
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = 1.minutes,
+            ),
+            request = RequestInfo(
+                url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
+                method = HttpMethod.Post,
+                dpop = BuildDPoPHeader(
+                    signDpop = signDpop,
+                    url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
+                    accessToken = accessToken.accessToken,
+                    nonce = authorizationServer.getDpopNonce(),
+                ),
             ),
         ).getOrThrow()
         return credential

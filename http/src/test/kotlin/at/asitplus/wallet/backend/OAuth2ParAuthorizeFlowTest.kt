@@ -10,8 +10,8 @@ import at.asitplus.wallet.backend.controller.IndexController
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
-import at.asitplus.wallet.lib.ktor.openid.DPoP
-import at.asitplus.wallet.lib.ktor.openid.DPoPNonce
+import at.asitplus.wallet.lib.oauth2.DPoP
+import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
@@ -115,7 +115,7 @@ class OAuth2ParAuthorizeFlowTest {
             ?: error("No scope configured in issuer metadata")
         val state = uuid4().toString()
         val authRequest = oauth2Client.createAuthRequest(state = state, scope = scope)
-        val authorizationCode = authorizationServer.authorize(authRequest) {
+        val authorizationCode = authorizationServer.authorize(authorizationServer.pushedRequest(authRequest)) {
             catching {
                 toOidcUserInfoExtended(SecurityContextHolder.getContext().authentication)
                     ?: error("No authenticated user")
