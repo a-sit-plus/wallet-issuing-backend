@@ -63,83 +63,87 @@
 
     <!--/*@thymesVar id="qrcode" type="ByteArray"*/-->
     <div th:if="${tabs != null}">
-        <div class="container py-4">
-            <!-- Tab headers -->
-            <ul class="nav nav-tabs" id="dynamicTab" role="tablist">
-                <li class="nav-item" role="presentation" th:each="tab,iter : ${tabs}">
-                    <button class="nav-link"
-                            th:classappend="${iter.index == 0} ? ' active'"
-                            type="button" role="tab"
-                            th:id="${'tab-' + tab.id}"
-                            data-bs-toggle="tab"
-                            th:data-bs-target="${'#pane-' + tab.id}"
-                            th:aria-controls="${'pane-' + tab.id}"
-                            th:aria-selected="${iter.index == 0}"
-                            th:text="${tab.title}">
-                        Tab
-                    </button>
-                </li>
-            </ul>
+        <div class="py-4">
+            <div class="row g-3">
+                <!-- Tab headers -->
+                <div class="col-12 col-md-4 col-lg-3">
+                    <ul class="nav nav-pills flex-column gap-1" id="dynamicTab" role="tablist" aria-orientation="vertical">
+                        <li class="nav-item" role="presentation" th:each="tab,iter : ${tabs}">
+                            <button class="nav-link w-100 text-start"
+                                th:classappend="${iter.index == 0} ? ' active'"
+                                type="button" role="tab"
+                                th:id="${'tab-' + tab.id}"
+                                data-bs-toggle="tab"
+                                th:data-bs-target="${'#pane-' + tab.id}"
+                                th:aria-controls="${'pane-' + tab.id}"
+                                th:aria-selected="${iter.index == 0}"
+                                th:text="${tab.title}">
+                            Tab
+                            </button>
+                        </li>
+                    </ul>
+                </div>
 
-            <!-- Tab panes -->
-            <div class="tab-content border border-top-0 p-3 rounded-bottom" id="dynamicTabContent">
-                <div class="tab-pane fade"
-                     th:each="tab,iter : ${tabs}"
-                     th:classappend="${iter.index == 0} ? ' show active'"
-                     role="tabpanel"
-                     th:id="${'pane-' + tab.id}"
-                     th:aria-labelledby="${'tab-' + tab.id}">
-                    <p class="text-body-secondary" th:text="${tab.description}">Description</p>
-                    <div th:if="${tab.qrBase64 != null}">
-                        <div th:if="${tab.preAuth}"
-                             class="dcapi-container qr-block"
-                             data-dcapi-container>
-                            <div class="dcapi-content">
-                                <img class="img-fluid rounded border"
-                                     th:src="'data:image/png;base64,' + ${tab.qrBase64}"
-                                     th:alt="${'QR code for ' + tab.title}"/>
-                                <div class="mt-3">
-                                    <button type="button"
-                                            class="btn btn-outline-primary w-100"
-                                            th:attr="onclick=|invokeDigitalCredentialsApi(this)|"
-                                            th:data-dcapi-url="|@{${paths.DcApiCreateRequestUrl}}/${tab.id}|">
-                                        Issue via Digital Credentials API
-                                    </button>
+                <!-- Tab panes -->
+                <div class="tab-content col-12 col-md-8 col-lg-9 border rounded p-3" id="dynamicTabContent">
+                    <div class="tab-pane fade"
+                         th:each="tab,iter : ${tabs}"
+                         th:classappend="${iter.index == 0} ? ' show active'"
+                         role="tabpanel"
+                         th:id="${'pane-' + tab.id}"
+                         th:aria-labelledby="${'tab-' + tab.id}">
+                        <p class="text-body-secondary" th:text="${tab.description}">Description</p>
+                        <div th:if="${tab.qrBase64 != null}">
+                            <div th:if="${tab.preAuth}"
+                                 class="dcapi-container qr-block"
+                                 data-dcapi-container>
+                                <div class="dcapi-content">
+                                    <img class="img-fluid rounded border"
+                                         th:src="'data:image/png;base64,' + ${tab.qrBase64}"
+                                         th:alt="${'QR code for ' + tab.title}"/>
+                                    <div class="mt-3">
+                                        <button type="button"
+                                                class="btn btn-outline-primary w-100"
+                                                th:attr="onclick=|invokeDigitalCredentialsApi(this)|"
+                                                th:data-dcapi-url="|@{${paths.DcApiCreateRequestUrl}}/${tab.id}|">
+                                            Issue via Digital Credentials API
+                                        </button>
+                                    </div>
+                                    <div class="mt-3">
+                                        <a class="btn btn-outline-primary w-100"
+                                           th:href="${tab.offerUrl}">
+                                            Open Wallet
+                                        </a>
+                                    </div>
                                 </div>
-                                <div class="mt-3">
-                                    <a class="btn btn-outline-primary w-100"
-                                       th:href="${tab.offerUrl}">
-                                        Open Wallet
-                                    </a>
+                                <div class="dcapi-overlay d-none" data-dcapi-result>
+                                    <div class="alert mb-0" data-dcapi-message>
+                                        <span data-dcapi-message-text></span>
+                                        <button type="button"
+                                                class="btn btn-secondary w-100 mt-2"
+                                                onclick="reloadRequest()"
+                                                data-dcapi-reload>
+                                            Reload request
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="dcapi-overlay d-none" data-dcapi-result>
-                                <div class="alert mb-0" data-dcapi-message>
-                                    <span data-dcapi-message-text></span>
-                                    <button type="button"
-                                            class="btn btn-secondary w-100 mt-2"
-                                            onclick="reloadRequest()"
-                                            data-dcapi-reload>
-                                        Reload request
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div th:if="${!tab.preAuth}">
-                            <div class="qr-block">
-                                <img class="img-fluid rounded border"
-                                     width="500"
-                                     th:src="'data:image/png;base64,' + ${tab.qrBase64}"
-                                     th:alt="${'QR code for ' + tab.title}"/>
-                                <div class="alert alert-info mt-3 mb-0 w-100">
-                                    Digital Credentials API is only available on pre routes.
-                                    <span sec:authorize="isAnonymous()"> Login to view them.</span>
-                                </div>
-                                <div class="mt-3">
-                                    <a class="btn btn-outline-primary w-100"
-                                       th:href="${tab.offerUrl}">
-                                        Open Wallet
-                                    </a>
+                            <div th:if="${!tab.preAuth}">
+                                <div class="qr-block">
+                                    <img class="img-fluid rounded border"
+                                         width="500"
+                                         th:src="'data:image/png;base64,' + ${tab.qrBase64}"
+                                         th:alt="${'QR code for ' + tab.title}"/>
+                                    <div class="alert alert-info mt-3 mb-0 w-100">
+                                        Digital Credentials API is only available on pre routes.
+                                        <span sec:authorize="isAnonymous()"> Login to view them.</span>
+                                    </div>
+                                    <div class="mt-3">
+                                        <a class="btn btn-outline-primary w-100"
+                                           th:href="${tab.offerUrl}">
+                                            Open Wallet
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>

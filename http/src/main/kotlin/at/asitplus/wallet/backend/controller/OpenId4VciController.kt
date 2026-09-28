@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 
@@ -37,13 +38,19 @@ class OpenId4VciController(
     private val backendConfigurationProperties: BackendConfigurationProperties,
 ) {
 
-    @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE])
-    fun issuerMetadata() = credentialIssuer.metadata.copy(
-        displayProperties = setOf(
-            backendConfigurationProperties.metadata.toDisplayProperties()
+    @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER, produces = [APPLICATION_JSON_VALUE, "application/jwt"])
+    suspend fun issuerMetadata(@RequestHeader(HttpHeaders.Accept, required = false) accept: String?): ResponseEntity<*> {
+        val metadata = credentialIssuer.metadata.copy(
+            displayProperties = setOf(backendConfigurationProperties.metadata.toDisplayProperties())
         )
-    ).also {
-        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $it")
+        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
+        if (accept?.split(',')?.any { it.trim().substringBefore(';') == "application/jwt" } == true) {
+            val signed = credentialIssuer.signedMetadata().getOrThrow()
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/jwt"))
+                .body(signed.toString())
+        }
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(metadata)
     }
 
     private fun MetadataConfiguration.toDisplayProperties() = DisplayProperties(

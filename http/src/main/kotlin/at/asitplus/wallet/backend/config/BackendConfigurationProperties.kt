@@ -1,5 +1,6 @@
 package at.asitplus.wallet.backend.config
 
+import at.asitplus.wallet.lib.etsi.LoTEServiceType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import java.net.URL
@@ -13,6 +14,8 @@ data class BackendConfigurationProperties(
     val credentials: CredentialConfigurationProperties = CredentialConfigurationProperties(),
     /** Key used for signing issued credentials, and fallback for credentials absent from [credentialKeys]. */
     val issuerKey: KeyConfiguration = KeyConfiguration(),
+    /** Optional key and certificate chain for JWT-signed issuer metadata (WRPAC). */
+    val metadataKey: KeyConfiguration? = null,
     /**
      * Signing key per credential, keyed by `vct` (SD-JWT) or ISO docType (mdoc).
      * Credentials not listed here are signed with [issuerKey].
@@ -20,10 +23,28 @@ data class BackendConfigurationProperties(
     val credentialKeys: Map<String, KeyConfiguration> = emptyMap(),
     /** Key used for signing authn requests for PID login */
     val verifierKey: KeyConfiguration = KeyConfiguration(),
+    /** Optional HAIP client authentication using Wallet Instance Attestations. */
+    val walletAttestation: WalletAttestationConfiguration = WalletAttestationConfiguration(),
     /** Configure details about revocation lists. */
     val revocationList: RevocationListConfigurationProperties = RevocationListConfigurationProperties(),
     /** Issuer name for OID4VCI metadata. */
     val metadata: MetadataConfiguration = MetadataConfiguration(),
+)
+
+data class WalletAttestationConfiguration(
+    /** When enabled, PAR and token requests require a WIA signed by a trusted Wallet Provider. */
+    val enabled: Boolean = false,
+    /** Wallet Provider LoTE URLs from the Commission acceptance and development environments. */
+    val walletProviderLoteUrls: List<String> = listOf(
+        LoTEServiceType.WALLET.defaultUrl(),
+        LoTEServiceType.WALLET.defaultUrl("https://development.trust.tech.ec.europa.eu/lists/eudiw"),
+    ),
+    /** Optional PEM anchors for the LoTE JWS signer. If absent, trust relies on HTTPS and JAdES verification. */
+    val loteSignerCertificates: List<String> = emptyList(),
+    /** Additional PEM-encoded Wallet Provider certificates or trust anchors. */
+    val trustedCertificates: List<String> = emptyList(),
+    /** Additional trust anchors for Key Attestation signatures. */
+    val trustedKeyAttestationCertificates: List<String> = emptyList(),
 )
 
 data class MetadataConfiguration(

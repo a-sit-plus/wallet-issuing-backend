@@ -9,11 +9,15 @@ import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.backend.config.AV_DOCTYPE
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.CredentialOffering
+import at.asitplus.wallet.eupid.EU_PID_DOCTYPE
+import at.asitplus.wallet.eupidsdjwt.EU_PID_SD_JWT_VCT
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.PLAIN_JWT
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.data.CredentialScheme
+import at.asitplus.wallet.lib.data.IsoMdocCredentialScheme
+import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.utils.DefaultMapStore
@@ -98,19 +102,35 @@ class IndexController(
             ?: SecurityContextHolder.getContext().authentication
                 ?.let { SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended(it) }
         Napier.i("/index called with ${user?.userInfo?.subject}")
-        model["tabs"] = user?.let { buildPreAuthnTabs(it) } ?: buildAuthCodeTabs()
+        model["tabs"] = buildAuthCodeTabs() + (user?.let { buildPreAuthnTabs(it) } ?: emptyList())
         return ModelAndView("index")
     }
 
-    private suspend fun buildAuthCodeTabs(): List<TabItem> = listOf(
-        buildTabItemAuthCode("All", "All credentials with auth code", setOf(), Paths.Schemes.HaipVci)
-    ) + credentialOfferings.map { offering ->
-        buildTabItemAuthCode(
-            title = offering.tabTitle(),
-            description = offering.description ?: "",
-            credential = offering.scheme to offering.representation,
-            urlScheme = offering.urlScheme(),
-        )
+    private suspend fun buildAuthCodeTabs(): List<TabItem> {
+        val pid = credentialOfferings.filter { offering ->
+            when (offering.representation) {
+                SD_JWT -> (offering.scheme as? SdJwtCredentialScheme)?.sdJwtType == EU_PID_SD_JWT_VCT
+                ISO_MDOC -> (offering.scheme as? IsoMdocCredentialScheme)?.isoDocType == EU_PID_DOCTYPE
+                else -> false
+            }
+        }
+        return listOf(
+            buildTabItemAuthCode("All", "All credentials with auth code", setOf(), Paths.Schemes.HaipVci)
+        ) + credentialOfferings.map { offering ->
+            buildTabItemAuthCode(
+                title = offering.tabTitle(),
+                description = offering.description ?: "",
+                credential = offering.scheme to offering.representation,
+                urlScheme = offering.urlScheme(),
+            )
+        } + if (pid.size == 2) listOf(
+            buildTabItemAuthCode(
+                title = "PID · SD-JWT + mdoc",
+                description = "Issue both PID formats in one authorization code flow",
+                credentials = pid.map { it.scheme to it.representation }.toSet(),
+                urlScheme = Paths.Schemes.HaipVci,
+            )
+        ) else emptyList()
     }
 
     private suspend fun buildPreAuthnTabs(user: OidcUserInfoExtended): List<TabItem> = listOf(
@@ -128,7 +148,15 @@ class IndexController(
     private fun CredentialOffering.urlScheme() =
         if (scheme.isoDocType == AV_DOCTYPE) Paths.Schemes.Av else Paths.Schemes.HaipVci
 
-    private fun CredentialOffering.tabTitle() = "$name · ${representation.label()}"
+    private fun CredentialOffering.tabTitle(): String {
+        val shortName = when {
+            name.contains("Person Identification Data", ignoreCase = true) -> "PID"
+            name.contains("Mobile Driving Licence", ignoreCase = true) -> "mDL"
+            name.contains("European Health Insurance Card", ignoreCase = true) -> "EHIC"
+            else -> name
+        }
+        return "$shortName · ${representation.label()}"
+    }
 
     private fun CredentialRepresentation.label() = when (this) {
         SD_JWT -> "SD-JWT"
@@ -209,7 +237,7 @@ class IndexController(
             .queryParam(Paths.QueryParams.CredentialOfferUri, credentialOfferUrl)
             .toUriString()
         val qrBase64 = QRCode.ofSquares().build(url).render().getBytes().encodeToString(Base64())
-        TabItem(nonce, title, description, qrBase64, url, preAuth)
+        TabItem(nonce, "$title · ${if (preAuth) "pre-auth" else "auth code"}", description, qrBase64, url, preAuth)
     }
 
     data class TabItem(

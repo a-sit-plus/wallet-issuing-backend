@@ -1,6 +1,9 @@
 package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
+import at.asitplus.openid.IssuerMetadata
+import at.asitplus.signum.indispensable.pki.X509Certificate as SignumX509Certificate
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
@@ -16,6 +19,7 @@ import at.asitplus.wallet.eupid.EuPidJsonValueEncoder
 import at.asitplus.wallet.lib.LibraryInitializer
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
+import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.FixedTimePeriodProvider
 import at.asitplus.wallet.lib.agent.Issuer
 import at.asitplus.wallet.lib.agent.IssuerAgent
@@ -24,6 +28,10 @@ import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
+import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
+import at.asitplus.wallet.lib.jws.SignJwt
+import at.asitplus.wallet.lib.jws.VerifyJwsObjectFun
+import at.asitplus.wallet.lib.jws.VerifyJwsSignature
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
 import at.asitplus.wallet.lib.data.CredentialMetadataRegistry
@@ -32,11 +40,13 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenSto
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
+import at.asitplus.wallet.lib.oauth2.ClientAuthenticationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
+import at.asitplus.wallet.lib.oidvci.ProofValidator
 import at.asitplus.wallet.mdl.MobileDrivingLicenceItemValueSerializerMap
 import at.asitplus.wallet.mdl.MobileDrivingLicenceJsonValueEncoder
 import at.asitplus.wallet.sdjwt.SdJwtTypeMetadataDocument
@@ -63,11 +73,17 @@ import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessag
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.util.StreamUtils
 import java.io.StringReader
+import java.io.ByteArrayInputStream
 import java.net.URI
 import java.nio.charset.Charset
 import java.security.KeyStore
 import java.security.PublicKey
 import java.security.Security
+import java.security.cert.CertPathValidator
+import java.security.cert.CertificateFactory
+import java.security.cert.PKIXParameters
+import java.security.cert.TrustAnchor
+import java.security.cert.X509Certificate
 import kotlin.time.Clock
 
 @Configuration
@@ -317,39 +333,162 @@ class BackendConfiguration {
         issuer: Issuer,
         statusListGroups: StatusListGroups,
         credentialOfferings: List<CredentialOffering>,
-    ): CredentialIssuer = CredentialIssuer(
-        publicContext = configuration.publicContext.toString(),
-        credentialSchemes = credentialOfferings.map { it.scheme }.toSet(),
-        authorizationService = authorizationServer,
-        issuer = issuer,
-        // every signing key must appear here, or wallets cannot verify credentials signed with it
-        keyMaterial = statusListGroups.all.map { it.keyMaterial }.toSet(),
-        credentialEndpointPath = Paths.CredentialUrl,
-        nonceEndpointPath = Paths.NonceUrl,
-        credentialSchemeMapper = credentialSchemeMapper,
-    )
+        walletProviderTrustService: WalletProviderTrustService,
+    ): CredentialIssuer {
+        val metadataSigner = SignJwt<IssuerMetadata>(
+            configuration.metadataKey?.let(::loadKeyMaterial) ?: EphemeralKeyWithoutCert(),
+            JwsHeaderCertOrJwk(),
+        )
+        val schemes = credentialOfferings.map { it.scheme }.toSet()
+        // Every signing key must appear here, or wallets cannot verify credentials signed with it.
+        val signingKeys = statusListGroups.all.map { it.keyMaterial }.toSet()
+        return if (configuration.walletAttestation.enabled) {
+            CredentialIssuer(
+                publicContext = configuration.publicContext.toString(),
+                credentialSchemes = schemes,
+                authorizationService = authorizationServer,
+                issuer = issuer,
+                keyMaterial = signingKeys,
+                credentialEndpointPath = Paths.CredentialUrl,
+                nonceEndpointPath = Paths.NonceUrl,
+                requireKeyAttestation = true,
+                proofValidator = keyAttestationProofValidator(
+                    configuration.walletAttestation,
+                    configuration.publicContext.toString(),
+                    walletProviderTrustService,
+                ),
+                signMetadata = metadataSigner,
+                credentialSchemeMapper = credentialSchemeMapper,
+            )
+        } else {
+            // Leave VC-K's default proof validator intact, including its Key Attestation status check.
+            CredentialIssuer(
+                publicContext = configuration.publicContext.toString(),
+                credentialSchemes = schemes,
+                authorizationService = authorizationServer,
+                issuer = issuer,
+                keyMaterial = signingKeys,
+                credentialEndpointPath = Paths.CredentialUrl,
+                nonceEndpointPath = Paths.NonceUrl,
+                signMetadata = metadataSigner,
+                credentialSchemeMapper = credentialSchemeMapper,
+            )
+        }
+    }
 
     @Bean
     fun authorizationServer(
         credentialOfferings: List<CredentialOffering>,
-    ): SimpleAuthorizationService = SimpleAuthorizationService(
-        strategy = CredentialAuthorizationServiceStrategy(
-            credentialSchemes = credentialOfferings.map { it.scheme }.toSet(),
-            mapper = credentialSchemeMapper
-        ),
-        publicContext = configuration.publicContext.toString(),
-        authorizationEndpointPath = Paths.AuthorizeUrl,
-        tokenEndpointPath = Paths.TokenUrl,
-        pushedAuthorizationRequestEndpointPath = Paths.ParUrl,
-        tokenService = TokenService.jwt(
+        walletProviderTrustService: WalletProviderTrustService,
+    ): SimpleAuthorizationService {
+        val clientAuthenticationService = walletClientAuthenticationService(
+            configuration.walletAttestation,
+            configuration.publicContext.toString(),
+            walletProviderTrustService,
+        )
+        return SimpleAuthorizationService(
+            strategy = CredentialAuthorizationServiceStrategy(
+                credentialSchemes = credentialOfferings.map { it.scheme }.toSet(),
+                mapper = credentialSchemeMapper
+            ),
             publicContext = configuration.publicContext.toString(),
-        ),
-    )
+            authorizationEndpointPath = Paths.AuthorizeUrl,
+            tokenEndpointPath = Paths.TokenUrl,
+            pushedAuthorizationRequestEndpointPath = Paths.ParUrl,
+            tokenService = TokenService.jwt(publicContext = configuration.publicContext.toString()),
+            clientAuthenticationService = clientAuthenticationService,
+        )
+    }
+
+    @Bean
+    fun walletProviderTrustService(): WalletProviderTrustService =
+        WalletProviderTrustService(configuration.walletAttestation, resourceLoader)
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
         KotlinSerializationJsonHttpMessageConverter(joseCompliantSerializer)
 }
+
+/** Requires WIA client authentication against the current Wallet Provider and A-SIT anchors. */
+internal fun walletClientAuthenticationService(
+    configuration: WalletAttestationConfiguration,
+    issuerIdentifier: String,
+    trustService: WalletProviderTrustService,
+): ClientAuthenticationService {
+    if (!configuration.enabled) return ClientAuthenticationService(enforceClientAuthentication = false)
+
+    return ClientAuthenticationService(
+        enforceClientAuthentication = true,
+        issuerIdentifier = issuerIdentifier,
+        // Bind the signature to the x5c leaf. The generic verifier may otherwise use a JWK asserted in the JWS.
+        verifyJwsObject = trustedAttestationVerifier { trustService.walletProviderAnchors() },
+    )
+}
+
+/** Credential proofs must carry a Key Attestation signed by a trusted Wallet Provider or extra KA anchor. */
+internal fun keyAttestationProofValidator(
+    configuration: WalletAttestationConfiguration,
+    issuerIdentifier: String,
+    trustService: WalletProviderTrustService,
+): ProofValidator {
+    require(configuration.enabled) { "Key Attestation validator requires wallet attestation mode" }
+    val verifier = trustedAttestationVerifier { trustService.keyAttestationAnchors() }
+    return ProofValidator(
+        publicContext = issuerIdentifier,
+        requireKeyAttestation = true,
+        verifyAttestationProof = { attestation -> verifier(attestation.jws).isSuccess },
+    )
+}
+
+internal fun loadAttestationAnchors(locations: List<String>, resourceLoader: ResourceLoader): Set<X509Certificate> {
+    val certificateFactory = CertificateFactory.getInstance("X.509")
+    return locations.flatMap { location ->
+        require(location.isNotBlank()) { "Attestation certificate location must not be blank" }
+        resourceLoader.getResource(location).inputStream.use { stream ->
+            certificateFactory.generateCertificates(stream).map { certificate ->
+                certificate as X509Certificate
+            }.also { require(it.isNotEmpty()) { "No attestation certificate in $location" } }
+        }
+    }.toSet()
+}
+
+internal fun trustedAttestationVerifier(anchors: suspend () -> Set<X509Certificate>) = VerifyJwsObjectFun { jws ->
+    catching {
+        val chain = jws.jwsHeader.certificateChain
+            ?.takeIf { it.isNotEmpty() }
+            ?: throw IllegalArgumentException("Attestation has no x5c")
+        require(isTrustedAttestationChain(chain, anchors())) { "Attestation certificate is not trusted" }
+        VerifyJwsSignature()(jws, chain.first().decodedPublicKey.getOrThrow()).getOrThrow()
+    }
+}
+
+/** Accept a pinned leaf or a certificate path ending at a configured CA anchor. */
+internal fun isTrustedAttestationChain(
+    chain: List<SignumX509Certificate>,
+    anchors: Set<X509Certificate>,
+): Boolean = catching {
+    require(chain.isNotEmpty() && anchors.isNotEmpty())
+    val factory = CertificateFactory.getInstance("X.509")
+    val presented = chain.map { signumCertificate ->
+        factory.generateCertificate(ByteArrayInputStream(signumCertificate.encodeToDer())) as X509Certificate
+    }
+    presented.forEach { it.checkValidity() }
+    anchors.forEach { it.checkValidity() }
+    val leaf = presented.first()
+    if (anchors.any { it.encoded.contentEquals(leaf.encoded) }) return@catching true
+
+    val caAnchors = anchors.filter { it.basicConstraints >= 0 }.map { TrustAnchor(it, null) }.toSet()
+    require(caAnchors.isNotEmpty())
+    val pathCertificates = presented.takeWhile { certificate ->
+        anchors.none { it.encoded.contentEquals(certificate.encoded) }
+    }
+    val path = factory.generateCertPath(pathCertificates)
+    CertPathValidator.getInstance("PKIX").validate(
+        path,
+        PKIXParameters(caAnchors).apply { isRevocationEnabled = false },
+    )
+    true
+}.getOrElse { false }
 
 /**
  * Signs each credential with the key configured for it in [BackendConfigurationProperties.credentialKeys], falling back

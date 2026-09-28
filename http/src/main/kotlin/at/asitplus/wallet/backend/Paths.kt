@@ -28,7 +28,7 @@ object Paths {
     }
 
     object Schemes {
-        const val HaipVci = "haip-vci"
+        const val HaipVci = "eu-eaa-offer"
         const val HaipVp = "haip-vp"
         const val Av = "av"
     }
