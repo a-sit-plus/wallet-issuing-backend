@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.lib.oauth2.DPoPNonce
+import at.asitplus.wallet.lib.oauth2.OAuthClientAttestationChallenge
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import io.ktor.http.*
 import org.springframework.http.HttpStatus
@@ -25,6 +26,11 @@ class GlobalModel {
         is OAuth2Exception.UseDpopNonce -> ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .header(HttpHeaders.DPoPNonce, oauth2Exception.dpopNonce)
+            .body(oauth2Exception.toOAuth2Error())
+
+        is OAuth2Exception.UseAttestationChallenge -> ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .header(HttpHeaders.OAuthClientAttestationChallenge, oauth2Exception.attestationChallenge)
             .body(oauth2Exception.toOAuth2Error())
 
         is OAuth2Exception -> ResponseEntity

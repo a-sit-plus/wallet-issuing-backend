@@ -207,6 +207,7 @@ Any `application.yml` property can be supplied as an environment variable using 
 | `/par` | Pushed authorization request endpoint |
 | `/authorize` | Authorization endpoint |
 | `/token` | Token endpoint |
+| `/challenge` | Challenge for Client Attestation PoP JWTs (only with `backend.wallet-attestation.enabled`) |
 | `/nonce` | Credential proof nonce endpoint |
 | `/credential` | OpenID4VCI credential endpoint |
 | `/credentials/status/current` | Current status-list aggregation |

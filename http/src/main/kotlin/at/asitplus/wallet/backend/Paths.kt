@@ -10,6 +10,7 @@ object Paths {
     const val NonceUrl = "/nonce"
     const val AuthorizeUrl = "/authorize"
     const val TokenUrl = "/token"
+    const val ChallengeUrl = "/challenge"
     const val CredentialUrl = "/credential"
     const val OfferUrl = "/offer"
     const val DcApiCreateRequestUrl = "/dcapi/create-request"

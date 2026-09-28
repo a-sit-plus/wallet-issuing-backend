@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
+import at.asitplus.openid.AttestationChallengeResponse
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.PushedAuthenticationResponseParameters
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 
 
@@ -54,6 +56,23 @@ class OAuth2Controller(
     suspend fun oauthMetadata(): OAuth2AuthorizationServerMetadata {
         return authorizationService.metadata()
             .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $it") }
+    }
+
+    /**
+     * Called by the Wallet to get a challenge for its Client Attestation PoP JWT,
+     * see [SimpleAuthorizationService.attestationChallenge].
+     * Not available without wallet attestation, where no `challenge_endpoint` is advertised.
+     */
+    @PostMapping(Paths.ChallengeUrl, produces = [APPLICATION_JSON_VALUE])
+    suspend fun attestationChallenge(response: HttpServletResponse): AttestationChallengeResponse {
+        Napier.i("${Paths.ChallengeUrl} called")
+        val result = authorizationService.attestationChallenge().getOrElse {
+            Napier.w("${Paths.ChallengeUrl} got error", it)
+            throw it
+        } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+        Napier.d("${Paths.ChallengeUrl} returns $result")
+        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
+        return result
     }
 
     /**

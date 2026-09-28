@@ -383,6 +383,7 @@ class BackendConfiguration {
             authorizationEndpointPath = Paths.AuthorizeUrl,
             tokenEndpointPath = Paths.TokenUrl,
             pushedAuthorizationRequestEndpointPath = Paths.ParUrl,
+            challengeEndpointPath = Paths.ChallengeUrl,
             tokenService = TokenService.jwt(publicContext = configuration.publicContext.toString()),
             clientAuthenticationService = clientAuthenticationService,
         )
