@@ -30,6 +30,7 @@ import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
+import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.jws.VerifyJwsObjectFun
 import at.asitplus.wallet.lib.jws.VerifyJwsSignature
 import at.asitplus.wallet.lib.data.AttributeIndex
@@ -344,38 +345,23 @@ class BackendConfiguration {
         val schemes = credentialOfferings.map { it.scheme }.toSet()
         // Every signing key must appear here, or wallets cannot verify credentials signed with it.
         val signingKeys = statusListGroups.all.map { it.keyMaterial }.toSet()
-        return if (configuration.walletAttestation.enabled) {
-            CredentialIssuer(
-                publicContext = configuration.publicContext.toString(),
-                credentialSchemes = schemes,
-                authorizationService = authorizationServer,
-                issuer = issuer,
-                keyMaterial = signingKeys,
-                credentialEndpointPath = Paths.CredentialUrl,
-                nonceEndpointPath = Paths.NonceUrl,
-                requireKeyAttestation = true,
-                proofValidator = keyAttestationProofValidator(
-                    configuration.walletAttestation,
-                    configuration.publicContext.toString(),
-                    walletProviderTrustService,
-                ),
-                signMetadata = metadataSigner,
-                credentialSchemeMapper = credentialSchemeMapper,
-            )
-        } else {
-            // Leave VC-K's default proof validator intact, including its Key Attestation status check.
-            CredentialIssuer(
-                publicContext = configuration.publicContext.toString(),
-                credentialSchemes = schemes,
-                authorizationService = authorizationServer,
-                issuer = issuer,
-                keyMaterial = signingKeys,
-                credentialEndpointPath = Paths.CredentialUrl,
-                nonceEndpointPath = Paths.NonceUrl,
-                signMetadata = metadataSigner,
-                credentialSchemeMapper = credentialSchemeMapper,
-            )
-        }
+        return CredentialIssuer(
+            publicContext = configuration.publicContext.toString(),
+            credentialSchemes = schemes,
+            authorizationService = authorizationServer,
+            issuer = issuer,
+            keyMaterial = signingKeys,
+            credentialEndpointPath = Paths.CredentialUrl,
+            nonceEndpointPath = Paths.NonceUrl,
+            requireKeyAttestation = configuration.walletAttestation.enabled,
+            proofValidator = credentialProofValidator(
+                configuration.walletAttestation,
+                configuration.publicContext.toString(),
+                walletProviderTrustService,
+            ),
+            signMetadata = metadataSigner,
+            credentialSchemeMapper = credentialSchemeMapper,
+        )
     }
 
     @Bean
@@ -426,20 +412,21 @@ internal fun walletClientAuthenticationService(
     )
 }
 
-/** Credential proofs must carry a Key Attestation signed by a trusted Wallet Provider or extra KA anchor. */
-internal fun keyAttestationProofValidator(
+/**
+ * In wallet attestation mode, credential proofs must carry a Key Attestation signed by a trusted Wallet Provider or
+ * extra KA anchor. Otherwise Key Attestations are optional, and one that is present only needs a valid signature.
+ */
+internal fun credentialProofValidator(
     configuration: WalletAttestationConfiguration,
     issuerIdentifier: String,
     trustService: WalletProviderTrustService,
-): ProofValidator {
-    require(configuration.enabled) { "Key Attestation validator requires wallet attestation mode" }
-    val verifier = trustedAttestationVerifier { trustService.keyAttestationAnchors() }
-    return ProofValidator(
-        publicContext = issuerIdentifier,
-        requireKeyAttestation = true,
-        verifyAttestationProof = { attestation -> verifier(attestation.jws).isSuccess },
-    )
-}
+): ProofValidator = ProofValidator(
+    publicContext = issuerIdentifier,
+    requireKeyAttestation = configuration.enabled,
+    verifyKeyAttestationSignature = if (configuration.enabled)
+        trustedAttestationVerifier { trustService.keyAttestationAnchors() }
+    else VerifyJwsObject(),
+)
 
 internal fun loadAttestationAnchors(locations: List<String>, resourceLoader: ResourceLoader): Set<X509Certificate> {
     val certificateFactory = CertificateFactory.getInstance("X.509")
