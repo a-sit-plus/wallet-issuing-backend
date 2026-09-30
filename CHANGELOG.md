@@ -8,6 +8,8 @@ Unreleased:
    `/credentials/status/<slug>/<timePeriod>`; `/credentials/status/current` aggregates all of them
  - **Breaking:** `backend.iso-mdoc-issuer-key` has been replaced by `backend.credential-keys`; list each mdoc
    docType explicitly to keep a separate mdoc key
+ - Update to VC-K 8.0.0
+ - Implement test cases for EUDI Launchpad 2026
 
 7.0.0:
  - Update to VC-K 7.0.0

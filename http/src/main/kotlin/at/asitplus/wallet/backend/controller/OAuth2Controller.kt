@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
 import at.asitplus.openid.AttestationChallengeResponse
+import at.asitplus.openid.decode
+import at.asitplus.openid.decodeFromFormUrlEncoded
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.PushedAuthenticationResponseParameters
@@ -14,8 +16,6 @@ import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
 import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
-import at.asitplus.wallet.lib.oidvci.decodeFromPostBody
-import at.asitplus.wallet.lib.oidvci.decodeFromUrlQuery
 import io.github.aakira.napier.Napier
 import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
@@ -87,7 +87,7 @@ class OAuth2Controller(
     ): PushedAuthenticationResponseParameters {
         Napier.i("${Paths.ParUrl} called")
         Napier.v("${Paths.ParUrl} called with $requestBody")
-        val params: RequestParameters = requestBody.decodeFromPostBody()
+        val params: RequestParameters = requestBody.decodeFromFormUrlEncoded()
             ?: throw OAuth2Exception.InvalidRequest()
         val result = authorizationService.parWithDpopNonce(
             request = params,
@@ -122,8 +122,8 @@ class OAuth2Controller(
         Napier.i("${Paths.AuthorizeUrl} called")
         Napier.v("${Paths.AuthorizeUrl} called with $requestParams and $requestBody")
         val params: RequestParameters =
-            if (requestBody.isNullOrEmpty()) requestParams.decodeFromUrlQuery()
-            else requestBody.decodeFromPostBody()
+            if (requestBody.isNullOrEmpty()) requestParams.decode()
+            else requestBody.decodeFromFormUrlEncoded()
 
         val result = authorizationService.authorize(params) {
             catching {
@@ -160,7 +160,7 @@ class OAuth2Controller(
     ): TokenResponseParameters {
         Napier.i("${Paths.TokenUrl} called")
         Napier.v("${Paths.TokenUrl} called with $requestBody")
-        val params: TokenRequestParameters = requestBody.decodeFromPostBody()
+        val params: TokenRequestParameters = requestBody.decodeFromFormUrlEncoded()
             ?: throw OAuth2Exception.InvalidRequest()
         val result = authorizationService.tokenWithDpopNonce(
             request = params,

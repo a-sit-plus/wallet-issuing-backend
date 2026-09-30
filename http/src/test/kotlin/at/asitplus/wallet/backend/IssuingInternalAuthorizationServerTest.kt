@@ -20,6 +20,7 @@ import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SdJwtSigned
 import at.asitplus.wallet.lib.jws.SignJwt
 import at.asitplus.wallet.lib.jws.SignJwtFun
+import at.asitplus.wallet.lib.oauth2.DPoP
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -232,12 +233,12 @@ class IssuingInternalAuthorizationServerTest {
             httpRequest = RequestInfo(
                 url = Paths.TokenUrl,
                 method = HttpMethod.Post,
-                dpop = BuildDPoPHeader(
+                headers = headersOf(HttpHeaders.DPoP, BuildDPoPHeader(
                     signDpop = signDpop,
                     url = Paths.TokenUrl,
                     httpMethod = HttpMethod.Post.value,
                     nonce = authorizationServer.getDpopNonce(),
-                )
+                ).toString())
             )
         ).getOrThrow()
         val credentialRequest = client.oid4vciClient.createCredential(
@@ -255,12 +256,12 @@ class IssuingInternalAuthorizationServerTest {
             request = RequestInfo(
                 url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
                 method = HttpMethod.Post,
-                dpop = BuildDPoPHeader(
+                headers = headersOf(HttpHeaders.DPoP, BuildDPoPHeader(
                     signDpop = signDpop,
                     url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
                     accessToken = accessToken.accessToken,
                     nonce = authorizationServer.getDpopNonce(),
-                ),
+                ).toString()),
             ),
         ).getOrThrow()
         return credential

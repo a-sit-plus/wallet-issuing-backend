@@ -13,6 +13,7 @@ import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
 import at.asitplus.wallet.lib.jws.SignJwtFun
+import at.asitplus.wallet.lib.oauth2.DPoP
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
@@ -24,7 +25,9 @@ import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.headersOf
 import org.springframework.security.core.context.SecurityContextHolder
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -81,12 +84,12 @@ suspend fun loadCredential(
         httpRequest = RequestInfo(
             url = Paths.TokenUrl,
             method = HttpMethod.Post,
-            dpop = BuildDPoPHeader(
+            headers = headersOf(HttpHeaders.DPoP, BuildDPoPHeader(
                 signDpop = signDpop,
                 url = Paths.TokenUrl,
                 httpMethod = HttpMethod.Post.value,
                 nonce = authorizationServer.getDpopNonce(),
-            )
+            ).toString())
         )
     ).getOrThrow()
     val credentialRequest = client.oid4vciClient.createCredential(
@@ -102,12 +105,12 @@ suspend fun loadCredential(
         request = RequestInfo(
             url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
             method = HttpMethod.Post,
-            dpop = BuildDPoPHeader(
+            headers = headersOf(HttpHeaders.DPoP, BuildDPoPHeader(
                 signDpop = signDpop,
                 url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
                 accessToken = accessToken.accessToken,
                 nonce = authorizationServer.getDpopNonce(),
-            ),
+            ).toString()),
         ),
     ).getOrThrow()
         .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()

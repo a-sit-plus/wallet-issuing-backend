@@ -3,6 +3,8 @@ package at.asitplus.wallet.backend
 import at.asitplus.catching
 import at.asitplus.openid.CredentialOffer
 import at.asitplus.openid.PushedAuthenticationResponseParameters
+import at.asitplus.openid.encodeToParameters
+import at.asitplus.openid.formUrlEncode
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier.toOidcUserInfoExtended
@@ -16,8 +18,6 @@ import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.encodeToParameters
-import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull

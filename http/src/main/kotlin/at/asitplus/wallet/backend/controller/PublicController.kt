@@ -4,6 +4,7 @@ import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.dcql.DCQLClaimsPathPointer
+import at.asitplus.openid.encodeToParameters
 import at.asitplus.signum.indispensable.josef.JsonWebKey
 import at.asitplus.signum.indispensable.josef.JwsCompactTyped
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -26,9 +27,8 @@ import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
 import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
-import at.asitplus.wallet.lib.jws.VerifyJwsObject
+import at.asitplus.wallet.lib.jws.VerifyJwsObjectTrusted
 import at.asitplus.wallet.lib.oauth2.OAuth2Utils
-import at.asitplus.wallet.lib.oidvci.encodeToParameters
 import at.asitplus.wallet.lib.openid.ClientIdScheme
 import at.asitplus.wallet.lib.openid.CreationOptions
 import at.asitplus.wallet.lib.openid.CredentialPresentationRequestBuilder
@@ -145,8 +145,8 @@ class PublicController(
         verifier = VerifierAgent(
             identifier = clientIdScheme.clientId,
             validatorSdJwt = ValidatorSdJwt(
-                verifyJwsObject = VerifyJwsObject(
-                    publicKeyLookup = { jwsCompact ->
+                verifyJwsObject = VerifyJwsObjectTrusted(
+                    trustedKeys = { jwsCompact ->
                         (jwsCompact.getPayload<JsonObject>().getOrNull()
                             ?.get("iss") as? JsonPrimitive?)?.content?.let { iss ->
                             val url = OAuth2Utils.insertWellKnownPath(iss, OpenIdConstants.WellKnownPaths.JwtVcIssuer)

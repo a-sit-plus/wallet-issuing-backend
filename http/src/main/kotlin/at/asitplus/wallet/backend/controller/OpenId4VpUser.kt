@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.KmmResult
-import at.asitplus.openid.IdToken
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.wallet.eupid.EuPidDataElements
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
@@ -16,11 +15,8 @@ import at.asitplus.wallet.lib.data.IsoDocumentParsed
 import at.asitplus.wallet.lib.data.VcJwsVerificationResultWrapper
 import at.asitplus.wallet.lib.data.VerifiablePresentationParsed
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusValidationResult
-import at.asitplus.wallet.lib.openid.Iso180137AnnexCWrapper
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
-import at.asitplus.wallet.lib.openid.VpTokenValidationResult
 import at.asitplus.wallet.lib.openid.VpTokenValidationResultDCQL
-import at.asitplus.wallet.lib.openid.VpTokenValidationResultPresentationExchange
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.LocalDate
@@ -42,13 +38,11 @@ import java.security.MessageDigest
 
 @Serializable
 data class OpenId4VpUser(
-    val idToken: IdToken?,
-    val idTokenError: String?,
     val credentials: Collection<ParsedCredential>?,
     val presentationError: String?,
 ) : AuthenticatedPrincipal {
     @Transient
-    val id = Json.encodeToString(OpenId4VpUserIdSource(idToken, idTokenError, credentials, presentationError)).sha256()
+    val id = Json.encodeToString(OpenId4VpUserIdSource(credentials, presentationError)).sha256()
 
     @Transient
     val firstname = credentials?.firstNotNullOfOrNull { it.getGivenName() }
@@ -66,8 +60,6 @@ data class OpenId4VpUser(
 
 @Serializable
 private data class OpenId4VpUserIdSource(
-    val idToken: IdToken?,
-    val idTokenError: String?,
     val credentials: Collection<ParsedCredential>?,
     val presentationError: String?,
 )
@@ -105,9 +97,7 @@ fun ParsedCredential.getClaim(claim: String) = allFields?.entries
     }
 
 fun AuthnResponseResult.toUser() = OpenId4VpUser(
-    idToken = idTokenValidationResult?.getOrNull(),
-    idTokenError = idTokenValidationResult?.exceptionOrNull()?.message,
-    credentials = vpTokenValidationResult?.getOrNull()?.presentations()?.flatMap {
+    credentials = vpTokenValidationResult?.getOrNull()?.presentationResults?.flatMap {
         it.toApiItemCredentials()
     },
     presentationError = vpTokenValidationResult?.exceptionOrNull()?.message
@@ -116,14 +106,6 @@ fun AuthnResponseResult.toUser() = OpenId4VpUser(
             else -> null
         },
 )
-
-fun VpTokenValidationResult.presentations() = when (this) {
-    is VpTokenValidationResultDCQL -> credentialQueryResponseValidations.flatMap {
-        it.value
-    }
-
-    is VpTokenValidationResultPresentationExchange -> inputDescriptorResponseValidations.values
-}
 
 fun KmmResult<Verifier.VerifyPresentationResult>.toApiItemCredentials() = exceptionOrNull()?.let {
     listOf(ParsedCredential(error = it.message))
@@ -136,17 +118,6 @@ fun KmmResult<Verifier.VerifyPresentationResult>.toApiItemCredentials() = except
 
 fun Verifier.VerifyPresentationResult.Success.toApiItemCredentials(): Collection<ParsedCredential> =
     vp.toApiItemCredentials()
-
-fun Iso180137AnnexCWrapper.toUser() = OpenId4VpUser(
-    idToken = null,
-    idTokenError = null,
-    presentationError = null,
-    credentials = documents.map { it.toApiItemCredential() }
-)
-
-fun KmmResult<AuthnResponseResult>.convertToUser(): OpenId4VpUser =
-    exceptionOrNull()?.let { throw RuntimeException("Failed: input", it) }
-        ?: getOrThrow().toUser()
 
 fun VerifiablePresentationParsed.toApiItemCredentials(): List<ParsedCredential> =
     freshVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {

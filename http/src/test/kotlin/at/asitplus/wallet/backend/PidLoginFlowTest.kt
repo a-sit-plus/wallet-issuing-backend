@@ -1,6 +1,7 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.openid.formUrlEncode
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.HolderAgent
@@ -10,7 +11,6 @@ import at.asitplus.wallet.lib.agent.toStoreCredentialInput
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
 import at.asitplus.wallet.lib.data.rfc3986.toUri
-import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import at.asitplus.wallet.lib.openid.OpenId4VpHolder
 import io.kotest.matchers.nulls.shouldNotBeNull

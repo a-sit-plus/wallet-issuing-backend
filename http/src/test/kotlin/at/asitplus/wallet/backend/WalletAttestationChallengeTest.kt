@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.openid.AttestationChallengeResponse
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
+import at.asitplus.openid.encodeToParameters
+import at.asitplus.openid.formUrlEncode
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
@@ -16,8 +18,6 @@ import at.asitplus.wallet.lib.oauth2.OAuthClientAttestationPop
 import at.asitplus.wallet.lib.oidvci.BuildClientAttestationJwt
 import at.asitplus.wallet.lib.oidvci.BuildClientAttestationPoPJwt
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.encodeToParameters
-import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpHeaders

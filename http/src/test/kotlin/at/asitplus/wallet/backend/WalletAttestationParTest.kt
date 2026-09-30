@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend
 
+import at.asitplus.openid.encodeToParameters
+import at.asitplus.openid.formUrlEncode
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
-import at.asitplus.wallet.lib.oidvci.encodeToParameters
-import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test

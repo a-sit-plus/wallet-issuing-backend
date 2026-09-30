@@ -2,6 +2,8 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.openid.OidcUserInfo
 import at.asitplus.openid.OidcUserInfoExtended
+import at.asitplus.openid.encodeToParameters
+import at.asitplus.openid.formUrlEncode
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
@@ -12,8 +14,6 @@ import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.encodeToParameters
-import at.asitplus.wallet.lib.oidvci.formUrlEncode
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.ktor.http.HttpHeaders as KtorHttpHeaders
 import kotlinx.coroutines.test.runTest

@@ -26,6 +26,7 @@ import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.http.HttpHeaders as KtorHttpHeaders
 import io.ktor.http.HttpMethod as KtorHttpMethod
+import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import org.junit.jupiter.api.Test
@@ -126,12 +127,12 @@ class CredentialEndpointSerializationTest {
             httpRequest = RequestInfo(
                 url = Paths.TokenUrl,
                 method = KtorHttpMethod.Post,
-                dpop = BuildDPoPHeader(
+                headers = headersOf(KtorHttpHeaders.DPoP, BuildDPoPHeader(
                     signDpop = signDpop,
                     url = Paths.TokenUrl,
                     httpMethod = KtorHttpMethod.Post.value,
                     nonce = authorizationServer.getDpopNonce(),
-                ),
+                ).toString()),
             ),
         ).getOrThrow()
         val credentialNonce = credentialIssuer.nonceWithDpopNonce().getOrThrow()
