@@ -3,8 +3,8 @@ package at.asitplus.wallet.backend.config
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.openid.IssuerMetadata
-import at.asitplus.signum.indispensable.pki.X509Certificate as SignumX509Certificate
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.toJcaCertificateBlocking
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Paths
@@ -28,22 +28,22 @@ import at.asitplus.wallet.lib.agent.KeyMaterial
 import at.asitplus.wallet.lib.agent.KeyStoreMaterial
 import at.asitplus.wallet.lib.agent.StatusListAgent
 import at.asitplus.wallet.lib.agent.TimePeriodProvider
-import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
-import at.asitplus.wallet.lib.jws.SignJwt
-import at.asitplus.wallet.lib.jws.VerifyJwsObject
-import at.asitplus.wallet.lib.jws.VerifyJwsObjectFun
-import at.asitplus.wallet.lib.jws.VerifyJwsSignature
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation
 import at.asitplus.wallet.lib.data.CredentialMetadataRegistry
 import at.asitplus.wallet.lib.data.StaticCredentialMetadataRegistry
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
+import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
+import at.asitplus.wallet.lib.jws.SignJwt
+import at.asitplus.wallet.lib.jws.VerifyJwsObject
+import at.asitplus.wallet.lib.jws.VerifyJwsObjectFun
+import at.asitplus.wallet.lib.jws.VerifyJwsSignature
 import at.asitplus.wallet.lib.ktor.openid.RemoteCredentialMetadataRegistry
-import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oauth2.ClientAuthenticationService
 import at.asitplus.wallet.lib.oauth2.AttestationBasedClientAuthenticationService
+import at.asitplus.wallet.lib.oauth2.ClientAuthenticationService
 import at.asitplus.wallet.lib.oauth2.NoopClientAuthenticationService
+import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
@@ -76,7 +76,6 @@ import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessag
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.util.StreamUtils
 import java.io.StringReader
-import java.io.ByteArrayInputStream
 import java.net.URI
 import java.nio.charset.Charset
 import java.security.KeyStore
@@ -88,6 +87,7 @@ import java.security.cert.PKIXParameters
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import kotlin.time.Clock
+import at.asitplus.signum.indispensable.pki.X509Certificate as SignumX509Certificate
 
 @Configuration
 @EnableConfigurationProperties(value = [BackendConfigurationProperties::class])
@@ -459,9 +459,7 @@ internal fun isTrustedAttestationChain(
 ): Boolean = catching {
     require(chain.isNotEmpty() && anchors.isNotEmpty())
     val factory = CertificateFactory.getInstance("X.509")
-    val presented = chain.map { signumCertificate ->
-        factory.generateCertificate(ByteArrayInputStream(signumCertificate.encodeToDer())) as X509Certificate
-    }
+    val presented = chain.map { it.toJcaCertificateBlocking().getOrThrow() }
     presented.forEach { it.checkValidity() }
     anchors.forEach { it.checkValidity() }
     val leaf = presented.first()

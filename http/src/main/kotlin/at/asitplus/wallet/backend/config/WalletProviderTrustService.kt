@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.etsi.TrustListPayload
 import at.asitplus.signum.indispensable.josef.JwsCompact
+import at.asitplus.signum.indispensable.toJcaCertificateBlocking
 import at.asitplus.wallet.lib.etsi.LoTEFilterService
 import at.asitplus.wallet.lib.etsi.LoteProfile
 import at.asitplus.wallet.lib.jws.VerifyJwsObjectJades
@@ -48,11 +49,13 @@ class WalletProviderTrustService(
         else trustedAttestationVerifier { loteSignerAnchors },
     )
     private val refreshMutex = Mutex()
+
     private data class State(
         val anchors: Set<X509Certificate> = emptySet(),
         val expiry: Instant = Instant.DISTANT_PAST,
         val nextRefresh: Instant = Instant.DISTANT_PAST,
     )
+
     private val states = urls.associateWith { State() }.toMutableMap()
 
     suspend fun walletProviderAnchors(): Set<X509Certificate> =
@@ -72,15 +75,16 @@ class WalletProviderTrustService(
                     val (jws, payload) = JwsCompact.parse<TrustListPayload>(fetch(url)).getOrThrow()
                     verifier(jws).getOrThrow()
                     val lote = payload.loTe
-                    val validity = requireNotNull(lote.listAndSchemeInformation) { "Wallet Provider LoTE has no validity" }
+                    val validity = requireNotNull(lote.listAndSchemeInformation) {
+                        "Wallet Provider LoTE has no validity"
+                    }
                     require(validity.listIssueDateTime <= now && now < validity.nextUpdate) {
                         "Wallet Provider LoTE is not currently valid"
                     }
-                    val factory = java.security.cert.CertificateFactory.getInstance("X.509")
                     val anchors = LoTEFilterService()
                         .extractIssuanceCertificates(lote, LoteProfile.WALLET)
                         .mapNotNull { it.certificate }
-                        .map { factory.generateCertificate(it.encodeToDer().inputStream()) as X509Certificate }
+                        .map { it.toJcaCertificateBlocking().getOrThrow() }
                         .toSet()
                     states[url] = State(anchors, validity.nextUpdate, minOf(now + 1.hours, validity.nextUpdate))
                     Napier.i("Loaded ${anchors.size} Wallet Provider anchors from $url")
