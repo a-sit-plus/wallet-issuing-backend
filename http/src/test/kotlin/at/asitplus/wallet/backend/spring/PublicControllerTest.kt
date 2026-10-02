@@ -8,6 +8,7 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import io.kotest.matchers.nulls.shouldNotBeNull
 import org.hamcrest.Matchers.emptyString
 import org.hamcrest.Matchers.not
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -54,6 +55,10 @@ class PublicControllerTest {
             header { exists(HttpHeaders.CACHE_CONTROL) }
             content { string(not(emptyString())) }
         }.andReturn()
+
+        val publishedCwt = firstResult.response.contentAsByteArray
+        assertEquals(0xd2, publishedCwt[0].toInt() and 0xff)
+        assertEquals(0x84, publishedCwt[1].toInt() and 0xff)
 
         mockMvc.get("${Paths.Credentials.StatusUrl}/$timePeriod") {
             accept = MediaType.parseMediaType(MediaTypes.Application.STATUSLIST_CWT)
