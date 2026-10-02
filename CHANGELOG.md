@@ -1,6 +1,7 @@
 # Changelog
 
 Unreleased:
+ - Publish CWT status list tokens with the required COSE_Sign1 tag 18
  - Select the credential signing key per credential scheme with `backend.credential-keys`, keyed by `vct` (SD-JWT)
    or ISO docType (mdoc)
  - Publish every configured signing key in the issuer JWKS

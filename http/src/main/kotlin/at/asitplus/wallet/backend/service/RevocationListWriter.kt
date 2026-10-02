@@ -1,6 +1,5 @@
 package at.asitplus.wallet.backend.service
 
-import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.config.StatusListGroup
 import at.asitplus.wallet.backend.config.StatusListGroups
@@ -10,8 +9,6 @@ import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.communication.primitives.StatusListTokenMediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToByteArray
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.file.Path
@@ -37,13 +34,11 @@ class RevocationListWriter(
      * Since move is an atomic operation (at least on Linux), the read
      * operations should never read a partial file.
      */
-    @OptIn(ExperimentalSerializationApi::class)
     suspend fun writeRevocationList(timePeriod: Int) = withContext(Dispatchers.IO) {
         statusListGroups.all.forEach { write(it, timePeriod) }
     }
 
     /** Every group publishes the same revocation data, but signed with its own key and under its own path. */
-    @OptIn(ExperimentalSerializationApi::class)
     private suspend fun write(group: StatusListGroup, timePeriod: Int) {
         with(configurationProperties.revocationList) {
             Path(jwtPath(group.slug)).createDirectories()
@@ -68,7 +63,6 @@ class RevocationListWriter(
         log.info("Wrote JWT status token for $timePeriod to ${destinationFile.pathString} with ${text.length} chars")
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     private suspend fun writeStatusListCwt(
         destinationFile: Path,
         timePeriod: Int,
@@ -76,7 +70,7 @@ class RevocationListWriter(
     ) {
         val token = statusListIssuer.provideStatusListToken(listOf(StatusListTokenMediaType.Cwt))
         val content = token.second as StatusListCwt
-        val bytes = coseCompliantSerializer.encodeToByteArray(content.value)
+        val bytes = content.encodeForPublication()
         createTempFile().apply {
             writeBytes(bytes)
             moveTo(destinationFile, true)
