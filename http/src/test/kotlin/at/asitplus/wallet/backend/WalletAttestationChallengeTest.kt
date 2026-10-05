@@ -99,6 +99,7 @@ class WalletAttestationChallengeTest {
         ).attestationChallenge.shouldNotBeNull()
 
         par(challenge).andExpect(status().isCreated)
+            .andExpect(header().exists(HttpHeaders.OAuthClientAttestationChallenge))
         Unit
     }
 

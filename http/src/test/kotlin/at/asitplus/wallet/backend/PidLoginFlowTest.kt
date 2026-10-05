@@ -35,6 +35,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post 
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import java.net.URI
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
@@ -80,6 +82,7 @@ class PidLoginFlowTest {
                 .andReturn()
         ))
             .andExpect(status().isOk)
+            .andExpect(content().contentTypeCompatibleWith("application/oauth-authz-req+jwt"))
             .andReturn()
             .response.contentAsString
 
@@ -97,6 +100,8 @@ class PidLoginFlowTest {
                 .andReturn()
         ))
             .andExpect(status().isOk)
+            .andExpect(content().json("{}"))
+            .andExpect(header().string("Cache-Control", "no-store"))
     }
 
     private fun browserSeesAuthenticatedSession(sessionCookies: Array<Cookie>) {

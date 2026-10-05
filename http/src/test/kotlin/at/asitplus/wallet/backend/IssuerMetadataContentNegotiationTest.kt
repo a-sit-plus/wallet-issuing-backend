@@ -15,12 +15,14 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -52,12 +54,26 @@ class IssuerMetadataContentNegotiationTest {
         metadata.issuedAt.shouldBeNull()
     }
 
+    @Test
+    fun `metadata prefers JSON when JWT has lower quality or is excluded`() {
+        listOf("application/jwt;q=0.1, application/json;q=1", "application/jwt;q=0, application/json").forEach { accept ->
+            val initial = mockMvc.get("/.well-known/openid-credential-issuer") {
+                header(HttpHeaders.ACCEPT, accept)
+            }.andExpect { request { asyncStarted() } }.andReturn()
+            mockMvc.perform(asyncDispatch(initial))
+                .andExpect(status().isOk)
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(header().string(HttpHeaders.VARY, "Accept"))
+        }
+    }
+
     private fun fetchMetadata(accept: MediaType): String {
         val initial = mockMvc.get("/.well-known/openid-credential-issuer") {
             this.accept = accept
         }.andExpect { request { asyncStarted() } }.andReturn()
         return mockMvc.perform(asyncDispatch(initial))
             .andExpect(status().isOk)
+            .andExpect(header().string(HttpHeaders.VARY, "Accept"))
             .andExpect(content().contentTypeCompatibleWith(accept))
             .andReturn().response.contentAsString
     }

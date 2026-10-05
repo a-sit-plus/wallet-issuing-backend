@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.josef.JsonWebKey
 import at.asitplus.signum.indispensable.josef.JwsCompactTyped
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
+import at.asitplus.wallet.backend.Extensions.toResponseEntity
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements.BIRTH_DATE
@@ -26,7 +27,6 @@ import at.asitplus.wallet.lib.data.ConstantIndex
 import at.asitplus.wallet.lib.data.StatusListJwt
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
-import at.asitplus.wallet.lib.jws.JwsContentTypeConstants
 import at.asitplus.wallet.lib.jws.VerifyJwsObjectTrusted
 import at.asitplus.wallet.lib.oauth2.OAuth2Utils
 import at.asitplus.wallet.lib.openid.ClientIdScheme
@@ -34,6 +34,8 @@ import at.asitplus.wallet.lib.openid.CreationOptions
 import at.asitplus.wallet.lib.openid.CredentialPresentationRequestBuilder
 import at.asitplus.wallet.lib.openid.OpenId4VpRequestOptions
 import at.asitplus.wallet.lib.openid.OpenId4VpVerifier
+import at.asitplus.wallet.lib.openid.directPostHttpResponse
+import at.asitplus.wallet.lib.openid.loadRequestObjectHttpResponse
 import at.asitplus.wallet.lib.utils.DefaultMapStore
 import at.asitplus.wallet.lib.utils.MapStore
 import com.benasher44.uuid.uuid4
@@ -51,6 +53,8 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpServletResponseWrapper
 import jakarta.servlet.http.HttpSession
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -83,8 +87,6 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import qrcode.QRCode
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.hours
 
 private const val SESSION_KEY_OPENID4VP_USER = "sessionOpenId4VpResponse"
 
@@ -260,15 +262,13 @@ class PublicController(
             Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", it)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
         }
-        val result = requireNotNull(createdRequest.loadRequestObject)(null)
+        val result = createdRequest.loadRequestObjectHttpResponse(null)
             .getOrElse {
                 Napier.w("${Paths.Transaction.GetUrl}/$transactionId error", it)
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
             }
             .also { Napier.i("${Paths.Transaction.GetUrl}/$transactionId returns $it") }
-        return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType("application/" + JwsContentTypeConstants.OAUTH_AUTHZ_REQUEST))
-            .body(result)
+        return result.toResponseEntity()
     }
 
     private fun requestPidSdJwt() = listOf(
@@ -288,7 +288,7 @@ class PublicController(
     suspend fun transactionPost(
         @PathVariable id: String,
         @RequestBody requestBody: String,
-    ): ResponseEntity<Void> {
+    ): ResponseEntity<String> {
         Napier.i("${Paths.Transaction.ResultUrl}/$id called with $requestBody")
         val desktopSessionId = transactionIdToSessionIdMap.remove(id)
         if (desktopSessionId == null) {
@@ -305,7 +305,7 @@ class PublicController(
             session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)
             sessionRepository.save(session)
         }
-        return ResponseEntity.ok().build()
+        return directPostHttpResponse().toResponseEntity()
     }
 
     private fun setAuthenticationInSession(

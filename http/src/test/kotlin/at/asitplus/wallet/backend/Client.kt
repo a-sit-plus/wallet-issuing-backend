@@ -1,8 +1,8 @@
 package at.asitplus.wallet.backend
 
 import at.asitplus.catching
-import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.AuthenticationRequestParameters
+import at.asitplus.openid.CredentialResponseParameters
 import at.asitplus.openid.JarRequestParameters
 import at.asitplus.openid.TokenResponseParameters
 import at.asitplus.signum.indispensable.josef.JsonWebToken
@@ -19,8 +19,9 @@ import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciClient.RequestOptions
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.oidvci.WalletService
-import at.asitplus.wallet.lib.oidvci.WalletService.RequestOptions
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -28,9 +29,9 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.headersOf
-import org.springframework.security.core.context.SecurityContextHolder
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import org.springframework.security.core.context.SecurityContextHolder
 
 class Client {
 
@@ -113,6 +114,6 @@ suspend fun loadCredential(
             ).toString()),
         ),
     ).getOrThrow()
-        .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()
+        .shouldBeInstanceOf<OpenId4VciServer.CredentialResponse.Plain>()
         .response
 }

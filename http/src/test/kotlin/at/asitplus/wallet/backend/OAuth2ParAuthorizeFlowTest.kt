@@ -40,6 +40,8 @@ import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.view
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.model
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -104,6 +106,23 @@ class OAuth2ParAuthorizeFlowTest {
         ).andExpect(status().isFound)
             .andExpect(header().string(HttpHeaders.LOCATION, containsString("code=")))
             .andExpect(header().string(HttpHeaders.LOCATION, containsString("state=$state")))
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun `authorize keeps the manual iPhone redirect page`() = runTest {
+        val client = OAuth2Client()
+        val scope = credentialIssuer.metadata.supportedCredentialConfigurations!!.values.first().scope!!
+        val pushed = authorizationServer.pushedRequest(client.createAuthRequest(state = "iphone-state", scope = scope))
+        val initial = mockMvc.get(Paths.AuthorizeUrl) {
+            param("client_id", client.clientId)
+            param("request_uri", pushed.requestUri.shouldNotBeNull())
+            header(HttpHeaders.USER_AGENT, "Safari iPhone")
+        }.andExpect { request { asyncStarted() } }.andReturn()
+        mockMvc.perform(asyncDispatch(initial))
+            .andExpect(status().isOk)
+            .andExpect(view().name("iphone-redirect"))
+            .andExpect(model().attribute("url", containsString("state=iphone-state")))
     }
 
     @Test

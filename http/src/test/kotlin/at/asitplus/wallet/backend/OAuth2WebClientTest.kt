@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 
@@ -40,6 +41,38 @@ class OAuth2WebClientTest {
 
     @LocalServerPort
     private var port: Int = 0
+
+    @Test
+    fun `successful token response preserves prepared protocol headers and JSON`() = runTest {
+        val client = OAuth2Client()
+        val offer = authorizationServer.offerWithPreAuthnForUserForSchemes(
+            user = OidcUserInfoExtended.fromOidcUserInfo(OidcUserInfo(subject = "prepared-response-user")).getOrThrow(),
+            credentialIssuer = credentialIssuer.metadata.credentialIssuer,
+            schemes = emptySet(),
+        )
+        val tokenRequest = client.createTokenRequestParameters(
+            authorization = OAuth2Client.AuthorizationForToken.PreAuthCode(
+                offer.grants?.preAuthorizedCode?.preAuthorizedCode.shouldNotBeNull()
+            ),
+        )
+        val dpop = BuildDPoPHeader(
+            signDpop = SignJwt<JsonWebToken>(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk()),
+            url = "http://localhost:$port${Paths.TokenUrl}",
+            nonce = authorizationServer.getDpopNonce(),
+        )
+        webClient.post().uri(Paths.TokenUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .header(KtorHttpHeaders.DPoP, dpop.toString())
+            .bodyValue(tokenRequest.encodeToParameters().formUrlEncode())
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+            .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "no-store")
+            .expectHeader().valueEquals(HttpHeaders.PRAGMA, "no-cache")
+            .expectHeader().exists(KtorHttpHeaders.DPoPNonce)
+            .expectBody().jsonPath("$.access_token").isNotEmpty
+            .jsonPath("$.token_type").isEqualTo("DPoP")
+    }
 
     @Test
     fun `pre-authorized token error response includes DPoP nonce for WebTestClient`() = runTest {
