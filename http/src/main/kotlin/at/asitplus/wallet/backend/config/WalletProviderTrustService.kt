@@ -78,7 +78,8 @@ class WalletProviderTrustService(
                     val validity = requireNotNull(lote.listAndSchemeInformation) {
                         "Wallet Provider LoTE has no validity"
                     }
-                    require(validity.listIssueDateTime <= now && now < validity.nextUpdate) {
+                    val nextUpdate = requireNotNull(validity.nextUpdate) { "Wallet Provider LoTE has no nextUpdate" }
+                    require(validity.listIssueDateTime <= now && now < nextUpdate) {
                         "Wallet Provider LoTE is not currently valid"
                     }
                     val anchors = LoTEFilterService()
@@ -86,7 +87,7 @@ class WalletProviderTrustService(
                         .mapNotNull { it.certificate }
                         .map { it.toJcaCertificateBlocking().getOrThrow() }
                         .toSet()
-                    states[url] = State(anchors, validity.nextUpdate, minOf(now + 1.hours, validity.nextUpdate))
+                    states[url] = State(anchors, nextUpdate, minOf(now + 1.hours, nextUpdate))
                     Napier.i("Loaded ${anchors.size} Wallet Provider anchors from $url")
                 } catch (e: Exception) {
                     Napier.w("Could not refresh Wallet Provider LoTE from $url", e)

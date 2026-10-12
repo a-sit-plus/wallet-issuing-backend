@@ -122,10 +122,11 @@ class WalletAttestationConfigurationTest {
     @Test
     fun `key attestation is accepted only from a trusted Wallet Provider in wallet attestation mode`() {
         runBlocking {
-            val trustedProvider = EphemeralKeyWithSelfSignedCert()
+            val providerPki = MetadataTestPki()
+            val trustedProvider = providerPki.keyMaterial
             val configuration = WalletAttestationConfiguration(
                 enabled = true,
-                trustedKeyAttestationCertificates = listOf(writePem("ka-anchor.pem", trustedProvider)),
+                trustedKeyAttestationCertificates = listOf(writePem("ka-anchor.pem", providerPki.intermediate)),
             )
             val validator = credentialProofValidator(
                 configuration, "https://issuer.example",
@@ -142,24 +143,30 @@ class WalletAttestationConfigurationTest {
     }
 
     @Test
-    fun `optional key attestation only needs a valid signature without wallet attestation mode`() {
+    fun `optional key attestation still requires a trusted issued provider certificate`() {
         runBlocking {
-            val configuration = WalletAttestationConfiguration()
+            val providerPki = MetadataTestPki()
+            val configuration = WalletAttestationConfiguration(
+                trustedKeyAttestationCertificates = listOf(writePem("optional-ka-anchor.pem", providerPki.intermediate)),
+            )
             val validator = credentialProofValidator(
                 configuration, "https://issuer.example",
                 WalletProviderTrustService(configuration, DefaultResourceLoader(), fetch = { error("offline") }),
             )
             val attestedKey = EphemeralKeyWithoutCert()
 
-            validator.validateAttestation(EphemeralKeyWithSelfSignedCert(), attestedKey) shouldBe
+            validator.validateAttestation(providerPki.keyMaterial, attestedKey) shouldBe
                     listOf(attestedKey.jsonWebKey.toCryptoPublicKey().getOrThrow())
+            shouldThrow<OAuth2Exception.InvalidProof> {
+                validator.validateAttestation(EphemeralKeyWithSelfSignedCert(), attestedKey)
+            }
         }
     }
 
-    private suspend fun writePem(name: String, keyMaterial: EphemeralKeyWithSelfSignedCert): String {
+    private fun writePem(name: String, certificate: X509Certificate): String {
         val location = tempDir.resolve(name)
         val pem = Base64.getMimeEncoder(64, "\n".toByteArray())
-            .encodeToString(keyMaterial.getCertificate()!!.encodeToDer())
+            .encodeToString(certificate.encoded)
         location.writeText("-----BEGIN CERTIFICATE-----\n$pem\n-----END CERTIFICATE-----\n")
         return location.toUri().toString()
     }

@@ -6,6 +6,7 @@ import at.asitplus.openid.encodeToParameters
 import at.asitplus.openid.formUrlEncode
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.wallet.backend.config.MetadataTestPki
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
@@ -104,12 +105,13 @@ class WalletAttestationChallengeTest {
     }
 
     companion object {
-        private val walletProvider = EphemeralKeyWithSelfSignedCert()
+        private val providerPki = MetadataTestPki()
+        private val walletProvider = providerPki.keyMaterial
 
         @JvmStatic
         @DynamicPropertySource
         fun walletAttestation(registry: DynamicPropertyRegistry) {
-            val der = runBlocking { walletProvider.getCertificate()!!.encodeToDer() }
+            val der = providerPki.intermediate.encoded
             val pem = Files.createTempFile("wallet-provider", ".pem").apply {
                 toFile().deleteOnExit()
                 Files.writeString(
@@ -121,7 +123,7 @@ class WalletAttestationChallengeTest {
             }
             registry.add("backend.wallet-attestation.enabled") { true }
             registry.add("backend.wallet-attestation.trusted-certificates") { pem.toUri().toString() }
-            // Fail fast without network access, the pinned Wallet Provider certificate suffices
+            // Fail fast without network access; the configured issuing CA authorizes this provider.
             registry.add("backend.wallet-attestation.wallet-provider-lote-urls") { "https://127.0.0.1:1/lote.json" }
         }
     }

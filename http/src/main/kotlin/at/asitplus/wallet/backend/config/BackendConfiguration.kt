@@ -409,14 +409,20 @@ internal fun walletClientAuthenticationService(
 
     return AttestationBasedClientAuthenticationService(
         issuerIdentifier = issuerIdentifier,
-        // Bind the signature to the x5c leaf. The generic verifier may otherwise use a JWK asserted in the JWS.
-        verifyJwsObject = trustedAttestationVerifier { trustService.walletProviderAnchors() },
+        clientAttestationValidator = at.asitplus.wallet.lib.validation.ClientAttestationValidator(
+            walletProviderAnchors = at.asitplus.wallet.lib.agent.TrustedCertificates {
+                trustService.walletProviderAnchors().map {
+                    requireNotNull(SignumX509Certificate.decodeFromByteArray(it.encoded))
+                }.toSet()
+            },
+        ),
     )
 }
 
 /**
  * In wallet attestation mode, credential proofs must carry a Key Attestation signed by a trusted Wallet Provider or
- * extra KA anchor. Otherwise Key Attestations are optional, and one that is present only needs a valid signature.
+ * extra KA issuing anchor. Otherwise Key Attestations are optional; a supplied attestation still requires a trusted
+ * provider under the current VC-K validation policy.
  */
 internal fun credentialProofValidator(
     configuration: WalletAttestationConfiguration,
@@ -425,9 +431,13 @@ internal fun credentialProofValidator(
 ): ProofValidator = ProofValidator(
     publicContext = issuerIdentifier,
     requireKeyAttestation = configuration.enabled,
-    verifyKeyAttestationSignature = if (configuration.enabled)
-        trustedAttestationVerifier { trustService.keyAttestationAnchors() }
-    else VerifyJwsObject(),
+    keyAttestationValidator = at.asitplus.wallet.lib.validation.KeyAttestationValidator(
+        walletProviderAnchors = at.asitplus.wallet.lib.agent.TrustedCertificates {
+            trustService.keyAttestationAnchors().map {
+                requireNotNull(SignumX509Certificate.decodeFromByteArray(it.encoded))
+            }.toSet()
+        },
+    ),
 )
 
 internal fun loadAttestationAnchors(locations: List<String>, resourceLoader: ResourceLoader): Set<X509Certificate> {
