@@ -11,6 +11,10 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
+import java.util.Base64
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -24,11 +28,26 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 
-@SpringBootTest
+@SpringBootTest(properties = ["backend.metadata-registration-certificate=classpath:metadata-registration.jwt"])
 @AutoConfigureMockMvc
 class IssuerMetadataContentNegotiationTest {
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var configuration: BackendConfigurationProperties
+
+    @Test
+    fun `signed metadata includes the registrar token unchanged under its signature`() = runBlocking {
+        val signed = JwsCompactTyped<IssuerMetadata>(fetchMetadata(MediaType.parseMediaType("application/jwt")))
+        VerifyJwsObject()(signed.jws).getOrThrow()
+        signed.payload.issuerInfo!!.single().format shouldBe "registration_cert"
+        val wirePayload = kotlinx.serialization.json.Json.parseToJsonElement(
+            String(Base64.getUrlDecoder().decode(signed.jws.toString().split('.')[1]))
+        ).jsonObject
+        val entry = wirePayload["issuer_info"]!!.jsonArray.single().jsonObject
+        entry["format"]!!.jsonPrimitive.content shouldBe "registration_cert"
+        entry["data"]!!.jsonPrimitive.content shouldBe
+            javaClass.getResource("/metadata-registration.jwt")!!.readText().trim()
+        Unit
+    }
 
     @Test
     fun `issuer metadata is available as a signed JWT for wallet trust validation`() = runBlocking {
@@ -52,6 +71,7 @@ class IssuerMetadataContentNegotiationTest {
         metadata.displayProperties.shouldNotBeNull().map { it.name }.shouldContainExactly(configuration.metadata.name)
         metadata.subject.shouldBeNull()
         metadata.issuedAt.shouldBeNull()
+        metadata.issuerInfo.shouldBeNull()
     }
 
     @Test

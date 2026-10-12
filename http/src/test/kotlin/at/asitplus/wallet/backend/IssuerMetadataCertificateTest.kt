@@ -27,5 +27,7 @@ class IssuerMetadataCertificateTest {
         val response = mockMvc.perform(asyncDispatch(initial)).andExpect(status().isOk).andReturn().response
         val header = String(Base64.getUrlDecoder().decode(response.contentAsString.substringBefore('.')))
         check(Json.parseToJsonElement(header).jsonObject["x5c"]!!.jsonArray.isNotEmpty())
+        val payload = String(Base64.getUrlDecoder().decode(response.contentAsString.split('.')[1]))
+        check("issuer_info" !in Json.parseToJsonElement(payload).jsonObject)
     }
 }

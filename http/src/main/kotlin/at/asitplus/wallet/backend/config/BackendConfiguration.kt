@@ -2,7 +2,8 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.openid.IssuerMetadata
+import at.asitplus.openid.IssuerInfo
+import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.toJcaCertificateBlocking
 import at.asitplus.wallet.backend.AntilogSlf4jAdapter
@@ -35,6 +36,7 @@ import at.asitplus.wallet.lib.data.StaticCredentialMetadataRegistry
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenStore
 import at.asitplus.wallet.lib.data.rfc3986.UniformResourceIdentifier
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
+import at.asitplus.wallet.lib.jws.JwsHeaderIdentifierFun
 import at.asitplus.wallet.lib.jws.SignJwt
 import at.asitplus.wallet.lib.jws.VerifyJwsObject
 import at.asitplus.wallet.lib.jws.VerifyJwsObjectFun
@@ -62,6 +64,7 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -342,10 +345,23 @@ class BackendConfiguration {
         walletProviderTrustService: WalletProviderTrustService,
         statusListTokenResolver: StatusListTokenResolver,
     ): CredentialIssuer {
-        val metadataSigner = SignJwt<IssuerMetadata>(
-            configuration.metadataKey?.let(::loadKeyMaterial) ?: EphemeralKeyWithoutCert(),
-            JwsHeaderCertOrJwk(),
-        )
+        val metadataKey = configuration.metadataKey?.let(::loadKeyMaterial) ?: EphemeralKeyWithoutCert()
+        val metadataChain = runBlocking {
+            (metadataKey as? KeyStoreMaterial)?.getCertificateChain() ?: listOfNotNull(metadataKey.getCertificate())
+        }.orEmpty().let { chain ->
+            // Transport the signing leaf and intermediates, excluding a self-issued root.
+            if (chain.size > 1 && chain.last().toJcaCertificateBlocking().getOrThrow().let {
+                    it.subjectX500Principal == it.issuerX500Principal
+                }) chain.dropLast(1) else chain
+        }
+        val issuerInfo = configuration.metadataRegistrationCertificate?.let { location ->
+            val registration = loadResource(resourceLoader, location).trim()
+            require(registration.isNotEmpty()) { "Metadata registration certificate is empty" }
+            listOf(IssuerInfo(
+                format = OpenIdConstants.IssuerInfo.REGISTRATION_CERT_FORMAT,
+                data = JsonPrimitive(registration),
+            ))
+        }
         val schemes = credentialOfferings.map { it.scheme }.toSet()
         // Every signing key must appear here, or wallets cannot verify credentials signed with it.
         val signingKeys = statusListGroups.all.map { it.keyMaterial }.toSet()
@@ -364,7 +380,11 @@ class BackendConfiguration {
                 walletProviderTrustService,
                 statusListTokenResolver,
             ),
-            signMetadata = metadataSigner,
+            signMetadata = SignJwt(metadataKey, JwsHeaderIdentifierFun { header, key ->
+                if (metadataChain.isEmpty()) JwsHeaderCertOrJwk()(header, key)
+                else header.copy(certificateChain = metadataChain)
+            }),
+            issuerInfo = issuerInfo,
             credentialSchemeMapper = credentialSchemeMapper,
             displayProperties = setOf(configuration.metadata.toDisplayProperties()),
         )
