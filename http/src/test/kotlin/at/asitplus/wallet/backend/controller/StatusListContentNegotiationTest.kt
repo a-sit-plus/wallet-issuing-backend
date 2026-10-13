@@ -27,6 +27,7 @@ class StatusListContentNegotiationTest {
     private lateinit var mvc: MockMvc
     private val jwt = "application/statuslist+jwt"
     private val cwt = "application/statuslist+cwt"
+    private val mdocIdentifier = "eu.europa.ec.eudi.pid.1"
     private val paths = listOf("${Paths.Credentials.StatusUrl}/1", "${Paths.Credentials.StatusUrl}/pid/1")
 
     @BeforeEach
@@ -34,9 +35,9 @@ class StatusListContentNegotiationTest {
         val configuration = BackendConfigurationProperties(
             revocationList = RevocationListConfigurationProperties(path = directory.toString()),
         )
-        val groups = StatusListGroups(listOf(null, "pid").map { slug ->
+        val groups = StatusListGroups(listOf(null to null, "pid" to "urn:eudi:pid:1", mdocIdentifier to mdocIdentifier).map { (slug, identifier) ->
             val key = EphemeralKeyWithSelfSignedCert()
-            StatusListGroup(slug, slug.orEmpty(), key, StatusListAgent(
+            StatusListGroup(identifier, slug.orEmpty(), key, StatusListAgent(
                 keyMaterial = key, statusListBaseUrl = "https://issuer.example${Paths.Credentials.StatusUrl}" +
                     if (slug == null) "" else "/$slug",
             ))
@@ -57,6 +58,21 @@ class StatusListContentNegotiationTest {
             token.payload.subject.string shouldBe "https://issuer.example$path"
         }
         Unit
+    }
+
+    @Test
+    fun `mdoc URL defaults to CWT while explicit JWT preferences still win`() {
+        val path = "${Paths.Credentials.StatusUrl}/$mdocIdentifier/1"
+        for (accept in listOf(null, "*/*", "application/*", "$jwt, $cwt", "$cwt, $jwt")) {
+            val response = fetch(path, accept)
+            response.status shouldBe 200
+            response.contentType shouldBe cwt
+            response.contentAsByteArray.take(2).map { it.toInt() and 0xff } shouldBe listOf(0xd2, 0x84)
+            response.getHeader(HttpHeaders.VARY) shouldBe "Accept"
+        }
+        for (accept in listOf(jwt, "$jwt;q=0.9, $cwt;q=0.1", "$cwt;q=0, */*")) {
+            fetch(path, accept).contentType shouldBe jwt
+        }
     }
 
     @Test

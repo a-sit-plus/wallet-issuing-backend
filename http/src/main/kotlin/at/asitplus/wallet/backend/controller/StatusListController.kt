@@ -3,7 +3,9 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.CredentialCatalog
 import at.asitplus.wallet.backend.config.StatusListGroups
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import io.github.aakira.napier.Napier
@@ -82,7 +84,10 @@ class StatusListController(
         val url = Paths.Credentials.StatusUrl + (if (slug.isEmpty()) "" else "/$slug") + "/$timePeriod"
         Napier.i("$url called")
         val accept = Collections.list(request.getHeaders(HttpHeaders.ACCEPT)).joinToString(",")
-        val statusListContentType = selectContentType(accept)
+        val identifier = statusListGroups.bySlug(slug)?.credentialIdentifier
+        val representation = CredentialCatalog.entries.singleOrNull { it.identifier == identifier }?.representation
+        val defaultType = if (representation == ISO_MDOC) statusListCwtType else statusListJwtType
+        val statusListContentType = selectContentType(accept, defaultType)
         val path = with(configurationProperties.revocationList) {
             Path(if (statusListContentType == statusListCwtType) cwtPath(slug) else jwtPath(slug), timePeriod.toString())
         }
@@ -146,8 +151,8 @@ class StatusListController(
     }
 
     /** RFC 9110, 12.5.1: specific ranges override wildcards, including q=0 exclusions. */
-    private fun selectContentType(accept: String): MediaType {
-        if (accept.isBlank()) return statusListJwtType
+    private fun selectContentType(accept: String, defaultType: MediaType): MediaType {
+        if (accept.isBlank()) return defaultType
         val ranges = try {
             MediaType.parseMediaTypes(accept)
         } catch (exception: IllegalArgumentException) {
@@ -160,8 +165,9 @@ class StatusListController(
                 else -> 2
             }
         }.thenBy { it.parameters.count { (name, _) -> name != "q" } }
-        // JWT comes first and wins an otherwise equal preference.
-        return listOf(statusListJwtType, statusListCwtType).mapNotNull { type ->
+        // The credential-specific default wins an otherwise equal preference.
+        val otherType = if (defaultType == statusListJwtType) statusListCwtType else statusListJwtType
+        return listOf(defaultType, otherType).mapNotNull { type ->
             val range = ranges.filter { range ->
                 range.includes(type) && range.parameters.all { (name, value) ->
                     name == "q" || type.getParameter(name) == value

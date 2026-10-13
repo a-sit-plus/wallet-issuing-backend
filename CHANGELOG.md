@@ -1,8 +1,9 @@
 # Changelog
 
 9.0.0-SNAPSHOT (unreleased):
- - Default credential status-list responses to JWT (`application/statuslist+jwt`) when `Accept` is absent,
-   wildcard or equally prefers JWT/CWT; retain CWT negotiation, honor quality/exclusion values and send `Vary: Accept`
+ - Default shared and SD-JWT credential status-list URLs to JWT (`application/statuslist+jwt`), and per-key mdoc
+   URLs to CWT (`application/statuslist+cwt`), using the URI's configured credential identifier; honor explicit
+   `Accept` preferences, quality/exclusion values and send `Vary: Accept`
  - Adapt wallet and key attestation validation to current VC-K APIs, requiring trusted issuing anchors for
    supplied attestations even when key attestations are optional
  - Publish CWT status list tokens with the required COSE_Sign1 tag 18

@@ -353,19 +353,24 @@ Token status list output is controlled by `backend.revocation-list`:
 - `regular-check-rate`: interval for refreshing outdated lists, default `PT1H`.
 - `path`: directory where status lists are written, default `cache/revocation-lists/`.
 
-Status-list URLs serve a compact signed JWT with `Content-Type: application/statuslist+jwt` by default,
-including requests without `Accept` or with `Accept: */*`. To retrieve the binary, tagged COSE/CWT
-representation for mdoc clients, send `Accept: application/statuslist+cwt`. Both the legacy
+Shared and SD-JWT status-list URLs serve a compact signed JWT with
+`Content-Type: application/statuslist+jwt` by default,
+including requests without `Accept` or with `Accept: */*`. Per-key URLs whose configured credential
+identifier denotes an mdoc instead default to the binary, tagged COSE/CWT representation
+(`application/statuslist+cwt`); this lookup uses the credential catalog, not URI text heuristics.
+The shared legacy URL keeps JWT because it can serve several credential formats. Explicitly request
+`application/statuslist+jwt` or `application/statuslist+cwt` to choose the representation. Both the legacy
 `/credentials/status/<timePeriod>` and per-key `/credentials/status/<slug>/<timePeriod>` URLs support
 this negotiation. Quality values and explicit `q=0` exclusions are honored; equal preferences select
-JWT. Requests accepting neither representation receive HTTP 406. Successful responses include `Vary: Accept`,
+the credential-specific default. Requests accepting neither representation receive HTTP 406. Successful responses include `Vary: Accept`,
 including conditional HTTP 304 responses, so caches distinguish the two representations.
 
 The [SD-JWT VC draft-19, 2.2.2.3](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-19.html#section-2.2.2.3)
 requires a referenced `status_list` token to use JWT. The general
 [Token Status List draft-21, 8.1–8.2](https://www.ietf.org/archive/id/draft-ietf-oauth-status-list-21.html#section-8.1)
 defines HTTP negotiation and the JWT/CWT response media types; it does not prescribe one universal
-default. JWT is this service's fallback for SD-JWT interoperability. SD-JWT clients should explicitly
+default. This service chooses by the URL's credential group, falling back to JWT for shared URLs.
+SD-JWT clients should explicitly
 request `application/statuslist+jwt`. Status URLs embedded in credentials remain unchanged.
 
 ## Identity Sources
