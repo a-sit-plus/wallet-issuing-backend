@@ -391,8 +391,13 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun walletProviderTrustService(): WalletProviderTrustService =
-        WalletProviderTrustService(configuration.walletAttestation, resourceLoader)
+    fun trustListService() = TrustListService(
+        configuration.trustLists.withWalletOverrides(configuration.walletAttestation), resourceLoader,
+    )
+
+    @Bean
+    fun walletProviderTrustService(trustListService: TrustListService): WalletProviderTrustService =
+        WalletProviderTrustService(configuration.walletAttestation, resourceLoader, trustListService)
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =

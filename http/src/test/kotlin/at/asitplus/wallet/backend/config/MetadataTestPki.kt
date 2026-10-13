@@ -18,9 +18,9 @@ import java.util.Date
 /** Real CA hierarchy, so tests exercise the transported chain instead of accepting self-signed stand-ins. */
 internal class MetadataTestPki(val identifier: String = "NTRAT-test-issuer") {
     val rootKey = keyPair()
-    val root = certificate(rootKey, "CN=Root", null, rootKey, true)
+    val root = certificate(rootKey, "CN=Root,O=Test Provider", null, rootKey, true)
     val intermediateKey = keyPair()
-    val intermediate = certificate(intermediateKey, "CN=Intermediate", root, rootKey, true)
+    val intermediate = certificate(intermediateKey, "CN=Intermediate,O=Test Provider", root, rootKey, true)
     val leafKey = keyPair()
     val leaf = certificate(leafKey, "CN=Issuer,2.5.4.97=$identifier", intermediate, intermediateKey, false)
     val chain = listOf(leaf, intermediate, root)
@@ -41,7 +41,7 @@ internal class MetadataTestPki(val identifier: String = "NTRAT-test-issuer") {
         key: KeyPair, subject: String, issuer: X509Certificate?, issuerKey: KeyPair, ca: Boolean,
     ): X509Certificate {
         val builder = JcaX509v3CertificateBuilder(
-            issuer?.let { X500Name(it.subjectX500Principal.name) } ?: X500Name(subject),
+            issuer?.let { X500Name.getInstance(it.subjectX500Principal.encoded) } ?: X500Name(subject),
             BigInteger(120, java.security.SecureRandom()),
             Date(System.currentTimeMillis() - 60_000), Date(System.currentTimeMillis() + 86_400_000),
             X500Name(subject), key.public,
