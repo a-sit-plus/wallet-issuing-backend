@@ -1,6 +1,10 @@
 # Changelog
 
 9.0.0-SNAPSHOT (unreleased):
+ - Include an optional registrar-signed WRPRC JWT in signed issuer metadata through VC-K's `issuer_info`,
+   configured with `backend.metadata-registration-certificate`
+ - Transport the configured metadata WRPAC leaf and intermediates in protected `x5c`, excluding a self-issued
+   final root; keep metadata signing and registration configuration independently optional
  - Configure loaded LoTE profiles, stages, URL overrides and profile-scoped issuance/status anchors through
    `backend.trust-lists`; default to Wallet Providers on acceptance/development with the A-SIT IACA 2026 root
  - Resolve wallet-instance and key-storage status lists as JWT/CWT and require a separately authorized Wallet
