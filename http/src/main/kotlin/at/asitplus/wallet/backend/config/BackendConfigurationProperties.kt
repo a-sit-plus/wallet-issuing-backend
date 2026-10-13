@@ -42,7 +42,7 @@ data class BackendConfigurationProperties(
 
 data class TrustListConfiguration(
     /** Only these profiles are loaded and authorized, including their custom anchors. */
-    val profiles: Set<LoteProfile> = setOf(LoteProfile.WALLET),
+    val profiles: Set<LoteProfile> = setOf(LoteProfile.WALLET, LoteProfile.PID),
     /** Commission trust infrastructure stages; empty permits custom anchors only. */
     val stages: List<LoTEStage> = listOf(LoTEStage.ACCEPTANCE, LoTEStage.DEVELOPMENT),
     /** Optional HTTPS URL overrides per enabled profile. */
@@ -50,12 +50,13 @@ data class TrustListConfiguration(
     /** Optional PEM anchors for authenticating LoTE signatures. */
     val signerCertificates: List<String> = emptyList(),
     /** Custom issuance and status anchors are authorized only for the profile they are configured under. */
-    val trustedCertificates: Map<LoteProfile, TrustListCertificates> = mapOf(
-        LoteProfile.WALLET to TrustListCertificates(
-            issuance = listOf("classpath:certificates/asit-iaca-2026.pem"),
-            status = listOf("classpath:certificates/asit-iaca-2026.pem"),
-        ),
-    ),
+    val trustedCertificates: Map<LoteProfile, TrustListCertificates> =
+        listOf(LoteProfile.WALLET, LoteProfile.PID).associateWith {
+            TrustListCertificates(
+                issuance = listOf("classpath:certificates/asit-iaca-2026.pem"),
+                status = listOf("classpath:certificates/asit-iaca-2026.pem"),
+            )
+        },
 )
 
 data class TrustListCertificates(

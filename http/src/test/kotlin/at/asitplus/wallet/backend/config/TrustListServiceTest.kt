@@ -24,7 +24,7 @@ class TrustListServiceTest {
     private val resources = DefaultResourceLoader()
 
     @Test
-    fun `configured profiles and stages select URLs with A-SIT confined to wallet`() = runBlocking<Unit> {
+    fun `configured profiles and stages select URLs with explicit A-SIT wallet and PID scopes`() = runBlocking<Unit> {
         val fetched = mutableListOf<String>()
         val service = TrustListService(TrustListConfiguration(
             profiles = setOf(LoteProfile.WALLET, LoteProfile.PID), stages = listOf(LoTEStage.ACCEPTANCE),
@@ -32,8 +32,8 @@ class TrustListServiceTest {
         val wallet = service.issuanceAnchors(LoteProfile.WALLET)
         check(wallet.isNotEmpty())
         service.revocationAnchors(LoteProfile.WALLET) shouldBe wallet
-        service.issuanceAnchors(LoteProfile.PID) shouldBe emptySet()
-        service.revocationAnchors(LoteProfile.PID) shouldBe emptySet()
+        service.issuanceAnchors(LoteProfile.PID) shouldBe wallet
+        service.revocationAnchors(LoteProfile.PID) shouldBe wallet
         service.issuanceAnchors(LoteProfile.mDL) shouldBe emptySet()
         fetched.toSet() shouldBe setOf(LoteProfile.WALLET.fetchUrl(LoTEStage.ACCEPTANCE), LoteProfile.PID.fetchUrl(LoTEStage.ACCEPTANCE))
         Unit
@@ -67,7 +67,7 @@ class TrustListServiceTest {
         val clock = MutableClock(Clock.System.now())
         val token = listToken(issuer, status, clock.now())
         var fetches = 0
-        val service = TrustListService(TrustListConfiguration(stages = listOf(LoTEStage.ACCEPTANCE),
+        val service = TrustListService(TrustListConfiguration(profiles = setOf(LoteProfile.WALLET), stages = listOf(LoTEStage.ACCEPTANCE),
             signerCertificates = listOf(pem("list-signer", issuer.intermediate)), trustedCertificates = emptyMap()), resources,
             fetch = { fetches++; if (fetches == 1) token else error("offline") }, clock = clock)
         service.issuanceAnchors(LoteProfile.WALLET) shouldBe setOf(issuer.signumChain[1])
