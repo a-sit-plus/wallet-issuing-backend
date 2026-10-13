@@ -343,6 +343,54 @@ it does mean the lists are not partitioned per credential type.
 > list each mdoc docType you issue explicitly. Note that its credentials then move to the new status list
 > path; already-issued mdocs keep pointing at the old path, which stays served.
 
+### Wallet Provider Trust
+
+Configure which Lists of Trusted Entities (LoTEs) the service loads and which Commission stages it
+uses with `backend.trust-lists`. By default it loads only `WALLET`, from acceptance and development,
+and adds the bundled A-SIT IACA 2026 certificate for wallet-attestation issuance and status:
+
+```yaml
+backend:
+  trust-lists:
+    profiles: [WALLET]
+    stages: [ACCEPTANCE, DEVELOPMENT]
+    trusted-certificates:
+      WALLET:
+        issuance: ["classpath:certificates/asit-iaca-2026.pem"]
+        status: ["classpath:certificates/asit-iaca-2026.pem"]
+    # Optional independent anchors for authenticating the LoTE JWS signer:
+    # signer-certificates: ["file:/secrets/lote-signer-anchor.pem"]
+    # Optional URL override instead of the URLs derived from stages:
+    # urls:
+    #   WALLET: ["https://example.org/wallet-providers.json"]
+  wallet-attestation:
+    enabled: true
+```
+
+Profiles are `WALLET`, `PID`, `mDL`, `WRPAC` and `EAA`. Each profile authorizes only its own issuance
+and revocation services. Custom certificates are also scoped per profile and purpose: a Wallet
+Provider issuer anchor does not automatically authorize its status tokens, and the default A-SIT
+wallet anchors do not authorize PID issuers. Enable another profile to load its lists; custom trust
+for it requires its own `trusted-certificates` entry. PID login does not consume these scopes yet.
+Empty `stages` permits custom anchors only; a disabled profile authorizes nothing.
+
+LoTE signatures and validity are checked before a list is used. Refresh happens on demand, at most
+hourly for a valid list, with retries after five minutes on failure; cached lists remain usable only
+until `NextUpdate`. Lists received from a URL must match its configured profile. Without
+`signer-certificates`, source authentication relies on HTTPS plus JAdES signature integrity.
+
+Wallet Instance Attestations and supplied Key Attestations resolve their advertised
+`client_status`/`key_storage_status` lists. Status signers must be issued by a Wallet Provider
+revocation anchor or a configured wallet `status` CA; signing leaves must not be self-signed or
+transport the anchor. Configure the CA directly issuing the status signer, as required by VC-K's
+status trust rule. Unavailable, expired, revoked or incorrectly signed status blocks acceptance.
+JWT and tagged CWT responses are supported. Even an optional Key Attestation is checked when supplied.
+
+The existing `wallet-attestation.trusted-certificates` and `trusted-key-attestation-certificates`
+remain additional wallet/KA **issuance** anchors. Legacy `wallet-provider-lote-urls` overrides the
+wallet profile URLs when supplied, and `lote-signer-certificates` adds signer pins; prefer the new
+`trust-lists` configuration. Disabling the wallet profile also disables these legacy issuance anchors.
+
 ### Revocation And Status Lists
 
 Token status list output is controlled by `backend.revocation-list`:
@@ -500,7 +548,8 @@ HTTPS to the configured URLs plus JAdES signature integrity. The URLs can be ove
 the issuer keeps its normal certificates. Clients requesting
 `Accept: application/jwt` from `/.well-known/openid-credential-issuer` receive metadata signed with
 `backend.metadata-key`. The default key is ephemeral and is unsuitable for the trusted WRPAC case.
-The service does not resolve external KA key-storage status lists.
+Wallet trust profiles, custom anchors and status validation are described in
+[Wallet Provider Trust](#wallet-provider-trust).
 
 The playbook's ITB ISS-01–14 are wallet tests against the reference issuer. This service supports the
 positive issuing flows:
