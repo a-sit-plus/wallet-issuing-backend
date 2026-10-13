@@ -6,6 +6,12 @@ import at.asitplus.openid.encodeToParameters
 import at.asitplus.openid.formUrlEncode
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.wallet.backend.config.walletStatusToken
+import at.asitplus.wallet.lib.agent.validation.StatusListTokenResolver
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.context.annotation.Import
 import at.asitplus.wallet.backend.config.MetadataTestPki
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
@@ -45,6 +51,7 @@ import java.util.Base64
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(WalletAttestationChallengeTest.StatusConfiguration::class)
 class WalletAttestationChallengeTest {
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var configuration: BackendConfigurationProperties
@@ -99,12 +106,26 @@ class WalletAttestationChallengeTest {
                 .andReturn().response.contentAsString
         ).attestationChallenge.shouldNotBeNull()
 
-        par(challenge).andExpect(status().isCreated)
-            .andExpect(header().exists(HttpHeaders.OAuthClientAttestationChallenge))
+        val accepted = par(challenge).andExpect(status().isCreated)
+            .andExpect(header().exists(HttpHeaders.OAuthClientAttestationChallenge)).andReturn()
+        revoked = true
+        try {
+            par(accepted.response.getHeader(HttpHeaders.OAuthClientAttestationChallenge))
+                .andExpect(status().isBadRequest)
+                .andExpect(content().string(containsString("client_status invalid")))
+        } finally { revoked = false }
         Unit
     }
 
+    @TestConfiguration
+    class StatusConfiguration {
+        @Bean
+        @Primary
+        fun walletStatusResolver() = StatusListTokenResolver { walletStatusToken(walletProvider, it.string, revoked) }
+    }
+
     companion object {
+        private var revoked = false
         private val providerPki = MetadataTestPki()
         private val walletProvider = providerPki.keyMaterial
 
@@ -121,6 +142,7 @@ class WalletAttestationChallengeTest {
                             "\n-----END CERTIFICATE-----\n"
                 )
             }
+            registry.add("backend.trust-lists.trusted-certificates.WALLET.status[0]") { pem.toUri().toString() }
             registry.add("backend.wallet-attestation.enabled") { true }
             registry.add("backend.wallet-attestation.trusted-certificates") { pem.toUri().toString() }
             // Fail fast without network access; the configured issuing CA authorizes this provider.
