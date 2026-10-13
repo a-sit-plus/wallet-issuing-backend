@@ -37,6 +37,12 @@
 
                 try {
                     const status = await checkStatus();
+                    if (status && status.error) {
+                        clearInterval(timer);
+                        const error = document.getElementById('pid-login-error');
+                        error.textContent = status.error;
+                        error.hidden = false;
+                    }
                     if (status && status.authenticated === true) {
                         clearInterval(timer);
                         window.location.replace(BASE_URL);
@@ -55,6 +61,7 @@
 <body style="" class="bg-light">
 <div th:replace="~{fragments/navbar.html :: navbar}"></div>
 <div class="container py-4">
+    <p id="pid-login-error" class="text-danger" hidden></p>
     <h2>Login with username and password</h2>
     <div class="lead mt-4 mb-5">
         <p th:if="${loginError}" class="text-danger">Login error: <span th:text="${loginError}"/></p>

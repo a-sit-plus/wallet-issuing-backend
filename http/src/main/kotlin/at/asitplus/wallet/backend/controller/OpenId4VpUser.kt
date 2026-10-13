@@ -1,40 +1,23 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.wallet.eupid.EuPidDataElements
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
-import at.asitplus.wallet.lib.agent.Verifier
-import at.asitplus.wallet.lib.agent.validation.CredentialFreshnessSummary
-import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidationSummary
-import at.asitplus.wallet.lib.agent.validation.CredentialTimelinessValidationSummary.*
-import at.asitplus.wallet.lib.agent.validation.common.EntityExpiredError
-import at.asitplus.wallet.lib.agent.validation.common.EntityNotYetValidError
 import at.asitplus.wallet.lib.data.CredentialToJsonConverter.toJsonElement
-import at.asitplus.wallet.lib.data.IsoDocumentParsed
-import at.asitplus.wallet.lib.data.VcJwsVerificationResultWrapper
-import at.asitplus.wallet.lib.data.VerifiablePresentationParsed
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatusValidationResult
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
-import at.asitplus.wallet.lib.openid.VpTokenValidationResultDCQL
+import at.asitplus.wallet.lib.validation.ValidatedCredential
+import at.asitplus.wallet.lib.validation.ValidationDecision
+import at.asitplus.wallet.lib.validation.credentialIdentifier
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.LocalTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format
-import kotlinx.datetime.format.char
-import kotlinx.datetime.toLocalDateTime
+import java.security.MessageDigest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import org.springframework.security.core.AuthenticatedPrincipal
-import java.security.MessageDigest
 
 @Serializable
 data class OpenId4VpUser(
@@ -52,6 +35,9 @@ data class OpenId4VpUser(
 
     @Transient
     val imageDataBase64 = credentials?.firstNotNullOfOrNull { it.getPortrait() }?.toImage()
+
+    val isAccepted: Boolean
+        get() = presentationError == null && !credentials.isNullOrEmpty() && credentials.all { it.error == null }
 
     override fun getName(): String =
         (listOfNotNull(firstname, lastname).joinToString(" ") + " ($id)").trim()
@@ -96,139 +82,28 @@ fun ParsedCredential.getClaim(claim: String) = allFields?.entries
         }
     }
 
+/** Only accepted validation results may supply an authenticated identity. */
 fun AuthnResponseResult.toUser(): OpenId4VpUser = when (this) {
-    is AuthnResponseResult.Error -> OpenId4VpUser(credentials = null, presentationError = error.errorDescription ?: error.error)
-    is AuthnResponseResult.Success -> OpenId4VpUser(
-    credentials = vpTokenResult.getOrNull()?.presentationResults?.flatMap {
-        it.toApiItemCredentials()
-    },
-    presentationError = vpTokenResult.exceptionOrNull()?.message
-        ?: when (val presentation = vpTokenResult.getOrNull()) {
-            is VpTokenValidationResultDCQL -> presentation.submissionRequirementsValidationResult.exceptionOrNull()?.message
-            else -> null
-        },
-)
-}
-
-fun KmmResult<Verifier.VerifyPresentationResult>.toApiItemCredentials() = exceptionOrNull()?.let {
-    listOf(ParsedCredential(error = it.message))
-} ?: when (val it = getOrThrow()) {
-    is Verifier.VerifyPresentationResult.Success -> it.toApiItemCredentials()
-    is Verifier.VerifyPresentationResult.SuccessIso -> it.toApiItemCredentials()
-    is Verifier.VerifyPresentationResult.SuccessSdJwt -> it.toApiItemCredentials()
-    is Verifier.VerifyPresentationResult.SuccessUnsigned -> it.toApiItemCredentials()
-}
-
-fun Verifier.VerifyPresentationResult.Success.toApiItemCredentials(): Collection<ParsedCredential> =
-    vp.toApiItemCredentials()
-
-fun VerifiablePresentationParsed.toApiItemCredentials(): List<ParsedCredential> =
-    freshVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {
-        it.map {
-            ParsedCredential(
-                jwtCredential = it.vcJws.vc.credentialSubject,
-                credentialType = "EuPid2023",
-            )
+    is AuthnResponseResult.Error -> OpenId4VpUser(null, error.errorDescription ?: error.error)
+    is AuthnResponseResult.Success -> {
+        val presentations = presentationValidations.values.flatten()
+        if (validationReport.decision != ValidationDecision.ACCEPTED) {
+            OpenId4VpUser(null, presentations.firstNotNullOfOrNull { it.rejection()?.message }
+                ?: "PID presentation rejected")
+        } else {
+            val credentials = presentations.flatMap { it.presentation?.credentials.orEmpty() }.map {
+                val json = toJsonElement(it)
+                ParsedCredential(
+                    allFields = if (it is ValidatedCredential.IsoMdoc) JsonObject(
+                        json.values.filterIsInstance<JsonObject>().flatMap { it.entries }.associate { it.toPair() }
+                    ) else json,
+                    credentialType = it.credentialIdentifier,
+                )
+            }
+            if (credentials.isEmpty()) OpenId4VpUser(null, "No validated PID credentials")
+            else OpenId4VpUser(credentials, null)
         }
-    } ?: notVerifiablyFreshVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {
-        it.map { it.freshnessSummary }
-            .map { it.toApiItemCredential() }
-    } ?: invalidVerifiableCredentials.takeIf { it.isNotEmpty() }?.let {
-        it.map { ParsedCredential(error = "Structure invalid: $it") }
-    } ?: listOf(ParsedCredential(error = "No result"))
-
-fun Verifier.VerifyPresentationResult.SuccessUnsigned.toApiItemCredentials(): List<ParsedCredential> =
-    vc.toApiItemCredentials()
-
-fun VcJwsVerificationResultWrapper.toApiItemCredentials(): List<ParsedCredential> = if (freshnessSummary.isFresh) {
-    listOf(this).map {
-        ParsedCredential(
-            jwtCredential = it.vcJws.vc.credentialSubject,
-            credentialType = it.vcJws.vc.type.first(),
-        )
     }
-} else {
-    listOf(freshnessSummary.toApiItemCredential())
-}
-
-fun CredentialFreshnessSummary.VcJws.toApiItemCredential(): ParsedCredential =
-    ParsedCredential(error = errorMessage())
-
-fun Verifier.VerifyPresentationResult.SuccessSdJwt.toApiItemCredentials(): Collection<ParsedCredential> = listOf(
-    ParsedCredential(
-        allFields = reconstructedJsonObject,
-        credentialType = verifiableCredentialSdJwt.verifiableCredentialType,
-        error = freshnessSummary.errorMessage()
-    )
-)
-
-private fun CredentialTimelinessValidationSummary.errorMessage(): String? =
-    if (isNotYetValid) detailsNotYetValid()
-    else if (isExpired) detailsExpired()
-    else null
-
-fun CredentialTimelinessValidationSummary.detailsNotYetValid() = when (this) {
-    is Mdoc -> details.msoTimelinessValidationSummary?.mdocNotYetValidError?.errorMessage()
-    is SdJwt -> details.jwsNotYetValidError?.errorMessage()
-    is VcJws -> details.jwsNotYetValidError?.errorMessage()
-        ?: details.credentialNotYetValidError?.errorMessage()
-}
-
-private fun EntityNotYetValidError.errorMessage(): String =
-    "Not yet valid: ${notBeforeTime.formatted()}"
-
-fun CredentialTimelinessValidationSummary.detailsExpired() = when (this) {
-    is Mdoc -> details.msoTimelinessValidationSummary?.mdocExpiredError?.errorMessage()
-    is SdJwt -> details.jwsExpiredError?.errorMessage()
-    is VcJws -> details.jwsExpiredError?.errorMessage()
-        ?: details.credentialExpiredError?.errorMessage()
-}
-
-private fun EntityExpiredError.errorMessage(): String =
-    "Expired at: ${expirationTime.formatted()}"
-
-private fun kotlin.time.Instant.formatted(): String =
-    toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Format {
-        date(LocalDate.Format { year(); char('-'); monthNumber(); char('-'); day() })
-        char(' ')
-        time(LocalTime.Format { hour(); char(':'); minute(); char(':'); second() })
-    })
-
-fun Verifier.VerifyPresentationResult.SuccessIso.toApiItemCredentials(): Collection<ParsedCredential> =
-    documents.map { it.toApiItemCredential() }
-
-private fun IsoDocumentParsed.toApiItemCredential(): ParsedCredential = ParsedCredential(
-    allFields = buildJsonObject {
-        validItems.forEach {
-            put(it.elementIdentifier, it.elementValue.toJsonElement())
-        }
-    },
-    credentialType = mso.docType,
-    error = freshnessSummary.errorMessage(),
-)
-
-private fun CredentialFreshnessSummary.SdJwt.errorMessage(): String? =
-    if (isFresh) null else listOfNotNull(
-        tokenStatusValidationResult.errorMessage(),
-        timelinessValidationSummary.errorMessage()
-    ).takeIf { it.isNotEmpty() }?.joinToString()
-
-private fun CredentialFreshnessSummary.VcJws.errorMessage(): String? =
-    if (isFresh) null else listOfNotNull(
-        tokenStatusValidationResult.errorMessage(),
-        timelinessValidationSummary.errorMessage()
-    ).takeIf { it.isNotEmpty() }?.joinToString()
-
-private fun CredentialFreshnessSummary.Mdoc.errorMessage(): String? =
-    if (isFresh) null else listOfNotNull(
-        tokenStatusValidationResult.errorMessage(),
-        timelinessValidationSummary.errorMessage()
-    ).takeIf { it.isNotEmpty() }?.joinToString()
-
-private fun TokenStatusValidationResult.errorMessage(): String? = when (this) {
-    is TokenStatusValidationResult.Invalid -> "Invalid: Token status is ${this.tokenStatus}"
-    is TokenStatusValidationResult.Rejected -> "Rejected: Error is ${this.throwable.toString()}"
-    is TokenStatusValidationResult.Valid -> null
 }
 
 private fun String.sha256() = runCatching {
