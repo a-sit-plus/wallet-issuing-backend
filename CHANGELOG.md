@@ -7,10 +7,16 @@
    configured with `backend.metadata-registration-certificate`
  - Transport the configured metadata WRPAC leaf and intermediates in protected `x5c`, excluding a self-issued
    final root; keep metadata signing and registration configuration independently optional
+ - Load PID LoTEs alongside Wallet Provider LoTEs by default, with explicitly scoped A-SIT IACA 2026 anchors;
+   configure PID credential issuers and status signers independently through `backend.trust-lists`
+ - Validate PID login with VC-K's current credential/presentation API, requiring authorized issuers, current
+   validity and trusted status when advertised; build the principal only from accepted validated credentials
+ - Bind PID responses to the browser transaction and consume them once; rejected presentations and wallet
+   cancellations remain unauthenticated, receive the protocol acknowledgement and display a login error
  - Configure loaded LoTE profiles, stages, URL overrides and profile-scoped issuance/status anchors through
-   `backend.trust-lists`; default to Wallet Providers on acceptance/development with the A-SIT IACA 2026 root
+   `backend.trust-lists`; default to Wallet Providers and PID on acceptance/development with the A-SIT IACA 2026 root
  - Resolve wallet-instance and key-storage status lists as JWT/CWT and require a separately authorized Wallet
-   Provider status signer; reject revoked, expired, unavailable or untrusted status without changing PID login
+   Provider status signer; reject revoked, expired, unavailable or untrusted status
  - Default shared and SD-JWT credential status-list URLs to JWT (`application/statuslist+jwt`), and per-key mdoc
    URLs to CWT (`application/statuslist+cwt`), using the URI's configured credential identifier; honor explicit
    `Accept` preferences, quality/exclusion values and send `Vary: Accept`
