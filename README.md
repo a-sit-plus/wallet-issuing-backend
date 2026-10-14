@@ -346,19 +346,22 @@ it does mean the lists are not partitioned per credential type.
 > list each mdoc docType you issue explicitly. Note that its credentials then move to the new status list
 > path; already-issued mdocs keep pointing at the old path, which stays served.
 
-### Wallet Provider Trust
+### Wallet Provider and PID Trust
 
 Configure which Lists of Trusted Entities (LoTEs) the service loads and which Commission stages it
-uses with `backend.trust-lists`. By default it loads only `WALLET`, from acceptance and development,
-and adds the bundled A-SIT IACA 2026 certificate for wallet-attestation issuance and status:
+uses with `backend.trust-lists`. By default it loads `WALLET` and `PID`, from acceptance and development,
+and explicitly adds the bundled A-SIT IACA 2026 certificate to both profiles for issuance and status:
 
 ```yaml
 backend:
   trust-lists:
-    profiles: [WALLET]
+    profiles: [WALLET, PID]
     stages: [ACCEPTANCE, DEVELOPMENT]
     trusted-certificates:
       WALLET:
+        issuance: ["classpath:certificates/asit-iaca-2026.pem"]
+        status: ["classpath:certificates/asit-iaca-2026.pem"]
+      PID:
         issuance: ["classpath:certificates/asit-iaca-2026.pem"]
         status: ["classpath:certificates/asit-iaca-2026.pem"]
     # Optional independent anchors for authenticating the LoTE JWS signer:
@@ -373,8 +376,9 @@ backend:
 Profiles are `WALLET`, `PID`, `mDL`, `WRPAC` and `EAA`. Each profile authorizes only its own issuance
 and revocation services. Custom certificates are also scoped per profile and purpose: a Wallet
 Provider issuer anchor does not automatically authorize its status tokens, and the default A-SIT
-wallet anchors do not authorize PID issuers. Enable another profile to load its lists; custom trust
-for it requires its own `trusted-certificates` entry. PID login does not consume these scopes yet.
+wallet anchors do not authorize PID issuers. The A-SIT root is explicitly configured in each default
+profile. Enable another profile to load its lists; custom trust for it requires its own
+`trusted-certificates` entry.
 Empty `stages` permits custom anchors only; a disabled profile authorizes nothing.
 
 LoTE signatures and validity are checked before a list is used. Refresh happens on demand, at most
@@ -463,6 +467,49 @@ Files are loaded at startup. Replace the key, certificate chain and registration
 to rotate them. Load external configuration with, for example,
 `--spring.config.additional-location=file:/etc/issuer/metadata.yml`, supplying passwords through the
 deployment's secret configuration.
+
+### PID Login Validation
+
+PID login uses VC-K's `CredentialValidator` and presentation validation reports. Its PID trust scope
+covers `urn:eudi:pid:1` (SD-JWT) and `eu.europa.ec.eudi.pid.1` (mdoc); the login request currently asks
+for the SD-JWT PID, including given name, family name and birth date. Other credential types cannot
+use these anchors.
+
+An accepted login requires valid issuer and holder signatures, an issuer authorized by PID issuance
+anchors, current credential validity (with five minutes of clock leeway), holder binding to the
+request, and satisfaction of the requested DCQL claims. When a credential advertises status, that
+status must be available, current and valid, with a signer separately authorized by PID revocation
+anchors. Credentials without a status reference remain eligible. There is no permissive login mode.
+
+For custom PID trust, configure issuance and status CAs independently. For example, to use only local
+anchors for both loaded profiles:
+
+```yaml
+backend:
+  trust-lists:
+    profiles: [WALLET, PID]
+    stages: []
+    trusted-certificates:
+      WALLET:
+        issuance: ["classpath:certificates/asit-iaca-2026.pem"]
+        status: ["classpath:certificates/asit-iaca-2026.pem"]
+      PID:
+        issuance: ["file:/secrets/pid-issuer-ca.pem"]
+        status: ["file:/secrets/pid-status-signer-ca.pem"]
+```
+
+Use the CA directly issuing the status signer for `PID.status`; its signer certificate must not be
+self-signed or transport the trust anchor. Issuance anchors do not implicitly authorize status
+signers. Disabling `PID`, or lacking usable PID anchors, blocks PID login. Deployment trust sources
+and anchors must cover the PIDs presented by your wallets.
+
+Only an accepted response with validated credentials can create the browser's authenticated
+principal; its identity claims come from those credentials. Responses are bound to the browser's
+transaction and consumed once. Processed rejected presentations and wallet cancellations still
+receive the OpenID4VP HTTP 200 acknowledgement, but leave the browser unauthenticated and display an
+error, including the cause of response-level failures such as unmet credential requests. Reload the
+login page to start a new attempt. Malformed, uncorrelated or cross-transaction
+responses are rejected.
 
 ### Revocation And Status Lists
 
@@ -582,8 +629,9 @@ page offers PID SD-JWT, PID mdoc and mDL mdoc separately. It also offers both PI
 authorization-code transaction. Authorization-code offers remain available after the user logs in.
 
 For peer-to-peer Issuance_1–3, use a deployment with certificate chains registered in the corresponding
-PID/mDL Provider and WRPAC LoTEs. When wallet attestation is enabled, the issuer loads the Wallet
-Provider LoTEs from both the Commission acceptance and development stages:
+PID/mDL Provider and WRPAC LoTEs. The issuer defaults to Wallet Provider and PID LoTEs from both the
+Commission acceptance and development stages. PID login checks presented issuers against its PID
+trust scope; enable wallet attestation to require trusted Wallet Provider attestations for issuance:
 
 ```yaml
 backend:

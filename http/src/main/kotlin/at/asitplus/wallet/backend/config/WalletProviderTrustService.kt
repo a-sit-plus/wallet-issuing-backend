@@ -18,7 +18,7 @@ class WalletProviderTrustService(
         fetch: suspend (String) -> String = ::fetchTrustList,
         clock: Clock = Clock.System,
     ) : this(configuration, resourceLoader, TrustListService(
-        TrustListConfiguration().withWalletOverrides(configuration), resourceLoader, fetch, clock,
+        TrustListConfiguration(profiles = setOf(LoteProfile.WALLET)).withWalletOverrides(configuration), resourceLoader, fetch, clock,
     ))
 
     private val extras = loadAttestationAnchors(configuration.trustedCertificates, resourceLoader)

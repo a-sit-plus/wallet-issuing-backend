@@ -1,13 +1,9 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.openid.JarRequestParameters
-import at.asitplus.openid.JwtVcIssuerMetadata
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.openid.dcql.DCQLClaimsPathPointer
 import at.asitplus.openid.encodeToParameters
-import at.asitplus.signum.indispensable.josef.JsonWebKey
-import at.asitplus.signum.indispensable.josef.JwsCompactTyped
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Extensions.toResponseEntity
 import at.asitplus.wallet.backend.Paths
@@ -17,18 +13,8 @@ import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements.FAMILY_NAME
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements.GIVEN_NAME
 import at.asitplus.wallet.lib.RequestOptionsCredential
 import at.asitplus.wallet.lib.agent.KeyMaterial
-import at.asitplus.wallet.lib.agent.Validator
-import at.asitplus.wallet.lib.agent.ValidatorMdoc
-import at.asitplus.wallet.lib.agent.ValidatorSdJwt
-import at.asitplus.wallet.lib.agent.VerifierAgent
-import at.asitplus.wallet.lib.agent.validation.TokenStatusResolverImpl
 import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex
-import at.asitplus.wallet.lib.data.StatusListJwt
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
-import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListTokenPayload
-import at.asitplus.wallet.lib.jws.VerifyJwsObjectTrusted
-import at.asitplus.wallet.lib.oauth2.OAuth2Utils
 import at.asitplus.wallet.lib.openid.ClientIdScheme
 import at.asitplus.wallet.lib.openid.CreationOptions
 import at.asitplus.wallet.lib.openid.CredentialPresentationRequestBuilder
@@ -38,30 +24,21 @@ import at.asitplus.wallet.lib.openid.directPostHttpResponse
 import at.asitplus.wallet.lib.openid.loadRequestObjectHttpResponse
 import at.asitplus.wallet.lib.utils.DefaultMapStore
 import at.asitplus.wallet.lib.utils.MapStore
+import at.asitplus.wallet.lib.validation.CredentialValidator
+import at.asitplus.wallet.lib.validation.ValidationPolicy
 import com.benasher44.uuid.uuid4
 import io.github.aakira.napier.Napier
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpServletResponseWrapper
 import jakarta.servlet.http.HttpSession
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.apache.tomcat.websocket.AuthenticationException
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.GrantedAuthority
@@ -100,22 +77,10 @@ class PublicController(
     private val successHandler: AuthenticationSuccessHandler,
     private val sessionRepository: MapSessionRepository,
     private val verifierKeyMaterial: KeyMaterial,
+    private val pidCredentialValidator: CredentialValidator,
+    private val pidPresentationPolicy: ValidationPolicy,
 ) {
     private val transactionIdToSessionIdMap: MapStore<String, String> = DefaultMapStore(lifetime = 4.hours)
-
-    private val httpClient = HttpClient {
-        install(ContentNegotiation) {
-            json(joseCompliantSerializer)
-        }
-        install(Logging) {
-            logger = object : Logger {
-                override fun log(message: String) {
-                    Napier.i(message = message, tag = "at.asitplus.http")
-                }
-            }
-            level = LogLevel.ALL
-        }
-    }
 
     val clientIdScheme = runBlocking {
         ClientIdScheme.CertificateHash(
@@ -124,45 +89,11 @@ class PublicController(
         )
     }
 
-    fun validator() = Validator(
-        tokenStatusResolver = TokenStatusResolverImpl(
-            resolveStatusListToken = {
-                Napier.i("Resolving token status for from $it")
-                run {
-                    httpClient.get(it.string) {
-                        header(HttpHeaders.Accept, MediaTypes.Application.STATUSLIST_JWT)
-                    }.body<String>()
-                }.let {
-                    JwsCompactTyped<StatusListTokenPayload>(it)
-                }.let {
-                    StatusListJwt(value = it, resolvedAt = Clock.System.now())
-                }
-            },
-        ),
-    )
-
     val openIdVerifier = OpenId4VpVerifier(
         keyMaterial = verifierKeyMaterial,
         clientIdScheme = clientIdScheme,
-        verifier = VerifierAgent(
-            identifier = clientIdScheme.clientId,
-            validatorSdJwt = ValidatorSdJwt(
-                verifyJwsObject = VerifyJwsObjectTrusted(
-                    trustedKeys = { jwsCompact ->
-                        (jwsCompact.getPayload<JsonObject>().getOrNull()
-                            ?.get("iss") as? JsonPrimitive?)?.content?.let { iss ->
-                            val url = OAuth2Utils.insertWellKnownPath(iss, OpenIdConstants.WellKnownPaths.JwtVcIssuer)
-                            Napier.i("Resolving Key for $iss from $url")
-                            httpClient.get(url).body<JwtVcIssuerMetadata>().jsonWebKeySet?.keys?.toSet<JsonWebKey>()
-                        }
-                    }
-                ),
-                validator = validator(),
-            ),
-            validatorMdoc = ValidatorMdoc(
-                validator = validator(),
-            )
-        )
+        credentialValidator = pidCredentialValidator,
+        presentationPolicy = pidPresentationPolicy,
     )
 
     fun buildQrCodeUrl(requestUrl: String): String =
@@ -208,7 +139,7 @@ class PublicController(
     }
 
     @Serializable
-    data class StatusResponse(val authenticated: Boolean, val redirectUrl: String?)
+    data class StatusResponse(val authenticated: Boolean, val redirectUrl: String?, val error: String? = null)
 
     /**
      * Will be called async. from `login.html` to redirect the user to the front page,
@@ -222,6 +153,8 @@ class PublicController(
     ): StatusResponse {
         val user = session.getAttribute(SESSION_KEY_OPENID4VP_USER) as? OpenId4VpUser?
             ?: return StatusResponse(false, null)
+
+        if (!user.isAccepted) return StatusResponse(false, null, user.presentationError ?: "PID presentation rejected")
 
         Napier.i("${Paths.LoginStatusUrl} got successful authentication in session ${session.id}: $user")
         val targetUrl = setAuthenticationInSession(user, session, request, response)
@@ -295,11 +228,16 @@ class PublicController(
             Napier.w("${Paths.Transaction.ResultUrl}/$id returns NOT_FOUND")
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
-        val user = openIdVerifier.validateAuthnResponse(requestBody)
+        val result = openIdVerifier.validateAuthnResponse(requestBody)
             .getOrElse {
                 Napier.w("${Paths.Transaction.ResultUrl}/$id error", it)
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, it.localizedMessage, it)
-            }.toUser()
+            }
+        val expectedResponseUrl = configurationProperties.publicContext.appendPath(Paths.Transaction.ResultUrl + "/" + id)
+        if (result.request.responseUrl != expectedResponseUrl) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Presentation answers another login transaction")
+        }
+        val user = result.toUser()
         sessionRepository.findById(desktopSessionId)?.let { session ->
             Napier.i("${Paths.Transaction.ResultUrl}/$id is updating session ${session.id}")
             session.setAttribute(SESSION_KEY_OPENID4VP_USER, user)

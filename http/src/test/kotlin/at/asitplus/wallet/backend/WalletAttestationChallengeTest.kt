@@ -143,6 +143,7 @@ class WalletAttestationChallengeTest {
                 )
             }
             registry.add("backend.trust-lists.trusted-certificates.WALLET.status[0]") { pem.toUri().toString() }
+            registry.add("backend.trust-lists.profiles[0]") { "WALLET" }
             registry.add("backend.wallet-attestation.enabled") { true }
             registry.add("backend.wallet-attestation.trusted-certificates") { pem.toUri().toString() }
             // Fail fast without network access; the configured issuing CA authorizes this provider.
