@@ -1,7 +1,13 @@
 # Changelog
 
-Unreleased:
+9.0.0-SNAPSHOT (unreleased):
  - Publish CWT status list tokens with the required COSE_Sign1 tag 18
+ - Use VC-K prepared HTTP responses for OAuth2, credential issuance, and OpenID4VP login endpoints
+ - Return credential token and DPoP errors with HTTP 401 and `WWW-Authenticate`
+ - Forward protocol headers, including fresh attestation challenges, token cache controls, and `Vary: Accept`
+ - Respect metadata content negotiation quality values and preserve the manual iPhone redirect page
+ 
+8.0.0:
  - Select the credential signing key per credential scheme with `backend.credential-keys`, keyed by `vct` (SD-JWT)
    or ISO docType (mdoc)
  - Publish every configured signing key in the issuer JWKS
@@ -9,7 +15,7 @@ Unreleased:
    `/credentials/status/<slug>/<timePeriod>`; `/credentials/status/current` aggregates all of them
  - **Breaking:** `backend.iso-mdoc-issuer-key` has been replaced by `backend.credential-keys`; list each mdoc
    docType explicitly to keep a separate mdoc key
- - Update to VC-K 8.0.0
+ - Update to VC-K 9.0.0-SNAPSHOT
  - Implement test cases for EUDI Launchpad 2026
 
 7.0.0:

@@ -26,7 +26,8 @@ import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.WalletService
+import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.collections.shouldContain
@@ -37,6 +38,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.ktor.http.*
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.json.buildJsonObject
@@ -45,7 +47,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * Tests the issuing process,
@@ -64,7 +65,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun pid_new_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eudi:pid:1"), SD_JWT)
+        val requestOptions = OpenId4VciClient.RequestOptions(sdJwtScheme("urn:eudi:pid:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -76,7 +77,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun pid_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(isoScheme("eu.europa.ec.eudi.pid.1"), ISO_MDOC)
+        val requestOptions = OpenId4VciClient.RequestOptions(isoScheme("eu.europa.ec.eudi.pid.1"), ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -91,7 +92,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun cor_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(sdJwtScheme("eu.europa.ec.eudi.cor.1"), SD_JWT)
+        val requestOptions = OpenId4VciClient.RequestOptions(sdJwtScheme("eu.europa.ec.eudi.cor.1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -103,7 +104,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun por_sdjwt_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eu.europa.ec.eudi:por:1"), SD_JWT)
+        val requestOptions = OpenId4VciClient.RequestOptions(sdJwtScheme("urn:eu.europa.ec.eudi:por:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -122,7 +123,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun ehic_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eudi:ehic:1"), SD_JWT)
+        val requestOptions = OpenId4VciClient.RequestOptions(sdJwtScheme("urn:eudi:ehic:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -140,7 +141,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun taxid_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(sdJwtScheme("urn:eu.europa.ec.eudi:tax:1"), SD_JWT)
+        val requestOptions = OpenId4VciClient.RequestOptions(sdJwtScheme("urn:eu.europa.ec.eudi:tax:1"), SD_JWT)
 
         val credential = loadCredential(requestOptions)
 
@@ -159,7 +160,7 @@ class IssuingInternalAuthorizationServerTest {
     @Test
     fun ida15_binding_ok() = runTest {
         val credential = loadCredential(
-            WalletService.RequestOptions(sdJwtScheme(Ida15BindingClaims.VCT), SD_JWT)
+            OpenId4VciClient.RequestOptions(sdJwtScheme(Ida15BindingClaims.VCT), SD_JWT)
         )
 
         val serializedCredential = credential.credentials.shouldNotBeNull().first().shouldNotBeNull()
@@ -180,7 +181,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun mdl_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(isoScheme("org.iso.18013.5.1.mDL"), ISO_MDOC)
+        val requestOptions = OpenId4VciClient.RequestOptions(isoScheme("org.iso.18013.5.1.mDL"), ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -193,7 +194,7 @@ class IssuingInternalAuthorizationServerTest {
 
     @Test
     fun age_iso_ok() = runTest {
-        val requestOptions = WalletService.RequestOptions(isoScheme("eu.europa.ec.av.1"), ISO_MDOC)
+        val requestOptions = OpenId4VciClient.RequestOptions(isoScheme("eu.europa.ec.av.1"), ISO_MDOC)
 
         val credential = loadCredential(requestOptions)
 
@@ -211,7 +212,7 @@ class IssuingInternalAuthorizationServerTest {
     private fun isoScheme(docType: String) =
         AttributeIndex.resolveIsoDoctype(docType) ?: error("ISO mdoc scheme not resolved: $docType")
 
-    private suspend fun loadCredential(requestOptions: WalletService.RequestOptions): CredentialResponseParameters {
+    private suspend fun loadCredential(requestOptions: OpenId4VciClient.RequestOptions): CredentialResponseParameters {
         val client = Client()
         val signDpop: SignJwtFun<JsonWebToken> = SignJwt(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk())
         val state = uuid4().toString()
@@ -265,7 +266,7 @@ class IssuingInternalAuthorizationServerTest {
             ),
         ).getOrThrow()
         return credential
-            .shouldBeInstanceOf<CredentialIssuer.CredentialResponse.Plain>()
+            .shouldBeInstanceOf<OpenId4VciServer.CredentialResponse.Plain>()
             .response
     }
 

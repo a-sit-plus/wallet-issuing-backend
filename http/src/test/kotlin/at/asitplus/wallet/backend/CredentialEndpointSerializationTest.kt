@@ -18,7 +18,7 @@ import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.WalletService
+import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -40,6 +40,9 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest
@@ -79,6 +82,7 @@ class CredentialEndpointSerializationTest {
 
         val responseBody = mockMvc.perform(asyncDispatch(credentialResult))
             .andExpect(status().isOk)
+            .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
             .andReturn().response.contentAsString
 
         responseBody shouldNotContain "coerceToInlineType"
@@ -87,13 +91,55 @@ class CredentialEndpointSerializationTest {
             .first().credentialString.shouldNotBeNull()
     }
 
+    @Test
+    fun `credential rejects invalid access tokens with the requested authentication scheme`() {
+        listOf("Bearer", "DPoP").forEach { scheme ->
+            val initial = mockMvc.post(Paths.CredentialUrl) {
+                contentType = MediaType.APPLICATION_JSON
+                header(HttpHeaders.AUTHORIZATION, "$scheme invalid-token")
+                content = "{}"
+            }.andExpect { request { asyncStarted() } }.andReturn()
+            mockMvc.perform(asyncDispatch(initial))
+                .andExpect(status().isUnauthorized)
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "$scheme error=\"invalid_token\""))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error").value("invalid_token"))
+        }
+    }
+
+    @Test
+    @WithOAuth2AuthenticationToken
+    fun `credential DPoP errors use resource server challenges`() = runTest {
+        val signDpop: SignJwtFun<JsonWebToken> = SignJwt(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk())
+        val (token, credentialRequest) = authorizeAndCreateCredentialRequest(Client(), signDpop)
+        val proofWithoutNonce = BuildDPoPHeader(
+            signDpop = signDpop,
+            url = "http://localhost${Paths.CredentialUrl}",
+            httpMethod = KtorHttpMethod.Post.value,
+            accessToken = token.accessToken,
+        ).toString()
+        listOf("malformed" to "invalid_dpop_proof", proofWithoutNonce to "use_dpop_nonce").forEach { (proof, error) ->
+            val initial = mockMvc.post(Paths.CredentialUrl) {
+                contentType = MediaType.APPLICATION_JSON
+                header(HttpHeaders.AUTHORIZATION, token.toHttpHeaderValue())
+                header(KtorHttpHeaders.DPoP, proof)
+                content = joseCompliantSerializer.encodeToString(credentialRequest.request)
+            }.andExpect { request { asyncStarted() } }.andReturn()
+            val result = mockMvc.perform(asyncDispatch(initial))
+                .andExpect(status().isUnauthorized)
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "DPoP error=\"$error\""))
+                .andExpect(jsonPath("$.error").value(error))
+            if (error == "use_dpop_nonce") result.andExpect(header().exists("DPoP-Nonce"))
+        }
+    }
+
     private suspend fun authorizeAndCreateCredentialRequest(
         client: Client,
         signDpop: SignJwtFun<JsonWebToken>,
-    ): Pair<TokenResponseParameters, WalletService.CredentialRequest.Plain> {
+    ): Pair<TokenResponseParameters, OpenId4VciClient.CredentialRequest.Plain> {
         val credentialFormat = client.oid4vciClient
             .selectSupportedCredentialFormat(
-                WalletService.RequestOptions(
+                OpenId4VciClient.RequestOptions(
                     AttributeIndex.resolveSdJwtAttributeType("urn:eudi:pid:1")
                         ?: error("EU PID SD-JWT scheme not resolved"),
                     SD_JWT,
@@ -142,7 +188,7 @@ class CredentialEndpointSerializationTest {
             credentialFormat = credentialFormat,
             clientNonce = credentialNonce.response.clientNonce,
         ).getOrThrow().first()
-            .shouldBeInstanceOf<WalletService.CredentialRequest.Plain>()
+            .shouldBeInstanceOf<OpenId4VciClient.CredentialRequest.Plain>()
 
         return accessToken to credentialRequest
     }

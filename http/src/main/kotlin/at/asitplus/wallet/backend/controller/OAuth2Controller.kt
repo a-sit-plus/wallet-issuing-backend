@@ -1,28 +1,24 @@
 package at.asitplus.wallet.backend.controller
 
 import at.asitplus.catching
-import at.asitplus.openid.AttestationChallengeResponse
-import at.asitplus.openid.decode
-import at.asitplus.openid.decodeFromFormUrlEncoded
-import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.OpenIdConstants
-import at.asitplus.openid.PushedAuthenticationResponseParameters
 import at.asitplus.openid.RequestParameters
 import at.asitplus.openid.TokenRequestParameters
-import at.asitplus.openid.TokenResponseParameters
+import at.asitplus.openid.decode
+import at.asitplus.openid.decodeFromFormUrlEncoded
 import at.asitplus.wallet.backend.Extensions.toRequestInfo
+import at.asitplus.wallet.backend.Extensions.toResponseEntity
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.auth.SpringSecurityAuthenticationSupplier
-import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
+import at.asitplus.wallet.lib.oauth2.toHttpResponse
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
 import io.github.aakira.napier.Napier
-import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
@@ -32,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
@@ -47,15 +42,17 @@ class OAuth2Controller(
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
-    suspend fun openidMetadata(): OAuth2AuthorizationServerMetadata {
+    suspend fun openidMetadata(): ResponseEntity<String> {
         return authorizationService.metadata()
             .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $it") }
+            .toHttpResponse().toResponseEntity()
     }
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER, produces = [APPLICATION_JSON_VALUE])
-    suspend fun oauthMetadata(): OAuth2AuthorizationServerMetadata {
+    suspend fun oauthMetadata(): ResponseEntity<String> {
         return authorizationService.metadata()
             .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $it") }
+            .toHttpResponse().toResponseEntity()
     }
 
     /**
@@ -64,27 +61,24 @@ class OAuth2Controller(
      * Not available without wallet attestation, where no `challenge_endpoint` is advertised.
      */
     @PostMapping(Paths.ChallengeUrl, produces = [APPLICATION_JSON_VALUE])
-    suspend fun attestationChallenge(response: HttpServletResponse): AttestationChallengeResponse {
+    suspend fun attestationChallenge(): ResponseEntity<String> {
         Napier.i("${Paths.ChallengeUrl} called")
         val result = authorizationService.attestationChallenge().getOrElse {
             Napier.w("${Paths.ChallengeUrl} got error", it)
             throw it
         } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
         Napier.d("${Paths.ChallengeUrl} returns $result")
-        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-        return result
+        return result.toHttpResponse().toResponseEntity()
     }
 
     /**
      * Called by the Wallet when pushing an authorization request, see [SimpleAuthorizationService.par]
      */
     @PostMapping(Paths.ParUrl, produces = [APPLICATION_JSON_VALUE])
-    @ResponseStatus(HttpStatus.CREATED)
     suspend fun par(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-        response: HttpServletResponse,
-    ): PushedAuthenticationResponseParameters {
+    ): ResponseEntity<String> {
         Napier.i("${Paths.ParUrl} called")
         Napier.v("${Paths.ParUrl} called with $requestBody")
         val params: RequestParameters = requestBody.decodeFromFormUrlEncoded()
@@ -99,9 +93,7 @@ class OAuth2Controller(
             throw it
         }
         Napier.d("${Paths.ParUrl} returns $result")
-        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-        result.dpopNonce?.let { response.addHeader(HttpHeaders.DPoPNonce, it) }
-        return result.response
+        return result.toHttpResponse().toResponseEntity()
     }
 
     /**
@@ -118,7 +110,7 @@ class OAuth2Controller(
         request: HttpServletRequest,
         model: ModelMap,
         authentication: Authentication? = null,
-    ): ModelAndView {
+    ): Any {
         Napier.i("${Paths.AuthorizeUrl} called")
         Napier.v("${Paths.AuthorizeUrl} called with $requestParams and $requestBody")
         val params: RequestParameters =
@@ -142,7 +134,7 @@ class OAuth2Controller(
             model["url"] = result.url
             ModelAndView("iphone-redirect")
         } else {
-            ModelAndView("redirect:${result.url}")
+            result.toHttpResponse().toResponseEntity()
         }
     }
 
@@ -156,8 +148,7 @@ class OAuth2Controller(
     suspend fun token(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-        response: HttpServletResponse,
-    ): TokenResponseParameters {
+    ): ResponseEntity<String> {
         Napier.i("${Paths.TokenUrl} called")
         Napier.v("${Paths.TokenUrl} called with $requestBody")
         val params: TokenRequestParameters = requestBody.decodeFromFormUrlEncoded()
@@ -171,9 +162,7 @@ class OAuth2Controller(
             throw it
         }
         Napier.d("${Paths.TokenUrl} returns $result")
-        response.addHeader(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-        result.dpopNonce?.let { response.addHeader(HttpHeaders.DPoPNonce, it) }
-        return result.response
+        return result.toHttpResponse().toResponseEntity()
     }
 
 }

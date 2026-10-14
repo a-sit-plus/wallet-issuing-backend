@@ -1,21 +1,18 @@
 package at.asitplus.wallet.backend.controller
 
-import at.asitplus.openid.ClientNonceResponse
 import at.asitplus.openid.OpenIdConstants
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.Extensions.toRequestInfo
+import at.asitplus.wallet.backend.Extensions.toResponseEntity
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.MediaTypes
-import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oidvci.CredentialIssuer
-import at.asitplus.wallet.lib.oidvci.WalletService
+import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
+import at.asitplus.wallet.lib.oidvci.toHttpResponse
 import io.github.aakira.napier.Napier
-import io.ktor.client.utils.CacheControl
 import io.ktor.http.*
 import jakarta.servlet.http.HttpServletRequest
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.ResponseEntity
@@ -39,19 +36,10 @@ class OpenId4VciController(
         OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER,
         produces = [APPLICATION_JSON_VALUE, MediaTypes.Application.JWT]
     )
-    suspend fun issuerMetadata(@RequestHeader(HttpHeaders.Accept, required = false) accept: String?): ResponseEntity<*> {
-        if (accept?.split(',')?.any { it.trim().substringBefore(';') == MediaTypes.Application.JWT } == true) {
-            val signed = credentialIssuer.signedMetadata().getOrThrow()
-            Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $signed")
-            return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(MediaTypes.Application.JWT))
-                .body(signed.toString())
-        }
-        val metadata = credentialIssuer.metadata
-        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $metadata")
-        // Serialize explicitly, because Spring would pick Jackson for the untyped ResponseEntity
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
-            .body(joseCompliantSerializer.encodeToString(metadata))
+    suspend fun issuerMetadata(@RequestHeader(HttpHeaders.Accept, required = false) accept: String?): ResponseEntity<String> {
+        val result = credentialIssuer.metadataHttpResponse(accept).getOrThrow()
+        Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_CREDENTIAL_ISSUER} returns $result")
+        return result.toResponseEntity()
     }
 
     @GetMapping(
@@ -68,32 +56,29 @@ class OpenId4VciController(
      * Called by the Wallet to get a nonce for their proof-of-possessions, see [CredentialIssuer.nonceWithDpopNonce].
      */
     @PostMapping(Paths.NonceUrl, produces = [APPLICATION_JSON_VALUE])
-    suspend fun nonce(): ResponseEntity<ClientNonceResponse> {
+    suspend fun nonce(): ResponseEntity<String> {
         Napier.i("${Paths.NonceUrl} called")
         val result = credentialIssuer.nonceWithDpopNonce().getOrElse {
             Napier.w("${Paths.NonceUrl} got error", it)
             throw it
         }
         Napier.d("${Paths.NonceUrl} returns $result")
-        return ResponseEntity.status(HttpStatus.OK)
-            .header(HttpHeaders.CacheControl, CacheControl.NO_STORE)
-            .apply { result.dpopNonce?.let { header(HttpHeaders.DPoPNonce, it) } }
-            .body(result.response)
+        return result.toHttpResponse().toResponseEntity()
     }
 
     /**
      * Issues the credential, when the token sent by the Wallet is valid,
      * see [CredentialIssuer.credential].
      */
-    @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE])
+    @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE, MediaTypes.Application.JWT])
     suspend fun credential(
         @RequestBody requestBody: String,
         request: HttpServletRequest,
-    ): ResponseEntity<*> {
+    ): ResponseEntity<String> {
         Napier.i("${Paths.CredentialUrl} called")
         val authorizationHeader = request.getHeader(HttpHeaders.Authorization)
         Napier.v("${Paths.CredentialUrl} called with $authorizationHeader and $requestBody")
-        val params = WalletService.CredentialRequest.parse(requestBody).getOrElse {
+        val params = OpenId4VciClient.CredentialRequest.parse(requestBody).getOrElse {
             Napier.w("${Paths.CredentialUrl} can't parse request", it)
             throw it
         }
@@ -111,23 +96,7 @@ class OpenId4VciController(
             throw it
         }
         Napier.d("${Paths.CredentialUrl} returns $credential")
-        return credential.toResponseEntity()
+        return credential.toHttpResponse().toResponseEntity()
     }
-
-    private suspend fun CredentialIssuer.CredentialResponse.toResponseEntity(): ResponseEntity<*> =
-        when (this) {
-            is CredentialIssuer.CredentialResponse.Encrypted -> this.toResponseEntity()
-            is CredentialIssuer.CredentialResponse.Plain -> this.toResponseEntity()
-        }
-
-    private suspend fun CredentialIssuer.CredentialResponse.Plain.toResponseEntity() =
-        ResponseEntity.status(HttpStatus.OK)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(joseCompliantSerializer.encodeToString(response))
-
-    private suspend fun CredentialIssuer.CredentialResponse.Encrypted.toResponseEntity() =
-        ResponseEntity.status(HttpStatus.OK)
-            .contentType(MediaType.parseMediaType(MediaTypes.Application.JWT))
-            .body(response.serialize())
 
 }
