@@ -427,7 +427,7 @@ Clients requesting `Accept: application/jwt` at `/.well-known/openid-credential-
 metadata with protected `typ=openidvci-issuer-metadata+jwt`, `sub=credential_issuer` and `iat`. VC-K
 includes the configured dataset as `issuer_info` format `registrar_dataset` with JSON object data, and
 the WRPRC as format `registration_cert` with the unchanged compact JWT string. Both appear under the
-metadata signature. Without either resource, `issuer_info` is omitted; without a metadata key,
+metadata signature. With neither resource configured, `issuer_info` is omitted; without a metadata key,
 the existing ephemeral-key signing remains available. Unsigned JSON negotiation and `Vary: Accept`
 remain available, with registration artifacts included only in the signed representation.
 
