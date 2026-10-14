@@ -255,6 +255,9 @@ Key settings:
 - `backend.credentials.lifetime` controls issued credential validity as an ISO-8601 duration, for example
   `PT60M`, `P7D`, or `P180D`.
 - `backend.metadata.name` and `backend.metadata.logo` populate OpenID4VCI display metadata.
+- `backend.metadata-key` optionally supplies the WRPAC signing key and certificate chain for signed
+  issuer metadata. `backend.metadata-registration-certificate` optionally supplies the WRPRC JWT
+  resource. See [Signed Issuer Metadata](#signed-issuer-metadata).
 - `backend.issuer-key` signs every credential without its own key in `backend.credential-keys`, and that
   credential's status lists.
 - `backend.credential-keys` selects the signing key per credential, keyed by `vct` (SD-JWT) or ISO docType
@@ -391,6 +394,76 @@ remain additional wallet/KA **issuance** anchors. Legacy `wallet-provider-lote-u
 wallet profile URLs when supplied, and `lote-signer-certificates` adds signer pins; prefer the new
 `trust-lists` configuration. Disabling the wallet profile also disables these legacy issuance anchors.
 
+### Signed Issuer Metadata
+
+Configure a Wallet Relying Party Access Certificate (WRPAC) and its private key with
+`backend.metadata-key`. Configure the registrar's compact Wallet Relying Party Registration
+Certificate (WRPRC) JWT with `backend.metadata-registration-certificate`. Supply the registrar dataset
+JSON resource with `backend.metadata-registrar-dataset`. All three options are independently optional:
+
+```yaml
+backend:
+  public-context: https://issuer.example.org
+  metadata-key:
+    type: KEYSTORE
+    keystore:
+      path: file:/secrets/wrpac.p12
+      type: PKCS12
+      alias: wrpac
+      password: ${METADATA_KEYSTORE_PASSWORD}
+      alias-password: ${METADATA_KEY_PASSWORD}
+  metadata-registration-certificate: file:/secrets/issuer-registration.jwt
+  metadata-registrar-dataset: file:/secrets/issuer-registrar-dataset.json
+```
+
+The keystore alias contains the signing private key, its WRPAC leaf and intermediate certificates.
+The signed metadata's protected `x5c` includes the leaf and intermediates, excluding a self-issued
+final root. The existing `FILE` key configuration supports a private key and a single certificate;
+use a keystore for a complete chain. The registration property is a Spring resource location, such
+as `file:/secrets/issuer-registration.jwt` or `classpath:issuer-registration.jwt`. Surrounding file
+whitespace is removed; an empty registration resource is a configuration error.
+
+Clients requesting `Accept: application/jwt` at `/.well-known/openid-credential-issuer` receive
+metadata with protected `typ=openidvci-issuer-metadata+jwt`, `sub=credential_issuer` and `iat`. VC-K
+includes the configured dataset as `issuer_info` format `registrar_dataset` with JSON object data, and
+the WRPRC as format `registration_cert` with the unchanged compact JWT string. Both appear under the
+metadata signature. With neither resource configured, `issuer_info` is omitted; without a metadata key,
+the existing ephemeral-key signing remains available. Unsigned JSON negotiation and `Vary: Accept`
+remain available, with registration artifacts included only in the signed representation.
+
+The dataset resource must be a JSON object matching VC-K's `WrpRegistrarDataset`: `identifier`
+(an array of objects with `type`, a scheme URI, and `identifier`), `srvDescription` (an array of
+`lang`/`content` objects), `registryURI` (the registrar URI), and `providesAttestations` (credential
+format and metadata descriptors). The arrays and registry URI must be non-empty; malformed or
+incomplete configured resources fail startup. The JSON object is preserved in metadata.
+
+For example, this illustrates one SD-JWT credential; obtain the actual dataset from your registrar
+and include every credential type your deployment advertises:
+
+```json
+{
+  "identifier": [{"type": "https://example.org/identifier-scheme", "identifier": "registered-provider-id"}],
+  "srvDescription": [{"lang": "en", "content": "Credential issuing service"}],
+  "registryURI": "https://registrar.example/issuers/provider",
+  "providesAttestations": [{"format": "dc+sd-jwt", "meta": {"vct_values": ["urn:eudi:pid:1"]}}]
+}
+```
+
+VC-K's issuer metadata validator requires exactly one `registrar_dataset` for acceptance. A WRPRC
+alone does not replace it; the WRPRC remains optional under that metadata check. Publication options
+remain optional here so generic deployments can retain their existing metadata behavior. To enable
+trusted signed metadata acceptance, configure the dataset and WRPAC, and the WRPRC when your
+registration requires it. This service loads the artifacts; clients validate their trust and status.
+
+Obtain a WRPRC identifying the same legal entity as the WRPAC and covering every advertised PID,
+mDL and other credential type in the catalog. Credential document-signing keys and PID-login request
+signing are configured separately. The service publishes supplied registration material without
+checking its provider trust, scope or status; VC-K and the consuming wallet validate fetched metadata.
+Files are loaded at startup. Replace the key, certificate chain and registration together and restart
+to rotate them. Load external configuration with, for example,
+`--spring.config.additional-location=file:/etc/issuer/metadata.yml`, supplying passwords through the
+deployment's secret configuration.
+
 ### Revocation And Status Lists
 
 Token status list output is controlled by `backend.revocation-list`:
@@ -521,6 +594,8 @@ backend:
       path: file:/secrets/wrpac.p12
       type: PKCS12
       alias: wrpac
+  metadata-registration-certificate: file:/secrets/issuer-registration.jwt
+  metadata-registrar-dataset: file:/secrets/issuer-registrar-dataset.json
   credential-keys:
     "urn:eudi:pid:1":              # PID SD-JWT signing certificate
       type: KEYSTORE
@@ -548,6 +623,10 @@ HTTPS to the configured URLs plus JAdES signature integrity. The URLs can be ove
 the issuer keeps its normal certificates. Clients requesting
 `Accept: application/jwt` from `/.well-known/openid-credential-issuer` receive metadata signed with
 `backend.metadata-key`. The default key is ephemeral and is unsuitable for the trusted WRPAC case.
+Optionally configure `backend.metadata-registration-certificate` with the registrar-signed WRPRC
+JWT resource. VC-K includes it in signed metadata's `issuer_info`; the WRPAC leaf and intermediates
+are transported in protected `x5c`. Both metadata properties are optional. See the
+[signed issuer metadata configuration](#signed-issuer-metadata) for provisioning and renewal.
 Wallet trust profiles, custom anchors and status validation are described in
 [Wallet Provider Trust](#wallet-provider-trust).
 
