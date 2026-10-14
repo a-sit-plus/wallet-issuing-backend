@@ -2,7 +2,6 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.openid.IssuerInfo
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.toJcaCertificateBlocking
@@ -64,7 +63,6 @@ import io.github.aakira.napier.Napier
 import io.ktor.client.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509CertificateHolder
@@ -354,14 +352,7 @@ class BackendConfiguration {
                     it.subjectX500Principal == it.issuerX500Principal
                 }) chain.dropLast(1) else chain
         }
-        val issuerInfo = configuration.metadataRegistrationCertificate?.let { location ->
-            val registration = loadResource(resourceLoader, location).trim()
-            require(registration.isNotEmpty()) { "Metadata registration certificate is empty" }
-            listOf(IssuerInfo(
-                format = OpenIdConstants.IssuerInfo.REGISTRATION_CERT_FORMAT,
-                data = JsonPrimitive(registration),
-            ))
-        }
+        val issuerInfo = loadMetadataIssuerInfo(configuration, resourceLoader)
         val schemes = credentialOfferings.map { it.scheme }.toSet()
         // Every signing key must appear here, or wallets cannot verify credentials signed with it.
         val signingKeys = statusListGroups.all.map { it.keyMaterial }.toSet()

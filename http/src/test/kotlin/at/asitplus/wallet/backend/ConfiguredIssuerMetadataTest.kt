@@ -40,9 +40,12 @@ class ConfiguredIssuerMetadataTest {
         val payload = Json.parseToJsonElement(signed.plainPayload.decodeToString()).jsonObject
         payload["credential_issuer"]!!.jsonPrimitive.content shouldBe "https://issuer.example"
         payload["sub"] shouldBe payload["credential_issuer"]
-        payload["issuer_info"]!!.jsonArray.single().jsonObject["data"]!!.jsonPrimitive.content shouldBe registration
+        val entries = payload["issuer_info"]!!.jsonArray.associate { it.jsonObject["format"]!!.jsonPrimitive.content to it.jsonObject["data"]!! }
+        entries["registration_cert"]!!.jsonPrimitive.content shouldBe registration
+        entries["registrar_dataset"] shouldBe Json.parseToJsonElement(
+            javaClass.getResource("/metadata-registrar-dataset.json")!!.readText()
+        )
         signed.jwsHeader.type shouldBe "openidvci-issuer-metadata+jwt"
-        payload["issuer_info"]!!.jsonArray.single().jsonObject["format"]!!.jsonPrimitive.content shouldBe "registration_cert"
         check(payload["iat"]!!.jsonPrimitive.long > 0)
         check(payload["credential_configurations_supported"]!!.jsonObject.size >= 9)
     }
@@ -73,6 +76,7 @@ class ConfiguredIssuerMetadataTest {
                 "backend.metadata-key.keystore.password" to password,
                 "backend.metadata-key.keystore.alias-password" to password,
                 "backend.metadata-registration-certificate" to registrationPath.toUri().toString(),
+                "backend.metadata-registrar-dataset" to "classpath:metadata-registrar-dataset.json",
             )
             properties.forEach { (key, value) -> registry.add(key) { value } }
         }
