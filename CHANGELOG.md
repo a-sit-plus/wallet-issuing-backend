@@ -2,7 +2,8 @@
 
 9.0.0-SNAPSHOT (unreleased):
  - Include an independently optional registrar dataset JSON resource in signed issuer metadata through
-   `backend.metadata-registrar-dataset`; reject malformed or incomplete configured datasets at startup
+   `backend.metadata-registrar-dataset`, accepting the dataset object or a registrar's `issuer_info` export;
+   reject malformed datasets at startup and warn about datasets VC-K's validator would reject
  - Include an optional registrar-signed WRPRC JWT in signed issuer metadata through VC-K's `issuer_info`,
    configured with `backend.metadata-registration-certificate`
  - Transport the configured metadata WRPAC leaf and intermediates in protected `x5c`, excluding a self-issued

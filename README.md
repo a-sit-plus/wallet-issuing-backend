@@ -435,11 +435,14 @@ metadata signature. With neither resource configured, `issuer_info` is omitted; 
 the existing ephemeral-key signing remains available. Unsigned JSON negotiation and `Vary: Accept`
 remain available, with registration artifacts included only in the signed representation.
 
-The dataset resource must be a JSON object matching VC-K's `WrpRegistrarDataset`: `identifier`
-(an array of objects with `type`, a scheme URI, and `identifier`), `srvDescription` (an array of
-`lang`/`content` objects), `registryURI` (the registrar URI), and `providesAttestations` (credential
-format and metadata descriptors). The arrays and registry URI must be non-empty; malformed or
-incomplete configured resources fail startup. The JSON object is preserved in metadata.
+The dataset resource is either the dataset JSON object itself or an `issuer_info` export from the
+registrar, i.e. an array of (or a single) `{"format": ..., "data": ...}` element containing exactly
+one `registrar_dataset`, whose `data` is used. The dataset must be a non-empty JSON object; malformed
+resources fail startup. The JSON object is preserved in metadata as supplied. VC-K's
+`WrpRegistrarDataset` expects `identifier` (an array of objects with `type`, a scheme URI, and
+`identifier`), `srvDescription` (an array of `lang`/`content` objects), `registryURI` (the registrar
+URI), and `providesAttestations` (credential format and metadata descriptors), all non-empty. Datasets
+in other shapes are still published, but startup logs a warning because VC-K clients may reject them.
 
 For example, this illustrates one SD-JWT credential; obtain the actual dataset from your registrar
 and include every credential type your deployment advertises:

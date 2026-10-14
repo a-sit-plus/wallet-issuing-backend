@@ -26,18 +26,36 @@ class MetadataIssuerInfoTest {
         both.map { it.format } shouldBe listOf("registrar_dataset", "registration_cert")
     }
 
-    @Test fun `malformed and incomplete configured datasets fail loading`() {
-        val invalid = listOf("not-json", "[]", "{}") +
-            listOf("identifier", "srvDescription", "registryURI", "providesAttestations").flatMap { field ->
-                listOf(JsonObject(dataset - field).toString(), JsonObject(dataset + (field to
-                    if (field == "registryURI") JsonPrimitive("") else JsonArray(emptyList()))).toString())
-            }
-        invalid.forEach { json ->
-            val path = directory.resolve("dataset.json")
-            Files.writeString(path, json)
-            shouldThrowAny {
-                loadMetadataIssuerInfo(BackendConfigurationProperties(metadataRegistrarDataset = path.toUri().toString()), resources)
-            }
+    @Test fun `issuer_info exports and datasets not matching VC-K are accepted`() {
+        val registrar = """{"identifier":[{"type":"http://data.europa.eu/eudi/id/VATIN","identifier":"U60778947"}],""" +
+            """"srvDescription":[{"lang":"en","value":"Testing"}],"registryURI":"https://registrar.example/wrp/1",""" +
+            """"credential":[{"format":"dc+sd-jwt","meta":{"vct_values":["urn:eudi:pid:1"]}}]}"""
+        listOf(
+            registrar to registrar,
+            """[{"data":$registrar,"format":"registrar_dataset"}]""" to registrar,
+            """{"format":"registrar_dataset","data":$registrar}""" to registrar,
+            """[{"format":"registration_cert","data":"a.b.c"},{"format":"registrar_dataset","data":$dataset}]""" to dataset.toString(),
+            JsonObject(dataset - "providesAttestations").toString() to JsonObject(dataset - "providesAttestations").toString(),
+        ).forEach { (json, expected) ->
+            loadMetadataIssuerInfo(configWith(json), resources)!!.single().data shouldBe Json.parseToJsonElement(expected)
         }
+    }
+
+    @Test fun `malformed configured datasets fail loading`() {
+        listOf(
+            "not-json", "[]", "{}", "\"text\"", "[1]", "[{}]",
+            """[{"format":"registration_cert","data":"a.b.c"}]""",
+            """[{"format":"registrar_dataset","data":{}}]""",
+            """[{"format":"registrar_dataset","data":"text"}]""",
+            """[{"format":"registrar_dataset","data":$dataset},{"format":"registrar_dataset","data":$dataset}]""",
+        ).forEach { json ->
+            shouldThrowAny { loadMetadataIssuerInfo(configWith(json), resources) }
+        }
+    }
+
+    private fun configWith(json: String): BackendConfigurationProperties {
+        val path = directory.resolve("dataset.json")
+        Files.writeString(path, json)
+        return BackendConfigurationProperties(metadataRegistrarDataset = path.toUri().toString())
     }
 }
