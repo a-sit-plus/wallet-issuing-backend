@@ -7,6 +7,7 @@
    configured with `backend.metadata-registration-certificate`
  - Transport the configured metadata WRPAC leaf and intermediates in protected `x5c`, excluding a self-issued
    final root; keep metadata signing and registration configuration independently optional
+ - Report PID login rejection causes from the complete validation report, including response-level failures
  - Load PID LoTEs alongside Wallet Provider LoTEs by default, with explicitly scoped A-SIT IACA 2026 anchors;
    configure PID credential issuers and status signers independently through `backend.trust-lists`
  - Validate PID login with VC-K's current credential/presentation API, requiring authorized issuers, current

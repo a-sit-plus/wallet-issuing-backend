@@ -8,6 +8,7 @@ import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.validation.ValidatedCredential
 import at.asitplus.wallet.lib.validation.ValidationDecision
 import at.asitplus.wallet.lib.validation.credentialIdentifier
+import at.asitplus.wallet.lib.validation.firstRejection
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import java.security.MessageDigest
@@ -88,7 +89,7 @@ fun AuthnResponseResult.toUser(): OpenId4VpUser = when (this) {
     is AuthnResponseResult.Success -> {
         val presentations = presentationValidations.values.flatten()
         if (validationReport.decision != ValidationDecision.ACCEPTED) {
-            OpenId4VpUser(null, presentations.firstNotNullOfOrNull { it.rejection()?.message }
+            OpenId4VpUser(null, validationReport.firstRejection()?.message
                 ?: "PID presentation rejected")
         } else {
             val credentials = presentations.flatMap { it.presentation?.credentials.orEmpty() }.map {

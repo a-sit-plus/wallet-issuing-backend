@@ -507,7 +507,8 @@ Only an accepted response with validated credentials can create the browser's au
 principal; its identity claims come from those credentials. Responses are bound to the browser's
 transaction and consumed once. Processed rejected presentations and wallet cancellations still
 receive the OpenID4VP HTTP 200 acknowledgement, but leave the browser unauthenticated and display an
-error. Reload the login page to start a new attempt. Malformed, uncorrelated or cross-transaction
+error, including the cause of response-level failures such as unmet credential requests. Reload the
+login page to start a new attempt. Malformed, uncorrelated or cross-transaction
 responses are rejected.
 
 ### Revocation And Status Lists
