@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.josef.KeyStorageStatus
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithSelfSignedCert
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.KeyMaterial
+import at.asitplus.wallet.lib.agent.validation.StatusListTokenResolver
 import at.asitplus.wallet.lib.jws.JwsHeaderCertOrJwk
 import at.asitplus.wallet.lib.jws.SignJwt
 import at.asitplus.wallet.lib.oidvci.OAuth2Exception
@@ -32,6 +33,7 @@ import java.security.cert.X509Certificate
 import java.util.Base64
 import kotlin.io.path.writeText
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.days
 
 class WalletAttestationConfigurationTest {
@@ -122,14 +124,16 @@ class WalletAttestationConfigurationTest {
     @Test
     fun `key attestation is accepted only from a trusted Wallet Provider in wallet attestation mode`() {
         runBlocking {
-            val trustedProvider = EphemeralKeyWithSelfSignedCert()
+            val providerPki = MetadataTestPki()
+            val trustedProvider = providerPki.keyMaterial
             val configuration = WalletAttestationConfiguration(
                 enabled = true,
-                trustedKeyAttestationCertificates = listOf(writePem("ka-anchor.pem", trustedProvider)),
+                trustedKeyAttestationCertificates = listOf(writePem("ka-anchor.pem", providerPki.intermediate)),
             )
             val validator = credentialProofValidator(
                 configuration, "https://issuer.example",
-                WalletProviderTrustService(configuration, DefaultResourceLoader(), fetch = { error("offline") }),
+                walletTrustWithStatus(configuration, providerPki),
+                StatusListTokenResolver { walletStatusToken(providerPki.keyMaterial, it.string) },
             )
             val attestedKey = EphemeralKeyWithoutCert()
 
@@ -142,24 +146,62 @@ class WalletAttestationConfigurationTest {
     }
 
     @Test
-    fun `optional key attestation only needs a valid signature without wallet attestation mode`() {
+    fun `optional key attestation still requires a trusted issued provider certificate`() {
         runBlocking {
-            val configuration = WalletAttestationConfiguration()
+            val providerPki = MetadataTestPki()
+            val configuration = WalletAttestationConfiguration(
+                trustedKeyAttestationCertificates = listOf(writePem("optional-ka-anchor.pem", providerPki.intermediate)),
+            )
             val validator = credentialProofValidator(
                 configuration, "https://issuer.example",
-                WalletProviderTrustService(configuration, DefaultResourceLoader(), fetch = { error("offline") }),
+                walletTrustWithStatus(configuration, providerPki),
+                StatusListTokenResolver { walletStatusToken(providerPki.keyMaterial, it.string) },
             )
             val attestedKey = EphemeralKeyWithoutCert()
 
-            validator.validateAttestation(EphemeralKeyWithSelfSignedCert(), attestedKey) shouldBe
+            validator.validateAttestation(providerPki.keyMaterial, attestedKey) shouldBe
                     listOf(attestedKey.jsonWebKey.toCryptoPublicKey().getOrThrow())
+            shouldThrow<OAuth2Exception.InvalidProof> {
+                validator.validateAttestation(EphemeralKeyWithSelfSignedCert(), attestedKey)
+            }
         }
     }
 
-    private suspend fun writePem(name: String, keyMaterial: EphemeralKeyWithSelfSignedCert): String {
+    @Test
+    fun `key attestation status requires its own authorized signer and valid current status`() = runBlocking<Unit> {
+        val providerPki = MetadataTestPki()
+        val statusPki = MetadataTestPki()
+        val configuration = WalletAttestationConfiguration(enabled = true,
+            trustedKeyAttestationCertificates = listOf(writePem("provider.pem", providerPki.intermediate)))
+        val service = walletTrustWithStatus(configuration, statusPki)
+        val key = EphemeralKeyWithoutCert()
+        val valid = credentialProofValidator(configuration, "https://issuer.example", service,
+            StatusListTokenResolver { walletStatusToken(statusPki.keyMaterial, it.string) })
+        valid.validateAttestation(providerPki.keyMaterial, key) shouldBe listOf(key.jsonWebKey.toCryptoPublicKey().getOrThrow())
+        val rejected = listOf<StatusListTokenResolver>(
+            StatusListTokenResolver { walletStatusToken(statusPki.keyMaterial, it.string, revoked = true) },
+            StatusListTokenResolver { walletStatusToken(statusPki.keyMaterial, it.string, expiry = Clock.System.now() - 1.hours) },
+            StatusListTokenResolver { walletStatusToken(providerPki.keyMaterial, it.string) },
+            StatusListTokenResolver { walletStatusToken(statusPki.keyMaterial, "https://other.example/status") },
+            StatusListTokenResolver { error("offline") },
+        )
+        rejected.forEach { resolver ->
+            val validator = credentialProofValidator(configuration, "https://issuer.example", service, resolver)
+            shouldThrow<OAuth2Exception.InvalidProof> { validator.validateAttestation(providerPki.keyMaterial, key) }
+        }
+    }
+
+    private fun walletTrustWithStatus(configuration: WalletAttestationConfiguration, status: MetadataTestPki) =
+        WalletProviderTrustService(configuration, DefaultResourceLoader(), TrustListService(
+            TrustListConfiguration(stages = emptyList(), trustedCertificates = mapOf(
+                LoteProfile.WALLET to TrustListCertificates(status = listOf(writePem("status.pem", status.intermediate))),
+            )), DefaultResourceLoader(), fetch = { error("must not fetch") },
+        ))
+
+    private fun writePem(name: String, certificate: X509Certificate): String {
         val location = tempDir.resolve(name)
         val pem = Base64.getMimeEncoder(64, "\n".toByteArray())
-            .encodeToString(keyMaterial.getCertificate()!!.encodeToDer())
+            .encodeToString(certificate.encoded)
         location.writeText("-----BEGIN CERTIFICATE-----\n$pem\n-----END CERTIFICATE-----\n")
         return location.toUri().toString()
     }

@@ -50,6 +50,9 @@ import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.lib.oidvci.ProofValidator
+import at.asitplus.wallet.lib.agent.validation.StatusListTokenResolver
+import at.asitplus.wallet.lib.agent.TrustedCertificates
+import at.asitplus.wallet.lib.validation.StatusValidator
 import at.asitplus.wallet.mdl.MobileDrivingLicenceItemValueSerializerMap
 import at.asitplus.wallet.mdl.MobileDrivingLicenceJsonValueEncoder
 import at.asitplus.wallet.sdjwt.SdJwtTypeMetadataDocument
@@ -337,6 +340,7 @@ class BackendConfiguration {
         statusListGroups: StatusListGroups,
         credentialOfferings: List<CredentialOffering>,
         walletProviderTrustService: WalletProviderTrustService,
+        statusListTokenResolver: StatusListTokenResolver,
     ): CredentialIssuer {
         val metadataSigner = SignJwt<IssuerMetadata>(
             configuration.metadataKey?.let(::loadKeyMaterial) ?: EphemeralKeyWithoutCert(),
@@ -358,6 +362,7 @@ class BackendConfiguration {
                 configuration.walletAttestation,
                 configuration.publicContext.toString(),
                 walletProviderTrustService,
+                statusListTokenResolver,
             ),
             signMetadata = metadataSigner,
             credentialSchemeMapper = credentialSchemeMapper,
@@ -369,11 +374,13 @@ class BackendConfiguration {
     fun authorizationServer(
         credentialOfferings: List<CredentialOffering>,
         walletProviderTrustService: WalletProviderTrustService,
+        statusListTokenResolver: StatusListTokenResolver,
     ): SimpleAuthorizationService {
         val clientAuthenticationService = walletClientAuthenticationService(
             configuration.walletAttestation,
             configuration.publicContext.toString(),
             walletProviderTrustService,
+            statusListTokenResolver,
         )
         return SimpleAuthorizationService(
             strategy = CredentialAuthorizationServiceStrategy(
@@ -391,8 +398,16 @@ class BackendConfiguration {
     }
 
     @Bean
-    fun walletProviderTrustService(): WalletProviderTrustService =
-        WalletProviderTrustService(configuration.walletAttestation, resourceLoader)
+    fun statusListTokenResolver(): StatusListTokenResolver = StatusListTokenFetcher()
+
+    @Bean
+    fun trustListService() = TrustListService(
+        configuration.trustLists.withWalletOverrides(configuration.walletAttestation), resourceLoader,
+    )
+
+    @Bean
+    fun walletProviderTrustService(trustListService: TrustListService): WalletProviderTrustService =
+        WalletProviderTrustService(configuration.walletAttestation, resourceLoader, trustListService)
 
     @Bean
     fun messageConverter(): KotlinSerializationJsonHttpMessageConverter =
@@ -404,31 +419,50 @@ internal fun walletClientAuthenticationService(
     configuration: WalletAttestationConfiguration,
     issuerIdentifier: String,
     trustService: WalletProviderTrustService,
+    statusListTokenResolver: StatusListTokenResolver = StatusListTokenFetcher(),
 ): ClientAuthenticationService {
     if (!configuration.enabled) return NoopClientAuthenticationService
 
     return AttestationBasedClientAuthenticationService(
         issuerIdentifier = issuerIdentifier,
-        // Bind the signature to the x5c leaf. The generic verifier may otherwise use a JWK asserted in the JWS.
-        verifyJwsObject = trustedAttestationVerifier { trustService.walletProviderAnchors() },
+        clientAttestationValidator = at.asitplus.wallet.lib.validation.ClientAttestationValidator(
+            walletProviderStatusAnchors = TrustedCertificates { trustService.statusAnchors() },
+            statusValidator = walletStatusValidator(trustService, statusListTokenResolver),
+            walletProviderAnchors = at.asitplus.wallet.lib.agent.TrustedCertificates {
+                trustService.walletProviderAnchors().map {
+                    requireNotNull(SignumX509Certificate.decodeFromByteArray(it.encoded))
+                }.toSet()
+            },
+        ),
     )
 }
 
 /**
  * In wallet attestation mode, credential proofs must carry a Key Attestation signed by a trusted Wallet Provider or
- * extra KA anchor. Otherwise Key Attestations are optional, and one that is present only needs a valid signature.
+ * extra KA issuing anchor. Otherwise Key Attestations are optional; a supplied attestation still requires a trusted
+ * provider under the current VC-K validation policy.
  */
 internal fun credentialProofValidator(
     configuration: WalletAttestationConfiguration,
     issuerIdentifier: String,
     trustService: WalletProviderTrustService,
+    statusListTokenResolver: StatusListTokenResolver = StatusListTokenFetcher(),
 ): ProofValidator = ProofValidator(
     publicContext = issuerIdentifier,
     requireKeyAttestation = configuration.enabled,
-    verifyKeyAttestationSignature = if (configuration.enabled)
-        trustedAttestationVerifier { trustService.keyAttestationAnchors() }
-    else VerifyJwsObject(),
+    keyAttestationValidator = at.asitplus.wallet.lib.validation.KeyAttestationValidator(
+        walletProviderStatusAnchors = TrustedCertificates { trustService.statusAnchors() },
+        statusValidator = walletStatusValidator(trustService, statusListTokenResolver),
+        walletProviderAnchors = at.asitplus.wallet.lib.agent.TrustedCertificates {
+            trustService.keyAttestationAnchors().map {
+                requireNotNull(SignumX509Certificate.decodeFromByteArray(it.encoded))
+            }.toSet()
+        },
+    ),
 )
+
+private fun walletStatusValidator(trustService: WalletProviderTrustService, fetch: StatusListTokenResolver) =
+    StatusValidator(TrustedWalletStatusListResolver(fetch, TrustedCertificates { trustService.statusAnchors() }))
 
 internal fun loadAttestationAnchors(locations: List<String>, resourceLoader: ResourceLoader): Set<X509Certificate> {
     val certificateFactory = CertificateFactory.getInstance("X.509")

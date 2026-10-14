@@ -96,16 +96,19 @@ fun ParsedCredential.getClaim(claim: String) = allFields?.entries
         }
     }
 
-fun AuthnResponseResult.toUser() = OpenId4VpUser(
-    credentials = vpTokenValidationResult?.getOrNull()?.presentationResults?.flatMap {
+fun AuthnResponseResult.toUser(): OpenId4VpUser = when (this) {
+    is AuthnResponseResult.Error -> OpenId4VpUser(credentials = null, presentationError = error.errorDescription ?: error.error)
+    is AuthnResponseResult.Success -> OpenId4VpUser(
+    credentials = vpTokenResult.getOrNull()?.presentationResults?.flatMap {
         it.toApiItemCredentials()
     },
-    presentationError = vpTokenValidationResult?.exceptionOrNull()?.message
-        ?: when (val presentation = vpTokenValidationResult?.getOrNull()) {
+    presentationError = vpTokenResult.exceptionOrNull()?.message
+        ?: when (val presentation = vpTokenResult.getOrNull()) {
             is VpTokenValidationResultDCQL -> presentation.submissionRequirementsValidationResult.exceptionOrNull()?.message
             else -> null
         },
 )
+}
 
 fun KmmResult<Verifier.VerifyPresentationResult>.toApiItemCredentials() = exceptionOrNull()?.let {
     listOf(ParsedCredential(error = it.message))

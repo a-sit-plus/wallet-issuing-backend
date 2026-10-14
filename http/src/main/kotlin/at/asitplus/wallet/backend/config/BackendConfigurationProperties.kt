@@ -26,6 +26,8 @@ data class BackendConfigurationProperties(
     val credentialKeys: Map<String, KeyConfiguration> = emptyMap(),
     /** Key used for signing authn requests for PID login */
     val verifierKey: KeyConfiguration = KeyConfiguration(),
+    /** Profiles and stages of verified Lists of Trusted Entities, with custom anchors scoped per profile. */
+    val trustLists: TrustListConfiguration = TrustListConfiguration(),
     /** Optional HAIP client authentication using Wallet Instance Attestations. */
     val walletAttestation: WalletAttestationConfiguration = WalletAttestationConfiguration(),
     /** Configure details about revocation lists. */
@@ -34,15 +36,41 @@ data class BackendConfigurationProperties(
     val metadata: MetadataConfiguration = MetadataConfiguration(),
 )
 
+data class TrustListConfiguration(
+    /** Only these profiles are loaded and authorized, including their custom anchors. */
+    val profiles: Set<LoteProfile> = setOf(LoteProfile.WALLET),
+    /** Commission trust infrastructure stages; empty permits custom anchors only. */
+    val stages: List<LoTEStage> = listOf(LoTEStage.ACCEPTANCE, LoTEStage.DEVELOPMENT),
+    /** Optional HTTPS URL overrides per enabled profile. */
+    val urls: Map<LoteProfile, List<String>> = emptyMap(),
+    /** Optional PEM anchors for authenticating LoTE signatures. */
+    val signerCertificates: List<String> = emptyList(),
+    /** Custom issuance and status anchors are authorized only for the profile they are configured under. */
+    val trustedCertificates: Map<LoteProfile, TrustListCertificates> = mapOf(
+        LoteProfile.WALLET to TrustListCertificates(
+            issuance = listOf("classpath:certificates/asit-iaca-2026.pem"),
+            status = listOf("classpath:certificates/asit-iaca-2026.pem"),
+        ),
+    ),
+)
+
+data class TrustListCertificates(
+    val issuance: List<String> = emptyList(),
+    val status: List<String> = emptyList(),
+)
+
+/** Old wallet URL/signer settings override their new equivalents when explicitly supplied. */
+internal fun TrustListConfiguration.withWalletOverrides(wallet: WalletAttestationConfiguration) = copy(
+    urls = wallet.walletProviderLoteUrls?.let { urls + (LoteProfile.WALLET to it) } ?: urls,
+    signerCertificates = (signerCertificates + wallet.loteSignerCertificates).distinct(),
+)
+
 data class WalletAttestationConfiguration(
     /** When enabled, PAR and token requests require a WIA signed by a trusted Wallet Provider. */
     val enabled: Boolean = false,
-    /** Wallet Provider LoTE URLs from the Commission acceptance and development environments. */
-    val walletProviderLoteUrls: List<String> = listOf(
-        LoTEStage.ACCEPTANCE.fetchUrl(LoteProfile.WALLET),
-        LoTEStage.DEVELOPMENT.fetchUrl(LoteProfile.WALLET),
-    ),
-    /** Optional PEM anchors for the LoTE JWS signer. If absent, trust relies on HTTPS and JAdES verification. */
+    /** Legacy Wallet Provider URL override; otherwise use trustLists profiles/stages/URLs. */
+    val walletProviderLoteUrls: List<String>? = null,
+    /** Legacy additional LoTE signer anchors; prefer trustLists.signerCertificates. */
     val loteSignerCertificates: List<String> = emptyList(),
     /** Additional PEM-encoded Wallet Provider certificates or trust anchors. */
     val trustedCertificates: List<String> = emptyList(),

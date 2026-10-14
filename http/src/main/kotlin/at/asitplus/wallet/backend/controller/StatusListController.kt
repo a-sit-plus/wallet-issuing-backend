@@ -3,8 +3,9 @@ package at.asitplus.wallet.backend.controller
 import at.asitplus.wallet.backend.Extensions.sha256
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
-import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
+import at.asitplus.wallet.backend.config.CredentialCatalog
 import at.asitplus.wallet.backend.config.StatusListGroups
+import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.MediaTypes
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.StatusListAggregation
 import io.github.aakira.napier.Napier
@@ -19,7 +20,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
-import java.nio.file.Path
+import org.springframework.web.server.ResponseStatusException
 import java.time.Instant
 import java.util.Collections
 import kotlin.io.path.Path
@@ -82,9 +83,14 @@ class StatusListController(
     ): ResponseEntity<ByteArray> {
         val url = Paths.Credentials.StatusUrl + (if (slug.isEmpty()) "" else "/$slug") + "/$timePeriod"
         Napier.i("$url called")
-        val acceptMediaTypes = request.getHeader(HttpHeaders.ACCEPT)?.let { MediaType.parseMediaTypes(it) }
-        val statusListContentType = acceptMediaTypes.toStatusListContentType()
-        val path = configurationProperties.revocationList.getPath(acceptMediaTypes, slug, timePeriod)
+        val accept = Collections.list(request.getHeaders(HttpHeaders.ACCEPT)).joinToString(",")
+        val identifier = statusListGroups.bySlug(slug)?.credentialIdentifier
+        val representation = CredentialCatalog.entries.singleOrNull { it.identifier == identifier }?.representation
+        val defaultType = if (representation == ISO_MDOC) statusListCwtType else statusListJwtType
+        val statusListContentType = selectContentType(accept, defaultType)
+        val path = with(configurationProperties.revocationList) {
+            Path(if (statusListContentType == statusListCwtType) cwtPath(slug) else jwtPath(slug), timePeriod.toString())
+        }
         val content = if (path.exists() && path.isReadable()) path.readBytes() else null
         return if (content == null || content.isEmpty()) {
             Napier.w("$url returns HTTP 404")
@@ -99,6 +105,7 @@ class StatusListController(
                 this.cacheControl = cacheControl.headerValue
                 this.lastModified = lastModified
                 contentType = statusListContentType
+                vary = listOf(HttpHeaders.ACCEPT)
             }
 
             if (request.matchesNotModified(etag, lastModified)) {
@@ -143,25 +150,33 @@ class StatusListController(
         return lastModifiedSeconds <= ifModifiedSinceSeconds
     }
 
-    private fun RevocationListConfigurationProperties.getPath(
-        types: List<MediaType>?,
-        slug: String,
-        timePeriod: Int,
-    ): Path =
-        if (types.isCompatibleWithCwt())
-            Path(cwtPath(slug), timePeriod.toString())
-        else
-            Path(jwtPath(slug), timePeriod.toString())
-
-    private fun List<MediaType>?.toStatusListContentType(): MediaType =
-        if (isCompatibleWithCwt()) statusListCwtType else
-            if (isCompatibleWithJwt()) statusListJwtType else
-                MediaType.TEXT_PLAIN
-
-    private fun List<MediaType>?.isCompatibleWithCwt() =
-        this?.any { it.isCompatibleWith(statusListCwtType) } == true
-
-    private fun List<MediaType>?.isCompatibleWithJwt() =
-        this?.any { it.isCompatibleWith(statusListJwtType) } == true
-
+    /** RFC 9110, 12.5.1: specific ranges override wildcards, including q=0 exclusions. */
+    private fun selectContentType(accept: String, defaultType: MediaType): MediaType {
+        if (accept.isBlank()) return defaultType
+        val ranges = try {
+            MediaType.parseMediaTypes(accept)
+        } catch (exception: IllegalArgumentException) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Accept header", exception)
+        }
+        val specificity = compareBy<MediaType> {
+            when {
+                it.isWildcardType -> 0
+                it.isWildcardSubtype -> 1
+                else -> 2
+            }
+        }.thenBy { it.parameters.count { (name, _) -> name != "q" } }
+        // The credential-specific default wins an otherwise equal preference.
+        val otherType = if (defaultType == statusListJwtType) statusListCwtType else statusListJwtType
+        return listOf(defaultType, otherType).mapNotNull { type ->
+            val range = ranges.filter { range ->
+                range.includes(type) && range.parameters.all { (name, value) ->
+                    name == "q" || type.getParameter(name) == value
+                }
+            }.maxWithOrNull(specificity.thenBy { it.qualityValue })
+            range?.takeIf { it.qualityValue > 0 }?.let { type to it }
+        }.sortedWith(compareByDescending<Pair<MediaType, MediaType>> { it.second.qualityValue }
+            .thenComparator { first, second -> specificity.compare(second.second, first.second) })
+            .firstOrNull()?.first
+            ?: throw ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Request a JWT or CWT status list")
+    }
 }

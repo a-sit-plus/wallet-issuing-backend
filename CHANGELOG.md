@@ -1,6 +1,15 @@
 # Changelog
 
 9.0.0-SNAPSHOT (unreleased):
+ - Configure loaded LoTE profiles, stages, URL overrides and profile-scoped issuance/status anchors through
+   `backend.trust-lists`; default to Wallet Providers on acceptance/development with the A-SIT IACA 2026 root
+ - Resolve wallet-instance and key-storage status lists as JWT/CWT and require a separately authorized Wallet
+   Provider status signer; reject revoked, expired, unavailable or untrusted status without changing PID login
+ - Default shared and SD-JWT credential status-list URLs to JWT (`application/statuslist+jwt`), and per-key mdoc
+   URLs to CWT (`application/statuslist+cwt`), using the URI's configured credential identifier; honor explicit
+   `Accept` preferences, quality/exclusion values and send `Vary: Accept`
+ - Adapt wallet and key attestation validation to current VC-K APIs, requiring trusted issuing anchors for
+   supplied attestations even when key attestations are optional
  - Publish CWT status list tokens with the required COSE_Sign1 tag 18
  - Use VC-K prepared HTTP responses for OAuth2, credential issuance, and OpenID4VP login endpoints
  - Return credential token and DPoP errors with HTTP 401 and `WWW-Authenticate`
