@@ -18,13 +18,17 @@ object Extensions {
 
     fun ByteArray.sha256(): ByteArray = MessageDigest.getInstance("SHA-256").digest(this)
 
-    /** Writes VC-K's encoded body and all header values without further serialization. */
+    /**
+     * Writes VC-K's encoded body with its content type, and all header values, without further serialization.
+     * A response without body has no `Content-Type`.
+     */
     fun PreparedHttpResponse.toResponseEntity(): ResponseEntity<String> =
         ResponseEntity.status(status.value)
             .headers(org.springframework.http.HttpHeaders().also { target ->
                 headers.entries().forEach { (name, values) -> target.addAll(name, values) }
+                body?.let { target.set(org.springframework.http.HttpHeaders.CONTENT_TYPE, it.contentType.toString()) }
             })
-            .body(body)
+            .body(body?.text)
 
     fun HttpServletRequest.toRequestInfo() = RequestInfo(
         url = requestURL.toString(),

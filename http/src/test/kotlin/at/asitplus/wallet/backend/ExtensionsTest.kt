@@ -2,7 +2,9 @@ package at.asitplus.wallet.backend
 
 import at.asitplus.wallet.backend.Extensions.appendPath
 import at.asitplus.wallet.backend.Extensions.toResponseEntity
+import at.asitplus.wallet.lib.HttpBody
 import at.asitplus.wallet.lib.PreparedHttpResponse
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headers
 import java.net.URI
@@ -12,21 +14,28 @@ import org.junit.jupiter.api.Test
 class ExtensionsTest {
 
     @Test
-    fun `prepared response adapter preserves status repeated headers and encoded body`() {
+    fun `prepared response adapter preserves status repeated headers content type and encoded body`() {
         val prepared = PreparedHttpResponse(
             status = HttpStatusCode.Created,
             headers = headers {
-                append("Content-Type", "application/json")
                 append("X-Value", "first")
                 append("X-Value", "second")
             },
-            body = "{\"name\":\"Müller\"}",
+            body = HttpBody(ContentType.Application.Json, "{\"name\":\"Müller\"}"),
         )
         val response = prepared.toResponseEntity()
         assertEquals(201, response.statusCode.value())
         assertEquals(listOf("first", "second"), response.headers["X-Value"])
         assertEquals("application/json", response.headers.getFirst("Content-Type"))
-        assertEquals(prepared.body, response.body)
+        assertEquals(prepared.body?.text, response.body)
+    }
+
+    @Test
+    fun `prepared response adapter sends no content type without body`() {
+        val response = PreparedHttpResponse(status = HttpStatusCode.NoContent).toResponseEntity()
+        assertEquals(204, response.statusCode.value())
+        assertEquals(null, response.headers.getFirst("Content-Type"))
+        assertEquals(null, response.body)
     }
 
     @Test
