@@ -402,8 +402,8 @@ wallet profile URLs when supplied, and `lote-signer-certificates` adds signer pi
 
 Configure a Wallet Relying Party Access Certificate (WRPAC) and its private key with
 `backend.metadata-key`. Configure the registrar's compact Wallet Relying Party Registration
-Certificate (WRPRC) JWT with `backend.metadata-registration-certificate`. Supply the registrar dataset
-JSON resource with `backend.metadata-registrar-dataset`. All three options are independently optional:
+Certificate (WRPRC) JWT with `backend.metadata-registration-certificate`. Both options are independently
+optional:
 
 ```yaml
 backend:
@@ -417,7 +417,6 @@ backend:
       password: ${METADATA_KEYSTORE_PASSWORD}
       alias-password: ${METADATA_KEY_PASSWORD}
   metadata-registration-certificate: file:/secrets/issuer-registration.jwt
-  metadata-registrar-dataset: file:/secrets/issuer-registrar-dataset.json
 ```
 
 The keystore alias contains the signing private key, its WRPAC leaf and intermediate certificates.
@@ -429,38 +428,15 @@ whitespace is removed; an empty registration resource is a configuration error.
 
 Clients requesting `Accept: application/jwt` at `/.well-known/openid-credential-issuer` receive
 metadata with protected `typ=openidvci-issuer-metadata+jwt`, `sub=credential_issuer` and `iat`. VC-K
-includes the configured dataset as `issuer_info` format `registrar_dataset` with JSON object data, and
-the WRPRC as format `registration_cert` with the unchanged compact JWT string. Both appear under the
-metadata signature. With neither resource configured, `issuer_info` is omitted; without a metadata key,
+includes the WRPRC as `issuer_info` format `registration_cert` with the unchanged compact JWT string,
+under the metadata signature. Without a WRPRC, `issuer_info` is omitted; without a metadata key,
 the existing ephemeral-key signing remains available. Unsigned JSON negotiation and `Vary: Accept`
 remain available, with registration artifacts included only in the signed representation.
 
-The dataset resource is either the dataset JSON object itself or an `issuer_info` export from the
-registrar, i.e. an array of (or a single) `{"format": ..., "data": ...}` element containing exactly
-one `registrar_dataset`, whose `data` is used. The dataset must be a non-empty JSON object; malformed
-resources fail startup. The JSON object is preserved in metadata as supplied. VC-K's
-`WrpRegistrarDataset` expects `identifier` (an array of objects with `type`, a scheme URI, and
-`identifier`), `srvDescription` (an array of `lang`/`content` objects), `registryURI` (the registrar
-URI), and `providesAttestations` (credential format and metadata descriptors), all non-empty. Datasets
-in other shapes are still published, but startup logs a warning because VC-K clients may reject them.
-
-For example, this illustrates one SD-JWT credential; obtain the actual dataset from your registrar
-and include every credential type your deployment advertises:
-
-```json
-{
-  "identifier": [{"type": "https://example.org/identifier-scheme", "identifier": "registered-provider-id"}],
-  "srvDescription": [{"lang": "en", "content": "Credential issuing service"}],
-  "registryURI": "https://registrar.example/issuers/provider",
-  "providesAttestations": [{"format": "dc+sd-jwt", "meta": {"vct_values": ["urn:eudi:pid:1"]}}]
-}
-```
-
-VC-K's issuer metadata validator requires exactly one `registrar_dataset` for acceptance. A WRPRC
-alone does not replace it; the WRPRC remains optional under that metadata check. Publication options
-remain optional here so generic deployments can retain their existing metadata behavior. To enable
-trusted signed metadata acceptance, configure the dataset and WRPAC, and the WRPRC when your
-registration requires it. This service loads the artifacts; clients validate their trust and status.
+CIR 2024/2982 as amended (Annex I) makes the WRPRC mandatory in signed issuer metadata and voids the
+`registrar_dataset` requirements of ETSI TS 119 472-3 V1.1.1, 4.2.3, so this service publishes no
+registrar dataset. Publication options remain optional here so generic deployments can retain their
+existing metadata behavior. This service loads the artifacts; clients validate their trust and status.
 
 Obtain a WRPRC identifying the same legal entity as the WRPAC and covering every advertised PID,
 mDL and other credential type in the catalog. Credential document-signing keys and PID-login request
@@ -646,7 +622,6 @@ backend:
       type: PKCS12
       alias: wrpac
   metadata-registration-certificate: file:/secrets/issuer-registration.jwt
-  metadata-registrar-dataset: file:/secrets/issuer-registrar-dataset.json
   credential-keys:
     "urn:eudi:pid:1":              # PID SD-JWT signing certificate
       type: KEYSTORE
