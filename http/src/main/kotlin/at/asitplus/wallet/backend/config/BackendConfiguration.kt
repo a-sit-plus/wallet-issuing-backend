@@ -165,6 +165,7 @@ class BackendConfiguration {
         revokedCredentialRepo = revokedCredentialRepo,
         applicationEventPublisher = applicationEventPublisher,
         identityColumnResynchronizer = identityColumnResynchronizer,
+        revocationListConfiguration = configuration.revocationList,
     )
 
     @Bean

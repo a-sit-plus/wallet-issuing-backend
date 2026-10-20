@@ -1,7 +1,6 @@
 package at.asitplus.wallet.backend.data
 
 import at.asitplus.KmmResult
-import at.asitplus.wallet.backend.service.RevocationListWriter
 import at.asitplus.wallet.backend.service.RevocationService
 import at.asitplus.wallet.lib.agent.CredentialToBeIssued
 import at.asitplus.wallet.lib.agent.Issuer
@@ -11,8 +10,6 @@ import at.asitplus.wallet.lib.data.rfc.tokenStatusList.agents.ReferencedTokenSto
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.Identifier
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.iso18013.IdentifierInfo
 import at.asitplus.wallet.lib.data.rfc.tokenStatusList.primitives.TokenStatus
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Lazy
 
 /**
  * Implements interface [IssuerCredentialStore] from VC Library to wrap calls to [RevocationService].
@@ -20,11 +17,6 @@ import org.springframework.context.annotation.Lazy
 class IssuerCredentialStoreAdapter(
     private val revocationService: RevocationService,
 ) : IssuerCredentialStore, ReferencedTokenStore {
-
-    // Break the circular dependency
-    @Autowired
-    @Lazy
-    lateinit var revocationListWriter: RevocationListWriter
 
     override fun setStatus(
         timePeriod: Int,
@@ -39,10 +31,8 @@ class IssuerCredentialStoreAdapter(
         credential: CredentialToBeIssued,
         timePeriod: Int,
     ): KmmResult<ReferencedTokenStore.StoredCredentialReference> =
-        revocationService.storeReferencedToken(credential, timePeriod).onSuccess {
-            // need to do this immediately, so clients receiving our credential can check the status list right away
-            revocationListWriter.writeRevocationList(it.timePeriod)
-        }
+        // no need to write the revocation list, since the published one already contains valid entries for new indices
+        revocationService.storeReferencedToken(credential, timePeriod)
 
     override fun getStatusListView(timePeriod: Int): StatusListView =
         revocationService.getStatusListView(timePeriod)

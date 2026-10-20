@@ -1,6 +1,9 @@
 # Changelog
 
 9.0.0-SNAPSHOT (unreleased):
+ - Stop writing status lists on every issuance: publish lists with valid entries for unassigned indices, growing by
+   `backend.revocation-list.capacity-increment` (default 1000) once fewer than `minimum-free-indices` (default 500)
+   are left, and write grown lists on the next dirty check
  - Include an optional registrar-signed WRPRC JWT in signed issuer metadata through VC-K's `issuer_info`,
    configured with `backend.metadata-registration-certificate`
  - Transport the configured metadata WRPAC leaf and intermediates in protected `x5c`, excluding a self-issued
