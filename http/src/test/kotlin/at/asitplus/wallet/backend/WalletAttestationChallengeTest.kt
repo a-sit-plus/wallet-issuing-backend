@@ -29,6 +29,8 @@ import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpHeaders
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -81,7 +83,6 @@ class WalletAttestationChallengeTest {
             SignJwt(walletProvider, JwsHeaderCertOrJwk()),
             clientId = client.clientId,
             clientKey = clientKey.jsonWebKey,
-            // walletStatusResolver serves a list for any URI, whose entry at idx 0 reflects revoked
             clientStatus = ClientStatus(
                 status = buildJsonObject {
                     putJsonObject("status_list") {
