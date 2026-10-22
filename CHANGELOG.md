@@ -1,6 +1,7 @@
 # Changelog
 
 9.0.0-SNAPSHOT (unreleased):
+ - Update to VC-K 9.0.0-RC1
  - Stop writing status lists on every issuance: publish lists with valid entries for unassigned indices, growing by
    `backend.revocation-list.capacity-increment` (default 1000) once fewer than `minimum-free-indices` (default 500)
    are left, and write grown lists on the next dirty check
@@ -38,8 +39,14 @@
    `/credentials/status/<slug>/<timePeriod>`; `/credentials/status/current` aggregates all of them
  - **Breaking:** `backend.iso-mdoc-issuer-key` has been replaced by `backend.credential-keys`; list each mdoc
    docType explicitly to keep a separate mdoc key
- - Update to VC-K 9.0.0-SNAPSHOT
+ - Update to VC-K 8.0.0-RC1
  - Implement test cases for EUDI Launchpad 2026
+ - Verify key attestations against the trusted Wallet Providers in wallet attestation mode, and only check the
+   signature of optional key attestations otherwise
+ - Serve `POST /challenge` for Attestation-Based Client Authentication, and send the
+   `OAuth-Client-Attestation-Challenge` header with `use_attestation_challenge` errors
+ - Serve issuer metadata as per OpenID4VCI 1.0: signed metadata carries `typ` `openidvci-issuer-metadata+jwt`,
+   `sub`, `iat` and the display properties, and unsigned metadata uses snake_case keys
 
 7.0.0:
  - Update to VC-K 7.0.0
