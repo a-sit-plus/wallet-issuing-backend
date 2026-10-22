@@ -18,6 +18,7 @@ import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
+import at.asitplus.wallet.lib.oidvci.JwtProofCreator
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient.RequestOptions
 import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
@@ -36,7 +37,7 @@ class Client {
 
     val randomKeyAdapter = EphemeralKeyWithSelfSignedCert()
 
-    val oid4vciClient = OpenId4VciClient(keyMaterial = randomKeyAdapter)
+    val oid4vciClient = OpenId4VciClient(proofCreators = listOf(JwtProofCreator(randomKeyAdapter)))
 
     val oauth2Client = OAuth2Client()
 
