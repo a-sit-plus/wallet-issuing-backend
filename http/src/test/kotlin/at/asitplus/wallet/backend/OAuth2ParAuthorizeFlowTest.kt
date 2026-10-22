@@ -69,7 +69,7 @@ class OAuth2ParAuthorizeFlowTest {
     fun `par followed by authorize with request_uri succeeds when issuer_state is present`() = runTest {
         val oauth2Client = OAuth2Client()
         val scope = credentialIssuer.metadata.supportedCredentialConfigurations
-            ?.values?.firstNotNullOfOrNull { it.scope }
+            .values.firstNotNullOfOrNull { it.scope }
             ?: error("No scope configured in issuer metadata")
         val issuerState = authorizationServer.offerWithAuthorizationCodeForSchemes(
             credentialIssuer = credentialIssuer.metadata.credentialIssuer,
@@ -112,7 +112,7 @@ class OAuth2ParAuthorizeFlowTest {
     @WithOAuth2AuthenticationToken
     fun `authorize keeps the manual iPhone redirect page`() = runTest {
         val client = OAuth2Client()
-        val scope = credentialIssuer.metadata.supportedCredentialConfigurations!!.values.first().scope!!
+        val scope = credentialIssuer.metadata.supportedCredentialConfigurations.values.first().scope!!
         val pushed = authorizationServer.pushedRequest(client.createAuthRequest(state = "iphone-state", scope = scope))
         val initial = mockMvc.get(Paths.AuthorizeUrl) {
             param("client_id", client.clientId)
@@ -130,7 +130,7 @@ class OAuth2ParAuthorizeFlowTest {
     fun `token error response includes DPoP nonce when proof nonce is missing`() = runTest {
         val oauth2Client = OAuth2Client()
         val scope = credentialIssuer.metadata.supportedCredentialConfigurations
-            ?.values?.firstNotNullOfOrNull { it.scope }
+            .values.firstNotNullOfOrNull { it.scope }
             ?: error("No scope configured in issuer metadata")
         val state = uuid4().toString()
         val authRequest = oauth2Client.createAuthRequest(state = state, scope = scope)

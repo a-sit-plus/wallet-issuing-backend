@@ -92,7 +92,7 @@ class WalletAttestationChallengeTest {
                 expiration = Clock.System.now() + 31.days,
             ),
         )
-        val scope = credentialIssuer.metadata.supportedCredentialConfigurations!!.values.first().scope!!
+        val scope = credentialIssuer.metadata.supportedCredentialConfigurations.values.first().scope!!
         suspend fun par(challenge: String?): ResultActions {
             val pop = BuildClientAttestationPoPJwt(
                 SignJwt(clientKey, JwsHeaderNone()),
