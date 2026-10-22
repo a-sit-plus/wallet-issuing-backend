@@ -11,7 +11,7 @@
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-brightgreen.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![A-SIT Plus Official](https://img.shields.io/badge/A--SIT_Plus-official-005b79?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNDMuNzYyODYgMTg0LjgxOTk5Ij48ZGVmcz48Y2xpcFBhdGggaWQ9ImEiIGNsaXBQYXRoVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNMCA1OTUuMjhoODQxLjg5VjBIMFoiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBjbGlwLXBhdGg9InVybCgjYSkiIHRyYW5zZm9ybT0ibWF0cml4KDEuMzMzMzMzMyAwIDAgLTEuMzMzMzMzMyAtNDgyLjI1IDUxNy41MykiPjxwYXRoIGZpbGw9IiMwMDViNzkiIGQ9Ik00MTUuNjcgMjQ5LjUzYy03LjE1LjA4LTEzLjk0IDEtMjAuMTcgMi43NWE1Mi4zMyA1Mi4zMyAwIDAgMC0xNy40OCA4LjQ2IDQwLjQzIDQwLjQzIDAgMCAwLTExLjk2IDE0LjU2Yy0yLjY4IDUuNDEtNC4xNCAxMS44NC00LjM1IDE5LjA5bC0uMDIgNi4xMnYyLjE3YS43MS43MSAwIDAgMCAuNy43M2gxNi41MmMuMzkgMCAuNy0uMzIuNzEtLjdsLjAxLTIuMmMwLTIuNi4wMi01LjgyLjAzLTYuMDcuMi00LjYgMS4yNC04LjY2IDMuMDgtMTIuMDZhMjguNTIgMjguNTIgMCAwIDEgOC4yMy05LjU4IDM1LjI1IDM1LjI1IDAgMCAxIDExLjk2LTUuNTggNTUuMzggNTUuMzggMCAwIDEgMTIuNTgtMS43NmM0LjMyLjEgOC42LjcgMTIuNzQgMS44YTM1LjA3IDM1LjA3IDAgMCAxIDExLjk2IDUuNTcgMjguNTQgMjguNTQgMCAwIDEgOC4yNCA5LjU3YzEuOTYgMy42NCAzIDguMDIgMy4xMiAxMy4wMnYyNC4wOUgzNjIuNGEuNy43IDAgMCAwLS43MS43VjMzNWMwIDguNDMuMDEgOC4wNS4wMSA4LjE0LjIgNy4zIDEuNjcgMTMuNzcgNC4zNiAxOS4yMmE0MC40MyA0MC40MyAwIDAgMCAxMS45NiAxNC41N2M1IDMuNzYgMTAuODcgNi42MSAxNy40OCA4LjQ2YTc3LjUgNzcuNSAwIDAgMCAyMC4wMiAyLjc3YzcuMTUtLjA3IDEzLjk0LTEgMjAuMTctMi43NGE1Mi4zIDUyLjMgMCAwIDAgMTcuNDgtOC40NiA0MC40IDQwLjQgMCAwIDAgMTEuOTUtMTQuNTdjMS42Mi0zLjI2IDMuNzctMTAuMDQgMy43Ny0xNC42OCAwLS4zOC0uMTctLjc0LS41NC0uODJsLTE2Ljg5LS40Yy0uMi0uMDQtLjM0LjM0LS4zNC41NCAwIC4yNy0uMDMuNC0uMDYuNi0uNSAyLjgyLTEuMzggNS40LTIuNjEgNy42OWEyOC41MyAyOC41MyAwIDAgMS04LjI0IDkuNTggMzUuMDEgMzUuMDEgMCAwIDEtMTEuOTYgNS41NyA1NS4yNSA1NS4yNSAwIDAgMS0xMi41NyAxLjc3Yy00LjMyLS4xLTguNjEtLjcxLTEyLjc1LTEuOGEzNS4wNSAzNS4wNSAwIDAgMS0xMS45Ni01LjU3IDI4LjUyIDI4LjUyIDAgMCAxLTguMjMtOS41OGMtMS44Ni0zLjQ0LTIuOS03LjU1LTMuMDktMTIuMmwtLjAxLTcuNDdoODkuMTZhLjcuNyAwIDAgMCAuNy0uNzJ2LTM5LjVjLS4xLTcuNjUtMS41OC0xNC40LTQuMzgtMjAuMDZhNDAuNCA0MC40IDAgMCAwLTExLjk1LTE0LjU2IDUyLjM3IDUyLjM3IDAgMCAwLTE3LjQ4LTguNDcgNzcuNTYgNzcuNTYgMCAwIDAtMjAuMDEtMi43N1oiLz48cGF0aCBmaWxsPSIjY2U0OTJlIiBkPSJNNDE5LjM4IDI4MC42M2gtNy41N2EuNy43IDAgMCAwLS43MS43MXYxNS40MmE4LjE3IDguMTcgMCAwIDAtMy43OCA2LjkgOC4yOCA4LjI4IDAgMCAwIDE2LjU0IDAgOC4yOSA4LjI5IDAgMCAwLTMuNzYtNi45di0xNS40MmEuNy43IDAgMCAwLS43Mi0uNzEiLz48L2c%2BPC9zdmc%2B&logoColor=white&labelColor=white)](https://a-sit-plus.github.io)
 [![Powered by VC-K](https://img.shields.io/badge/VC--K-powered-8A2BE2?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4LjAzIDkuNSI+PGcgZmlsbD0iIzhhMmJlMiIgZm9udC1mYW1pbHk9IlZBTE9SQU5UIiBmb250LXNpemU9IjEyLjciIHRleHQtYW5jaG9yPSJtaWRkbGUiPjxwYXRoIGQ9Ik01OS42NCAyMjIuMTNxMC0uOTguMzYtMS44Mi4zNy0uODQuOTgtMS40Ni42Mi0uNjIgMS40Ni0uOTYuODMtLjM2IDEuOC0uMzUgMS4wMy4wMiAxLjkuNDIuODcuNCAxLjUgMS4xMi4wNC4wNS4wMy4xMSAwIC4wNy0uMDUuMWwtMSAuODZxLS4wNi4wMy0uMTIuMDN0LS4xLS4wNnEtLjQyLS40OC0xLS43Ni0uNTYtLjMtMS4yMi0uMjgtLjYuMDEtMS4xMy4yNy0uNTQuMjQtLjkzLjY3LS40LjQyLS42Mi45OC0uMjMuNTYtLjIzIDEuMiAwIC42My4yNCAxLjE4LjI0LjU2LjY1Ljk4LjQuNDIuOTQuNjYuNTMuMjMgMS4xNC4yMy42My0uMDEgMS4yLS4zLjU1LS4yNy45Ni0uNzUuMDQtLjA1LjEtLjA1LjA2LS4wMi4xMS4wM2wxIC44NnEuMDYuMDMuMDYuMS4wMS4wNi0uMDMuMTEtLjY0LjczLTEuNTMgMS4xNC0uOS40MS0xLjk1LjQtLjk1IDAtMS43OS0uMzYtLjgyLS4zNy0xLjQzLS45OS0uNjEtLjYzLS45NS0xLjQ4LS4zNS0uODUtLjM1LTEuODN6IiBzdHlsZT0iLWlua3NjYXBlLWZvbnQtc3BlY2lmaWNhdGlvbjpWQUxPUkFOVDt0ZXh0LWFsaWduOmNlbnRlciIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTU5LjY0IC0yMTcuNDIpIi8+PHBhdGggZD0iTTY2LjIxIDIyMS4zNWgxLjNjLjEgMCAuMTYuMDYuMTYuMTd2MS4zOGMwIC4xMS0uMDUuMTctLjE2LjE3aC0xLjNjLS4xIDAtLjE2LS4wNi0uMTYtLjE3di0xLjM4YzAtLjExLjA1LS4xNy4xNi0uMTd6IiBsZXR0ZXItc3BhY2luZz0iLTMuMTIiIHN0eWxlPSItaW5rc2NhcGUtZm9udC1zcGVjaWZpY2F0aW9uOlZBTE9SQU5UO3RleHQtYWxpZ246Y2VudGVyIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTkuNjQgLTIxNy40MikiLz48L2c+PC9zdmc+&logoColor=white&labelColor=white)](https://github.com/a-sit-plus/vck)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.3.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
 </div>
@@ -35,13 +35,19 @@ can authenticate users, derive credential claims, and deliver wallet-ready crede
   with authorization code, pre-authorized code, pushed authorization requests, token exchange, nonce, and credential endpoints.
 - Supports the [Digital Credentials API](https://wicg.github.io/digital-credentials/) for browser-based issuance
   without a redirect.
-- Uses VC-K's issuer APIs to sign and deliver credentials as JWT VC, SD-JWT VC, and ISO mdoc where supported
-  by the configured credential scheme.
-- Publishes issuer, OAuth2/OIDC, and JWT VC metadata for wallet discovery.
+- Uses VC-K's issuer APIs to sign and deliver credentials as SD-JWT VC and ISO mdoc, with a signing key per
+  credential type when configured.
+- Publishes OpenID4VCI issuer metadata, unsigned or signed with a Wallet Relying Party Access Certificate (WRPAC)
+  and optionally carrying the Wallet Relying Party Registration Certificate (WRPRC), plus OAuth2/OIDC and SD-JWT VC
+  issuer (`jwt-vc-issuer`) metadata for wallet discovery.
+- Optionally requires Attestation-Based Client Authentication with Wallet Instance Attestations, and validates Key
+  Attestations, against Wallet Providers from the Commission's Lists of Trusted Entities (LoTEs), including their
+  status lists.
 - Authenticates users through Spring Security, external OIDC providers such as ID Austria, or EU PID
-  presentation via OpenID4VP.
+  presentation via OpenID4VP, accepting only PIDs from trusted issuers, with a valid status when they
+  reference one.
 - Converts authenticated identity data into EUDI Wallet credential payloads.
-- Tracks issued credentials and writes token status lists for revocation/status checks.
+- Tracks issued credentials and publishes token status lists as JWT or CWT for revocation/status checks.
 - Runs as a standard Spring Boot service with JPA persistence, H2 for local development, PostgreSQL for
   deployments, actuator endpoints, and optional Spring Boot Admin integration.
 
@@ -52,28 +58,35 @@ VC-K is the core interoperability layer in this repository:
 | Capability | How this backend uses VC-K |
 | --- | --- |
 | Credential issuance | `IssuerAgent` signs credentials and binds them to the holder key supplied by the wallet. |
-| OpenID4VCI | `CredentialIssuer` implements the issuer metadata, nonce, and credential response logic. |
+| OpenID4VCI | `OpenId4VciServer` implements the issuer metadata, nonce, and credential response logic. |
 | OAuth2 for issuance | `SimpleAuthorizationService` handles PAR, authorization, token issuance, DPoP nonce handling, and credential authorization. |
-| Credential formats | The configured VC-K credential schemes expose JWT VC, SD-JWT VC, and ISO mdoc representations where available. |
-| OpenID4VP login | `OpenId4VpVerifier` verifies EU PID presentations used as an identity source for issuance. |
+| Credential formats | Each configured VC-K credential scheme is issued as SD-JWT VC or ISO mdoc, as its type metadata defines. |
+| OpenID4VP login | `OpenId4VpVerifier` and `CredentialValidator` verify EU PID presentations used as an identity source for issuance. |
+| Trust lists | `LoTEFilterService` and `LoTETrustAnchorProvider` load signed LoTEs and supply Wallet Provider and PID trust anchors. |
 | Status lists | `StatusListAgent` creates token status lists and status-list aggregation metadata for issued credentials. |
 | Metadata mapping | `DefaultCredentialSchemeMapper` maps VC-K credential schemes to OpenID4VCI supported credential formats. |
+| Credential types | `CredentialMetadataRegistry` resolves credential schemes from SD-JWT VC type metadata documents. |
 
 ## Supported Credential Schemes
 
-The backend registers credential schemes from the
-[A-SIT Plus credentials collection](https://github.com/a-sit-plus/credentials-collection):
+The backend resolves its credential schemes at startup from the type metadata documents of the
+[A-SIT Plus credentials collection](https://github.com/a-sit-plus/credentials-collection), listed in
+[`CredentialCatalog`](http/src/main/kotlin/at/asitplus/wallet/backend/config/RemoteCredentialMetadata.kt):
 
-- EU PID
-- EU PID SD-JWT
-- Mobile Driving Licence
-- Power of Representation
-- Certificate of Residence
-- Tax ID
-- European Health Insurance Card
-- Age Verification
+| Credential | Format | Identifier |
+| --- | --- | --- |
+| EU PID | SD-JWT VC | `urn:eudi:pid:1` |
+| EU PID | ISO mdoc | `eu.europa.ec.eudi.pid.1` |
+| Mobile Driving Licence | ISO mdoc | `org.iso.18013.5.1.mDL` |
+| Power of Representation | SD-JWT VC | `urn:eu.europa.ec.eudi:por:1` |
+| Tax ID | SD-JWT VC | `urn:eu.europa.ec.eudi:tax:1` |
+| Certificate of Residence | SD-JWT VC | `eu.europa.ec.eudi.cor.1` |
+| European Health Insurance Card | SD-JWT VC | `urn:eudi:ehic:1` |
+| Age Verification | ISO mdoc | `eu.europa.ec.av.1` |
+| ID Austria 1.5 Binding | SD-JWT VC | `urn:eidgvat:credentials.ida15binding` |
 
-The exact format availability depends on each scheme's VC-K representation support.
+The IDA 1.5 Binding type metadata is bundled in the service, the others are fetched; startup fails if a document
+cannot be resolved.
 
 ## Architecture
 
@@ -82,15 +95,17 @@ Wallet
   |  OpenID4VCI / OpenID4VP
   v
 Spring Boot HTTP service
-  |-- OAuth2Controller          PAR, authorize, token, OAuth/OIDC metadata
+  |-- IndexController           issuer UI, credential offers, DC API requests
+  |-- OAuth2Controller          PAR, authorize, token, attestation challenge, OAuth/OIDC metadata
   |-- OpenId4VciController      issuer metadata, nonce, credential endpoint
   |-- PublicController          login, OIDC login choices, EU PID OpenID4VP login
   |-- StatusListController      status list and aggregation endpoints
   |-- RevocationController      debug self-revocation UI
   |
-  |-- VC-K IssuerAgent / CredentialIssuer / SimpleAuthorizationService
+  |-- VC-K IssuerAgent / OpenId4VciServer / SimpleAuthorizationService / OpenId4VpVerifier
+  |-- TrustListService and WalletProviderTrustService (LoTE trust, attestation and status validation)
   |-- DataExtractor and OidcIssuerCredentialDataProvider
-  |-- JPA repositories for prepared, issued, and revoked credentials
+  |-- JPA repositories for issued and revoked credentials
 ```
 
 ## Requirements
@@ -113,8 +128,8 @@ operational limitations:
 - **Sessions and transient issuance state are in memory.** Spring sessions use `MapSessionRepository`, and
   credential offers plus OpenID4VP login transactions use `DefaultMapStore`. Login state, offers, and
   transactions are lost on restart and are not shared across multiple service instances.
-- **Default keys are ephemeral.** `backend.issuer-key.type`, `backend.iso-mdoc-issuer-key.type` when set,
-  and `backend.verifier-key.type` default to `MEMORY`, which creates fresh self-signed key material on
+- **Default keys are ephemeral.** `backend.issuer-key.type`, each `backend.credential-keys` entry, and
+  `backend.verifier-key.type` default to `MEMORY`, which creates fresh self-signed key material on
   startup. A restart changes issuer/verifier identity unless file or keystore-backed keys are configured.
 - **Credential claims are partly synthetic.** The claim builders in `DataExtractor.kt` and
   `FakeDataExtractor.kt` fill many fields with random or placeholder values, including document numbers,
@@ -211,14 +226,17 @@ Any `application.yml` property can be supplied as an environment variable using 
 | `/nonce` | Credential proof nonce endpoint |
 | `/credential` | OpenID4VCI credential endpoint |
 | `/credentials/status/current` | Current status-list aggregation |
-| `/credentials/status/{timePeriod}` | Status list for a time period |
+| `/credentials/status/{timePeriod}` | Status list for a time period, for credentials signed with `backend.issuer-key` |
+| `/credentials/status/{slug}/{timePeriod}` | Status list for a time period, for a credential with its own key in `backend.credential-keys` |
 | `/offer/{nonce}` | Credential offer JSON resolved by nonce (linked from QR code) |
 | `/dcapi/create-request/{nonce}` | Digital Credentials API issuance payload resolved by nonce |
-| `/transaction/result` | OpenID4VP transaction result callback |
-| `/transaction/get` | OpenID4VP transaction state polling |
+| `/transaction/get/{transactionId}` | OpenID4VP request object of an EU PID login (`request_uri`) |
+| `/transaction/result/{id}` | OpenID4VP response endpoint of an EU PID login (`direct_post`) |
 | `/login` | User login page for OIDC and EU PID based identity input |
+| `/loginstatus` | Login state polled by the login page |
 | `/logout` | Session logout |
 | `/revocation` | Debug self-revocation view |
+| `/revoke/{id}` | Debug self-revocation of an issued credential |
 
 ## Configuration
 
@@ -240,7 +258,7 @@ backend:
     minimum-free-indices: 500
   metadata:
     name: "A-SIT Plus Wallet Issuer"
-    logo: "https://wallet.a-sit.at/assets/images/logo.svg"
+    logo: "https://wallet.a-sit.plus/assets/images/logo.svg"
   issuer-key:
     type: MEMORY
   credential-keys:
@@ -642,20 +660,20 @@ backend:
     "org.iso.18013.5.1.mDL":     # mDL mdoc signing certificate
       type: KEYSTORE
       keystore: { path: "file:/secrets/mdl.p12", type: PKCS12, alias: mdl }
+  trust-lists:
+    # Optional: pin the trusted LoTE JWS signer, independently of the LoTE itself.
+    signer-certificates:
+      - file:/secrets/lote-signer-anchor.pem
   wallet-attestation:
     enabled: true
-    # Optional: pin the trusted LoTE JWS signer, independently of the LoTE itself.
-    lote-signer-certificates:
-      - file:/secrets/lote-signer-anchor.pem
 ```
 
 The issuer verifies the signed lists, checks the Wallet Provider profile and validity period, and
 refreshes each stage independently on demand. It uses the resulting issuance certificates for WIA and
-KA validation, alongside the bundled A-SIT IACA 2026 root. `trusted-certificates` and
-`trusted-key-attestation-certificates` may add PEM anchors to the respective trust sets. The optional
-`lote-signer-certificates` pins the LoTE signer; without it, LoTE source authentication relies on
-HTTPS to the configured URLs plus JAdES signature integrity. The URLs can be overridden with
-`wallet-provider-lote-urls`. Peer Issuance_5 and Issuance_6 change the **wallet's** LoTE configuration;
+KA validation, alongside the bundled A-SIT IACA 2026 root. `backend.trust-lists.trusted-certificates`
+adds PEM anchors per profile. The optional `backend.trust-lists.signer-certificates` pins the LoTE signer;
+without it, LoTE source authentication relies on HTTPS to the configured URLs plus JAdES signature
+integrity. The URLs can be overridden with `backend.trust-lists.urls`. Peer Issuance_5 and Issuance_6 change the **wallet's** LoTE configuration;
 the issuer keeps its normal certificates. Clients requesting
 `Accept: application/jwt` from `/.well-known/openid-credential-issuer` receive metadata signed with
 `backend.metadata-key`. The default key is ephemeral and is unsuitable for the trusted WRPAC case.
@@ -664,7 +682,7 @@ JWT resource. VC-K includes it in signed metadata's `issuer_info`; the WRPAC lea
 are transported in protected `x5c`. Both metadata properties are optional. See the
 [signed issuer metadata configuration](#signed-issuer-metadata) for provisioning and renewal.
 Wallet trust profiles, custom anchors and status validation are described in
-[Wallet Provider Trust](#wallet-provider-trust).
+[Wallet Provider and PID Trust](#wallet-provider-and-pid-trust).
 
 The playbook's ITB ISS-01–14 are wallet tests against the reference issuer. This service supports the
 positive issuing flows:
@@ -817,7 +835,8 @@ Behavior notes:
 
 ```text
 http/src/main/kotlin/at/asitplus/wallet/backend
-  config/       Spring and VC-K wiring, key loading, credential claim builders
+  auth/         Mapping authenticated principals to OIDC user info for credential claims
+  config/       Spring and VC-K wiring, key loading, trust lists, credential claim builders
   controller/   OpenID4VCI, OAuth2, login, status-list, and revocation endpoints
   data/         JPA entities, repositories, and VC-K credential data provider
   service/      Revocation and status-list scheduling services
