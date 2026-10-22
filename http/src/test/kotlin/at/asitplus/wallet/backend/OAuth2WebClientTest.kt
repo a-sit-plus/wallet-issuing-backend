@@ -13,7 +13,7 @@ import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.ktor.http.HttpHeaders as KtorHttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -34,7 +34,7 @@ class OAuth2WebClientTest {
     private lateinit var webClient: WebTestClient
 
     @Autowired
-    private lateinit var credentialIssuer: CredentialIssuer
+    private lateinit var credentialIssuer: OpenId4VciServer
 
     @Autowired
     private lateinit var authorizationServer: SimpleAuthorizationService

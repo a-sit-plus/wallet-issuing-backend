@@ -8,8 +8,8 @@ import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.ISO_MDOC
 import at.asitplus.wallet.lib.data.ConstantIndex.CredentialRepresentation.SD_JWT
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient.RequestOptions
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -35,7 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest
 class PerCredentialSigningKeyTest {
 
     @Autowired
-    private lateinit var credentialIssuer: CredentialIssuer
+    private lateinit var credentialIssuer: OpenId4VciServer
 
     @Autowired
     private lateinit var authorizationServer: SimpleAuthorizationService

@@ -17,7 +17,7 @@ import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -39,9 +39,9 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.model
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.view
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.model
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -51,7 +51,7 @@ class OAuth2ParAuthorizeFlowTest {
     private lateinit var mockMvc: MockMvc
 
     @Autowired
-    private lateinit var credentialIssuer: CredentialIssuer
+    private lateinit var credentialIssuer: OpenId4VciServer
 
     @Autowired
     private lateinit var authorizationServer: SimpleAuthorizationService

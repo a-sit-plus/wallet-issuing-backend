@@ -25,7 +25,7 @@ import at.asitplus.wallet.lib.oauth2.OAuthClientAttestationChallenge
 import at.asitplus.wallet.lib.oauth2.OAuthClientAttestationPop
 import at.asitplus.wallet.lib.oidvci.BuildClientAttestationJwt
 import at.asitplus.wallet.lib.oidvci.BuildClientAttestationPoPJwt
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpHeaders
@@ -61,7 +61,7 @@ import kotlin.time.Duration.Companion.days
 class WalletAttestationChallengeTest {
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var configuration: BackendConfigurationProperties
-    @Autowired lateinit var credentialIssuer: CredentialIssuer
+    @Autowired lateinit var credentialIssuer: OpenId4VciServer
 
     @Test
     fun `authorization server advertises the challenge endpoint`() {

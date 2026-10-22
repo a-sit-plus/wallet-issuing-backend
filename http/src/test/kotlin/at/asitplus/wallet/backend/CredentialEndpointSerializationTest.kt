@@ -17,8 +17,8 @@ import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -54,7 +54,7 @@ class CredentialEndpointSerializationTest {
     private lateinit var mockMvc: MockMvc
 
     @Autowired
-    private lateinit var credentialIssuer: CredentialIssuer
+    private lateinit var credentialIssuer: OpenId4VciServer
 
     @Autowired
     private lateinit var authorizationServer: SimpleAuthorizationService
