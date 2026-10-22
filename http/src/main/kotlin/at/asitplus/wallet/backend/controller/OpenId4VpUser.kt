@@ -4,10 +4,10 @@ import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.wallet.eupid.EuPidDataElements
 import at.asitplus.wallet.eupidsdjwt.EuPidSdJwtDataElements
 import at.asitplus.wallet.lib.data.CredentialToJsonConverter.toJsonElement
+import at.asitplus.wallet.lib.data.VcDataModelConstants
 import at.asitplus.wallet.lib.openid.AuthnResponseResult
 import at.asitplus.wallet.lib.validation.ValidatedCredential
 import at.asitplus.wallet.lib.validation.ValidationDecision
-import at.asitplus.wallet.lib.validation.credentialIdentifier
 import at.asitplus.wallet.lib.validation.firstRejection
 import at.asitplus.wallet.mdl.MobileDrivingLicenceDataElements
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -106,6 +106,19 @@ fun AuthnResponseResult.toUser(): OpenId4VpUser = when (this) {
         }
     }
 }
+
+/**
+ * The signed type of this credential: the `vct` of an SD-JWT VC, the `docType` of an ISO mdoc, or the only type of a
+ * VC-JWT other than `VerifiableCredential`, `null` if it has several.
+ */
+private val ValidatedCredential.credentialIdentifier: String?
+    get() = when (this) {
+        is ValidatedCredential.SdJwtVc -> credential.verifiableCredentialType
+        is ValidatedCredential.IsoMdoc -> issuerSigned.issuerAuth.payload?.docType
+        is ValidatedCredential.VcJwt -> credential.vc.type
+            .filter { it != VcDataModelConstants.VERIFIABLE_CREDENTIAL }
+            .singleOrNull()
+    }
 
 private fun String.sha256() = runCatching {
     MessageDigest.getInstance("SHA-256").digest(this.encodeToByteArray()).encodeToString(Base64UrlStrict)
