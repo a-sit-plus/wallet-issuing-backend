@@ -2,6 +2,8 @@
 
 9.0.0-SNAPSHOT (unreleased):
  - Update to VC-K 9.0.0-RC1
+ - Serve on port 8080 and create no demo user by default again; configure `server.port` and
+   `spring.security.user.password` explicitly, e.g. in a local profile
  - Stop writing status lists on every issuance: publish lists with valid entries for unassigned indices, growing by
    `backend.revocation-list.capacity-increment` (default 1000) once fewer than `minimum-free-indices` (default 500)
    are left, and write grown lists on the next dirty check
