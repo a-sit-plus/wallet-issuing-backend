@@ -44,7 +44,7 @@ class RevocationListSchedulerTest {
     @Test
     fun testDirty() = runTest {
         val timePeriod = Random.nextInt()
-        scheduler.onRevocationEvent(RevocationEvent(this@RevocationListSchedulerTest, timePeriod))
+        scheduler.onStatusListChangedEvent(StatusListChangedEvent(this@RevocationListSchedulerTest, timePeriod))
         scheduler.writeDirtyRevocationList()
 
         verify(writer).writeRevocationList(eq(timePeriod))

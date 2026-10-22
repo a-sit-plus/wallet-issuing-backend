@@ -13,6 +13,7 @@ import org.springframework.boot.context.event.ApplicationStartedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -30,8 +31,9 @@ class RevocationListScheduler(
 
     private val log = LoggerFactory.getLogger(this.javaClass)
 
-    private val mapTimePeriodDirty = mutableMapOf<Int, Boolean>()
-    private val mapTimePeriodTimestamp = mutableMapOf<Int, Instant>()
+    // Updated from request threads on revocation and issuance, read from scheduler threads
+    private val mapTimePeriodDirty = ConcurrentHashMap<Int, Boolean>()
+    private val mapTimePeriodTimestamp = ConcurrentHashMap<Int, Instant>()
 
     @PostConstruct
     fun postConstruct() {
@@ -43,11 +45,10 @@ class RevocationListScheduler(
     }
 
     @EventListener
-    fun onRevocationEvent(event: RevocationEvent) {
-        log.debug("onRevocationEvent {}", event)
+    fun onStatusListChangedEvent(event: StatusListChangedEvent) {
+        log.debug("onStatusListChangedEvent {}", event)
+        mapTimePeriodTimestamp.putIfAbsent(event.timePeriod, Instant.fromEpochSeconds(0))
         mapTimePeriodDirty[event.timePeriod] = true
-        if (!mapTimePeriodTimestamp.containsKey(event.timePeriod))
-            mapTimePeriodTimestamp[event.timePeriod] = Instant.fromEpochSeconds(0)
     }
 
     @EventListener

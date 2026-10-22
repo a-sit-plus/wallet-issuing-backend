@@ -69,11 +69,12 @@ interface RevocationService {
 }
 
 /**
- * Gets emitted by [DefaultRevocationService] when a credential (issued in [timePeriod]) got revoked,
+ * Gets emitted by [DefaultRevocationService] when the revocation list for [timePeriod] changed, i.e. a credential
+ * got revoked or the list grew to keep enough free indices for issuing,
  * gets caught by [RevocationListScheduler] to update the cache of revocation lists.
  */
-class RevocationEvent(source: Any, val timePeriod: Int) : ApplicationEvent(source) {
+class StatusListChangedEvent(source: Any, val timePeriod: Int) : ApplicationEvent(source) {
     override fun toString(): String {
-        return "RevocationEvent(timePeriod=$timePeriod)"
+        return "StatusListChangedEvent(timePeriod=$timePeriod)"
     }
 }

@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.openid.OidcUserInfoExtended
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.wallet.backend.Paths
+import at.asitplus.wallet.backend.config.RevocationListConfigurationProperties
 import at.asitplus.wallet.backend.data.CredentialRepositoriesLock
 import at.asitplus.wallet.backend.data.IdentityColumnResynchronizer
 import at.asitplus.wallet.backend.data.IssuedCredential
@@ -34,6 +35,7 @@ class DefaultRevocationService(
     private val revokedCredentialRepo: RevokedCredentialRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val identityColumnResynchronizer: IdentityColumnResynchronizer,
+    private val revocationListConfiguration: RevocationListConfigurationProperties,
 ) : RevocationService {
 
     /**
@@ -45,10 +47,7 @@ class DefaultRevocationService(
     ): KmmResult<ReferencedTokenStore.StoredCredentialReference> = catching {
         synchronized(CredentialRepositoriesLock) {
             Napier.v("Storing new credential for $credential")
-            val revocationListIndex: Long = NumberUtils.max(
-                issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
-                revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-            ) + 1
+            val revocationListIndex: Long = maxRevocationListIndex(timePeriod) + 1
             val savedCredential = saveIssuedCredential(
                 IssuedCredential(
                     subjectId = credential.subjectPublicKey.subjectId(),
@@ -59,6 +58,11 @@ class DefaultRevocationService(
                     revocationListIndex = revocationListIndex
                 )
             )
+            // The published list already covers this index, but needs to grow to keep enough free indices
+            val sizeBefore = revocationListConfiguration.statusListSize(revocationListIndex - 1)
+            if (revocationListConfiguration.statusListSize(revocationListIndex) != sizeBefore) {
+                applicationEventPublisher.publishEvent(StatusListChangedEvent(this, timePeriod))
+            }
             ReferencedTokenStore.StoredCredentialReference(
                 id = savedCredential.id.toString(),
                 timePeriod = timePeriod,
@@ -130,7 +134,7 @@ class DefaultRevocationService(
             issuedCredentialRepo.deleteAll(toRevoke)
             issuedCredentialRepo.flush()
             toRevoke.map { it.timePeriod }.toSet()
-                .forEach { applicationEventPublisher.publishEvent(RevocationEvent(this, it)) }
+                .forEach { applicationEventPublisher.publishEvent(StatusListChangedEvent(this, it)) }
             return toRevoke.count()
         }
     }
@@ -144,22 +148,24 @@ class DefaultRevocationService(
             .filter { it.identifier != null }
             .associate { Identifier(it.identifier.toString().encodeToByteArray()) to IdentifierInfo() }
 
+    private fun maxRevocationListIndex(timePeriod: Int): Long = NumberUtils.max(
+        issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
+        revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
+    )
+
+    /**
+     * Revocation list indexes are 1-based, and the list contains valid entries beyond the highest index assigned
+     * (see [RevocationListConfigurationProperties.statusListSize]), so that credentials issued after the list
+     * has been written are included and reported as valid.
+     */
     private fun tokenStatusForAllIndexes(timePeriod: Int): List<TokenStatus> {
-        val revoked = revokedCredentialRepo.getByTimePeriod(timePeriod)
-        val maxRevocationListIndex = java.lang.Long.max(
-            issuedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0,
-            revokedCredentialRepo.getMaxRevocationListIndex(timePeriod) ?: 0
-        )
-        // Revocation list indexes are 1-based, so the list needs `maxRevocationListIndex + 1` entries
-        // for the credential at the highest index (e.g. the one just issued) to be included and reported as valid.
-        require(maxRevocationListIndex + 1 < Int.MAX_VALUE) { "Revocation list too large" }
-        return List(maxRevocationListIndex.toInt() + 1) { listIndex ->
-            TokenStatus(revoked.findIndex(listIndex)?.status ?: TokenStatus.Valid.value)
+        val revoked = revokedCredentialRepo.getByTimePeriod(timePeriod).associateBy { it.revocationListIndex }
+        val size = revocationListConfiguration.statusListSize(maxRevocationListIndex(timePeriod))
+        require(size < Int.MAX_VALUE) { "Revocation list too large" }
+        return List(size.toInt()) { listIndex ->
+            TokenStatus(revoked[listIndex.toLong()]?.status ?: TokenStatus.Valid.value)
         }
     }
-
-    private fun Collection<RevokedCredential>.findIndex(listIndex: Int): RevokedCredential? =
-        find { it.revocationListIndex == listIndex.toLong() }
 
     /**
      * Lists the field [IssuedCredential.revocationListIndex] for all credentials that have been revoked.

@@ -106,7 +106,7 @@ data class RevocationListConfigurationProperties(
     private val regularWriteTimeout: String = "P5D",
     /**
      * Rate at which to check for dirty revocation lists that shall be written after a credential got revoked,
-     * defaults to `PT10M`.
+     * or after issuing used up the free indices of a list (see [minimumFreeIndices]), defaults to `PT10M`.
      */
     private val dirtyCheckRate: String = "PT10M",
     /**
@@ -118,7 +118,24 @@ data class RevocationListConfigurationProperties(
      * Path at which the revocation lists shall be written to and read from, defaults to `cache/revocation-lists/`
      */
     val path: String = "cache/revocation-lists/",
+    /**
+     * Number of indices by which a revocation list grows, defaults to `1000`. Lists are published with valid entries
+     * for indices not yet assigned, so newly issued credentials are covered by the list already published, and the
+     * list need not be written on every issuance.
+     */
+    val capacityIncrement: Int = 1000,
+    /**
+     * Minimum number of unassigned indices a revocation list keeps, defaults to `500`. Once fewer are left, the
+     * list grows by [capacityIncrement] and gets written on the next dirty check. Should exceed the number of
+     * credentials issued per [dirtyCheckRate], since indices beyond the published list are not covered yet.
+     */
+    val minimumFreeIndices: Int = 500,
 ) {
+    init {
+        require(capacityIncrement > 0) { "capacityIncrement must be positive" }
+        require(minimumFreeIndices >= 0) { "minimumFreeIndices must not be negative" }
+    }
+
     val lifetimeDuration: Duration = Duration.parse(lifetime)
     val regularWriteTimeoutDuration: Duration = Duration.parse(regularWriteTimeout)
     val dirtyCheckRateDuration: Duration = Duration.parse(dirtyCheckRate)
@@ -133,6 +150,14 @@ data class RevocationListConfigurationProperties(
 
     /** Cache directory for the JWT status list tokens of one status list group, see [cwtPath]. */
     fun jwtPath(slug: String = "") = basePath + "jwt/" + if (slug.isEmpty()) "" else "$slug/"
+
+    /**
+     * Number of entries a revocation list has, when [maxIndex] is the highest index assigned so far: the smallest
+     * multiple of [capacityIncrement] that leaves at least [minimumFreeIndices] indices after [maxIndex] unassigned.
+     * Entry `0` is never assigned, since indices are 1-based.
+     */
+    fun statusListSize(maxIndex: Long): Long =
+        ((maxIndex + minimumFreeIndices) / capacityIncrement + 1) * capacityIncrement
 }
 
 data class KeyConfiguration(

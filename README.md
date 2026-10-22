@@ -236,6 +236,8 @@ backend:
     dirty-check-rate: PT10M
     regular-check-rate: PT1H
     path: cache/revocation-lists/
+    capacity-increment: 1000
+    minimum-free-indices: 500
   metadata:
     name: "A-SIT Plus Wallet Issuer"
     logo: "https://wallet.a-sit.at/assets/images/logo.svg"
@@ -496,9 +498,17 @@ Token status list output is controlled by `backend.revocation-list`:
 
 - `lifetime`: lifetime of a generated status list credential, default `P7D`.
 - `regular-write-timeout`: maximum age before a list is written again, default `P5D`.
-- `dirty-check-rate`: interval for writing lists after revocation changes, default `PT10M`.
+- `dirty-check-rate`: interval for writing lists after revocation changes or list growth, default `PT10M`.
 - `regular-check-rate`: interval for refreshing outdated lists, default `PT1H`.
 - `path`: directory where status lists are written, default `cache/revocation-lists/`.
+- `capacity-increment`: number of entries by which a list grows, default `1000`.
+- `minimum-free-indices`: number of unassigned entries a list keeps before growing, default `500`.
+
+Issuing a credential does not write its status list. Instead, every list contains valid entries for indices not
+assigned yet, so the list already published covers newly issued credentials. A list's size is a multiple of
+`capacity-increment` that keeps at least `minimum-free-indices` entries after the highest assigned index; the issuance
+that uses up the margin marks the list for writing on the next dirty check. Choose `minimum-free-indices` larger than
+the number of credentials issued per `dirty-check-rate`, since indices beyond the published list are not covered yet.
 
 Shared and SD-JWT status-list URLs serve a compact signed JWT with
 `Content-Type: application/statuslist+jwt` by default,

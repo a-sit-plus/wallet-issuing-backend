@@ -4,6 +4,7 @@ import at.asitplus.openid.AttestationChallengeResponse
 import at.asitplus.openid.OAuth2AuthorizationServerMetadata
 import at.asitplus.openid.encodeToParameters
 import at.asitplus.openid.formUrlEncode
+import at.asitplus.signum.indispensable.josef.ClientStatus
 import at.asitplus.signum.indispensable.josef.JsonWebToken
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.wallet.backend.config.walletStatusToken
@@ -29,6 +30,9 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -48,6 +52,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.nio.file.Files
 import java.util.Base64
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -75,6 +81,16 @@ class WalletAttestationChallengeTest {
             SignJwt(walletProvider, JwsHeaderCertOrJwk()),
             clientId = client.clientId,
             clientKey = clientKey.jsonWebKey,
+            // walletStatusResolver serves a list for any URI, whose entry at idx 0 reflects revoked
+            clientStatus = ClientStatus(
+                status = buildJsonObject {
+                    putJsonObject("status_list") {
+                        put("idx", 0)
+                        put("uri", "https://example.org/status/wallet-instance")
+                    }
+                },
+                expiration = Clock.System.now() + 31.days,
+            ),
         )
         val scope = credentialIssuer.metadata.supportedCredentialConfigurations!!.values.first().scope!!
         suspend fun par(challenge: String?): ResultActions {
