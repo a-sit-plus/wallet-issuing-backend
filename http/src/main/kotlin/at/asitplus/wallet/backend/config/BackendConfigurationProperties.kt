@@ -21,8 +21,6 @@ data class BackendConfigurationProperties(
     val metadataKey: KeyConfiguration? = null,
     /** Optional Spring resource containing the compact WRPRC JWT to include in signed issuer metadata. */
     val metadataRegistrationCertificate: String? = null,
-    /** Optional Spring resource containing the registrar_dataset JSON object for signed issuer metadata. */
-    val metadataRegistrarDataset: String? = null,
     /**
      * Signing key per credential, keyed by `vct` (SD-JWT) or ISO docType (mdoc).
      * Credentials not listed here are signed with [issuerKey].
