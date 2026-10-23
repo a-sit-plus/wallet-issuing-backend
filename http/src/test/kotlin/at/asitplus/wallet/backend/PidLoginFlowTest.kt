@@ -8,6 +8,7 @@ import at.asitplus.wallet.backend.config.MetadataTestPki
 import at.asitplus.wallet.backend.config.buildSdJwtClaims
 import at.asitplus.wallet.backend.config.walletStatusToken
 import at.asitplus.wallet.backend.controller.OpenId4VpUser
+import at.asitplus.wallet.lib.HttpStep
 import at.asitplus.wallet.lib.agent.EphemeralKeyWithoutCert
 import at.asitplus.wallet.lib.agent.HolderAgent
 import at.asitplus.wallet.lib.agent.IssuerAgent
@@ -19,7 +20,9 @@ import at.asitplus.wallet.lib.data.AttributeIndex
 import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
 import at.asitplus.wallet.lib.data.rfc3986.toUri
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
+import at.asitplus.wallet.lib.openid.AuthorizationResponsePreparationState
 import at.asitplus.wallet.lib.openid.OpenId4VpHolder
+import at.asitplus.wallet.lib.openid.OpenId4VpProtocolClient
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -147,7 +150,7 @@ class PidLoginFlowTest {
     fun `response cannot authenticate another browser transaction`() = runTest {
         val first = browserStartsPidLogin()
         val second = browserStartsPidLogin()
-        val response = holderWithPid().createAuthnResponse(fetchRequest(first.requestUri)).getOrThrow()
+        val response = holderWithPid().respondTo(fetchRequest(first.requestUri))
             .shouldBeInstanceOf<AuthenticationResponseResult.Post>()
         postResponse(URI(second.requestUri).rawPath.replace(Paths.Transaction.GetUrl, Paths.Transaction.ResultUrl), response.params.formUrlEncode(), 400)
         browserSeesAuthenticatedSession(first.sessionCookies, false)
@@ -157,7 +160,7 @@ class PidLoginFlowTest {
     @Test
     fun `valid proof cannot satisfy an unrequested DCQL query`() = runTest {
         val login = browserStartsPidLogin()
-        val response = holderWithPid().createAuthnResponse(fetchRequest(login.requestUri)).getOrThrow()
+        val response = holderWithPid().respondTo(fetchRequest(login.requestUri))
             .shouldBeInstanceOf<AuthenticationResponseResult.Post>()
         val token = Json.parseToJsonElement(response.params.getValue("vp_token")).jsonObject
         val params = response.params + ("vp_token" to JsonObject(mapOf("unrequested" to token.values.single())).toString())
@@ -168,7 +171,7 @@ class PidLoginFlowTest {
     @Test
     fun `invalid holder signature cannot authenticate`() = runTest {
         val login = browserStartsPidLogin()
-        val response = holderWithPid().createAuthnResponse(fetchRequest(login.requestUri)).getOrThrow()
+        val response = holderWithPid().respondTo(fetchRequest(login.requestUri))
             .shouldBeInstanceOf<AuthenticationResponseResult.Post>()
         val token = Json.parseToJsonElement(response.params.getValue("vp_token")).jsonObject
         val entry = token.entries.single()
@@ -186,7 +189,7 @@ class PidLoginFlowTest {
     @Test
     fun `processed response cannot be replayed`() = runTest {
         val login = browserStartsPidLogin()
-        val response = holderWithPid().createAuthnResponse(fetchRequest(login.requestUri)).getOrThrow()
+        val response = holderWithPid().respondTo(fetchRequest(login.requestUri))
             .shouldBeInstanceOf<AuthenticationResponseResult.Post>()
         postResponse(URI(response.url).rawPath, response.params.formUrlEncode())
         postResponse(URI(response.url).rawPath, response.params.formUrlEncode(), 404)
@@ -241,11 +244,17 @@ class PidLoginFlowTest {
     private suspend fun walletCompletesPidAuthentication(holderOid4vp: OpenId4VpHolder, requestUri: String) {
         val authnRequest = fetchRequest(requestUri)
 
-        val authnResponse = holderOid4vp.createAuthnResponse(authnRequest)
-            .getOrThrow()
+        val authnResponse = holderOid4vp.respondTo(authnRequest)
             .shouldBeInstanceOf<AuthenticationResponseResult.Post>()
 
         postResponse(URI(authnResponse.url).rawPath, authnResponse.params.formUrlEncode())
+    }
+
+    /** Responds to the fetched [requestObject] as a wallet does, which needs no further HTTP request to prepare. */
+    private suspend fun OpenId4VpHolder.respondTo(requestObject: String): AuthenticationResponseResult {
+        val prepared = OpenId4VpProtocolClient(this).prepareAuthorizationResponse(requestObject).next().getOrThrow()
+            .shouldBeInstanceOf<HttpStep.Done<AuthorizationResponsePreparationState>>()
+        return finalizeAuthorizationResponse(prepared.value).getOrThrow()
     }
 
     private fun fetchRequest(requestUri: String): String = mockMvc.perform(asyncDispatch(

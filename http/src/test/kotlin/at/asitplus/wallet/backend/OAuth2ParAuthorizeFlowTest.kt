@@ -17,7 +17,7 @@ import at.asitplus.wallet.lib.oauth2.DPoPNonce
 import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -39,9 +39,9 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.model
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.view
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.model
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -51,7 +51,7 @@ class OAuth2ParAuthorizeFlowTest {
     private lateinit var mockMvc: MockMvc
 
     @Autowired
-    private lateinit var credentialIssuer: CredentialIssuer
+    private lateinit var credentialIssuer: OpenId4VciServer
 
     @Autowired
     private lateinit var authorizationServer: SimpleAuthorizationService
@@ -69,7 +69,7 @@ class OAuth2ParAuthorizeFlowTest {
     fun `par followed by authorize with request_uri succeeds when issuer_state is present`() = runTest {
         val oauth2Client = OAuth2Client()
         val scope = credentialIssuer.metadata.supportedCredentialConfigurations
-            ?.values?.firstNotNullOfOrNull { it.scope }
+            .values.firstNotNullOfOrNull { it.scope }
             ?: error("No scope configured in issuer metadata")
         val issuerState = authorizationServer.offerWithAuthorizationCodeForSchemes(
             credentialIssuer = credentialIssuer.metadata.credentialIssuer,
@@ -112,7 +112,7 @@ class OAuth2ParAuthorizeFlowTest {
     @WithOAuth2AuthenticationToken
     fun `authorize keeps the manual iPhone redirect page`() = runTest {
         val client = OAuth2Client()
-        val scope = credentialIssuer.metadata.supportedCredentialConfigurations!!.values.first().scope!!
+        val scope = credentialIssuer.metadata.supportedCredentialConfigurations.values.first().scope!!
         val pushed = authorizationServer.pushedRequest(client.createAuthRequest(state = "iphone-state", scope = scope))
         val initial = mockMvc.get(Paths.AuthorizeUrl) {
             param("client_id", client.clientId)
@@ -130,7 +130,7 @@ class OAuth2ParAuthorizeFlowTest {
     fun `token error response includes DPoP nonce when proof nonce is missing`() = runTest {
         val oauth2Client = OAuth2Client()
         val scope = credentialIssuer.metadata.supportedCredentialConfigurations
-            ?.values?.firstNotNullOfOrNull { it.scope }
+            .values.firstNotNullOfOrNull { it.scope }
             ?: error("No scope configured in issuer metadata")
         val state = uuid4().toString()
         val authRequest = oauth2Client.createAuthRequest(state = state, scope = scope)

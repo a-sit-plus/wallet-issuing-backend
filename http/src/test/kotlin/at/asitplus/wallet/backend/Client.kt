@@ -18,10 +18,10 @@ import at.asitplus.wallet.lib.oauth2.OAuth2Client
 import at.asitplus.wallet.lib.oauth2.RequestInfo
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oidvci.BuildDPoPHeader
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.JwtProofCreator
+import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient.RequestOptions
 import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
-import at.asitplus.wallet.lib.oidvci.WalletService
 import at.asitplus.wallet.lib.openid.AuthenticationResponseResult
 import com.benasher44.uuid.uuid4
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -37,7 +37,7 @@ class Client {
 
     val randomKeyAdapter = EphemeralKeyWithSelfSignedCert()
 
-    val oid4vciClient = WalletService(keyMaterial = randomKeyAdapter)
+    val oid4vciClient = OpenId4VciClient(proofCreators = listOf(JwtProofCreator(randomKeyAdapter)))
 
     val oauth2Client = OAuth2Client()
 
@@ -54,7 +54,7 @@ suspend fun SimpleAuthorizationService.pushedRequest(request: AuthenticationRequ
  * the current Spring Security context, and returns the credential response.
  */
 suspend fun loadCredential(
-    credentialIssuer: CredentialIssuer,
+    credentialIssuer: OpenId4VciServer,
     authorizationServer: SimpleAuthorizationService,
     requestOptions: RequestOptions,
     lifetime: Duration = 1.minutes,
