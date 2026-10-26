@@ -5,6 +5,7 @@ import at.asitplus.wallet.backend.Extensions.toRequestInfo
 import at.asitplus.wallet.backend.Extensions.toResponseEntity
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.TypeMetadataIntegrity
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.MediaTypes
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
 class OpenId4VciController(
     private val credentialIssuer: OpenId4VciServer,
     private val backendConfigurationProperties: BackendConfigurationProperties,
+    private val typeMetadataIntegrity: TypeMetadataIntegrity,
 ) {
 
     @GetMapping(
@@ -90,6 +92,7 @@ class OpenId4VciController(
             },
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
+                vctIntegrity = typeMetadataIntegrity::forVct,
             ),
         ).getOrElse {
             Napier.w("${Paths.CredentialUrl} got error", it)

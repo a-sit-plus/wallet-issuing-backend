@@ -61,6 +61,9 @@ import at.asitplus.wallet.sdjwt.SdJwtTypeMetadataDocumentRegistry
 import at.asitplus.wallet.sdjwt.SdJwtVcType
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
+import io.ktor.client.request.get
+import io.ktor.client.statement.readRawBytes
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
@@ -153,6 +156,21 @@ class BackendConfiguration {
                 local.findEntry(identifier, representation) ?: remote.findEntry(identifier, representation)
         }.also { LibraryInitializer.registerCredentialMetadataRegistry(it) }
     }
+
+    /** Fetches each SD-JWT type metadata document once more, as the registry does not expose the raw document. */
+    @Bean
+    fun typeMetadataIntegrity(metadataHttpClient: HttpClient) = TypeMetadataIntegrity(
+        CredentialCatalog.entries.filter { it.representation == CredentialRepresentation.SD_JWT }.associate { entry ->
+            val document = if (entry.url.startsWith("classpath:"))
+                resourceLoader.getResource(entry.url).inputStream.use { it.readAllBytes() }
+            else runBlocking {
+                metadataHttpClient.get(entry.url).also {
+                    require(it.status.isSuccess()) { "Could not fetch ${entry.url}: ${it.status}" }
+                }.readRawBytes()
+            }
+            entry.vct to TypeMetadataIntegrity.of(document)
+        }
+    )
 
     @Bean
     fun revocationService(

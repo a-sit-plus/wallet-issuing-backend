@@ -2,6 +2,7 @@
 
 9.0.0-SNAPSHOT (unreleased):
  - Update to VC-K 9.0.0-RC1
+ - Include `vct#integrity` in issued SD-JWT VCs, the W3C SRI of the type metadata document of their `vct`
  - Serve on port 8080 and create no demo user by default again; configure `server.port` and
    `spring.security.user.password` explicitly, e.g. in a local profile
  - Stop writing status lists on every issuance: publish lists with valid entries for unassigned indices, growing by

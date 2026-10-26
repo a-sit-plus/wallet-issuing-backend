@@ -20,6 +20,8 @@ import kotlin.time.toKotlinInstant
 
 class OidcIssuerCredentialDataProvider(
     private val lifetime: Duration,
+    /** `vct#integrity` for a `vct`, see [at.asitplus.wallet.backend.config.TypeMetadataIntegrity]. */
+    private val vctIntegrity: (String) -> String? = { null },
 ) : CredentialDataProviderFun {
     override suspend fun invoke(
         input: CredentialDataProviderInput,
@@ -31,7 +33,9 @@ class OidcIssuerCredentialDataProvider(
 
         when (val scheme = input.credentialScheme) {
             is SdJwtCredentialScheme if input.credentialRepresentation == SD_JWT ->
-                scheme.buildSdJwtClaims(input.userInfo, issuance, expiration, input.subjectPublicKey)
+                scheme.buildSdJwtClaims(
+                    input.userInfo, issuance, expiration, input.subjectPublicKey, vctIntegrity(scheme.sdJwtType)
+                )
 
             is IsoMdocCredentialScheme if input.credentialRepresentation == ISO_MDOC ->
                 scheme.buildIsoClaims(input.userInfo, expiration, input.subjectPublicKey)

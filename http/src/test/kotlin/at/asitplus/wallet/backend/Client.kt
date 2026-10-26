@@ -58,6 +58,7 @@ suspend fun loadCredential(
     authorizationServer: SimpleAuthorizationService,
     requestOptions: RequestOptions,
     lifetime: Duration = 1.minutes,
+    vctIntegrity: (String) -> String? = { null },
 ): CredentialResponseParameters {
     val client = Client()
     val signDpop: SignJwtFun<JsonWebToken> = SignJwt(EphemeralKeyWithoutCert(), JwsHeaderCertOrJwk())
@@ -102,7 +103,7 @@ suspend fun loadCredential(
     return credentialIssuer.credential(
         authorizationHeader = accessToken.toHttpHeaderValue(),
         params = credentialRequest.first(),
-        credentialDataProvider = OidcIssuerCredentialDataProvider(lifetime = lifetime),
+        credentialDataProvider = OidcIssuerCredentialDataProvider(lifetime = lifetime, vctIntegrity = vctIntegrity),
         request = RequestInfo(
             url = credentialIssuer.metadata.credentialEndpointUrl.shouldNotBeNull(),
             method = HttpMethod.Post,

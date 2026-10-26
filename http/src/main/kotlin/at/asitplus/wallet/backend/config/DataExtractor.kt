@@ -35,6 +35,7 @@ fun SdJwtCredentialScheme.buildSdJwtClaims(
     iss: Instant,
     exp: Instant,
     subjectPublicKey: CryptoPublicKey,
+    vctIntegrity: String? = null,
 ) = CredentialToBeIssued.VcSd(
     claims = when (sdJwtType) {
         EU_PID_SD_JWT_VCT -> userInfo.buildEupidClaimsSdJwt(true)
@@ -44,7 +45,7 @@ fun SdJwtCredentialScheme.buildSdJwtClaims(
         EhicClaims.VCT -> userInfo.buildEhicClaims(iss, exp, false)
         Ida15BindingClaims.VCT -> userInfo.buildIda15BindingClaims(false)
         else -> TODO("$this is not implemented in buildSdJwtClaims()")
-    },
+    } + listOfNotNull(vctIntegrity?.let { ClaimToBeIssued("vct#integrity", it, selectivelyDisclosable = false) }),
     expiration = exp,
     scheme = this,
     subjectPublicKey = subjectPublicKey,

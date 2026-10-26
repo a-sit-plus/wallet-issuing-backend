@@ -695,6 +695,9 @@ positive issuing flows:
 The negative ITB cases are outside this service's current test setup. The ITB controls test execution and
 result recording.
 
+Playbook v3 requires `vct#integrity` in SD-JWT VCs: issued SD-JWT credentials carry the W3C Subresource Integrity
+(`sha256-…`) of the type metadata document this service resolves their `vct` to, as a non-disclosable claim.
+
 ## Database
 
 For local development and tests, H2 is enough:
