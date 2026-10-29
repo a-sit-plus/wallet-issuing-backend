@@ -42,18 +42,14 @@ class OAuth2Controller(
 ) {
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION, produces = [APPLICATION_JSON_VALUE])
-    suspend fun openidMetadata(): ResponseEntity<String> {
-        return authorizationService.metadata()
-            .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $it") }
-            .toHttpResponse().toResponseEntity()
-    }
+    suspend fun openidMetadata(): ResponseEntity<String> = authorizationService.metadata()
+        .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OPENID_CONFIGURATION} returns $it") }
+        .toHttpResponse().toResponseEntity()
 
     @GetMapping(OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER, produces = [APPLICATION_JSON_VALUE])
-    suspend fun oauthMetadata(): ResponseEntity<String> {
-        return authorizationService.metadata()
-            .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $it") }
-            .toHttpResponse().toResponseEntity()
-    }
+    suspend fun oauthMetadata(): ResponseEntity<String> = authorizationService.metadata()
+        .also { Napier.i("${OpenIdConstants.PATH_WELL_KNOWN_OAUTH_AUTHORIZATION_SERVER} returns $it") }
+        .toHttpResponse().toResponseEntity()
 
     /**
      * Called by the Wallet to get a challenge for its Client Attestation PoP JWT,
