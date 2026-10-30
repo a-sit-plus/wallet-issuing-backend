@@ -19,7 +19,7 @@ import at.asitplus.wallet.lib.data.CredentialScheme
 import at.asitplus.wallet.lib.data.IsoMdocCredentialScheme
 import at.asitplus.wallet.lib.data.SdJwtCredentialScheme
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.utils.DefaultMapStore
 import at.asitplus.wallet.lib.utils.MapStore
 import com.benasher44.uuid.uuid4
@@ -27,8 +27,9 @@ import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import jakarta.servlet.http.HttpSession
-import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import kotlin.time.Duration.Companion.hours
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.ui.ModelMap
@@ -39,7 +40,6 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.ModelAndView
 import org.springframework.web.util.UriComponentsBuilder
 import qrcode.QRCode
-import kotlin.time.Duration.Companion.hours
 
 
 /**
@@ -47,7 +47,7 @@ import kotlin.time.Duration.Companion.hours
  */
 @RestController
 class IndexController(
-    private val credentialIssuer: CredentialIssuer,
+    private val credentialIssuer: OpenId4VciServer,
     private val authorizationService: SimpleAuthorizationService,
     private val backendConfigurationProperties: BackendConfigurationProperties,
     private val credentialOfferings: List<CredentialOffering>,

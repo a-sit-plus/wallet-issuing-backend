@@ -72,7 +72,8 @@ internal class TrustedWalletStatusListResolver(
         }
         (signature.outcome as? CheckOutcome.Failed)?.let { throw it.throwable }
         require(signature.outcome == CheckOutcome.Passed) { "Status list signature could not be verified" }
-        signature.certificateChain.requireTrustedSigningCertificate(anchors, clock.now(), allowDirectTrust = false)
+        // LoTEs may list the status signer itself as revocation service identity, which then is its own x5c.
+        signature.certificateChain.requireTrustedSigningCertificate(anchors, clock.now())
         return token
     }
 }

@@ -47,7 +47,7 @@ import at.asitplus.wallet.lib.oauth2.NoopClientAuthenticationService
 import at.asitplus.wallet.lib.oauth2.SimpleAuthorizationService
 import at.asitplus.wallet.lib.oauth2.TokenService
 import at.asitplus.wallet.lib.oidvci.CredentialAuthorizationServiceStrategy
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.oidvci.DefaultCredentialSchemeMapper
 import at.asitplus.wallet.lib.oidvci.OAuth2AuthorizationServerAdapter
 import at.asitplus.wallet.lib.oidvci.ProofValidator
@@ -61,6 +61,9 @@ import at.asitplus.wallet.sdjwt.SdJwtTypeMetadataDocumentRegistry
 import at.asitplus.wallet.sdjwt.SdJwtVcType
 import io.github.aakira.napier.Napier
 import io.ktor.client.*
+import io.ktor.client.request.get
+import io.ktor.client.statement.readRawBytes
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
@@ -153,6 +156,21 @@ class BackendConfiguration {
                 local.findEntry(identifier, representation) ?: remote.findEntry(identifier, representation)
         }.also { LibraryInitializer.registerCredentialMetadataRegistry(it) }
     }
+
+    /** Fetches each SD-JWT type metadata document once more, as the registry does not expose the raw document. */
+    @Bean
+    fun typeMetadataIntegrity(metadataHttpClient: HttpClient) = TypeMetadataIntegrity(
+        CredentialCatalog.entries.filter { it.representation == CredentialRepresentation.SD_JWT }.associate { entry ->
+            val document = if (entry.url.startsWith("classpath:"))
+                resourceLoader.getResource(entry.url).inputStream.use { it.readAllBytes() }
+            else runBlocking {
+                metadataHttpClient.get(entry.url).also {
+                    require(it.status.isSuccess()) { "Could not fetch ${entry.url}: ${it.status}" }
+                }.readRawBytes()
+            }
+            entry.vct to TypeMetadataIntegrity.of(document)
+        }
+    )
 
     @Bean
     fun revocationService(
@@ -343,7 +361,7 @@ class BackendConfiguration {
         credentialOfferings: List<CredentialOffering>,
         walletProviderTrustService: WalletProviderTrustService,
         statusListTokenResolver: StatusListTokenResolver,
-    ): CredentialIssuer {
+    ): OpenId4VciServer {
         val metadataKey = configuration.metadataKey?.let(::loadKeyMaterial) ?: EphemeralKeyWithoutCert()
         val metadataChain = runBlocking {
             (metadataKey as? KeyStoreMaterial)?.getCertificateChain() ?: listOfNotNull(metadataKey.getCertificate())
@@ -357,7 +375,7 @@ class BackendConfiguration {
         val schemes = credentialOfferings.map { it.scheme }.toSet()
         // Every signing key must appear here, or wallets cannot verify credentials signed with it.
         val signingKeys = statusListGroups.all.map { it.keyMaterial }.toSet()
-        return CredentialIssuer(
+        return OpenId4VciServer(
             publicContext = configuration.publicContext.toString(),
             credentialSchemes = schemes,
             authorizationService = authorizationServer,

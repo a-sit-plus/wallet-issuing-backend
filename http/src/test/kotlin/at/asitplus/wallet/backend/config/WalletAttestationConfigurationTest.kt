@@ -191,10 +191,31 @@ class WalletAttestationConfigurationTest {
         }
     }
 
-    private fun walletTrustWithStatus(configuration: WalletAttestationConfiguration, status: MetadataTestPki) =
+    @Test
+    fun `status signer listed directly is trusted when it transports only its own certificate`() = runBlocking<Unit> {
+        val providerPki = MetadataTestPki()
+        val statusPki = MetadataTestPki()
+        val otherPki = MetadataTestPki()
+        val configuration = WalletAttestationConfiguration(enabled = true,
+            trustedKeyAttestationCertificates = listOf(writePem("provider.pem", providerPki.intermediate)))
+        val service = walletTrustWithStatus(configuration, statusPki, anchor = statusPki.leaf)
+        val key = EphemeralKeyWithoutCert()
+        val directSigner = statusPki.material(statusPki.leafKey, listOf(statusPki.leaf))
+        val valid = credentialProofValidator(configuration, "https://issuer.example", service,
+            StatusListTokenResolver { walletStatusToken(directSigner, it.string) })
+        valid.validateAttestation(providerPki.keyMaterial, key) shouldBe listOf(key.jsonWebKey.toCryptoPublicKey().getOrThrow())
+        val unlisted = credentialProofValidator(configuration, "https://issuer.example", service,
+            StatusListTokenResolver { walletStatusToken(otherPki.material(otherPki.leafKey, listOf(otherPki.leaf)), it.string) })
+        shouldThrow<OAuth2Exception.InvalidProof> { unlisted.validateAttestation(providerPki.keyMaterial, key) }
+    }
+
+    private fun walletTrustWithStatus(
+        configuration: WalletAttestationConfiguration, status: MetadataTestPki,
+        anchor: X509Certificate = status.intermediate,
+    ) =
         WalletProviderTrustService(configuration, DefaultResourceLoader(), TrustListService(
             TrustListConfiguration(stages = emptyList(), trustedCertificates = mapOf(
-                LoteProfile.WALLET to TrustListCertificates(status = listOf(writePem("status.pem", status.intermediate))),
+                LoteProfile.WALLET to TrustListCertificates(status = listOf(writePem("status.pem", anchor))),
             )), DefaultResourceLoader(), fetch = { error("must not fetch") },
         ))
 

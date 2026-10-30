@@ -5,10 +5,11 @@ import at.asitplus.wallet.backend.Extensions.toRequestInfo
 import at.asitplus.wallet.backend.Extensions.toResponseEntity
 import at.asitplus.wallet.backend.Paths
 import at.asitplus.wallet.backend.config.BackendConfigurationProperties
+import at.asitplus.wallet.backend.config.TypeMetadataIntegrity
 import at.asitplus.wallet.backend.data.OidcIssuerCredentialDataProvider
 import at.asitplus.wallet.lib.data.MediaTypes
-import at.asitplus.wallet.lib.oidvci.CredentialIssuer
 import at.asitplus.wallet.lib.oidvci.OpenId4VciClient
+import at.asitplus.wallet.lib.oidvci.OpenId4VciServer
 import at.asitplus.wallet.lib.oidvci.toHttpResponse
 import io.github.aakira.napier.Napier
 import io.ktor.http.*
@@ -24,12 +25,13 @@ import org.springframework.web.bind.annotation.RestController
 
 
 /**
- * Implements controller for OpenID4VCI, mapping the public functions of [CredentialIssuer].
+ * Implements controller for OpenID4VCI, mapping the public functions of [OpenId4VciServer].
  */
 @RestController
 class OpenId4VciController(
-    private val credentialIssuer: CredentialIssuer,
+    private val credentialIssuer: OpenId4VciServer,
     private val backendConfigurationProperties: BackendConfigurationProperties,
+    private val typeMetadataIntegrity: TypeMetadataIntegrity,
 ) {
 
     @GetMapping(
@@ -53,7 +55,7 @@ class OpenId4VciController(
     }
 
     /**
-     * Called by the Wallet to get a nonce for their proof-of-possessions, see [CredentialIssuer.nonceWithDpopNonce].
+     * Called by the Wallet to get a nonce for their proof-of-possessions, see [OpenId4VciServer.nonceWithDpopNonce].
      */
     @PostMapping(Paths.NonceUrl, produces = [APPLICATION_JSON_VALUE])
     suspend fun nonce(): ResponseEntity<String> {
@@ -68,7 +70,7 @@ class OpenId4VciController(
 
     /**
      * Issues the credential, when the token sent by the Wallet is valid,
-     * see [CredentialIssuer.credential].
+     * see [OpenId4VciServer.credential].
      */
     @PostMapping(Paths.CredentialUrl, produces = [APPLICATION_JSON_VALUE, MediaTypes.Application.JWT])
     suspend fun credential(
@@ -90,6 +92,7 @@ class OpenId4VciController(
             },
             credentialDataProvider = OidcIssuerCredentialDataProvider(
                 lifetime = backendConfigurationProperties.credentials.lifeTime,
+                vctIntegrity = typeMetadataIntegrity::forVct,
             ),
         ).getOrElse {
             Napier.w("${Paths.CredentialUrl} got error", it)
