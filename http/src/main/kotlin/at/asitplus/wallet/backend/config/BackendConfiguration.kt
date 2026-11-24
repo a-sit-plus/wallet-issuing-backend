@@ -2,6 +2,7 @@ package at.asitplus.wallet.backend.config
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.openid.KeyAttestationRequired
 import at.asitplus.openid.OpenIdConstants
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.toJcaCertificateBlocking
@@ -470,7 +471,8 @@ internal fun walletClientAuthenticationService(
 /**
  * In wallet attestation mode, credential proofs must carry a Key Attestation signed by a trusted Wallet Provider or
  * extra KA issuing anchor. Otherwise Key Attestations are optional; a supplied attestation still requires a trusted
- * provider under the current VC-K validation policy.
+ * provider under the current VC-K validation policy, and in wallet attestation mode, has to meet the configured
+ * `key_storage` and `user_authentication`, which are published.
  */
 internal fun credentialProofValidator(
     configuration: WalletAttestationConfiguration,
@@ -480,6 +482,10 @@ internal fun credentialProofValidator(
 ): ProofValidator = ProofValidator(
     publicContext = issuerIdentifier,
     requireKeyAttestation = configuration.enabled,
+    keyAttestationRequirements = KeyAttestationRequired(
+        keyStorage = configuration.keyStorage.ifEmpty { null },
+        userAuthentication = configuration.userAuthentication.ifEmpty { null },
+    ),
     keyAttestationValidator = at.asitplus.wallet.lib.validation.KeyAttestationValidator(
         walletProviderStatusAnchors = TrustedCertificates { trustService.statusAnchors() },
         statusValidator = walletStatusValidator(trustService, statusListTokenResolver),

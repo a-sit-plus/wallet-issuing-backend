@@ -418,6 +418,11 @@ remain additional wallet/KA **issuance** anchors. Legacy `wallet-provider-lote-u
 wallet profile URLs when supplied, and `lote-signer-certificates` adds signer pins; prefer the new
 `trust-lists` configuration. Disabling the wallet profile also disables these legacy issuance anchors.
 
+With `wallet-attestation.enabled`, `key_attestations_required` of both proof types lists the accepted
+`wallet-attestation.key-storage` and `wallet-attestation.user-authentication` values (OpenID4VCI 1.0, D.2),
+default `[iso_18045_high, iso_18045_moderate]` each. A Key Attestation has to contain one of the listed values
+of each; an empty list accepts any value and is not published.
+
 ### Signed Issuer Metadata
 
 Configure a Wallet Relying Party Access Certificate (WRPAC) and its private key with

@@ -1,5 +1,11 @@
 # Changelog
 
+10.0.0:
+ - Publish key storage requirements: with `backend.wallet-attestation.enabled`, `key_attestations_required` lists the
+   accepted `key_storage` and `user_authentication`, configured with `backend.wallet-attestation.key-storage` and
+   `.user-authentication` (default `iso_18045_high` and `iso_18045_moderate`), and Key Attestations not meeting them
+   are rejected
+
 9.0.0:
  - Update to VC-K 9.0.0
  - Include `vct#integrity` in issued SD-JWT VCs, the W3C SRI of the type metadata document of their `vct`

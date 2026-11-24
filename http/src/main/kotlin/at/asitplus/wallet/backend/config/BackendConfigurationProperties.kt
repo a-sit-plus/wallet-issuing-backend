@@ -79,7 +79,20 @@ data class WalletAttestationConfiguration(
     val trustedCertificates: List<String> = emptyList(),
     /** Additional trust anchors for Key Attestation signatures. */
     val trustedKeyAttestationCertificates: List<String> = emptyList(),
-)
+    /**
+     * When enabled, the `key_storage` values accepted in Key Attestations, published in `key_attestations_required`:
+     * a Key Attestation has to contain one of them. Defaults to `iso_18045_high` and `iso_18045_moderate`; empty
+     * accepts any.
+     */
+    val keyStorage: List<String> = DEFAULT_ATTACK_POTENTIAL_RESISTANCE,
+    /** Like [keyStorage], for `user_authentication`. */
+    val userAuthentication: List<String> = DEFAULT_ATTACK_POTENTIAL_RESISTANCE,
+) {
+    private companion object {
+        /** The values of OpenID4VCI 1.0, D.2, of keys at least as resistant as a platform keystore declares. */
+        val DEFAULT_ATTACK_POTENTIAL_RESISTANCE = listOf("iso_18045_high", "iso_18045_moderate")
+    }
+}
 
 data class MetadataConfiguration(
     val name: String = "A-SIT Plus Wallet Issuer",

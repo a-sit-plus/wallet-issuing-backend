@@ -122,6 +122,25 @@ class WalletAttestationConfigurationTest {
     }
 
     @Test
+    fun `key storage requirements are advertised as configured`() {
+        val resources = DefaultResourceLoader()
+        fun requirements(configuration: WalletAttestationConfiguration) = credentialProofValidator(
+            configuration, "https://issuer.example", WalletProviderTrustService(configuration, resources),
+        ).validProofTypes().values.map { it.keyAttestationRequired.shouldNotBeNull() }
+
+        requirements(WalletAttestationConfiguration(enabled = true)).forEach {
+            it.keyStorage shouldBe listOf("iso_18045_high", "iso_18045_moderate")
+            it.userAuthentication shouldBe listOf("iso_18045_high", "iso_18045_moderate")
+        }
+        requirements(
+            WalletAttestationConfiguration(enabled = true, keyStorage = listOf("iso_18045_high"), userAuthentication = emptyList())
+        ).forEach {
+            it.keyStorage shouldBe listOf("iso_18045_high")
+            it.userAuthentication.shouldBeNull()
+        }
+    }
+
+    @Test
     fun `key attestation is accepted only from a trusted Wallet Provider in wallet attestation mode`() {
         runBlocking {
             val providerPki = MetadataTestPki()
