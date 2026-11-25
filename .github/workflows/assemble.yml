@@ -1,7 +1,9 @@
 name: Assemble
-on: [push]
+on: [push, pull_request]
 jobs:
   build:
+    # Pushes to this repository already run the build, so run pull requests only from forks
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     env:
       GITHUB_ACTOR: ${{ github.actor }}
@@ -26,7 +28,8 @@ jobs:
           ./gradlew --continue clean assemble test build
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()
+        # The token of pull requests from forks is read-only and cannot create check runs
+        if: (success() || failure()) && github.event_name == 'push'
         with:
           name: Tests
           path: 'http/build/test-results/test/**/TEST-*.xml'
